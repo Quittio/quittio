@@ -95,7 +95,8 @@ return [
         'filename' => '{title}_{number}.{ext}',
         'cache_path' => storage_path('framework/cache/quittio'),
         'renderers' => [
-            'mpdf' => ['simple_tables' => true, 'pdfa_auto' => false],
+            // simple_tables = true ignores the borders of table cells.
+            'mpdf' => ['simple_tables' => false, 'pdfa_auto' => false],
         ],
     ],
 

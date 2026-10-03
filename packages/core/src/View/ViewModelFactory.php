@@ -723,12 +723,14 @@ final class ViewModelFactory
         if ($terms?->text !== null) {
             $lines[] = $terms->text;
         }
-        if ($this->invoice->dueDate !== null && $due !== null && $due->isPositive()) {
+        // Credit notes are refunds: no request to pay and no cash discount.
+        $payable = $due !== null && $due->isPositive() && ! $this->invoice->isCreditNote();
+        if ($this->invoice->dueDate !== null && $payable) {
             $lines[] = str_replace(':date', (string) $this->date($this->invoice->dueDate), $labels['payable_until']);
         }
 
         $discounts = [];
-        foreach ($terms->discounts ?? [] as $discount) {
+        foreach ($payable ? $terms->discounts ?? [] : [] as $discount) {
             $until = $this->invoice->issueDate->addDays($discount->days);
             $amount = (new EpcGiroCodeGenerator)->amount($this->invoice, true);
             $percent = $this->context->formatter->percent($discount->percent, $this->locale());
@@ -806,6 +808,7 @@ final class ViewModelFactory
             'pageMarginTop' => self::PAGE_MARGIN_TOP,
             'letterheadHeight' => $layout->letterheadHeight(self::PAGE_MARGIN_TOP),
             'addressHeight' => $layout->addressHeight,
+            'addressWidth' => $layout->addressWidth,
             'foldMarks' => $marks ? $layout->foldMarks : [],
             'punchMark' => $marks ? $layout->punchMark : null,
             'paper' => $p->paper,

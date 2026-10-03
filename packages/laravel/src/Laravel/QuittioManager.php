@@ -283,7 +283,7 @@ class QuittioManager
             fontDirectories: $settings->strings('pdf.font_directories'),
             defaultFont: $settings->string('pdf.font', 'inter'),
             pdfaAuto: $options->bool('pdfa_auto', false),
-            simpleTables: $options->bool('simple_tables', true),
+            simpleTables: $options->bool('simple_tables', false),
         );
     }
 

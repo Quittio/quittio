@@ -135,3 +135,14 @@ it('scales large logos once and caches them', function () {
         ->and($cache->resolve('data:image/png;base64,AAA'))->toBe('data:image/png;base64,AAA')
         ->and($cache->resolve(null))->toBeNull();
 })->skip(! extension_loaded('gd'), 'GD is not available.');
+
+it('asks only for payment on invoices, not on credit notes', function () {
+    $credit = (new En16931Calculator)->calculate(Invoices::simple()->type('381')->paymentTerms(fn ($t) => $t->dueInDays(14)->cashDiscount(7, '2'))->build());
+    $view = (new ViewModelFactory)->build($credit, new ViewContext(locale: 'en'));
+
+    expect($view->payment->qrCode)->toBeNull()
+        ->and(implode(' ', $view->paymentTerms->lines->toArray()))->not->toContain('Please pay')
+        ->and(implode(' ', $view->paymentTerms->lines->toArray()))->not->toContain('cash discount')
+        ->and((new Quittio\Core\Pdf\Qr\EpcGiroCodeGenerator)->supports($credit))->toBeFalse()
+        ->and(viewModel()->payment->qrCode)->not->toBeNull();
+});

@@ -200,7 +200,7 @@ final class Scenarios
             ->type(InvoiceTypeCode::CreditNote)
             ->precedingInvoice('RE-2026-0042', '2026-10-03')
             ->note('Stornierung der Rechnung RE-2026-0042 vom 03.10.2026. Grund: Doppelt berechnet.', 'AAI')
-            ->paymentTerms(fn ($t) => $t->text('Der Betrag wird erstattet.'));
+            ->paymentTerms('Der Betrag wird erstattet.');
     }
 
     public static function subLines(): InvoiceBuilder

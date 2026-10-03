@@ -33,7 +33,9 @@ final class EpcGiroCodeGenerator implements PaymentQrGenerator
         $instructions = $invoice->paymentInstructions;
         $transfer = $instructions?->primaryCreditTransfer();
 
+        // Credit notes are refunds: the buyer must not be asked to pay.
         return $invoice->currency === 'EUR'
+            && ! $invoice->isCreditNote()
             && $instructions !== null
             && in_array($instructions->meansCode, [PaymentMeansCode::SepaCreditTransfer, PaymentMeansCode::CreditTransfer], true)
             && $transfer !== null

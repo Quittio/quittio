@@ -20,6 +20,9 @@ After rendering, the guard checks that the template printed every mandatory valu
 ## mPDF rules
 
 - Layout with tables, not flexbox or grid.
+- Inside table cells, mPDF ignores `margin` and `padding` of blocks (`div`, `p`). Create spacing there with the padding of a table cell, e.g. a nested table with one row per block.
+- Keep `pdf.renderers.mpdf.simple_tables` off: it drops the borders of table cells.
+- Position elements on the page with `position: absolute` (measured from the page edge); `position: fixed` is measured from the page margins.
 - Repeated table headers via `<thead>`.
 - Headers and footers via `<htmlpageheader>` / `<htmlpagefooter>`, page numbers with `{PAGENO}` and `{nbpg}`.
 - `page-break-inside: avoid` for the totals block.

@@ -30,9 +30,13 @@ $columns = $prices ? 6 : 3;
     .right { text-align: right; }
     .letterhead td { height: <?= $e($design->letterheadHeight) ?>mm; }
     .company { font-size: 14pt; font-weight: bold; color: <?= $primary ?>; }
-    .sender-line { font-size: 6.5pt; color: <?= $muted ?>; border-bottom: 0.2mm solid <?= $muted ?>; padding-bottom: 1mm; margin-bottom: 2mm; }
+    /* mPDF ignores margin and padding of blocks inside table cells; spacing there uses cell padding. */
+    .address { width: <?= $e($design->addressWidth) ?>mm; }
+    .address td { padding: 0; }
+    .address td.sender-line { font-size: 6.5pt; color: <?= $muted ?>; border-bottom: 0.2mm solid <?= $muted ?>; padding-bottom: 1mm; }
+    .address td.address-lines { padding-top: 2mm; }
     .recipient { height: <?= $e($design->addressHeight) ?>mm; }
-    .mark { position: fixed; left: 5mm; width: 5mm; border-top: 0.2mm solid <?= $muted ?>; }
+    .mark { position: absolute; left: 5mm; width: 5mm; height: 0; border-top: 0.2mm solid <?= $muted ?>; }
     .meta td { padding: 0.6mm 0; }
     .meta td.label { color: <?= $muted ?>; padding-right: 4mm; }
     h1 { font-size: 15pt; color: <?= $primary ?>; margin: 8mm 0 3mm 0; }
@@ -47,6 +51,8 @@ $columns = $prices ? 6 : 3;
     .totals .due td { font-weight: bold; font-size: 10.5pt; border-top: 0.4mm solid <?= $primary ?>; }
     .section { margin-top: 6mm; page-break-inside: avoid; }
     .section-title { font-weight: bold; color: <?= $primary ?>; margin-bottom: 1mm; }
+    .stack td { padding: 0; }
+    .stack td.gap { padding-top: 4mm; }
     .footer td { font-size: 7pt; color: <?= $muted ?>; padding-right: 3mm; }
 </style>
 </head>
@@ -75,8 +81,10 @@ $columns = $prices ? 6 : 3;
 
 <table><tr>
     <td style="width: 95mm;" class="recipient">
-        <div class="sender-line"><?= $e($design->senderLine) ?></div>
-        <?php foreach ($invoice->buyer->address->lines as $line): ?><?= $e($line) ?><br><?php endforeach ?>
+        <table class="address">
+            <tr><td class="sender-line"><?= $e($design->senderLine) ?></td></tr>
+            <tr><td class="address-lines"><?php foreach ($invoice->buyer->address->lines as $line): ?><?= $e($line) ?><br><?php endforeach ?></td></tr>
+        </table>
     </td>
     <td>
         <table class="meta">
@@ -265,27 +273,34 @@ $columns = $prices ? 6 : 3;
 <div class="section">
     <table><tr>
         <td>
+            <table class="stack">
+            <?php $gap = ''; ?>
             <?php if ($invoice->paymentTerms): ?>
-                <div class="section-title"><?= $e($labels->payment_terms) ?></div>
-                <?php foreach ($invoice->paymentTerms->lines as $line): ?><div><?= $e($line) ?></div><?php endforeach ?>
+                <tr><td class="<?= $gap ?>">
+                    <div class="section-title"><?= $e($labels->payment_terms) ?></div>
+                    <?php foreach ($invoice->paymentTerms->lines as $line): ?><div><?= $e($line) ?></div><?php endforeach ?>
+                </td></tr>
+                <?php $gap = 'gap'; ?>
             <?php endif ?>
             <?php if ($invoice->payment): ?>
                 <?php foreach ($invoice->payment->accounts as $account): ?>
-                    <div style="margin-top: 2mm;">
+                    <tr><td class="<?= $gap ?>">
                         <div class="section-title"><?= $e($labels->bank_details) ?></div>
                         <?php if ($account->name): ?><?= $e($labels->account_holder) ?>: <?= $e($account->name) ?><br><?php endif ?>
                         <?= $e($labels->iban) ?>: <?= $e($account->iban) ?><br>
                         <?php if ($account->bic): ?><?= $e($labels->bic) ?>: <?= $e($account->bic) ?><br><?php endif ?>
                         <?= $e($labels->remittance) ?>: <?= $e($invoice->payment->remittance) ?>
-                    </div>
+                    </td></tr>
+                    <?php $gap = 'gap'; ?>
                 <?php endforeach ?>
                 <?php if ($invoice->payment->directDebit): ?>
-                    <div style="margin-top: 2mm;"><?= $e($labels->direct_debit) ?>
+                    <tr><td class="<?= $gap ?>"><?= $e($labels->direct_debit) ?>
                         <?php if ($invoice->payment->directDebit->mandate): ?><?= $e($labels->mandate) ?>: <?= $e($invoice->payment->directDebit->mandate) ?><?php endif ?>
                         <?php if ($invoice->payment->directDebit->creditorId): ?> · <?= $e($labels->creditor_id) ?>: <?= $e($invoice->payment->directDebit->creditorId) ?><?php endif ?>
-                    </div>
+                    </td></tr>
                 <?php endif ?>
             <?php endif ?>
+            </table>
         </td>
         <?php if ($invoice->payment && $invoice->payment->qrCode): ?>
             <td style="width: 32mm;" class="right">

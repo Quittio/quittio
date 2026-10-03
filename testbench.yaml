@@ -1,0 +1,12 @@
+# Lets the package commands run inside this repository without a Laravel app:
+#   vendor/bin/testbench quittio:preview --scenario=simple
+providers:
+  - Quittio\Laravel\QuittioServiceProvider
+
+env:
+  - APP_KEY="base64:cXVpdHRpby1kZXZlbG9wbWVudC1rZXktMDAwMDAwMDA="
+  - QUITTIO_COUNTRY=DE
+
+config:
+  quittio.countries:
+    - Quittio\Country\DE\CountryDE

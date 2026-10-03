@@ -83,7 +83,6 @@
   </cac:Delivery>
   <cac:PaymentMeans>
     <cbc:PaymentMeansCode>58</cbc:PaymentMeansCode>
-    <cbc:PaymentDueDate>2026-10-17</cbc:PaymentDueDate>
     <cbc:PaymentID>RE-2026-0042</cbc:PaymentID>
     <cac:PayeeFinancialAccount>
       <cbc:ID>DE02120300000000202051</cbc:ID>
@@ -94,8 +93,7 @@
     </cac:PayeeFinancialAccount>
   </cac:PaymentMeans>
   <cac:PaymentTerms>
-    <cbc:Note>Der Betrag wird erstattet.
-2.00 % cash discount for payment within 7 days (until 2026-10-10).</cbc:Note>
+    <cbc:Note>Der Betrag wird erstattet.</cbc:Note>
   </cac:PaymentTerms>
   <cac:TaxTotal>
     <cbc:TaxAmount currencyID="EUR">438.71</cbc:TaxAmount>

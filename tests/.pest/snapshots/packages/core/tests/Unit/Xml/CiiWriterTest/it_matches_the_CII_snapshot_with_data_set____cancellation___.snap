@@ -165,11 +165,7 @@
         <ram:RateApplicablePercent>19.00</ram:RateApplicablePercent>
       </ram:ApplicableTradeTax>
       <ram:SpecifiedTradePaymentTerms>
-        <ram:Description>Der Betrag wird erstattet.
-2.00 % cash discount for payment within 7 days (until 2026-10-10).</ram:Description>
-        <ram:DueDateDateTime>
-          <udt:DateTimeString format="102">20261017</udt:DateTimeString>
-        </ram:DueDateDateTime>
+        <ram:Description>Der Betrag wird erstattet.</ram:Description>
       </ram:SpecifiedTradePaymentTerms>
       <ram:SpecifiedTradeSettlementHeaderMonetarySummation>
         <ram:LineTotalAmount>2309.00</ram:LineTotalAmount>

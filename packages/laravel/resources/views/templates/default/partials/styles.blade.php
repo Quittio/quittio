@@ -11,9 +11,13 @@
     .right { text-align: right; }
     .letterhead td { height: {{ $design->letterheadHeight }}mm; }
     .company { font-size: 14pt; font-weight: bold; color: {{ $primary }}; }
-    .sender-line { font-size: 6.5pt; color: {{ $muted }}; border-bottom: 0.2mm solid {{ $muted }}; padding-bottom: 1mm; margin-bottom: 2mm; }
+    /* mPDF ignores margin and padding of blocks inside table cells; spacing there uses cell padding. */
+    .address { width: {{ $design->addressWidth }}mm; }
+    .address td { padding: 0; }
+    .address td.sender-line { font-size: 6.5pt; color: {{ $muted }}; border-bottom: 0.2mm solid {{ $muted }}; padding-bottom: 1mm; }
+    .address td.address-lines { padding-top: 2mm; }
     .recipient { height: {{ $design->addressHeight }}mm; }
-    .mark { position: fixed; left: 5mm; width: 5mm; border-top: 0.2mm solid {{ $muted }}; }
+    .mark { position: absolute; left: 5mm; width: 5mm; height: 0; border-top: 0.2mm solid {{ $muted }}; }
     .meta td { padding: 0.6mm 0; }
     .meta td.label { color: {{ $muted }}; padding-right: 4mm; }
     h1 { font-size: 15pt; color: {{ $primary }}; margin: 8mm 0 3mm 0; }
@@ -28,4 +32,6 @@
     .totals .due td { font-weight: bold; font-size: 10.5pt; border-top: 0.4mm solid {{ $primary }}; }
     .section { margin-top: 6mm; page-break-inside: avoid; }
     .section-title { font-weight: bold; color: {{ $primary }}; margin-bottom: 1mm; }
+    .stack td { padding: 0; }
+    .stack td.gap { padding-top: 4mm; }
     .footer td { font-size: 7pt; color: {{ $muted }}; padding-right: 3mm; }

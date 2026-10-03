@@ -31,7 +31,8 @@ final class MpdfRenderer implements PdfRenderer
         private readonly array $fontDirectories = [],
         private readonly string $defaultFont = 'inter',
         private readonly bool $pdfaAuto = false,
-        private readonly bool $simpleTables = true,
+        // simpleTables drops the borders of table cells (row lines, totals line) and is not faster.
+        private readonly bool $simpleTables = false,
     ) {}
 
     public function supportsEmbedding(): bool

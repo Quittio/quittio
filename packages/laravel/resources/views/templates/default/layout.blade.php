@@ -33,8 +33,10 @@
 
 <table><tr>
     <td style="width: 95mm;" class="recipient">
-        @include($partials.'.sender-line')
-        @include($partials.'.recipient')
+        <table class="address">
+            <tr><td class="sender-line">@include($partials.'.sender-line')</td></tr>
+            <tr><td class="address-lines">@include($partials.'.recipient')</td></tr>
+        </table>
     </td>
     <td>
         @include($partials.'.meta')
