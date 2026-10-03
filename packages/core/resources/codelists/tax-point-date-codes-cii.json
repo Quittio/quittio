@@ -1,0 +1,11 @@
+{
+    "name": "tax-point-date-codes-cii",
+    "rule": "BR-CL-06",
+    "description": "Value added tax point date code MUST be coded using a restriction of UNTDID 2475.",
+    "source": "EN 16931 Schematron (CII) 1.3.16 from 2026-09-02",
+    "codes": [
+        "29",
+        "5",
+        "72"
+    ]
+}

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         colors="true"
+         cacheDirectory=".phpunit.cache"
+         failOnWarning="true"
+         failOnRisky="true">
+    <testsuites>
+        <testsuite name="core">
+            <directory>packages/core/tests</directory>
+        </testsuite>
+        <testsuite name="country-de">
+            <directory>packages/country-de/tests</directory>
+        </testsuite>
+        <testsuite name="laravel">
+            <directory>packages/laravel/tests</directory>
+        </testsuite>
+    </testsuites>
+    <source>
+        <include>
+            <directory>packages/core/src</directory>
+            <directory>packages/country-de/src</directory>
+            <directory>packages/laravel/src</directory>
+        </include>
+    </source>
+    <php>
+        <ini name="memory_limit" value="1G"/>
+        <env name="APP_ENV" value="testing"/>
+    </php>
+</phpunit>

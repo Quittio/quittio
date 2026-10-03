@@ -1,0 +1,145 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Quittio\Core\Support;
+
+use Carbon\CarbonImmutable;
+use DateTimeInterface;
+use DateTimeZone;
+use InvalidArgumentException;
+use JsonSerializable;
+use Stringable;
+use Throwable;
+
+/**
+ * Calendar date without time of day.
+ *
+ * Invoice dates are legal dates in the issuer's time zone. Storing them as
+ * year/month/day makes it impossible for a UTC conversion to shift them to
+ * the previous or next day.
+ */
+final readonly class Date implements JsonSerializable, Stringable
+{
+    private function __construct(
+        public int $year,
+        public int $month,
+        public int $day,
+    ) {
+        if (! checkdate($month, $day, $year)) {
+            throw new InvalidArgumentException(sprintf('Invalid date %04d-%02d-%02d.', $year, $month, $day));
+        }
+    }
+
+    public static function of(int $year, int $month, int $day): self
+    {
+        return new self($year, $month, $day);
+    }
+
+    /**
+     * Accepts ISO dates (2026-10-03), the CII format 102 (20261003),
+     * date-time strings and DateTimeInterface instances.
+     *
+     * A DateTimeInterface is first converted into $timezone (if given), so that
+     * the calendar date matches the issuer's local date.
+     */
+    public static function parse(self|DateTimeInterface|string $value, DateTimeZone|string|null $timezone = null): self
+    {
+        if ($value instanceof self) {
+            return $value;
+        }
+
+        if ($value instanceof DateTimeInterface) {
+            $carbon = CarbonImmutable::instance($value);
+            if ($timezone !== null) {
+                $carbon = $carbon->setTimezone($timezone);
+            }
+
+            return new self((int) $carbon->format('Y'), (int) $carbon->format('n'), (int) $carbon->format('j'));
+        }
+
+        $value = trim($value);
+
+        if (preg_match('/^(\d{4})(\d{2})(\d{2})$/', $value, $m) === 1
+            || preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $value, $m) === 1) {
+            return new self((int) $m[1], (int) $m[2], (int) $m[3]);
+        }
+
+        try {
+            $carbon = CarbonImmutable::parse($value, $timezone);
+        } catch (Throwable $e) {
+            throw new InvalidArgumentException(sprintf('Unable to parse date "%s".', $value), 0, $e);
+        }
+
+        return new self((int) $carbon->format('Y'), (int) $carbon->format('n'), (int) $carbon->format('j'));
+    }
+
+    public static function today(DateTimeZone|string|null $timezone = null): self
+    {
+        return self::parse(CarbonImmutable::now($timezone ?? date_default_timezone_get()));
+    }
+
+    public function toCarbon(DateTimeZone|string|null $timezone = null): CarbonImmutable
+    {
+        return CarbonImmutable::create($this->year, $this->month, $this->day, 0, 0, 0, $timezone)
+            ?? throw new InvalidArgumentException('Unable to create date.');
+    }
+
+    public function addDays(int $days): self
+    {
+        return self::parse($this->toCarbon('UTC')->addDays($days));
+    }
+
+    public function format(string $format): string
+    {
+        return $this->toCarbon('UTC')->format($format);
+    }
+
+    /**
+     * Date in UN/CEFACT format 102 (CCYYMMDD).
+     */
+    public function toFormat102(): string
+    {
+        return sprintf('%04d%02d%02d', $this->year, $this->month, $this->day);
+    }
+
+    public function toIsoString(): string
+    {
+        return sprintf('%04d-%02d-%02d', $this->year, $this->month, $this->day);
+    }
+
+    public function compareTo(self $other): int
+    {
+        return $this->toIsoString() <=> $other->toIsoString();
+    }
+
+    public function equals(self $other): bool
+    {
+        return $this->compareTo($other) === 0;
+    }
+
+    public function isBefore(self $other): bool
+    {
+        return $this->compareTo($other) < 0;
+    }
+
+    public function isAfter(self $other): bool
+    {
+        return $this->compareTo($other) > 0;
+    }
+
+    public function diffInDays(self $other): int
+    {
+        return (int) $this->toCarbon('UTC')->diffInDays($other->toCarbon('UTC'), false);
+    }
+
+    public function __toString(): string
+    {
+        return $this->toIsoString();
+    }
+
+    public function jsonSerialize(): string
+    {
+        return $this->toIsoString();
+    }
+}

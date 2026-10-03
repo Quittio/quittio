@@ -1,0 +1,3093 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://quittio.dev/schema/invoice.schema.json",
+    "title": "Quittio invoice data",
+    "description": "InvoiceData::toArray() / toJson(). Amounts and decimals are strings; dates use ISO 8601 (YYYY-MM-DD). Values equal to their default may be omitted.",
+    "$ref": "#/$defs/InvoiceData",
+    "$defs": {
+        "Address": {
+            "type": "object",
+            "properties": {
+                "countryCode": {
+                    "type": "string",
+                    "description": "BT-40, cardinality 1"
+                },
+                "line1": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-35, cardinality 0..1"
+                },
+                "line2": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-36, cardinality 0..1"
+                },
+                "line3": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-162, cardinality 0..1"
+                },
+                "city": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-37, cardinality 0..1"
+                },
+                "postcode": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-38, cardinality 0..1"
+                },
+                "subdivision": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-39, cardinality 0..1"
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "countryCode"
+            ]
+        },
+        "Attachment": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "BT-122, cardinality 1"
+                },
+                "description": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-123, cardinality 0..1"
+                },
+                "externalUri": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-124, cardinality 0..1"
+                },
+                "content": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "contentEncoding": "base64"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-125, cardinality 0..1"
+                },
+                "mimeType": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "enum": [
+                                "application/pdf",
+                                "image/png",
+                                "image/jpeg",
+                                "text/csv",
+                                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                                "application/vnd.oasis.opendocument.spreadsheet"
+                            ]
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-125-1, cardinality 0..1"
+                },
+                "filename": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-125-2, cardinality 0..1"
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "id"
+            ]
+        },
+        "BuyerParty": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "BT-44, cardinality 1"
+                },
+                "address": {
+                    "$ref": "#/$defs/Address",
+                    "description": "BG-8, cardinality 1"
+                },
+                "tradingName": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-45, cardinality 0..1"
+                },
+                "identifier": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/Identifier"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-46, cardinality 0..1"
+                },
+                "legalRegistration": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/Identifier"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-47, cardinality 0..1"
+                },
+                "vatId": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-48, cardinality 0..1"
+                },
+                "electronicAddress": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/ElectronicAddress"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-49, cardinality 0..1"
+                },
+                "contact": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/Contact"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BG-9, cardinality 0..1"
+                },
+                "isConsumer": {
+                    "type": "boolean",
+                    "description": "internal"
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "name",
+                "address"
+            ]
+        },
+        "CashDiscount": {
+            "type": "object",
+            "properties": {
+                "days": {
+                    "type": "integer"
+                },
+                "percent": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+                },
+                "baseAmount": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "days",
+                "percent"
+            ]
+        },
+        "Classification": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "listId": {
+                    "type": "string",
+                    "examples": [
+                        "HS",
+                        "TST",
+                        "CV",
+                        "GN",
+                        "IB",
+                        "MP",
+                        "ZZZ"
+                    ]
+                },
+                "listVersion": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "code",
+                "listId"
+            ]
+        },
+        "Colors": {
+            "type": "object",
+            "properties": {
+                "primary": {
+                    "type": "string"
+                },
+                "text": {
+                    "type": "string"
+                },
+                "muted": {
+                    "type": "string"
+                },
+                "secondary": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                }
+            },
+            "additionalProperties": false
+        },
+        "Contact": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-41, cardinality 0..1"
+                },
+                "phone": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-42, cardinality 0..1"
+                },
+                "email": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-43, cardinality 0..1"
+                }
+            },
+            "additionalProperties": false
+        },
+        "CreditTransfer": {
+            "type": "object",
+            "properties": {
+                "accountId": {
+                    "type": "string",
+                    "description": "BT-84, cardinality 1"
+                },
+                "accountName": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-85, cardinality 0..1"
+                },
+                "serviceProviderId": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-86, cardinality 0..1"
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "accountId"
+            ]
+        },
+        "Delivery": {
+            "type": "object",
+            "properties": {
+                "recipientName": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-70, cardinality 0..1"
+                },
+                "locationId": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/Identifier"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-71, cardinality 0..1"
+                },
+                "actualDeliveryDate": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "format": "date"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-72, cardinality 0..1"
+                },
+                "address": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/Address"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BG-15, cardinality 0..1"
+                }
+            },
+            "additionalProperties": false
+        },
+        "DirectDebit": {
+            "type": "object",
+            "properties": {
+                "mandateReference": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-89, cardinality 0..1"
+                },
+                "creditorId": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-90, cardinality 0..1"
+                },
+                "debitedAccountId": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-91, cardinality 0..1"
+                }
+            },
+            "additionalProperties": false
+        },
+        "DocumentAllowance": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-92, cardinality 1"
+                },
+                "vatCategory": {
+                    "type": "string",
+                    "enum": [
+                        "S",
+                        "Z",
+                        "E",
+                        "AE",
+                        "K",
+                        "G",
+                        "O",
+                        "L",
+                        "M",
+                        "B"
+                    ],
+                    "description": "BT-95, cardinality 1"
+                },
+                "vatRate": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-96, cardinality 0..1"
+                },
+                "baseAmount": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-93, cardinality 0..1"
+                },
+                "percent": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-94, cardinality 0..1"
+                },
+                "reason": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-97, cardinality 0..1"
+                },
+                "reasonCode": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "examples": [
+                                "41",
+                                "42",
+                                "60",
+                                "62",
+                                "63",
+                                "64",
+                                "65",
+                                "66",
+                                "67",
+                                "68"
+                            ]
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-98, cardinality 0..1"
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "amount",
+                "vatCategory"
+            ]
+        },
+        "DocumentCharge": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-99, cardinality 1"
+                },
+                "vatCategory": {
+                    "type": "string",
+                    "enum": [
+                        "S",
+                        "Z",
+                        "E",
+                        "AE",
+                        "K",
+                        "G",
+                        "O",
+                        "L",
+                        "M",
+                        "B"
+                    ],
+                    "description": "BT-102, cardinality 1"
+                },
+                "vatRate": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-103, cardinality 0..1"
+                },
+                "baseAmount": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-100, cardinality 0..1"
+                },
+                "percent": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-101, cardinality 0..1"
+                },
+                "reason": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-104, cardinality 0..1"
+                },
+                "reasonCode": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "examples": [
+                                "AA",
+                                "AAA",
+                                "ABK",
+                                "ABL",
+                                "ADR",
+                                "ADT",
+                                "DL",
+                                "FC",
+                                "FI",
+                                "LA"
+                            ]
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-105, cardinality 0..1"
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "amount",
+                "vatCategory"
+            ]
+        },
+        "DocumentReference": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "kind": {
+                    "type": "string"
+                },
+                "lineId": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
+                "issueDate": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "format": "date"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
+                "typeCode": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
+                "description": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "id"
+            ]
+        },
+        "ElectronicAddress": {
+            "type": "object",
+            "properties": {
+                "value": {
+                    "type": "string"
+                },
+                "scheme": {
+                    "type": "string",
+                    "examples": [
+                        "EM",
+                        "0002",
+                        "0007",
+                        "0009",
+                        "0060",
+                        "0088",
+                        "0106",
+                        "0184",
+                        "0190",
+                        "0192"
+                    ]
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "value",
+                "scheme"
+            ]
+        },
+        "ExtendedData": {
+            "type": "object",
+            "properties": {
+                "invoicer": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/ExtendedParty"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "EXTENDED only"
+                },
+                "invoicee": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/ExtendedParty"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "EXTENDED only"
+                },
+                "ultimateCustomer": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/ExtendedParty"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "EXTENDED only"
+                },
+                "shipFrom": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/ExtendedParty"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "EXTENDED only"
+                },
+                "deliveryTermsCode": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "EXTENDED only"
+                },
+                "additionalReferences": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/DocumentReference"
+                    },
+                    "description": "EXTENDED only"
+                },
+                "installments": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/Installment"
+                    },
+                    "description": "EXTENDED only"
+                },
+                "additionalPaymentInstructions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/PaymentInstructions"
+                    },
+                    "description": "EXTENDED only"
+                }
+            },
+            "additionalProperties": false
+        },
+        "ExtendedParty": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "address": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/Address"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
+                "identifiers": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/Identifier"
+                    }
+                },
+                "vatId": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
+                "contact": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/Contact"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "name"
+            ]
+        },
+        "Identifier": {
+            "type": "object",
+            "properties": {
+                "value": {
+                    "type": "string"
+                },
+                "scheme": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "examples": [
+                                "0002",
+                                "0007",
+                                "0009",
+                                "0060",
+                                "0088",
+                                "0106",
+                                "0160",
+                                "0184",
+                                "0190",
+                                "0192"
+                            ]
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "value"
+            ]
+        },
+        "IncludedProduct": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "quantity": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
+                "unit": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "examples": [
+                                "C62",
+                                "H87",
+                                "SET",
+                                "PR",
+                                "DZN",
+                                "LS",
+                                "SEC",
+                                "MIN",
+                                "HUR",
+                                "DAY"
+                            ]
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
+                "description": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
+                "sellerId": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "name"
+            ]
+        },
+        "Installment": {
+            "type": "object",
+            "properties": {
+                "dueDate": {
+                    "type": "string",
+                    "format": "date"
+                },
+                "amount": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
+                "description": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "dueDate"
+            ]
+        },
+        "InvoiceData": {
+            "type": "object",
+            "properties": {
+                "number": {
+                    "type": "string",
+                    "description": "BT-1, cardinality 1"
+                },
+                "issueDate": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "BT-2, cardinality 1"
+                },
+                "typeCode": {
+                    "type": "string",
+                    "examples": [
+                        "71",
+                        "80",
+                        "81",
+                        "82",
+                        "83",
+                        "84",
+                        "102",
+                        "130",
+                        "202",
+                        "203"
+                    ],
+                    "description": "BT-3, cardinality 1"
+                },
+                "currency": {
+                    "type": "string",
+                    "description": "BT-5, cardinality 1"
+                },
+                "seller": {
+                    "$ref": "#/$defs/SellerParty",
+                    "description": "BG-4, cardinality 1"
+                },
+                "buyer": {
+                    "$ref": "#/$defs/BuyerParty",
+                    "description": "BG-7, cardinality 1"
+                },
+                "lines": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/InvoiceLine"
+                    },
+                    "description": "BG-25, cardinality 1..n"
+                },
+                "taxCurrency": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-6, cardinality 0..1"
+                },
+                "taxPointDate": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "format": "date"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-7, cardinality 0..1"
+                },
+                "taxPointDateCode": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "examples": [
+                                "issue_date",
+                                "delivery_date",
+                                "payment_date"
+                            ]
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-8, cardinality 0..1"
+                },
+                "dueDate": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "format": "date"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-9, cardinality 0..1"
+                },
+                "buyerReference": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-10, cardinality 0..1"
+                },
+                "projectReference": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/ProjectReference"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-11, cardinality 0..1"
+                },
+                "contractReference": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-12, cardinality 0..1"
+                },
+                "purchaseOrderReference": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-13, cardinality 0..1"
+                },
+                "salesOrderReference": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-14, cardinality 0..1"
+                },
+                "receivingAdviceReference": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-15, cardinality 0..1"
+                },
+                "despatchAdviceReference": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-16, cardinality 0..1"
+                },
+                "tenderReference": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-17, cardinality 0..1"
+                },
+                "invoicedObject": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/Identifier"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-18, cardinality 0..1"
+                },
+                "buyerAccountingReference": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-19, cardinality 0..1"
+                },
+                "paymentTerms": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/PaymentTerms"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-20, cardinality 0..1"
+                },
+                "notes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/Note"
+                    },
+                    "description": "BG-1, cardinality 0..n"
+                },
+                "businessProcess": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-23, cardinality 0..1"
+                },
+                "precedingInvoices": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/PrecedingInvoiceReference"
+                    },
+                    "description": "BG-3, cardinality 0..n"
+                },
+                "payee": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/PayeeParty"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BG-10, cardinality 0..1"
+                },
+                "sellerTaxRepresentative": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/TaxRepresentativeParty"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BG-11, cardinality 0..1"
+                },
+                "delivery": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/Delivery"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BG-13, cardinality 0..1"
+                },
+                "invoicingPeriod": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/Period"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BG-14, cardinality 0..1"
+                },
+                "paymentInstructions": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/PaymentInstructions"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BG-16, cardinality 0..1"
+                },
+                "allowances": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/DocumentAllowance"
+                    },
+                    "description": "BG-20, cardinality 0..n"
+                },
+                "charges": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/DocumentCharge"
+                    },
+                    "description": "BG-21, cardinality 0..n"
+                },
+                "totals": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/Totals"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BG-22, cardinality 1, calculated"
+                },
+                "vatBreakdown": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/VatBreakdown"
+                    },
+                    "description": "BG-23, cardinality 1..n, calculated"
+                },
+                "attachments": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/Attachment"
+                    },
+                    "description": "BG-24, cardinality 0..n"
+                },
+                "prepaidAmount": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
+                "roundingAmount": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
+                "extended": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/ExtendedData"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "EXTENDED only"
+                },
+                "xrechnungExtension": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/XRechnungExtensionData"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
+                "presentation": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/Presentation"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "PDF only"
+                },
+                "meta": {
+                    "$ref": "#/$defs/Meta",
+                    "description": "internal"
+                },
+                "standardVersion": {
+                    "type": "string",
+                    "enum": [
+                        "en16931-2017",
+                        "en16931-2026"
+                    ],
+                    "description": "internal"
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "number",
+                "issueDate",
+                "typeCode",
+                "currency",
+                "seller",
+                "buyer",
+                "lines"
+            ]
+        },
+        "InvoiceLine": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "BT-126, cardinality 1"
+                },
+                "quantity": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+                    "description": "BT-129, cardinality 1"
+                },
+                "unit": {
+                    "type": "string",
+                    "examples": [
+                        "C62",
+                        "H87",
+                        "SET",
+                        "PR",
+                        "DZN",
+                        "LS",
+                        "SEC",
+                        "MIN",
+                        "HUR",
+                        "DAY"
+                    ],
+                    "description": "BT-130, cardinality 1"
+                },
+                "price": {
+                    "$ref": "#/$defs/Price",
+                    "description": "BG-29, cardinality 1"
+                },
+                "vat": {
+                    "$ref": "#/$defs/LineVat",
+                    "description": "BG-30, cardinality 1"
+                },
+                "item": {
+                    "$ref": "#/$defs/Item",
+                    "description": "BG-31, cardinality 1"
+                },
+                "note": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-127, cardinality 0..1"
+                },
+                "objectId": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/Identifier"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-128, cardinality 0..1"
+                },
+                "netAmount": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-131, cardinality 1, calculated"
+                },
+                "orderLineReference": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-132, cardinality 0..1"
+                },
+                "buyerAccountingReference": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-133, cardinality 0..1"
+                },
+                "period": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/Period"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BG-26, cardinality 0..1"
+                },
+                "allowances": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/LineAllowance"
+                    },
+                    "description": "BG-27, cardinality 0..n"
+                },
+                "charges": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/LineCharge"
+                    },
+                    "description": "BG-28, cardinality 0..n"
+                },
+                "subLines": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/InvoiceLine"
+                    },
+                    "description": "internal"
+                },
+                "lineReferences": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/DocumentReference"
+                    },
+                    "description": "EXTENDED only"
+                },
+                "extended": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/LineExtendedData"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "EXTENDED only"
+                },
+                "presentation": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/LinePresentation"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "PDF only"
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "id",
+                "quantity",
+                "unit",
+                "price",
+                "vat",
+                "item"
+            ]
+        },
+        "Item": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "BT-153, cardinality 1"
+                },
+                "description": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-154, cardinality 0..1"
+                },
+                "sellerId": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-155, cardinality 0..1"
+                },
+                "buyerId": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-156, cardinality 0..1"
+                },
+                "standardId": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/Identifier"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-157, cardinality 0..1"
+                },
+                "classifications": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/Classification"
+                    },
+                    "description": "BT-158, cardinality 0..n"
+                },
+                "originCountry": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-159, cardinality 0..1"
+                },
+                "attributes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/ItemAttribute"
+                    },
+                    "description": "BG-32, cardinality 0..n"
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "name"
+            ]
+        },
+        "ItemAttribute": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "BT-160, cardinality 1"
+                },
+                "value": {
+                    "type": "string",
+                    "description": "BT-161, cardinality 1"
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "name",
+                "value"
+            ]
+        },
+        "LineAllowance": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-136, cardinality 1"
+                },
+                "baseAmount": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-137, cardinality 0..1"
+                },
+                "percent": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-138, cardinality 0..1"
+                },
+                "reason": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-139, cardinality 0..1"
+                },
+                "reasonCode": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "examples": [
+                                "41",
+                                "42",
+                                "60",
+                                "62",
+                                "63",
+                                "64",
+                                "65",
+                                "66",
+                                "67",
+                                "68"
+                            ]
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-140, cardinality 0..1"
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "amount"
+            ]
+        },
+        "LineCharge": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-141, cardinality 1"
+                },
+                "baseAmount": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-142, cardinality 0..1"
+                },
+                "percent": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-143, cardinality 0..1"
+                },
+                "reason": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-144, cardinality 0..1"
+                },
+                "reasonCode": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "examples": [
+                                "AA",
+                                "AAA",
+                                "ABK",
+                                "ABL",
+                                "ADR",
+                                "ADT",
+                                "DL",
+                                "FC",
+                                "FI",
+                                "LA"
+                            ]
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-145, cardinality 0..1"
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "amount"
+            ]
+        },
+        "LineExtendedData": {
+            "type": "object",
+            "properties": {
+                "lineStatusReasonCode": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "EXTENDED only"
+                },
+                "shipTo": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/ExtendedParty"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "EXTENDED only"
+                },
+                "deliveryDate": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "format": "date"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "EXTENDED only"
+                },
+                "includedProducts": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/IncludedProduct"
+                    },
+                    "description": "EXTENDED only"
+                }
+            },
+            "additionalProperties": false
+        },
+        "LineGroup": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "showSubtotal": {
+                    "type": "boolean"
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "id",
+                "title"
+            ]
+        },
+        "LinePresentation": {
+            "type": "object",
+            "properties": {
+                "groupId": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
+                "highlight": {
+                    "type": "boolean"
+                },
+                "showGrossPrice": {
+                    "anyOf": [
+                        {
+                            "type": "boolean"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                }
+            },
+            "additionalProperties": false
+        },
+        "LineVat": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "type": "string",
+                    "enum": [
+                        "S",
+                        "Z",
+                        "E",
+                        "AE",
+                        "K",
+                        "G",
+                        "O",
+                        "L",
+                        "M",
+                        "B"
+                    ],
+                    "description": "BT-151, cardinality 1"
+                },
+                "rate": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-152, cardinality 0..1"
+                },
+                "exemptionReason": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "internal"
+                },
+                "exemptionReasonCode": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "examples": [
+                                "VATEX-EU-AE",
+                                "VATEX-EU-IC",
+                                "VATEX-EU-G",
+                                "VATEX-EU-O",
+                                "VATEX-EU-D",
+                                "VATEX-EU-F",
+                                "VATEX-EU-I",
+                                "VATEX-EU-J",
+                                "VATEX-EU-79-C",
+                                "VATEX-EU-132"
+                            ]
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "internal"
+                },
+                "presetKey": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "internal"
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "category"
+            ]
+        },
+        "Meta": {
+            "type": "object",
+            "properties": {
+                "locale": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "internal"
+                },
+                "timezone": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "internal"
+                },
+                "exchangeRate": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "internal"
+                },
+                "exchangeRateDate": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "format": "date"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "internal"
+                },
+                "custom": {
+                    "type": [
+                        "array",
+                        "object"
+                    ],
+                    "description": "internal"
+                },
+                "source": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "internal"
+                },
+                "flags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "description": "internal"
+                }
+            },
+            "additionalProperties": false
+        },
+        "Note": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string",
+                    "description": "BT-22, cardinality 1"
+                },
+                "subjectCode": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "examples": [
+                                "AAI",
+                                "AAK",
+                                "ABL",
+                                "ACY",
+                                "PMD",
+                                "PMT",
+                                "REG",
+                                "SUR",
+                                "TXD"
+                            ]
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-21, cardinality 0..1"
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "content"
+            ]
+        },
+        "PayeeParty": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "BT-59, cardinality 1"
+                },
+                "identifier": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/Identifier"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-60, cardinality 0..1"
+                },
+                "legalRegistration": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/Identifier"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-61, cardinality 0..1"
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "name"
+            ]
+        },
+        "PaymentCard": {
+            "type": "object",
+            "properties": {
+                "primaryAccountNumber": {
+                    "type": "string",
+                    "description": "BT-87, cardinality 1"
+                },
+                "holderName": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-88, cardinality 0..1"
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "primaryAccountNumber"
+            ]
+        },
+        "PaymentInstructions": {
+            "type": "object",
+            "properties": {
+                "meansCode": {
+                    "type": "string",
+                    "examples": [
+                        "1",
+                        "10",
+                        "20",
+                        "30",
+                        "31",
+                        "42",
+                        "48",
+                        "49",
+                        "54",
+                        "55"
+                    ],
+                    "description": "BT-81, cardinality 1"
+                },
+                "meansText": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-82, cardinality 0..1"
+                },
+                "remittanceInformation": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-83, cardinality 0..1"
+                },
+                "creditTransfers": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/CreditTransfer"
+                    },
+                    "description": "BG-17, cardinality 0..n"
+                },
+                "card": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/PaymentCard"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BG-18, cardinality 0..1"
+                },
+                "directDebit": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/DirectDebit"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BG-19, cardinality 0..1"
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "meansCode"
+            ]
+        },
+        "PaymentTerms": {
+            "type": "object",
+            "properties": {
+                "text": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-20, cardinality 0..1"
+                },
+                "dueDays": {
+                    "anyOf": [
+                        {
+                            "type": "integer"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "internal"
+                },
+                "discounts": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/CashDiscount"
+                    },
+                    "description": "internal"
+                },
+                "lateFeeTerms": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/PenaltyTerms"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "internal"
+                }
+            },
+            "additionalProperties": false
+        },
+        "PenaltyTerms": {
+            "type": "object",
+            "properties": {
+                "days": {
+                    "anyOf": [
+                        {
+                            "type": "integer"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
+                "percent": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
+                "text": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                }
+            },
+            "additionalProperties": false
+        },
+        "Period": {
+            "type": "object",
+            "properties": {
+                "start": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "format": "date"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
+                "end": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "format": "date"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                }
+            },
+            "additionalProperties": false
+        },
+        "PrecedingInvoiceReference": {
+            "type": "object",
+            "properties": {
+                "number": {
+                    "type": "string",
+                    "description": "BT-25, cardinality 1"
+                },
+                "issueDate": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "format": "date"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-26, cardinality 0..1"
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "number"
+            ]
+        },
+        "Presentation": {
+            "type": "object",
+            "properties": {
+                "template": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "PDF only"
+                },
+                "logo": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "PDF only"
+                },
+                "colors": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/Colors"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "PDF only"
+                },
+                "font": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "PDF only"
+                },
+                "senderLine": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "PDF only"
+                },
+                "letterLayout": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "PDF only"
+                },
+                "salutation": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "PDF only"
+                },
+                "introText": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "PDF only"
+                },
+                "closingText": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "PDF only"
+                },
+                "footerColumns": {
+                    "type": [
+                        "array",
+                        "object"
+                    ],
+                    "description": "PDF only"
+                },
+                "lineGroups": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/LineGroup"
+                    },
+                    "description": "PDF only"
+                },
+                "showGrossPrices": {
+                    "type": "boolean",
+                    "description": "PDF only"
+                },
+                "showItemNumbers": {
+                    "type": "boolean",
+                    "description": "PDF only"
+                },
+                "paymentQr": {
+                    "type": "string",
+                    "description": "PDF only"
+                },
+                "watermark": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "PDF only"
+                },
+                "paper": {
+                    "type": "string",
+                    "description": "PDF only"
+                },
+                "labels": {
+                    "type": [
+                        "array",
+                        "object"
+                    ],
+                    "description": "PDF only"
+                },
+                "title": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "PDF only"
+                }
+            },
+            "additionalProperties": false
+        },
+        "Price": {
+            "type": "object",
+            "properties": {
+                "netPrice": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-146, cardinality 1"
+                },
+                "discount": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-147, cardinality 0..1"
+                },
+                "grossPrice": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-148, cardinality 0..1"
+                },
+                "baseQuantity": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-149, cardinality 0..1"
+                },
+                "baseQuantityUnit": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "examples": [
+                                "C62",
+                                "H87",
+                                "SET",
+                                "PR",
+                                "DZN",
+                                "LS",
+                                "SEC",
+                                "MIN",
+                                "HUR",
+                                "DAY"
+                            ]
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-150, cardinality 0..1"
+                },
+                "priceInclVat": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "internal"
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "netPrice"
+            ]
+        },
+        "ProjectReference": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "id"
+            ]
+        },
+        "SellerParty": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "BT-27, cardinality 1"
+                },
+                "address": {
+                    "$ref": "#/$defs/Address",
+                    "description": "BG-5, cardinality 1"
+                },
+                "tradingName": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-28, cardinality 0..1"
+                },
+                "identifiers": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/Identifier"
+                    },
+                    "description": "BT-29, cardinality 0..n"
+                },
+                "legalRegistration": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/Identifier"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-30, cardinality 0..1"
+                },
+                "vatId": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-31, cardinality 0..1"
+                },
+                "taxNumber": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-32, cardinality 0..1"
+                },
+                "additionalLegalInfo": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-33, cardinality 0..1"
+                },
+                "electronicAddress": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/ElectronicAddress"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-34, cardinality 0..1"
+                },
+                "contact": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/Contact"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BG-6, cardinality 0..1"
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "name",
+                "address"
+            ]
+        },
+        "TaxRepresentativeParty": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "BT-62, cardinality 1"
+                },
+                "vatId": {
+                    "type": "string",
+                    "description": "BT-63, cardinality 1"
+                },
+                "address": {
+                    "$ref": "#/$defs/Address",
+                    "description": "BG-12, cardinality 1"
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "name",
+                "vatId",
+                "address"
+            ]
+        },
+        "ThirdPartyPayment": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "type": "string"
+                },
+                "amount": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+                },
+                "description": {
+                    "type": "string"
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "type",
+                "amount",
+                "description"
+            ]
+        },
+        "Totals": {
+            "type": "object",
+            "properties": {
+                "lineNetSum": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+                    "description": "BT-106, cardinality 1, calculated"
+                },
+                "netTotal": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+                    "description": "BT-109, cardinality 1, calculated"
+                },
+                "grossTotal": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+                    "description": "BT-112, cardinality 1, calculated"
+                },
+                "amountDue": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+                    "description": "BT-115, cardinality 1, calculated"
+                },
+                "allowanceSum": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-107, cardinality 0..1, calculated"
+                },
+                "chargeSum": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-108, cardinality 0..1, calculated"
+                },
+                "vatTotal": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-110, cardinality 0..1, calculated"
+                },
+                "vatTotalInTaxCurrency": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-111, cardinality 0..1, calculated"
+                },
+                "prepaidAmount": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-113, cardinality 0..1"
+                },
+                "roundingAmount": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-114, cardinality 0..1"
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "lineNetSum",
+                "netTotal",
+                "grossTotal",
+                "amountDue"
+            ]
+        },
+        "VatBreakdown": {
+            "type": "object",
+            "properties": {
+                "taxableAmount": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+                    "description": "BT-116, cardinality 1, calculated"
+                },
+                "taxAmount": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+                    "description": "BT-117, cardinality 1, calculated"
+                },
+                "category": {
+                    "type": "string",
+                    "enum": [
+                        "S",
+                        "Z",
+                        "E",
+                        "AE",
+                        "K",
+                        "G",
+                        "O",
+                        "L",
+                        "M",
+                        "B"
+                    ],
+                    "description": "BT-118, cardinality 1, calculated"
+                },
+                "rate": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-119, cardinality 0..1, calculated"
+                },
+                "exemptionReason": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-120, cardinality 0..1"
+                },
+                "exemptionReasonCode": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "examples": [
+                                "VATEX-EU-AE",
+                                "VATEX-EU-IC",
+                                "VATEX-EU-G",
+                                "VATEX-EU-O",
+                                "VATEX-EU-D",
+                                "VATEX-EU-F",
+                                "VATEX-EU-I",
+                                "VATEX-EU-J",
+                                "VATEX-EU-79-C",
+                                "VATEX-EU-132"
+                            ]
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "BT-121, cardinality 0..1"
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "taxableAmount",
+                "taxAmount",
+                "category"
+            ]
+        },
+        "XRechnungExtensionData": {
+            "type": "object",
+            "properties": {
+                "thirdPartyPayments": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/ThirdPartyPayment"
+                    }
+                }
+            },
+            "additionalProperties": false
+        }
+    }
+}

@@ -1,0 +1,14 @@
+{
+    "name": "mime-codes",
+    "rule": "BR-CL-24",
+    "description": "For Mime code in attribute use MIMEMediaType.",
+    "source": "EN 16931 Schematron (CII) 1.3.16 from 2026-09-02",
+    "codes": [
+        "application/pdf",
+        "application/vnd.oasis.opendocument.spreadsheet",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "image/jpeg",
+        "image/png",
+        "text/csv"
+    ]
+}

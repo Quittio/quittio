@@ -1,0 +1,11 @@
+{
+    "name": "quittio/quittio",
+    "description": "Quickstart meta package: Quittio for Laravel with the country pack for Germany.",
+    "keywords": ["laravel", "e-invoice", "zugferd", "xrechnung"],
+    "type": "metapackage",
+    "license": "MIT",
+    "require": {
+        "quittio/laravel": "self.version",
+        "quittio/country-de": "self.version"
+    }
+}

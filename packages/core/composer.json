@@ -1,0 +1,52 @@
+{
+    "name": "quittio/core",
+    "description": "Country-neutral e-invoicing core: EN 16931 data model, calculation, validation, CII/UBL, ZUGFeRD/Factur-X PDF/A-3.",
+    "keywords": [
+        "e-invoice",
+        "einvoice",
+        "en16931",
+        "zugferd",
+        "factur-x",
+        "xrechnung",
+        "ubl",
+        "cii",
+        "peppol",
+        "pdfa"
+    ],
+    "type": "library",
+    "license": "MIT",
+    "require": {
+        "ext-dom": "*",
+        "ext-libxml": "*",
+        "ext-mbstring": "*",
+        "ext-xmlwriter": "*",
+        "ext-zlib": "*",
+        "php": "^8.3",
+        "brick/math": "^1.0",
+        "brick/money": "^0.15.2",
+        "league/commonmark": "^2.6",
+        "mpdf/mpdf": "^8.3.1",
+        "mpdf/qrcode": "^1.2.2",
+        "nesbot/carbon": "^3.8",
+        "psr/log": "^3.0",
+        "setasign/fpdi": "^2.6"
+    },
+    "suggest": {
+        "ext-intl": "Locale-aware number and date formatting",
+        "ext-gd": "Logo scaling and image handling in PDFs",
+        "opis/json-schema": "Validate JSON input against the shipped invoice schema",
+        "quittio/laravel": "Laravel integration with Blade templates, facade, commands and testing helpers",
+        "quittio/country-de": "Country pack for Germany (UStG, XRechnung, DIN 5008)"
+    },
+    "autoload": {
+        "psr-4": {
+            "Quittio\\Core\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Quittio\\Core\\Tests\\": "tests/"
+        }
+    },
+    "minimum-stability": "stable"
+}

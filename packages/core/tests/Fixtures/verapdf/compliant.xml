@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<report>
+  <buildInformation>
+    <releaseDetails id="core" version="1.30.2" buildDate="2026-06-03T10:43:00Z"></releaseDetails>
+    <releaseDetails id="validation-model" version="1.30.2" buildDate="2026-06-03T10:46:00Z"></releaseDetails>
+    <releaseDetails id="apps" version="1.30.2" buildDate="2026-06-03T10:55:00Z"></releaseDetails>
+  </buildInformation>
+  <jobs>
+    <job>
+      <item size="-1">
+        <name>STDIN</name>
+      </item>
+      <validationReport jobEndStatus="normal" profileName="PDF/A-3b validation profile" statement="PDF file is compliant with Validation Profile requirements." isCompliant="true">
+        <details passedRules="146" failedRules="0" passedChecks="989" failedChecks="0"></details>
+      </validationReport>
+      <duration start="1791045228954" finish="1791045230113">00:00:01.159</duration>
+    </job>
+  </jobs>
+  <batchSummary totalJobs="1" failedToParse="0" encrypted="0" outOfMemory="0" veraExceptions="0">
+    <validationReports compliant="1" nonCompliant="0" failedJobs="0">1</validationReports>
+    <featureReports failedJobs="0">0</featureReports>
+    <repairReports failedJobs="0">0</repairReports>
+    <duration start="1791045230212" finish="1791045230213">00:00:00.001</duration>
+  </batchSummary>
+</report>

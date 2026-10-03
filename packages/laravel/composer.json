@@ -1,0 +1,56 @@
+{
+    "name": "quittio/laravel",
+    "description": "Laravel integration for Quittio e-invoicing: facade, configuration, Blade templates, commands and testing helpers.",
+    "keywords": [
+        "laravel",
+        "e-invoice",
+        "zugferd",
+        "factur-x",
+        "xrechnung",
+        "peppol"
+    ],
+    "type": "library",
+    "license": "MIT",
+    "require": {
+        "php": "^8.3",
+        "illuminate/bus": "^13.0",
+        "illuminate/console": "^13.0",
+        "illuminate/contracts": "^13.0",
+        "illuminate/events": "^13.0",
+        "illuminate/filesystem": "^13.0",
+        "illuminate/http": "^13.0",
+        "illuminate/mail": "^13.0",
+        "illuminate/queue": "^13.0",
+        "illuminate/routing": "^13.0",
+        "illuminate/support": "^13.0",
+        "illuminate/translation": "^13.0",
+        "illuminate/view": "^13.0",
+        "psr/log": "^3.0",
+        "quittio/core": "self.version"
+    },
+    "suggest": {
+        "ext-zip": "Unpack the validator configuration in quittio:schemas:download",
+        "quittio/country-de": "Country pack for Germany (UStG, XRechnung, DIN 5008)"
+    },
+    "autoload": {
+        "psr-4": {
+            "Quittio\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Quittio\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Quittio\\Laravel\\QuittioServiceProvider"
+            ],
+            "aliases": {
+                "Quittio": "Quittio\\Laravel\\Facades\\Quittio"
+            }
+        }
+    },
+    "minimum-stability": "stable"
+}

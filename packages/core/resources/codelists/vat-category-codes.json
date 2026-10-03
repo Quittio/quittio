@@ -1,0 +1,18 @@
+{
+    "name": "vat-category-codes",
+    "rule": "BR-CL-17",
+    "description": "Invoice tax categories MUST be coded using UNCL 5305 code list",
+    "source": "EN 16931 Schematron (CII) 1.3.16 from 2026-09-02",
+    "codes": [
+        "AE",
+        "B",
+        "E",
+        "G",
+        "K",
+        "L",
+        "M",
+        "O",
+        "S",
+        "Z"
+    ]
+}

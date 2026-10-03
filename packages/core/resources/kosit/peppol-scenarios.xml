@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  KoSIT validator scenarios for Peppol BIS Billing 3.0 (UBL Invoice and CreditNote).
+
+  Repository root: the validator directory (tools/validators, or the target of
+  quittio:schemas:download). The Peppol rules are
+  compiled from the official Schematron of OpenPEPPOL with SchXslt.
+-->
+<scenarios xmlns="http://www.xoev.de/de/validator/framework/1/scenarios" frameworkVersion="1.0.0">
+  <name>Quittio Peppol BIS Billing 3.0</name>
+  <author>Quittio</author>
+  <date>2026-10-03</date>
+  <description>
+    <p>EN 16931 and Peppol BIS Billing 3.0 rules for UBL invoices and credit notes.</p>
+  </description>
+
+  <scenario>
+    <name>Peppol BIS Billing 3.0 (UBL Invoice)</name>
+    <namespace prefix="cbc">urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2</namespace>
+    <namespace prefix="invoice">urn:oasis:names:specification:ubl:schema:xsd:Invoice-2</namespace>
+    <namespace prefix="rep">http://www.xoev.de/de/validator/varl/1</namespace>
+    <match>exists(/invoice:Invoice[cbc:CustomizationID/text() = 'urn:cen.eu:en16931:2017#compliant#urn:fdc:peppol.eu:2017:poacc:billing:3.0'])</match>
+    <validateWithXmlSchema>
+      <resource>
+        <name>XML Schema for UBL 2.1 Invoice</name>
+        <location>xrechnung/resources/ubl/2.1/xsd/maindoc/UBL-Invoice-2.1.xsd</location>
+      </resource>
+    </validateWithXmlSchema>
+    <validateWithSchematron>
+      <resource>
+        <name>Schematron rules for EN16931 (UBL)</name>
+        <location>xrechnung/resources/ubl/2.1/xsl/EN16931-UBL-validation.xsl</location>
+      </resource>
+    </validateWithSchematron>
+    <validateWithSchematron>
+      <resource>
+        <name>Schematron rules for Peppol BIS Billing 3.0 (UBL)</name>
+        <location>peppol/PEPPOL-EN16931-UBL.xsl</location>
+      </resource>
+    </validateWithSchematron>
+    <createReport>
+      <resource>
+        <name>Validation report</name>
+        <location>xrechnung/resources/xrechnung-report.xsl</location>
+      </resource>
+    </createReport>
+    <acceptMatch>/rep:report/rep:assessment[1]/rep:accept[1]</acceptMatch>
+  </scenario>
+
+  <scenario>
+    <name>Peppol BIS Billing 3.0 (UBL CreditNote)</name>
+    <namespace prefix="cbc">urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2</namespace>
+    <namespace prefix="creditnote">urn:oasis:names:specification:ubl:schema:xsd:CreditNote-2</namespace>
+    <namespace prefix="rep">http://www.xoev.de/de/validator/varl/1</namespace>
+    <match>exists(/creditnote:CreditNote[cbc:CustomizationID/text() = 'urn:cen.eu:en16931:2017#compliant#urn:fdc:peppol.eu:2017:poacc:billing:3.0'])</match>
+    <validateWithXmlSchema>
+      <resource>
+        <name>XML Schema for UBL 2.1 CreditNote</name>
+        <location>xrechnung/resources/ubl/2.1/xsd/maindoc/UBL-CreditNote-2.1.xsd</location>
+      </resource>
+    </validateWithXmlSchema>
+    <validateWithSchematron>
+      <resource>
+        <name>Schematron rules for EN16931 (UBL)</name>
+        <location>xrechnung/resources/ubl/2.1/xsl/EN16931-UBL-validation.xsl</location>
+      </resource>
+    </validateWithSchematron>
+    <validateWithSchematron>
+      <resource>
+        <name>Schematron rules for Peppol BIS Billing 3.0 (UBL)</name>
+        <location>peppol/PEPPOL-EN16931-UBL.xsl</location>
+      </resource>
+    </validateWithSchematron>
+    <createReport>
+      <resource>
+        <name>Validation report</name>
+        <location>xrechnung/resources/xrechnung-report.xsl</location>
+      </resource>
+    </createReport>
+    <acceptMatch>/rep:report/rep:assessment[1]/rep:accept[1]</acceptMatch>
+  </scenario>
+
+  <noScenarioReport>
+    <resource>
+      <name>Default Report</name>
+      <location>xrechnung/resources/default-report.xsl</location>
+    </resource>
+  </noScenarioReport>
+</scenarios>

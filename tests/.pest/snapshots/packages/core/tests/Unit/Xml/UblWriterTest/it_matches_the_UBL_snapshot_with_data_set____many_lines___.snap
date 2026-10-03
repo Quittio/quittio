@@ -1,0 +1,1383 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2" xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2" xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2">
+  <cbc:CustomizationID>urn:cen.eu:en16931:2017</cbc:CustomizationID>
+  <cbc:ID>RE-2026-0042</cbc:ID>
+  <cbc:IssueDate>2026-10-03</cbc:IssueDate>
+  <cbc:DueDate>2026-10-17</cbc:DueDate>
+  <cbc:InvoiceTypeCode>380</cbc:InvoiceTypeCode>
+  <cbc:DocumentCurrencyCode>EUR</cbc:DocumentCurrencyCode>
+  <cbc:BuyerReference>PO-4711</cbc:BuyerReference>
+  <cac:AccountingSupplierParty>
+    <cac:Party>
+      <cbc:EndpointID schemeID="EM">rechnung@muster.de</cbc:EndpointID>
+      <cac:PostalAddress>
+        <cbc:StreetName>Hauptstraße 1</cbc:StreetName>
+        <cbc:CityName>Musterstadt</cbc:CityName>
+        <cbc:PostalZone>12345</cbc:PostalZone>
+        <cac:Country>
+          <cbc:IdentificationCode>DE</cbc:IdentificationCode>
+        </cac:Country>
+      </cac:PostalAddress>
+      <cac:PartyTaxScheme>
+        <cbc:CompanyID>DE123456789</cbc:CompanyID>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:PartyTaxScheme>
+      <cac:PartyTaxScheme>
+        <cbc:CompanyID>12/345/67890</cbc:CompanyID>
+        <cac:TaxScheme>
+          <cbc:ID>FC</cbc:ID>
+        </cac:TaxScheme>
+      </cac:PartyTaxScheme>
+      <cac:PartyLegalEntity>
+        <cbc:RegistrationName>Muster GmbH</cbc:RegistrationName>
+        <cbc:CompanyID>HRB 12345</cbc:CompanyID>
+        <cbc:CompanyLegalForm>Amtsgericht Musterstadt · Geschäftsführer: Max Muster</cbc:CompanyLegalForm>
+      </cac:PartyLegalEntity>
+      <cac:Contact>
+        <cbc:Name>Max Muster</cbc:Name>
+        <cbc:Telephone>+49 123 456789</cbc:Telephone>
+        <cbc:ElectronicMail>rechnung@muster.de</cbc:ElectronicMail>
+      </cac:Contact>
+    </cac:Party>
+  </cac:AccountingSupplierParty>
+  <cac:AccountingCustomerParty>
+    <cac:Party>
+      <cbc:EndpointID schemeID="EM">ap@kunde.de</cbc:EndpointID>
+      <cac:PartyIdentification>
+        <cbc:ID>K-10001</cbc:ID>
+      </cac:PartyIdentification>
+      <cac:PostalAddress>
+        <cbc:StreetName>Bahnhofstraße 5</cbc:StreetName>
+        <cbc:CityName>Beispielstadt</cbc:CityName>
+        <cbc:PostalZone>54321</cbc:PostalZone>
+        <cac:Country>
+          <cbc:IdentificationCode>DE</cbc:IdentificationCode>
+        </cac:Country>
+      </cac:PostalAddress>
+      <cac:PartyTaxScheme>
+        <cbc:CompanyID>DE987654321</cbc:CompanyID>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:PartyTaxScheme>
+      <cac:PartyLegalEntity>
+        <cbc:RegistrationName>Kunde AG</cbc:RegistrationName>
+      </cac:PartyLegalEntity>
+      <cac:Contact>
+        <cbc:Name>Erika Kunde</cbc:Name>
+        <cbc:Telephone>+49 987 654321</cbc:Telephone>
+        <cbc:ElectronicMail>einkauf@kunde.de</cbc:ElectronicMail>
+      </cac:Contact>
+    </cac:Party>
+  </cac:AccountingCustomerParty>
+  <cac:Delivery>
+    <cbc:ActualDeliveryDate>2026-09-30</cbc:ActualDeliveryDate>
+  </cac:Delivery>
+  <cac:PaymentMeans>
+    <cbc:PaymentMeansCode>58</cbc:PaymentMeansCode>
+    <cbc:PaymentID>RE-2026-0042</cbc:PaymentID>
+    <cac:PayeeFinancialAccount>
+      <cbc:ID>DE02120300000000202051</cbc:ID>
+      <cbc:Name>Muster GmbH</cbc:Name>
+      <cac:FinancialInstitutionBranch>
+        <cbc:ID>BYLADEM1001</cbc:ID>
+      </cac:FinancialInstitutionBranch>
+    </cac:PayeeFinancialAccount>
+  </cac:PaymentMeans>
+  <cac:PaymentTerms>
+    <cbc:Note>Payable within 14 days without deduction.</cbc:Note>
+  </cac:PaymentTerms>
+  <cac:TaxTotal>
+    <cbc:TaxAmount currencyID="EUR">1281.00</cbc:TaxAmount>
+    <cac:TaxSubtotal>
+      <cbc:TaxableAmount currencyID="EUR">5956.20</cbc:TaxableAmount>
+      <cbc:TaxAmount currencyID="EUR">1131.68</cbc:TaxAmount>
+      <cac:TaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>19.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:TaxCategory>
+    </cac:TaxSubtotal>
+    <cac:TaxSubtotal>
+      <cbc:TaxableAmount currencyID="EUR">2133.12</cbc:TaxableAmount>
+      <cbc:TaxAmount currencyID="EUR">149.32</cbc:TaxAmount>
+      <cac:TaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>7.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:TaxCategory>
+    </cac:TaxSubtotal>
+  </cac:TaxTotal>
+  <cac:LegalMonetaryTotal>
+    <cbc:LineExtensionAmount currencyID="EUR">8089.32</cbc:LineExtensionAmount>
+    <cbc:TaxExclusiveAmount currencyID="EUR">8089.32</cbc:TaxExclusiveAmount>
+    <cbc:TaxInclusiveAmount currencyID="EUR">9370.32</cbc:TaxInclusiveAmount>
+    <cbc:PayableAmount currencyID="EUR">9370.32</cbc:PayableAmount>
+  </cac:LegalMonetaryTotal>
+  <cac:InvoiceLine>
+    <cbc:ID>1</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">2</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">8.26</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 001</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00001</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>19.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">4.13</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>2</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">3</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">15.78</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 002</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00002</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>19.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">5.26</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>3</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">4</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">25.56</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 003</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00003</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>19.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">6.39</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>4</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">5</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">37.60</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 004</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00004</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>7.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">7.52</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>5</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">6</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">51.90</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 005</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00005</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>19.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">8.65</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>6</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">7</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">68.46</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 006</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00006</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>19.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">9.78</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>7</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">1</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">10.91</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 007</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00007</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>19.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">10.91</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>8</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">2</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">22.08</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 008</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00008</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>7.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">11.04</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>9</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">3</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">36.51</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 009</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00009</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>19.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">12.17</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>10</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">4</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">53.20</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 010</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00010</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>19.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">13.30</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>11</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">5</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">72.15</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 011</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00011</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>19.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">14.43</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>12</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">6</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">93.36</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 012</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00012</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>7.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">15.56</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>13</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">7</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">116.83</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 013</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00013</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>19.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">16.69</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>14</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">1</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">17.82</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 014</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00014</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>19.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">17.82</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>15</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">2</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">37.90</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 015</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00015</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>19.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">18.95</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>16</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">3</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">57.24</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 016</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00016</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>7.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">19.08</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>17</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">4</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">80.84</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 017</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00017</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>19.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">20.21</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>18</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">5</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">106.70</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 018</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00018</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>19.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">21.34</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>19</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">6</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">134.82</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 019</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00019</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>19.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">22.47</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>20</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">7</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">165.20</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 020</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00020</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>7.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">23.60</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>21</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">1</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">24.73</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 021</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00021</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>19.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">24.73</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>22</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">2</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">51.72</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 022</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00022</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>19.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">25.86</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>23</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">3</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">80.97</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 023</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00023</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>19.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">26.99</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>24</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">4</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">108.48</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 024</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00024</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>7.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">27.12</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>25</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">5</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">141.25</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 025</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00025</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>19.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">28.25</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>26</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">6</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">176.28</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 026</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00026</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>19.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">29.38</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>27</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">7</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">213.57</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 027</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00027</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>19.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">30.51</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>28</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">1</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">31.64</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 028</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00028</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>7.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">31.64</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>29</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">2</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">65.54</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 029</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00029</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>19.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">32.77</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>30</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">3</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">101.70</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 030</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00030</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>19.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">33.90</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>31</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">4</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">136.12</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 031</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00031</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>19.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">34.03</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>32</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">5</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">175.80</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 032</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00032</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>7.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">35.16</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>33</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">6</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">217.74</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 033</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00033</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>19.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">36.29</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>34</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">7</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">261.94</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 034</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00034</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>19.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">37.42</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>35</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">1</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">38.55</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 035</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00035</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>19.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">38.55</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>36</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">2</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">79.36</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 036</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00036</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>7.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">39.68</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>37</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">3</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">122.43</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 037</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00037</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>19.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">40.81</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>38</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">4</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">167.76</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 038</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00038</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>19.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">41.94</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>39</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">5</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">210.35</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 039</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00039</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>19.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">42.07</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>40</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">6</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">259.20</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 040</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00040</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>7.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">43.20</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>41</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">7</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">310.31</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 041</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00041</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>19.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">44.33</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>42</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">1</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">45.46</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 042</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00042</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>19.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">45.46</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>43</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">2</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">93.18</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 043</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00043</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>19.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">46.59</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>44</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">3</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">143.16</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 044</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00044</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>7.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">47.72</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>45</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">4</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">195.40</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 045</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00045</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>19.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">48.85</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>46</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">5</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">249.90</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 046</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00046</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>19.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">49.98</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>47</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">6</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">300.66</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 047</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00047</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>19.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">50.11</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>48</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">7</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">358.68</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 048</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00048</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>7.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">51.24</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>49</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">1</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">52.37</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 049</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00049</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>19.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">52.37</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>50</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">2</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">107.00</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 050</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00050</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>19.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">53.50</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>51</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">3</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">163.89</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 051</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00051</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>19.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">54.63</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>52</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">4</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">223.04</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 052</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00052</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>7.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">55.76</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>53</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">5</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">284.45</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 053</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00053</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>19.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">56.89</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>54</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">6</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">342.12</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 054</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00054</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>19.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">57.02</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>55</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">7</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">407.05</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 055</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00055</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>19.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">58.15</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>56</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">1</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">59.28</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 056</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00056</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>7.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">59.28</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>57</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">2</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">120.82</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 057</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00057</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>19.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">60.41</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>58</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">3</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">184.62</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 058</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00058</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>19.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">61.54</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>59</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">4</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">250.68</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 059</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00059</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>19.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">62.67</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>60</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">5</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">319.00</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Artikel 060</cbc:Name>
+      <cac:SellersItemIdentification>
+        <cbc:ID>ART-00060</cbc:ID>
+      </cac:SellersItemIdentification>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>7.00</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID>VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">63.80</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+</Invoice>

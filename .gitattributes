@@ -1,0 +1,14 @@
+* text=auto eol=lf
+*.pdf binary
+*.png binary
+*.ttf binary
+*.icc binary
+/.github export-ignore
+/tools export-ignore
+/docs export-ignore
+/phpunit.xml.dist export-ignore
+/phpstan.neon.dist export-ignore
+/pint.json export-ignore
+
+# Third-party schemas are kept byte for byte as published.
+packages/core/resources/xsd/** -text

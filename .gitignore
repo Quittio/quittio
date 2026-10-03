@@ -1,0 +1,19 @@
+/vendor/
+/composer.lock
+/.phpunit.cache/
+/.phpstan.cache/
+/build/
+/storage/
+/.idea/
+/.vscode/
+.DS_Store
+.env
+
+# Third-party fixtures that may not be redistributed
+/packages/core/tests/Fixtures/ferd/
+/packages/country-de/tests/Fixtures/xrechnung-testsuite/
+
+# Downloaded validator artifacts
+/tools/validators/
+/build/
+packages/laravel/tests/Visual/__snapshots__/*.actual.png

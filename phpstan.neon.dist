@@ -1,0 +1,11 @@
+includes:
+    - vendor/phpstan/phpstan-strict-rules/rules.neon
+
+parameters:
+    level: max
+    paths:
+        - packages/core/src
+        - packages/country-de/src
+        - packages/laravel/src
+    tmpDir: .phpstan.cache
+    treatPhpDocTypesAsCertain: false

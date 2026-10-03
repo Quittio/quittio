@@ -1,0 +1,39 @@
+{
+    "name": "quittio/country-de",
+    "description": "Quittio country pack for Germany: UStG mandatory fields, tax presets, XRechnung profiles and BR-DE rules, DIN 5008 layouts.",
+    "keywords": [
+        "e-invoice",
+        "xrechnung",
+        "zugferd",
+        "ustg",
+        "germany",
+        "din5008"
+    ],
+    "type": "library",
+    "license": "MIT",
+    "require": {
+        "php": "^8.3",
+        "quittio/core": "self.version"
+    },
+    "autoload": {
+        "psr-4": {
+            "Quittio\\Country\\DE\\": "src/"
+        },
+        "files": [
+            "bootstrap.php"
+        ]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Quittio\\Country\\DE\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "quittio": {
+            "country-packs": [
+                "Quittio\\Country\\DE\\CountryDE"
+            ]
+        }
+    },
+    "minimum-stability": "stable"
+}

@@ -1,0 +1,95 @@
+{
+    "name": "quittio/monorepo",
+    "description": "Monorepo for Quittio, e-invoicing for Laravel (EN 16931, ZUGFeRD/Factur-X, XRechnung, UBL, Peppol BIS).",
+    "type": "project",
+    "license": "MIT",
+    "require": {
+        "ext-dom": "*",
+        "ext-libxml": "*",
+        "ext-mbstring": "*",
+        "ext-xmlwriter": "*",
+        "ext-zlib": "*",
+        "php": "^8.3",
+        "brick/math": "^1.0",
+        "brick/money": "^0.15.2",
+        "illuminate/bus": "^13.0",
+        "illuminate/console": "^13.0",
+        "illuminate/contracts": "^13.0",
+        "illuminate/events": "^13.0",
+        "illuminate/filesystem": "^13.0",
+        "illuminate/http": "^13.0",
+        "illuminate/mail": "^13.0",
+        "illuminate/queue": "^13.0",
+        "illuminate/routing": "^13.0",
+        "illuminate/support": "^13.0",
+        "illuminate/translation": "^13.0",
+        "illuminate/view": "^13.0",
+        "league/commonmark": "^2.6",
+        "mpdf/mpdf": "^8.3.1",
+        "mpdf/qrcode": "^1.2.2",
+        "nesbot/carbon": "^3.8",
+        "psr/log": "^3.0",
+        "setasign/fpdi": "^2.6"
+    },
+    "require-dev": {
+        "laravel/pint": "^1.20",
+        "opis/json-schema": "^2.6",
+        "orchestra/testbench": "^11.0",
+        "pestphp/pest": "^4.7 || ^5.0",
+        "phpstan/phpstan": "^2.1",
+        "phpstan/phpstan-strict-rules": "^2.0",
+        "spatie/pest-plugin-snapshots": "^2.2"
+    },
+    "replace": {
+        "quittio/core": "self.version",
+        "quittio/laravel": "self.version",
+        "quittio/country-de": "self.version",
+        "quittio/quittio": "self.version"
+    },
+    "autoload": {
+        "psr-4": {
+            "Quittio\\Core\\": "packages/core/src/",
+            "Quittio\\": "packages/laravel/src/",
+            "Quittio\\Country\\DE\\": "packages/country-de/src/"
+        },
+        "files": [
+            "packages/country-de/bootstrap.php"
+        ]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Quittio\\Core\\Tests\\": "packages/core/tests/",
+            "Quittio\\Tests\\": "packages/laravel/tests/",
+            "Quittio\\Country\\DE\\Tests\\": "packages/country-de/tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Quittio\\Laravel\\QuittioServiceProvider"
+            ]
+        },
+        "quittio": {
+            "country-packs": [
+                "Quittio\\Country\\DE\\CountryDE"
+            ]
+        }
+    },
+    "scripts": {
+        "test": "pest",
+        "test:core": "pest --testsuite=core",
+        "test:laravel": "pest --testsuite=laravel",
+        "test:country-de": "pest --testsuite=country-de",
+        "analyse": "phpstan analyse --memory-limit=1G",
+        "lint": "pint --test",
+        "format": "pint"
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
