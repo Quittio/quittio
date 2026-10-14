@@ -1,9 +1,32 @@
 {
-    "name": "quittio/monorepo",
-    "description": "Monorepo for Quittio, e-invoicing for Laravel (EN 16931, ZUGFeRD/Factur-X, XRechnung, UBL, Peppol BIS).",
-    "type": "project",
+    "name": "quittio/quittio",
+    "description": "E-invoicing for Laravel: create, validate, read and render EN 16931 invoices (ZUGFeRD/Factur-X, XRechnung, UBL, Peppol BIS), with the country pack for Germany.",
+    "keywords": [
+        "laravel",
+        "e-invoice",
+        "einvoice",
+        "zugferd",
+        "factur-x",
+        "xrechnung",
+        "peppol",
+        "en16931",
+        "invoice"
+    ],
+    "type": "library",
     "license": "MIT",
+    "homepage": "https://quittio.github.io/quittio/",
+    "support": {
+        "issues": "https://github.com/Quittio/quittio/issues",
+        "source": "https://github.com/Quittio/quittio",
+        "docs": "https://quittio.github.io/quittio/"
+    },
+    "authors": [
+        {
+            "name": "Niklas Forst"
+        }
+    ],
     "require": {
+        "php": "^8.3",
         "ext-ctype": "*",
         "ext-dom": "*",
         "ext-gd": "*",
@@ -11,22 +34,9 @@
         "ext-mbstring": "*",
         "ext-xmlwriter": "*",
         "ext-zlib": "*",
-        "php": "^8.3",
         "brick/math": "^1.0",
         "brick/money": "^0.15.2",
-        "illuminate/bus": "^13.0",
-        "illuminate/console": "^13.0",
-        "illuminate/contracts": "^13.0",
-        "illuminate/database": "^13.0",
-        "illuminate/events": "^13.0",
-        "illuminate/filesystem": "^13.0",
-        "illuminate/http": "^13.0",
-        "illuminate/mail": "^13.0",
-        "illuminate/queue": "^13.0",
-        "illuminate/routing": "^13.0",
-        "illuminate/support": "^13.0",
-        "illuminate/translation": "^13.0",
-        "illuminate/view": "^13.0",
+        "laravel/framework": "^13.0",
         "league/commonmark": "^2.6",
         "mpdf/mpdf": "^8.3.1",
         "mpdf/qrcode": "^1.2.2",
@@ -47,15 +57,11 @@
     "replace": {
         "quittio/core": "self.version",
         "quittio/laravel": "self.version",
-        "quittio/country-de": "self.version",
-        "quittio/quittio": "self.version",
-        "quittio/managed": "self.version"
+        "quittio/country-de": "self.version"
     },
     "autoload": {
         "psr-4": {
             "Quittio\\Core\\": "packages/core/src/",
-            "Quittio\\Managed\\": "packages/managed/src/",
-            "Quittio\\Managed\\Database\\Factories\\": "packages/managed/database/factories/",
             "Quittio\\Laravel\\": "packages/laravel/src/Laravel/",
             "Quittio\\Country\\DE\\": "packages/country-de/src/"
         },
@@ -67,15 +73,13 @@
         "psr-4": {
             "Quittio\\Core\\Tests\\": "packages/core/tests/",
             "Quittio\\Tests\\": "packages/laravel/tests/",
-            "Quittio\\Country\\DE\\Tests\\": "packages/country-de/tests/",
-            "Quittio\\Managed\\Tests\\": "packages/managed/tests/"
+            "Quittio\\Country\\DE\\Tests\\": "packages/country-de/tests/"
         }
     },
     "extra": {
         "laravel": {
             "providers": [
                 "Quittio\\Laravel\\QuittioServiceProvider",
-                "Quittio\\Managed\\ManagedServiceProvider",
                 "Quittio\\Country\\DE\\Laravel\\GermanyServiceProvider"
             ]
         },
@@ -83,6 +87,9 @@
             "country-packs": [
                 "Quittio\\Country\\DE\\CountryDE"
             ]
+        },
+        "branch-alias": {
+            "dev-master": "0.1.x-dev"
         }
     },
     "scripts": {
@@ -92,8 +99,7 @@
         "test:country-de": "pest --testsuite=country-de",
         "analyse": "phpstan analyse --memory-limit=1G",
         "lint": "pint --test",
-        "format": "pint",
-        "test:managed": "pest --testsuite=managed"
+        "format": "pint"
     },
     "config": {
         "sort-packages": true,

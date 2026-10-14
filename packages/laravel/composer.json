@@ -11,6 +11,17 @@
     ],
     "type": "library",
     "license": "MIT",
+    "homepage": "https://quittio.github.io/quittio/",
+    "support": {
+        "issues": "https://github.com/Quittio/quittio/issues",
+        "source": "https://github.com/Quittio/quittio",
+        "docs": "https://quittio.github.io/quittio/"
+    },
+    "authors": [
+        {
+            "name": "Niklas Forst"
+        }
+    ],
     "require": {
         "php": "^8.3",
         "laravel/framework": "^13.0",
@@ -39,6 +50,9 @@
             "aliases": {
                 "Quittio": "Quittio\\Laravel\\Facades\\Quittio"
             }
+        },
+        "branch-alias": {
+            "dev-master": "0.1.x-dev"
         }
     },
     "minimum-stability": "stable"

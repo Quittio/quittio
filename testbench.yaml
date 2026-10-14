@@ -2,7 +2,6 @@
 #   vendor/bin/testbench quittio:preview --scenario=simple
 providers:
   - Quittio\Laravel\QuittioServiceProvider
-  - Quittio\Managed\ManagedServiceProvider
   - Quittio\Country\DE\Laravel\GermanyServiceProvider
 
 env:

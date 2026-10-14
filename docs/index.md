@@ -20,7 +20,7 @@ Germany is the first market; everything country-specific lives in country packs,
 | `quittio/core` | Country-neutral core: EN 16931 data model, calculation, profiles, CII and UBL writers/readers, ZUGFeRD/Factur-X PDF/A-3, validation. Usable without Laravel. |
 | `quittio/laravel` | Laravel integration: facade, configuration, Blade templates, commands, testing helpers. |
 | `quittio/country-de` | Country pack for Germany: UStG mandatory fields, tax presets, XRechnung profiles and BR-DE rules, DIN 5008 letter layouts. |
-| `quittio/quittio` | Meta package for a quick start: `quittio/laravel` plus `quittio/country-de`. |
+| `quittio/quittio` | Everything in one package: core, Laravel integration and the country pack Germany. |
 | `quittio/managed` | Managed layer (commercial licence): issuer profiles, drafts, gapless numbering, archive with hashes, cancellations and corrections, mail delivery, audit log, retention. |
 {: .packages }
 

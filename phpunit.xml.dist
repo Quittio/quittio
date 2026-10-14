@@ -16,16 +16,12 @@
         <testsuite name="laravel">
             <directory>packages/laravel/tests</directory>
         </testsuite>
-        <testsuite name="managed">
-            <directory>packages/managed/tests</directory>
-        </testsuite>
     </testsuites>
     <source>
         <include>
             <directory>packages/core/src</directory>
             <directory>packages/country-de/src</directory>
             <directory>packages/laravel/src</directory>
-            <directory>packages/managed/src</directory>
         </include>
     </source>
     <php>

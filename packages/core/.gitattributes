@@ -1,0 +1,9 @@
+* text=auto eol=lf
+*.pdf binary
+*.png binary
+*.ttf binary
+*.icc binary
+/tests export-ignore
+
+# Third-party schemas are kept byte for byte as published.
+resources/xsd/** -text

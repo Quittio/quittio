@@ -15,6 +15,17 @@
     ],
     "type": "library",
     "license": "MIT",
+    "homepage": "https://quittio.github.io/quittio/",
+    "support": {
+        "issues": "https://github.com/Quittio/quittio/issues",
+        "source": "https://github.com/Quittio/quittio",
+        "docs": "https://quittio.github.io/quittio/"
+    },
+    "authors": [
+        {
+            "name": "Niklas Forst"
+        }
+    ],
     "require": {
         "ext-ctype": "*",
         "ext-dom": "*",
@@ -50,5 +61,10 @@
             "Quittio\\Core\\Tests\\": "tests/"
         }
     },
-    "minimum-stability": "stable"
+    "minimum-stability": "stable",
+    "extra": {
+        "branch-alias": {
+            "dev-master": "0.1.x-dev"
+        }
+    }
 }

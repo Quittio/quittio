@@ -8,10 +8,6 @@ parameters:
         - packages/core/src
         - packages/country-de/src
         - packages/laravel/src
-        - packages/managed/src
-        - packages/managed/database
-        # Analyses the HasInvoices trait in the context of a customer model.
-        - packages/managed/tests/Fixtures/Customer.php
     tmpDir: .phpstan.cache
     treatPhpDocTypesAsCertain: false
     strictRules:

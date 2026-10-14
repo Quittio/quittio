@@ -11,6 +11,17 @@
     ],
     "type": "library",
     "license": "MIT",
+    "homepage": "https://quittio.github.io/quittio/",
+    "support": {
+        "issues": "https://github.com/Quittio/quittio/issues",
+        "source": "https://github.com/Quittio/quittio",
+        "docs": "https://quittio.github.io/quittio/"
+    },
+    "authors": [
+        {
+            "name": "Niklas Forst"
+        }
+    ],
     "require": {
         "ext-ctype": "*",
         "php": "^8.3",
@@ -41,6 +52,9 @@
             "providers": [
                 "Quittio\\Country\\DE\\Laravel\\GermanyServiceProvider"
             ]
+        },
+        "branch-alias": {
+            "dev-master": "0.1.x-dev"
         }
     },
     "minimum-stability": "stable",

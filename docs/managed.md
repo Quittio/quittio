@@ -6,7 +6,7 @@ partial cancellations, corrections, delivery by mail, the audit log and retentio
 only the public API of `quittio/laravel` and `quittio/core`: everything it produces could
 also be produced by hand with the core.
 
-`quittio/managed` is commercially licensed (see `packages/managed/LICENSE`).
+`quittio/managed` is commercially licensed and distributed separately from the open source packages.
 
 Not part of version 1.0: recording payments (the payment columns exist, see
 [Payment status](#payment-status)), bank reconciliation, dunning runs, subscriptions and
@@ -2057,8 +2057,8 @@ See [Testing](testing.md) for `Quittio::fake()` and the e-invoice assertions.
 
 ### Testing against MySQL and PostgreSQL
 
-The package's own test suite runs against SQLite by default and against MySQL and PostgreSQL
-from `tools/docker/databases`:
+The package's own test suite (in the repository of `quittio/managed`) runs against SQLite by
+default and against MySQL and PostgreSQL from `tools/docker/databases`:
 
 ```bash
 docker compose -f tools/docker/databases/compose.yaml up -d --wait

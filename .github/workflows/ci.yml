@@ -51,53 +51,6 @@ jobs:
           dependency-versions: ${{ matrix.dependencies }}
       - run: vendor/bin/pest --exclude-group=official,visual
 
-  managed-databases:
-    runs-on: ubuntu-latest
-    needs: test
-    strategy:
-      fail-fast: false
-      matrix:
-        db: [mysql, pgsql]
-        triggers: ['0', '1']
-    name: managed (${{ matrix.db }}, triggers ${{ matrix.triggers }})
-    services:
-      mysql:
-        image: mysql:8.4
-        env:
-          MYSQL_DATABASE: quittio
-          MYSQL_USER: quittio
-          MYSQL_PASSWORD: quittio
-          MYSQL_ROOT_PASSWORD: quittio
-        ports: ['33061:3306']
-        options: >-
-          --health-cmd "mysqladmin ping -h 127.0.0.1 -uquittio -pquittio"
-          --health-interval 2s --health-timeout 5s --health-retries 30
-      pgsql:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_DB: quittio
-          POSTGRES_USER: quittio
-          POSTGRES_PASSWORD: quittio
-        ports: ['54321:5432']
-        options: >-
-          --health-cmd "pg_isready -U quittio"
-          --health-interval 2s --health-timeout 5s --health-retries 30
-    env:
-      QUITTIO_DB: ${{ matrix.db }}
-      QUITTIO_DB_TRIGGERS: ${{ matrix.triggers }}
-    steps:
-      - uses: actions/checkout@v7
-      - uses: shivammathur/setup-php@v2
-        with:
-          php: '8.4'
-          extensions: dom, libxml, mbstring, xmlwriter, zlib, intl, gd, bcmath, pdo_mysql, pdo_pgsql, pcntl, posix
-          coverage: none
-      - name: Allow triggers with binary logging
-        if: matrix.db == 'mysql'
-        run: mysql -h 127.0.0.1 -P 33061 -uroot -pquittio -e "SET GLOBAL log_bin_trust_function_creators = 1;"
-      - run: composer install --no-interaction --no-progress
-      - run: vendor/bin/pest --testsuite=managed
-
   visual:
     runs-on: ubuntu-latest
     needs: test

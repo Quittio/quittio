@@ -1,0 +1,48 @@
+name: Split
+
+# Copies packages/* into the read-only repositories quittio/core, quittio/laravel and
+# quittio/country-de on every push to master and every tag (with the same tag).
+# Secret SPLIT_TOKEN: a token with write access ("Contents: Read and write") to these repositories.
+
+on:
+  push:
+    branches: [master]
+    tags: ['*']
+
+concurrency:
+  group: split-${{ github.ref }}
+
+jobs:
+  split:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [core, laravel, country-de]
+    steps:
+      - uses: actions/checkout@v7
+
+      - if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+        uses: danharrin/monorepo-split-github-action@v2.4.5
+        env:
+          GITHUB_TOKEN: ${{ secrets.SPLIT_TOKEN }}
+        with:
+          package_directory: packages/${{ matrix.package }}
+          repository_organization: Quittio
+          repository_name: ${{ matrix.package }}
+          branch: master
+          user_name: Niklas Forst
+          user_email: kontakt@niklasforst.de
+
+      - if: ${{ startsWith(github.ref, 'refs/tags/') }}
+        uses: danharrin/monorepo-split-github-action@v2.4.5
+        env:
+          GITHUB_TOKEN: ${{ secrets.SPLIT_TOKEN }}
+        with:
+          tag: ${{ github.ref_name }}
+          package_directory: packages/${{ matrix.package }}
+          repository_organization: Quittio
+          repository_name: ${{ matrix.package }}
+          branch: master
+          user_name: Niklas Forst
+          user_email: kontakt@niklasforst.de

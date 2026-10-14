@@ -10,7 +10,7 @@ declare(strict_types=1);
 | that it stays testable after the split; they are included here.
 */
 
-foreach (['core', 'country-de', 'laravel', 'managed'] as $package) {
+foreach (['core', 'country-de', 'laravel'] as $package) {
     $bootstrap = dirname(__DIR__).'/packages/'.$package.'/tests/Pest.php';
     if (is_file($bootstrap)) {
         require $bootstrap;

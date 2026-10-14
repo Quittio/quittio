@@ -22,6 +22,6 @@ SOFTWARE.
 
 ---
 
-This licence covers the packages quittio/core, quittio/laravel, quittio/country-de
-and quittio/quittio. The directory packages/managed (quittio/managed) is not
-covered by it and is licensed separately, see packages/managed/LICENSE.
+This licence covers this repository and the packages quittio/quittio,
+quittio/core, quittio/laravel and quittio/country-de. The commercial package
+quittio/managed is not part of this repository and is licensed separately.

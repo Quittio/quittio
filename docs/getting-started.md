@@ -5,7 +5,7 @@ This tutorial creates, renders and cancels a first invoice. The references for e
 ## Installation
 
 ```bash
-composer require quittio/quittio          # Laravel integration + country pack Germany
+composer require quittio/quittio          # core, Laravel integration and country pack Germany
 php artisan quittio:install               # publishes config/quittio.php
 ```
 

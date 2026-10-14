@@ -6,7 +6,7 @@ storage on filesystem disks, queued rendering, events, a browser preview, Artisa
 and testing helpers. It needs PHP 8.3 and Laravel 13.
 
 ```bash
-composer require quittio/quittio        # quittio/laravel + quittio/country-de
+composer require quittio/quittio        # core, Laravel integration and country pack Germany
 php artisan quittio:install             # publishes config/quittio.php
 ```
 

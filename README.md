@@ -2,7 +2,7 @@
 
 E-invoicing for Laravel. Quittio creates, validates, reads and renders electronic invoices based on the European standard EN 16931. Germany is the first market; everything country-specific lives in country packs, so the core stays country-neutral.
 
-**Documentation: [nforst.github.io/quittio](https://nforst.github.io/quittio/)**
+**Documentation: [quittio.github.io/quittio](https://quittio.github.io/quittio/)**
 
 > **Status:** version 0.1.0 in preparation. The core scope of the roadmap (0.1–0.3) is implemented: data model, calculation, validation L1–L7, CII/UBL writers and readers, ZUGFeRD/Factur-X PDF/A-3, XRechnung, Peppol BIS, Laravel integration and the country pack Germany. The Managed layer 1.0 (issuer profiles, drafts, gapless numbering, archive, cancellations, corrections, mail delivery, audit log) is available as the separate package `quittio/managed`; payments, dunning runs and subscriptions follow later. Not released yet; APIs may still change, and the legal wording must be confirmed by a tax adviser (see open decisions).
 
@@ -13,8 +13,8 @@ E-invoicing for Laravel. Quittio creates, validates, reads and renders electroni
 | `quittio/core` | Country-neutral core: EN 16931 data model, calculation, profiles, CII and UBL writers/readers, ZUGFeRD/Factur-X PDF/A-3, validation. Usable without Laravel. |
 | `quittio/laravel` | Laravel integration: facade, configuration, Blade templates, commands, testing helpers. |
 | `quittio/country-de` | Country pack for Germany: UStG mandatory fields, tax presets, XRechnung profiles and BR-DE rules, DIN 5008 letter layouts. |
-| `quittio/quittio` | Meta package for a quick start: `quittio/laravel` plus `quittio/country-de`. |
-| `quittio/managed` | Managed layer (commercial licence): issuer profiles, drafts, gapless numbering, archive with hashes, cancellations and corrections, mail delivery, audit log, retention. |
+| `quittio/quittio` | Everything in one package: core, Laravel integration and the country pack Germany. This repository; the other three are read-only splits of `packages/*`. |
+| `quittio/managed` | Managed layer (commercial licence, separate repository): issuer profiles, drafts, gapless numbering, archive with hashes, cancellations and corrections, mail delivery, audit log, retention. |
 
 ## Requirements
 
@@ -73,7 +73,7 @@ $result->xml();   // CII XML
 
 ## Documentation
 
-The documentation is published at **[nforst.github.io/quittio](https://nforst.github.io/quittio/)** (with search). The same pages are in [`docs/`](docs/):
+The documentation is published at **[quittio.github.io/quittio](https://quittio.github.io/quittio/)** (with search). The same pages are in [`docs/`](docs/):
 
 - [Getting started](docs/getting-started.md)
 - [Building invoices](docs/building-invoices.md)
@@ -101,13 +101,7 @@ composer analyse     # PHPStan, level max
 composer lint        # Pint
 ```
 
-The Managed tests run on SQLite by default; MySQL and PostgreSQL run in Docker:
-
-```bash
-docker compose -f tools/docker/databases/compose.yaml up -d --wait
-QUITTIO_DB=mysql vendor/bin/pest --testsuite=managed
-QUITTIO_DB=pgsql QUITTIO_DB_TRIGGERS=1 vendor/bin/pest --testsuite=managed
-```
+Development happens in this repository. `packages/core`, `packages/laravel` and `packages/country-de` are copied to the read-only repositories `quittio/core`, `quittio/laravel` and `quittio/country-de` on every push and tag (`.github/workflows/split.yml`); open issues and pull requests here.
 
 Official validation (KoSIT validator and veraPDF) runs in CI and locally:
 
