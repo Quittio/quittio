@@ -8,6 +8,12 @@ title: Quittio
 description: E-invoicing for Laravel – EN 16931, ZUGFeRD/Factur-X, XRechnung, UBL and Peppol BIS.
 theme: just-the-docs
 color_scheme: quittio
+# Brand assets: the logo replaces the title in the header; favicon.ico is linked by the theme,
+# favicon.svg and apple-touch-icon.png by _includes/head_custom.html.
+logo: /assets/images/quittio-logo.svg
+# Open Graph and Twitter preview (jekyll-seo-tag); the CI build sets url for absolute links.
+twitter:
+  card: summary_large_image
 
 search_enabled: true
 search:
@@ -54,6 +60,7 @@ defaults:
       path: ""
     values:
       layout: default
+      image: /assets/images/og-image.png
   # Every page below: Blade examples such as {{ $invoice->number }} must not be read as Liquid
   # (the theme's stylesheets still need Liquid, so this is set per page).
   - scope: { path: "index.md" }

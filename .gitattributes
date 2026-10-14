@@ -1,9 +1,11 @@
 * text=auto eol=lf
 *.pdf binary
 *.png binary
+*.ico binary
 *.ttf binary
 *.icc binary
 /.github export-ignore
+/art export-ignore
 /tools export-ignore
 /docs export-ignore
 /phpunit.xml.dist export-ignore

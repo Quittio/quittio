@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="art/banner-dark.svg">
+    <img src="art/banner-light.svg" alt="Quittio: Invoices, settled. E-invoicing for Laravel" width="1280">
+  </picture>
+</p>
+
 # Quittio
 
 E-invoicing for Laravel. Quittio creates, validates, reads and renders electronic invoices based on the European standard EN 16931. Germany is the first market; everything country-specific lives in country packs, so the core stays country-neutral.
