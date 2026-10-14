@@ -98,6 +98,7 @@ The documentation is published at **[docs.quittio.dev](https://docs.quittio.dev)
 - [Artisan commands](docs/commands.md)
 - [Managed layer](docs/managed.md)
 - [Field reference](docs/field-reference.md) (generated)
+- [AI assistants](docs/ai.md): llms.txt, the MCP server `https://docs.quittio.dev/mcp` and Laravel Boost
 
 The website is built from these pages with Jekyll and the theme Just the Docs (`.github/workflows/docs.yml`). Local preview: `cd docs && bundle install && bundle exec jekyll serve`.
 

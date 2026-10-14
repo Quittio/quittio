@@ -97,6 +97,7 @@ $result->xml();   // CII XML
 | [Testing](testing.md) | Fake, assertions, factories, scenarios |
 | [Artisan commands](commands.md) | All commands and publish tags |
 | [Field reference](field-reference.md) | Every field of the data model with BT, cardinality and XML paths (generated) |
+| [AI assistants](ai.md) | llms.txt, the MCP server of this documentation, Laravel Boost guidelines and skill |
 
 ## Licence
 

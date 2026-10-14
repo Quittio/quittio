@@ -1,7 +1,8 @@
 name: Docs
 
-# Builds the documentation website from docs/ and deploys it to Cloudflare as a Worker with
-# static assets (docs/wrangler.jsonc).
+# Builds the documentation website from docs/ (Jekyll, then llms.txt, the Markdown pages and the
+# MCP index with _worker/build.mjs) and deploys it to Cloudflare as a Worker with static assets
+# and the MCP server under /mcp (docs/wrangler.jsonc).
 # Repository secrets: CLOUDFLARE_API_TOKEN (token template "Edit Cloudflare Workers") and
 # CLOUDFLARE_ACCOUNT_ID. Repository variable: DOCS_URL, the address of the website
 # (e.g. https://docs.quittio.dev), used for absolute links such as the preview image.
@@ -55,6 +56,10 @@ jobs:
       - run: bundle exec jekyll build --config _config.yml,_config.ci.yml
         env:
           JEKYLL_ENV: production
+      - run: node _worker/build.mjs
+        env:
+          DOCS_URL: ${{ vars.DOCS_URL }}
+      - run: node --test _worker/index.test.mjs
       - run: npx --yes wrangler@4 deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

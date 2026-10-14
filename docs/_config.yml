@@ -98,3 +98,5 @@ defaults:
     values: { title: Artisan commands, nav_order: 14, render_with_liquid: false }
   - scope: { path: "field-reference.md" }
     values: { title: Field reference, nav_order: 15, render_with_liquid: false }
+  - scope: { path: "ai.md" }
+    values: { title: AI assistants, nav_order: 16, render_with_liquid: false }

@@ -1,10 +1,14 @@
-// Cloudflare Worker that serves the built documentation website (_site) as static assets,
-// deployed by .github/workflows/docs.yml. Custom domain: Workers → quittio-docs → Settings →
+// Cloudflare Worker of the documentation website, deployed by .github/workflows/docs.yml:
+// serves the built site (_site) as static assets and the MCP server under /mcp (_worker/index.js,
+// only these paths run the Worker). Custom domain: Workers → quittio-docs → Settings →
 // Domains & Routes.
 {
   "name": "quittio-docs",
+  "main": "./_worker/index.js",
   "compatibility_date": "2026-10-14",
   "assets": {
-    "directory": "./_site"
+    "directory": "./_site",
+    "binding": "ASSETS",
+    "run_worker_first": ["/mcp", "/mcp/"]
   }
 }

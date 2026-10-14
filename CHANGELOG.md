@@ -22,6 +22,7 @@ All notable changes to this project are documented in this file. The format foll
 - Country pack Germany: tax numbers (BT-32) of German sellers are checked for format and check digit according to the ELSTER procedures of every federal state (warning `DE-TAX-NUMBER`); `TaxNumber` parses the ELSTER, federal and state notations.
 
 - Country pack Germany: rule `DE-USTG-14` rejects intra-community supplies (category K) of small businesses except for new vehicles (section 19 (1) sentence 2 and (6) sentence 1 UStG); warning `DE-USTG-15` for invoices on intra-community supplies and on services in another member state issued after the 15th of the month following the supply (section 14a (1) sentence 2 and (3) sentence 1 UStG); `UstgRules::issuingDeadline()`.
+- Documentation for AI assistants: `llms.txt`, `llms-full.txt` and every page as Markdown on the website, a read-only MCP server at `https://docs.quittio.dev/mcp` (tools `search_docs`, `get_page`, `list_pages`) and Laravel Boost guidelines and the skill `quittio-development` in `quittio/quittio` and `quittio/laravel`.
 
 ### Changed
 

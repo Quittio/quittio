@@ -24,3 +24,5 @@ packages/laravel/tests/Visual/__snapshots__/*.actual.png
 /docs/.bundle/
 /docs/vendor/
 /docs/_config.ci.yml
+/docs/_worker/docs.generated.json
+/docs/.wrangler/
