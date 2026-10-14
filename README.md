@@ -2,6 +2,8 @@
 
 E-invoicing for Laravel. Quittio creates, validates, reads and renders electronic invoices based on the European standard EN 16931. Germany is the first market; everything country-specific lives in country packs, so the core stays country-neutral.
 
+**Documentation: [nforst.github.io/quittio](https://nforst.github.io/quittio/)**
+
 > **Status:** version 0.1.0 in preparation. The core scope of the roadmap (0.1–0.3) is implemented: data model, calculation, validation L1–L7, CII/UBL writers and readers, ZUGFeRD/Factur-X PDF/A-3, XRechnung, Peppol BIS, Laravel integration and the country pack Germany. The Managed layer 1.0 (issuer profiles, drafts, gapless numbering, archive, cancellations, corrections, mail delivery, audit log) is available as the separate package `quittio/managed`; payments, dunning runs and subscriptions follow later. Not released yet; APIs may still change, and the legal wording must be confirmed by a tax adviser (see open decisions).
 
 ## Packages
@@ -70,6 +72,8 @@ $result->xml();   // CII XML
 ```
 
 ## Documentation
+
+The documentation is published at **[nforst.github.io/quittio](https://nforst.github.io/quittio/)** (with search). The same pages are in [`docs/`](docs/):
 
 - [Getting started](docs/getting-started.md)
 - [Building invoices](docs/building-invoices.md)
