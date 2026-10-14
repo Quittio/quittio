@@ -190,7 +190,7 @@ class CountryDE extends AbstractCountryPack
 
     /**
      * Cancellation by credit note, correction by cancel and reissue. To be confirmed with
-     * a tax adviser (open decision in README).
+     * a tax adviser (legal review in the README).
      */
     public function correctionPolicy(): CorrectionPolicy
     {

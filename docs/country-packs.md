@@ -4,7 +4,7 @@ Everything that differs between countries lives in a country pack: tax presets, 
 
 A country pack implements `Quittio\Core\Countries\CountryPack`, usually by extending `Quittio\Core\Countries\AbstractCountryPack`, which supplies neutral defaults for every hook. A pack may only add or tighten rules; it never relaxes EN 16931.
 
-The first pack is Germany (`quittio/country-de`, [below](#germany-quittiocountry-de)). The legal wording and references of the packs are proposals that must be confirmed by a tax adviser (see the open decisions in the README).
+The first pack is Germany (`quittio/country-de`, [below](#germany-quittiocountry-de)). The legal wording and references of the packs are proposals that must be confirmed by a tax adviser (see the legal review in the README).
 
 ## How a pack is selected
 
@@ -884,10 +884,10 @@ They are registered as the namespace `quittio-de` (e.g. `quittio-de::rules.DE-US
 
 ### Known limitations
 
-- The legal wording and references of presets, rules and texts are proposals that must be confirmed by a tax adviser (see the open decisions in the README); the default correction strategy and the cancellation of self-billed invoices are open decisions as well.
+- The legal wording and references of presets, rules and texts are proposals that must be confirmed by a tax adviser (see the legal review in the README); the default correction strategy and the cancellation of self-billed invoices are under review as well.
 - Final invoices: only the EN 16931 variant (`deductAdvance()`) exists; the EXTENDED variant and the handling of unpaid advance invoices are open.
 - The shipped base rate table ends with 1 July 2026; later rates come from `quittio-de.base_rates` or `php artisan quittio:base-rate:update` (see [Base rate table](#base-rate-table)).
-- Default dunning fees and flat rates are an open decision; the documents layer does not track the § 288 (5) BGB flat rate per claim.
+- Default dunning fees and flat rates are under review; the documents layer does not track the § 288 (5) BGB flat rate per claim.
 - Distance sales (section 3c UStG) cannot be told from the data; `DE-USTG-12` only warns about possible ones.
 - Tax numbers are checked for format and check digit, not against the list of tax offices; territories without a distinct postcode cannot be detected.
 - The pack defines no buyer country rules, exporters (e.g. DATEV) or readers yet.

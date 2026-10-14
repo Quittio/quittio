@@ -1331,8 +1331,8 @@ invoice cancels the remainder.
   invoice is recalculated with Quittio's rounding when it is issued, also a draft started with
   `InvoiceBuilder::from()` on data another system rounded.
 
-The one-cent alignment is an open decision to be confirmed with a tax adviser (see the open
-decisions in the README).
+The one-cent alignment is to be confirmed by a tax adviser (see the legal review in the
+README).
 
 ### Sign strategies and credit notes
 
@@ -1432,7 +1432,7 @@ relation type) is written on the original.
 - A correction draft whose original was cancelled, partially cancelled or replaced meanwhile
   can no longer be issued; `quittio:drafts:prune` deletes it.
 
-The default strategy is an open decision to be confirmed with a tax adviser (see the README).
+The default strategy is to be confirmed by a tax adviser (see the legal review in the README).
 
 ### Left-behind drafts
 
@@ -2092,4 +2092,4 @@ and is skipped when it is not installed.
 - Issued invoices can be deleted only after their retention period; there is no early
   anonymisation.
 - The default cancellation and correction strategies and the one-cent VAT alignment of partial
-  cancellations are open decisions to be confirmed with a tax adviser (see the README).
+  cancellations are to be confirmed by a tax adviser (see the legal review in the README).

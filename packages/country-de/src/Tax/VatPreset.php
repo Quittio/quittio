@@ -17,7 +17,7 @@ use Quittio\Country\DE\CountryDE;
  * Tax presets for Germany (specification 8.2).
  *
  * The note texts and legal references are proposals and must be confirmed by a
- * tax adviser before the first release (open decision 8).
+ * tax adviser before the first release (legal review in the README).
  */
 enum VatPreset: string implements TaxPreset
 {

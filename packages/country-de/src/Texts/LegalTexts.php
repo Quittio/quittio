@@ -15,7 +15,7 @@ use Quittio\Country\DE\Tax\VatPreset;
  * small business) are the preset's exemption reason texts, so that one notice has one wording.
  *
  * The wording and legal references are proposals; confirm them with a tax adviser
- * before the first release (open decision 8).
+ * before the first release (legal review in the README).
  */
 final class LegalTexts
 {

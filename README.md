@@ -11,7 +11,7 @@ E-invoicing for Laravel. Quittio creates, validates, reads and renders electroni
 
 **Documentation: [docs.quittio.dev](https://docs.quittio.dev)**
 
-> **Status:** version 0.1.0 in preparation. The core scope of the roadmap (0.1–0.3) is implemented: data model, calculation, validation L1–L7, CII/UBL writers and readers, ZUGFeRD/Factur-X PDF/A-3, XRechnung, Peppol BIS, Laravel integration and the country pack Germany. The Managed layer 1.0 (issuer profiles, drafts, gapless numbering, archive, cancellations, corrections, mail delivery, audit log) is available as the separate package `quittio/managed`; payments, dunning runs and subscriptions follow later. Not released yet; APIs may still change, and the legal wording must be confirmed by a tax adviser (see open decisions).
+> **Status:** version 0.1.0 in preparation, not released yet. Implemented: data model, calculation, validation L1–L7, CII/UBL writers and readers, ZUGFeRD/Factur-X PDF/A-3, XRechnung, Peppol BIS, Laravel integration and the country pack Germany. The Managed layer (issuer profiles, drafts, gapless numbering, archive, cancellations, corrections, mail delivery, audit log) is available as the separate commercial package `quittio/managed`. APIs may still change, and the legal wording is under review (see [Legal review](#legal-review)).
 
 ## Packages
 
@@ -23,7 +23,7 @@ All open source packages are developed in this repository under [`packages/`](pa
 | `quittio/laravel` | [`packages/laravel`](packages/laravel) → [Quittio/laravel](https://github.com/Quittio/laravel) | Laravel integration: facade, configuration, Blade templates, commands, testing helpers. |
 | `quittio/country-de` | [`packages/country-de`](packages/country-de) → [Quittio/country-de](https://github.com/Quittio/country-de) | Country pack for Germany: UStG mandatory fields, tax presets, XRechnung profiles and BR-DE rules, DIN 5008 letter layouts. |
 | `quittio/quittio` | this repository | Everything in one package: core, Laravel integration and the country pack Germany. |
-| `quittio/managed` | separate repository (commercial) | Managed layer (commercial licence): issuer profiles, drafts, gapless numbering, archive with hashes, cancellations and corrections, mail delivery, audit log, retention. |
+| `quittio/managed` | commercial, see [Managed layer](docs/managed.md) | Managed layer (commercial licence): issuer profiles, drafts, gapless numbering, archive with hashes, cancellations and corrections, mail delivery, audit log, retention. |
 
 ## Requirements
 
@@ -99,7 +99,7 @@ The documentation is published at **[docs.quittio.dev](https://docs.quittio.dev)
 - [Managed layer](docs/managed.md)
 - [Field reference](docs/field-reference.md) (generated)
 
-The same pages are published as a website on Cloudflare (`.github/workflows/docs.yml`, Jekyll with the theme Just the Docs; secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, variable `DOCS_URL`, Worker configuration in `docs/wrangler.jsonc`). Local preview: `cd docs && bundle install && bundle exec jekyll serve`.
+The website is built from these pages with Jekyll and the theme Just the Docs (`.github/workflows/docs.yml`). Local preview: `cd docs && bundle install && bundle exec jekyll serve`.
 
 ## Development
 
@@ -124,34 +124,27 @@ tools/visual/check-linux.sh        # the same in a container matching the CI ima
 php tools/docs/generate.php        # JSON schema and field reference after model changes
 ```
 
-## Maintenance
+## Keeping data current
 
-- Base rate (Basiszinssatz) values are included up to 1 July 2026 (1.52 %, Deutsche Bundesbank). Add later values to `Quittio\Country\DE\Dunning\BaseRateTable` when published (changes on 1 January and 1 July), or at runtime with `withRate()`; interest for days from 1 January 2027 on is rejected until the next rate is added.
+- Base rate (Basiszinssatz, section 247 BGB): the values up to 1 July 2026 are included. Later values come from `php artisan quittio:base-rate:update` (Deutsche Bundesbank) or from `base_rates` in `config/quittio-de.php`, without a new release ([Base rate table](docs/country-packs.md#base-rate-table)).
 - Code lists follow the EN 16931 Schematron 1.3.16 of the XRechnung configuration 2026-08-31 (`quittio:codelists:update`).
 
-## Open decisions
+## Legal review
 
-The following points are still open and must be clarified with a tax adviser before a stable release. Defaults in the code are placeholders.
+Quittio is not released yet. The legal wording, legal references and defaults of the country pack Germany and the Managed layer are being reviewed by a tax adviser and may change before the first stable release. Under review:
 
-1. Sign strategy for cancellations: decided, 381 with positive amounts by default, configurable (`corrections.cancellation_strategy`). The VAT of partial cancellations is rounded cumulatively with the earlier ones, so that all of them together reverse exactly the VAT of the original; a single part may differ by one cent from round2(taxable amount × rate) (within BR-CO-17, noted on the document). The tax adviser should confirm this one-cent alignment.
-2. Default strategy for corrections: cancel and reissue by default (country pack Germany), corrected invoice 384 configurable (`quittio-managed.correction.strategy`); to be confirmed by a tax adviser.
-3. Price reductions: boundary between a price reduction and a new e-invoice; whether a used cash discount needs a document; an own document type (e.g. "Rechnungskorrektur (Entgeltminderung)") instead of a partial cancellation; documents for reductions over several invoices such as annual bonuses (section 17 (4) UStG); cash discount in exports.
-4. Final invoices: the EN 16931 variant is available in the country pack Germany (`->deductAdvance()`: full service with full VAT, paid advance invoices referenced, deducted in BT-113 and itemised with their VAT per rate, section 14 (5) sentence 2 UStG); still open: the EXTENDED variant, unpaid and partially paid advance invoices (deduct only the amount received), deducting advance invoices as negative lines so that the XML shows only the remaining VAT (risk of a double input tax deduction by the buyer), and deducting self-billed invoices (389) from a final invoice of the supplier.
-5. Continuing invoices: representation of the payment schedule in XML.
-6. Cancellation of self-billed invoices (type code 261, title "Storno-Gutschrift", objection of the supplier under section 14 (2) sentence 6 UStG).
-7. Additional visualisation PDFs when sending XRechnung.
-8. Wording and legal references of the tax presets. Checked against the current law text: small business invoices follow section 34a UStDV (since 2025: "Steuerbefreiung für Kleinunternehmer", no service date required), retention notice section 14b (1) sentence 5 UStG, self-billed invoices section 14 (2) sentence 5 UStG; a final review by a tax adviser is still open. Also open: the prepayment notice should state the date of receipt (section 14 (4) sentence 1 no. 6 UStG) instead of the expected date of supply, a text or preset for non-taxable transactions in Germany (e.g. section 1 (1a) UStG), the severity of the UStG rules (`DE-USTG-06` as an error), the new rules `DE-USTG-14` (small business with an intra-community supply) and `DE-USTG-15` (issuing deadline), and whether `DE-USTG-15` should also check final invoices.
-9. Default dunning fees and flat rates; crediting the flat rate of section 288 (5) BGB against dunning fees and a warning for the combination; a notice on the start of default (section 286 BGB); dunning charges without VAT (UStAE 1.3 (6)).
-10. Licences of bundled XSD files, code lists and fonts.
-11. Trademark registration of the name "Quittio" (licence model decided: open core, see below).
-12. Order and scope of further country packs.
-13. Peppol via access point providers only, or an own access point later.
-14. France: which platforms first, scope of e-reporting.
-15. When EN 16931-1:2026 becomes the default.
-16. Legal review of every country pack by a local tax adviser.
-17. E-invoicing obligation in Germany: block or only warn about a plain PDF and the profiles MINIMUM and BASIC WL for domestic B2B invoices, and from when (section 27 (38) UStG: 2027 above 800,000 EUR prior year turnover, 2028 for all).
-18. Retention: 8 years from the end of the year of issue, and which files to keep (ZUGFeRD PDF, XRechnung XML, an additional visualisation PDF).
+- **Cancellations:** type code 381 with positive amounts by default, configurable (`corrections.cancellation_strategy`). The VAT of partial cancellations is rounded cumulatively, so that all of them together reverse exactly the VAT of the original; a single part may differ by one cent from taxable amount × rate (within BR-CO-17, noted on the document).
+- **Corrections:** cancel and reissue by default, corrected invoice 384 configurable (`quittio-managed.correction.strategy`).
+- **Price reductions:** when a price reduction needs a new e-invoice or a document at all (e.g. a used cash discount), a document type of its own instead of a partial cancellation, reductions over several invoices such as annual bonuses (section 17 (4) UStG).
+- **Final invoices:** `->deductAdvance()` creates the EN 16931 variant (full service with full VAT, advance invoices referenced, deducted in BT-113 and itemised with their VAT per rate, section 14 (5) sentence 2 UStG). Under review: the EXTENDED variant, unpaid and partially paid advance invoices, deducting advance invoices as negative lines, deducting self-billed invoices (389).
+- **Continuing invoices:** representation of the payment schedule in the XML.
+- **Self-billed invoices:** their cancellation (type code 261, title "Storno-Gutschrift").
+- **XRechnung:** the optional visualisation PDF sent with the XML.
+- **Texts and rules:** wording and legal references of the tax presets, legal texts and UStG rules, including the prepayment notice, a text for non-taxable transactions in Germany, the severity of the rules (e.g. `DE-USTG-06`) and the rules `DE-USTG-14` and `DE-USTG-15`.
+- **Dunning:** default fees, the flat rate of section 288 (5) BGB together with dunning fees, the start of default, dunning charges without VAT.
+- **E-invoicing obligation:** whether a plain PDF and the profiles MINIMUM and BASIC WL are blocked or only warned about for domestic B2B invoices (section 27 (38) UStG).
+- **Retention:** 8 years from the end of the year of issue, and which files are kept.
 
 ## Licence
 
-Open core: `quittio/core`, `quittio/laravel`, `quittio/country-de` and `quittio/quittio` are released under the MIT licence, see [LICENSE](LICENSE). The Managed layer `quittio/managed` is commercially licensed, see [packages/managed/LICENSE](packages/managed/LICENSE); the licence terms are still to be published.
+`quittio/core`, `quittio/laravel`, `quittio/country-de` and `quittio/quittio` are released under the MIT licence, see [LICENSE](LICENSE). The Managed layer `quittio/managed` is a separate package under a commercial licence.

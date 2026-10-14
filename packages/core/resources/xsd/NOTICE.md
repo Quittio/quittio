@@ -9,5 +9,3 @@ The XML schemas in this directory are redistributed unmodified for offline valid
 
 The KoSIT validator configuration itself is licensed under the Apache License 2.0
 (https://github.com/itplr-kosit/validator-configuration-xrechnung).
-
-The licence situation of bundled schemas is listed as open decision 10 in the README and must be confirmed before a stable release.
