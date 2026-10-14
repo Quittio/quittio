@@ -99,7 +99,7 @@ The documentation is published at **[quittio.github.io/quittio](https://quittio.
 - [Managed layer](docs/managed.md)
 - [Field reference](docs/field-reference.md) (generated)
 
-The same pages are published as a website with GitHub Pages (`.github/workflows/docs.yml`, Jekyll with the theme Just the Docs; repository settings: Pages → Source: GitHub Actions). Local preview: `cd docs && bundle install && bundle exec jekyll serve`.
+The same pages are published as a website on Cloudflare (`.github/workflows/docs.yml`, Jekyll with the theme Just the Docs; secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, variable `DOCS_URL`, Worker configuration in `docs/wrangler.jsonc`). Local preview: `cd docs && bundle install && bundle exec jekyll serve`.
 
 ## Development
 

@@ -1,0 +1,10 @@
+// Cloudflare Worker that serves the built documentation website (_site) as static assets,
+// deployed by .github/workflows/docs.yml. Custom domain: Workers → quittio-docs → Settings →
+// Domains & Routes.
+{
+  "name": "quittio-docs",
+  "compatibility_date": "2026-10-14",
+  "assets": {
+    "directory": "./_site"
+  }
+}

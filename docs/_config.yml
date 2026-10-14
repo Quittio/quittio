@@ -1,6 +1,6 @@
-# Documentation website (GitHub Pages), built by .github/workflows/docs.yml with Jekyll 4 and
-# the theme Just the Docs. The Markdown files in this directory stay the only source: they need
-# no front matter, titles and navigation order are set below.
+# Documentation website, built by .github/workflows/docs.yml with Jekyll 4 and the theme
+# Just the Docs and served by Cloudflare (wrangler.jsonc). The Markdown files in this directory
+# stay the only source: they need no front matter, titles and navigation order are set below.
 #
 # Local preview: cd docs && bundle install && bundle exec jekyll serve
 
@@ -54,6 +54,8 @@ exclude:
   - .bundle
   - .jekyll-cache
   - _config.ci.yml
+  - wrangler.jsonc
+  - .wrangler
 
 defaults:
   - scope:

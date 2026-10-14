@@ -9,7 +9,7 @@ All notable changes to this project are documented in this file. The format foll
 - `Quittio::prepare()` / `PendingInvoice::prepare()`: calculation, format and profile choice and validation without rendering.
 - `InvoiceBuilder::updateLine()`, `removeLine()` and `InvoiceLine::withNetPrice()`.
 - Complete reference documentation: new pages Building invoices, Laravel integration and Configuration; every builder method, config key (both packages), command, event, exception, tax preset and rule is documented, the Managed layer page covers models, numbering, archive, immutability, delivery, audit log, authorisation and retention in full.
-- Documentation website built from `docs/` with Jekyll and Just the Docs (navigation, search), published to GitHub Pages by `.github/workflows/docs.yml`; the Markdown files stay the only source.
+- Documentation website built from `docs/` with Jekyll and Just the Docs (navigation, search), deployed to Cloudflare by `.github/workflows/docs.yml`; the Markdown files stay the only source.
 - Country pack Germany: tax preset `VatPreset::TriangularTransaction` for intra-community triangular transactions (section 25b UStG, wording of section 14a (7) UStG).
 - Country pack Germany: rule `DE-USTG-11` requires the VAT identifiers of seller and buyer for reverse charge services in another member state and for triangular transactions (section 14a (1) and (7) UStG); the tax number or a legal registration identifier is not sufficient there.
 - Country pack Germany: `->deductAdvance($advanceInvoice)` for final invoices (section 14 (5) sentence 2 UStG): references the paid advance invoice, adds it to BT-113 and itemises its net amounts and VAT per rate in a note. `InvoiceBuilder::addPrepaid()` adds to BT-113.
