@@ -11,6 +11,7 @@ use Quittio\Core\Data\Lines\InvoiceLine;
 use Quittio\Core\Data\Party\Address;
 use Quittio\Core\Enums\InvoiceTypeCode;
 use Quittio\Core\Enums\VatCategory;
+use Quittio\Core\Support\Date;
 use Quittio\Core\Validation\Rule;
 use Quittio\Core\Validation\Rules\CallbackRule;
 use Quittio\Core\Validation\Rules\Inspect;
@@ -48,6 +49,9 @@ final class UstgRules
         $r = static fn (string $code, string $fallback, Closure $check): Rule => CallbackRule::l3($code, $fallback, $check, self::NS);
         $small = static fn (InvoiceData $i): bool => self::isSmallAmountInvoice($i);
         $smallBusiness = static fn (InvoiceData $i): bool => self::isSmallBusinessInvoice($i);
+        // A line with the small business preset or the small business flag: the seller is a small business.
+        $smallBusinessSeller = static fn (InvoiceData $i): bool => $i->meta->hasFlag(Flags::SMALL_BUSINESS)
+            || array_filter($i->allLines(), static fn (InvoiceLine $l): bool => $l->vat->presetKey === VatPreset::SmallBusiness->value) !== [];
 
         return [
             $r('DE-USTG-01', 'Name and full address of the seller and the buyer must be stated (section 14 (4) no. 1 UStG).', function (InvoiceData $i, RuleReporter $report) use ($small): void {
@@ -135,13 +139,11 @@ final class UstgRules
                     $report->error('BT-112', 'totals.grossTotal', ['limit' => '250,00 EUR']);
                 }
             }),
-            $r('DE-USTG-09', 'A small business (section 19 UStG) must not charge VAT in the same invoice.', function (InvoiceData $i, RuleReporter $report): void {
-                $lines = $i->allLines();
-                $smallBusiness = array_filter($lines, static fn (InvoiceLine $l): bool => $l->vat->presetKey === VatPreset::SmallBusiness->value);
-                if ($smallBusiness === [] && ! $i->meta->hasFlag(Flags::SMALL_BUSINESS)) {
+            $r('DE-USTG-09', 'A small business (section 19 UStG) must not charge VAT in the same invoice.', function (InvoiceData $i, RuleReporter $report) use ($smallBusinessSeller): void {
+                if (! $smallBusinessSeller($i)) {
                     return;
                 }
-                foreach ($lines as $line) {
+                foreach ($i->allLines() as $line) {
                     if ($line->vat->category === VatCategory::StandardRate) {
                         $report->error('BT-151', 'lines');
 
@@ -157,7 +159,7 @@ final class UstgRules
                     }
                 }
             }),
-            $r('DE-USTG-10', 'The VAT amount should also be stated in EUR (BT-111 with BT-6 = EUR) for invoices in a foreign currency.', function (InvoiceData $i, RuleReporter $report): void {
+            $r('DE-USTG-10', 'The VAT amount should also be stated in EUR (BT-111 with BT-6 = EUR) for invoices in a foreign currency (Article 230 VAT Directive, section 16 (6) UStG).', function (InvoiceData $i, RuleReporter $report): void {
                 if ($i->currency === 'EUR' || $i->totals === null || $i->totals->vatTotal === null || $i->totals->vatTotal->isZero()) {
                     return;
                 }
@@ -166,12 +168,7 @@ final class UstgRules
                 }
             }),
             $r('DE-USTG-11', 'Reverse charge services in another EU member state and triangular transactions must state the VAT identifiers of the seller (BT-31) and the buyer (BT-48) (section 14a (1) and (7) UStG).', function (InvoiceData $i, RuleReporter $report): void {
-                $presets = [VatPreset::ReverseChargeEu->value, VatPreset::TriangularTransaction->value];
-                // Reverse charge without a preset counts when the buyer is in another member state (not section 13b UStG).
-                $buyerInOtherMemberState = self::isOtherMemberState($i->buyer->address, goods: false);
-                $crossBorder = array_filter($i->allLines(), static fn (InvoiceLine $l): bool => in_array($l->vat->presetKey, $presets, true)
-                    || ($l->vat->presetKey === null && $l->vat->category === VatCategory::ReverseCharge && $buyerInOtherMemberState));
-                if ($crossBorder === []) {
+                if (! self::hasReverseChargeInOtherMemberState($i, triangular: true)) {
                     return;
                 }
                 if (! Inspect::filled($i->seller->vatId) && ! Inspect::filled($i->sellerTaxRepresentative?->vatId)) {
@@ -198,6 +195,26 @@ final class UstgRules
                 // only a warning, as the exemption may not apply in the individual case.
                 if ($i->meta->hasFlag(Flags::NEW_VEHICLE) && ! Inspect::uses($i, VatCategory::IntraCommunitySupply)) {
                     $report->warning('BT-151', 'lines');
+                }
+            }),
+            $r('DE-USTG-14', 'A small business cannot treat a supply as a tax-exempt intra-community supply (VAT category K) (section 19 (1) sentence 2 UStG); only the intra-community supply of a new vehicle is excepted (section 19 (6) sentence 1 UStG).', function (InvoiceData $i, RuleReporter $report) use ($smallBusinessSeller): void {
+                // Section 19 (1) UStG does not apply to the intra-community supply of a new vehicle (section 19 (6) sentence 1 UStG), see DE-USTG-13.
+                if ($smallBusinessSeller($i) && ! $i->meta->hasFlag(Flags::NEW_VEHICLE) && Inspect::uses($i, VatCategory::IntraCommunitySupply)) {
+                    $report->error('BT-151', 'lines');
+                }
+            }),
+            $r('DE-USTG-15', 'Invoices for intra-community supplies and for services under section 3a (2) UStG in another member state must be issued by the 15th day of the month following the supply (section 14a (1) sentence 2 and (3) sentence 1 UStG); the deadline was :deadline.', function (InvoiceData $i, RuleReporter $report): void {
+                // Cancellations, corrections and re-issued invoices refer to the original (BG-3), whose deadline counted.
+                if ($i->precedingInvoices !== [] || in_array($i->typeCode, [InvoiceTypeCode::CreditNote, InvoiceTypeCode::SelfBilledCreditNote, InvoiceTypeCode::CorrectedInvoice, InvoiceTypeCode::PrepaymentInvoice], true)) {
+                    return;
+                }
+                if (! Inspect::uses($i, VatCategory::IntraCommunitySupply) && ! self::hasReverseChargeInOtherMemberState($i, triangular: false)) {
+                    return;
+                }
+                $deadline = self::issuingDeadline($i);
+                // Late invoices stay valid: only a warning.
+                if ($deadline !== null && $i->issueDate->isAfter($deadline)) {
+                    $report->warning('BT-2', 'issueDate', ['deadline' => $deadline->toIsoString()]);
                 }
             }),
         ];
@@ -274,6 +291,49 @@ final class UstgRules
         $destination = $delivery !== null && Inspect::filled($delivery->countryCode) ? $delivery : $invoice->buyer->address;
 
         return $invoice->buyer->isConsumer && self::isOtherMemberState($destination, goods: true);
+    }
+
+    /**
+     * Reverse charge in another member state: a line with VatPreset::ReverseChargeEu (or
+     * VatPreset::TriangularTransaction if $triangular), or of category AE without preset for a
+     * buyer in another member state (not section 13b UStG).
+     */
+    private static function hasReverseChargeInOtherMemberState(InvoiceData $invoice, bool $triangular): bool
+    {
+        $presets = $triangular ? [VatPreset::ReverseChargeEu->value, VatPreset::TriangularTransaction->value] : [VatPreset::ReverseChargeEu->value];
+        $buyerInOtherMemberState = self::isOtherMemberState($invoice->buyer->address, goods: false);
+        foreach ($invoice->allLines() as $line) {
+            if (in_array($line->vat->presetKey, $presets, true)
+                || ($line->vat->presetKey === null && $line->vat->category === VatCategory::ReverseCharge && $buyerInOtherMemberState)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * The 15th day of the month after the supply (section 14a (1) sentence 2 and (3) sentence 1
+     * UStG). The supply date is the latest of the delivery date, the end of the invoicing period
+     * and the ends of the line periods; null without any of them (see DE-USTG-03).
+     */
+    public static function issuingDeadline(InvoiceData $invoice): ?Date
+    {
+        $dates = [$invoice->delivery?->actualDeliveryDate, $invoice->invoicingPeriod->end ?? $invoice->invoicingPeriod?->start];
+        foreach ($invoice->allLines() as $line) {
+            $dates[] = $line->period->end ?? $line->period?->start;
+        }
+        $supply = null;
+        foreach ($dates as $date) {
+            if ($date !== null && ($supply === null || $date->isAfter($supply))) {
+                $supply = $date;
+            }
+        }
+        if ($supply === null) {
+            return null;
+        }
+
+        return $supply->month === 12 ? Date::of($supply->year + 1, 1, 15) : Date::of($supply->year, $supply->month + 1, 15);
     }
 
     /**

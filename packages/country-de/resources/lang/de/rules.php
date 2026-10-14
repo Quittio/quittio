@@ -141,7 +141,7 @@ return [
         'hint' => 'Verwenden Sie für alle Positionen VatPreset::SmallBusiness.',
     ],
     'DE-USTG-10' => [
-        'message' => 'Bei Rechnungen in fremder Währung soll der Steuerbetrag zusätzlich in Euro angegeben werden (BT-111 mit BT-6 = EUR).',
+        'message' => 'Bei Rechnungen in fremder Währung soll der Steuerbetrag zusätzlich in Euro angegeben werden (BT-111 mit BT-6 = EUR) (Art. 230 MwStSystRL, § 16 Abs. 6 UStG).',
         'hint' => 'Setzen Sie ->taxCurrency(\'EUR\', $kurs, $datum).',
     ],
     'DE-USTG-11' => [
@@ -155,6 +155,14 @@ return [
     'DE-USTG-13' => [
         'message' => 'Die innergemeinschaftliche Lieferung eines neuen Fahrzeugs (§ 14a Abs. 4 UStG) ist markiert, aber keine Position verwendet die Steuerkategorie K (innergemeinschaftliche Lieferung).',
         'hint' => 'Verwenden Sie VatPreset::IntraCommunitySupply für die Fahrzeugpositionen oder entfernen Sie ->newVehicle(), wenn das Fahrzeug nicht in einen anderen Mitgliedstaat geliefert wird.',
+    ],
+    'DE-USTG-14' => [
+        'message' => 'Ein Kleinunternehmer kann eine Lieferung nicht als steuerfreie innergemeinschaftliche Lieferung (Steuerkategorie K) behandeln (§ 19 Abs. 1 Satz 2 UStG); ausgenommen ist nur die innergemeinschaftliche Lieferung eines neuen Fahrzeugs (§ 19 Abs. 6 Satz 1 UStG).',
+        'hint' => 'Verwenden Sie VatPreset::SmallBusiness für die Positionen; bei einem neuen Fahrzeug ergänzen Sie ->newVehicle().',
+    ],
+    'DE-USTG-15' => [
+        'message' => 'Rechnungen über innergemeinschaftliche Lieferungen und über sonstige Leistungen nach § 3a Abs. 2 UStG in einem anderen Mitgliedstaat sind bis zum 15. Tag des Folgemonats auszustellen (§ 14a Abs. 1 Satz 2 und Abs. 3 Satz 1 UStG); die Frist endete am :deadline.',
+        'hint' => 'Prüfen Sie Rechnungsdatum (BT-2) und Leistungsdatum. Die Rechnung bleibt gültig, wird aber verspätet ausgestellt.',
     ],
     'DE-LEITWEG-ID' => [
         'message' => 'Die Prüfziffer der Leitweg-ID „:value“ (BT-10) ist falsch.',

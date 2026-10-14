@@ -21,6 +21,8 @@ All notable changes to this project are documented in this file. The format foll
 - Country pack Germany: the base rate (§ 247 BGB) can be updated without a release: `quittio-de.base_rates` in the new configuration `config/quittio-de.php`, `php artisan quittio:base-rate:update` fetching it from the statistics API of the Deutsche Bundesbank (`BundesbankBaseRates`), or `BaseRates::register()`; `DefaultInterest` uses these rates by default. The pack has a Laravel service provider of its own (`GermanyServiceProvider`, discovered automatically).
 - Country pack Germany: tax numbers (BT-32) of German sellers are checked for format and check digit according to the ELSTER procedures of every federal state (warning `DE-TAX-NUMBER`); `TaxNumber` parses the ELSTER, federal and state notations.
 
+- Country pack Germany: rule `DE-USTG-14` rejects intra-community supplies (category K) of small businesses except for new vehicles (section 19 (1) sentence 2 and (6) sentence 1 UStG); warning `DE-USTG-15` for invoices on intra-community supplies and on services in another member state issued after the 15th of the month following the supply (section 14a (1) sentence 2 and (3) sentence 1 UStG); `UstgRules::issuingDeadline()`.
+
 ### Changed
 
 - Repository layout: the root package is `quittio/quittio` (it replaces `quittio/core`, `quittio/laravel` and `quittio/country-de`); the meta package was removed; the packages are split into read-only repositories on every push; the commercial `quittio/managed` lives in its own repository.
@@ -32,6 +34,7 @@ All notable changes to this project are documented in this file. The format foll
 
 ### Fixed
 
+- Legal references: self-billed invoices are section 14 (2) sentence 5 UStG (was sentence 2); `DE-USTG-10` names its basis (Article 230 VAT Directive, section 16 (6) UStG).
 - `quittio:validate --kosit/--verapdf` uses every driver setting (`java`, `docker`, `timeout`, `fail_on_unavailable`) and no longer changes the cached core; `defaults.format = 'auto'` is accepted in Laravel and as issuer default; `quittio:preview` and the preview route accept the views of `pdf.templates`; the facade docblock lists every manager and fake method; the ASCII fallback file name of downloads transliterates characters ("Ü" becomes "U").
 - Profile validation no longer warns about postal addresses in BASIC WL and BASIC; address fields carry their Factur-X levels and the business terms of their context (e.g. BT-55 for the buyer country). Data of EXTENDED and of the XRechnung extension, and fields below a field that is not allowed, are reported once.
 - Reading a CII or UBL invoice without document totals reports BR-12 to BR-15 instead of `QUITTIO-NOT-CALCULATED`.

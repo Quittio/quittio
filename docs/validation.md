@@ -170,7 +170,7 @@ The PHP driver (`Quittio\Core\Validation\Drivers\PhpRulesDriver`, name `php`) ru
 | `QuittioRules` | L3 | package rules, see below |
 | `PlausibilityRules` | L7 | see [plausibility](#plausibility-l7) |
 | profile rules | L3 | Peppol BIS profile: `PEPPOL-EN16931-R001`, `-R002`, `-R003`, `-R005` (warning), `-R010`, `-R020`, `-R040`, `-R041`, `-R042`, `-R061`, `-R120`, `-R121`, `-R130`; XRechnung profiles (country pack DE): `BR-DE-…`, `BR-DEX-15`, `DE-XRECHNUNG-EXT-01` |
-| country pack rules | L3, L7 | `rules()` of the seller's pack and `buyerCountryRules()` of the buyer's pack; Germany: `DE-USTG-01` … `DE-USTG-12` (L3), `DE-LEITWEG-ID` (L7), see [Country packs](country-packs.md) |
+| country pack rules | L3, L7 | `rules()` of the seller's pack and `buyerCountryRules()` of the buyer's pack; Germany: `DE-USTG-01` … `DE-USTG-15` (L3), `DE-LEITWEG-ID`, `DE-LEITWEG-ID-SUSPECT`, `DE-TAX-NUMBER` (L7), see [Country packs](country-packs.md) |
 
 All EN 16931, code list, VAT category and Peppol rules report errors unless noted. The PHP rules cover the most frequent Schematron findings with readable messages; they do not replace the official Schematron (L5).
 

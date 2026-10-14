@@ -62,7 +62,7 @@ final class ViewModelFactory
     /** @var array<string, string> view model nodes that stand for others (issuer, recipient) */
     private array $aliases = [];
 
-    /** Self-billed invoice (section 14 (2) sentence 2 UStG): the buyer issues the document. */
+    /** Self-billed invoice (section 14 (2) sentence 5 UStG): the buyer issues the document. */
     private bool $selfBilled = false;
 
     public function build(InvoiceData $invoice, ViewContext $context = new ViewContext): InvoiceViewModel

@@ -120,7 +120,7 @@ final class Cancellation
         $selfBilled = $original->typeCode instanceof InvoiceTypeCode && $original->typeCode->isSelfBilled();
         $translator = Translations::translator();
         // The cancellation of a self-billed invoice is itself issued by the buyer (section 14 (2)
-        // sentence 2 UStG) and refers to the original as "Gutschrift", not as "Rechnung".
+        // sentence 5 UStG) and refers to the original as "Gutschrift", not as "Rechnung".
         $title ??= $policy?->cancellationTitle($selfBilled, $locale);
         $note = $translator->get($selfBilled ? 'quittio::labels.cancellation_note_self_billed' : 'quittio::labels.cancellation_note', [
             'number' => $original->number,

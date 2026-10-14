@@ -364,7 +364,7 @@ Messages come from the catalog key `{namespace}::rules.{code}` with the entries 
 | `defaults()` | currency `EUR`, time zone `Europe/Berlin`, locale `de`, paper `A4`, letter layout `din5008b`, profile `en16931`, payment QR `girocode` |
 | `profiles()` | [`XRechnung30`, `XRechnung30Extension`](#xrechnung-profiles) |
 | `taxPresets()` | every case of [`VatPreset`](#tax-presets) |
-| `rules()` | [UStG rules](#ustg-rules) `DE-USTG-01` to `DE-USTG-13` and the [Leitweg-ID checks](#leitweg-id) `DE-LEITWEG-ID` and `DE-LEITWEG-ID-SUSPECT` |
+| `rules()` | [UStG rules](#ustg-rules) `DE-USTG-01` to `DE-USTG-15` and the [Leitweg-ID checks](#leitweg-id) `DE-LEITWEG-ID` and `DE-LEITWEG-ID-SUSPECT` |
 | `buyerCountryRules()` | none |
 | `formatRules()` | [`GermanFormatRule`](#format-choice) |
 | `mandatoryOutput()` | [mandatory PDF output](#mandatory-pdf-output) |
@@ -429,7 +429,7 @@ Exemption reason texts (BT-120), from `resources/lang/{de,en}/tax.php`:
 How presets behave:
 
 - The text is taken in the invoice locale (`->locale()` on the builder) when the line is built. The enum presets and `VatPreset::exempt()` (a `Quittio\Country\DE\Tax\CustomVatPreset`) default to German when the invoice has no locale; other locales without a text fall back to English.
-- The preset key stays on the line (`$line->vat->presetKey`); `DE-USTG-09`, `DE-USTG-11` and small business detection rely on it.
+- The preset key stays on the line (`$line->vat->presetKey`); `DE-USTG-09`, `DE-USTG-11`, `DE-USTG-14`, `DE-USTG-15` and small business detection rely on it.
 - Category, rate, code and text flow into the VAT breakdown (BG-23). Different texts in one category and rate are joined in BT-120; BT-121 is kept only when the codes agree (warning `QUITTIO-EXEMPTION-CONFLICT`).
 - In the PDF, the BT-120 texts of all non-standard categories are listed in `legalNotes`. Margin scheme and travel agency rows show no VAT amount (section 14a (6) UStG).
 - Document level allowances and charges take a category and rate, not a preset: `->charge(VatCategory::StandardRate, '19', amount: '10.00', reason: 'Versand')`.
@@ -450,12 +450,14 @@ How presets behave:
 | `DE-USTG-07` | error per line (BG-32 `lines[i].item.attributes`) | The flag `de.new_vehicle` is set and a line has no item attributes. | § 14a Abs. 4 UStG | `->attribute('Erstzulassung', …)`, `->attribute('Kilometerstand', …)` on every line. |
 | `DE-USTG-08` | error (BT-112 `totals.grossTotal`) | The flag `de.small_amount` is set and the gross total exceeds 250.00 EUR. Other currencies count with their EUR equivalent (gross total × exchange rate of `->taxCurrency('EUR', $rate)`); without that rate the rule always fails. | § 33 UStDV | Remove `->smallAmount()` and issue a full invoice. |
 | `DE-USTG-09` | error (BT-151 `lines`, or BT-102 `charges` for document level entries) | A line uses `VatPreset::SmallBusiness` or the invoice has the small business flag, and a line (sub lines included) or a document level allowance or charge has category `S`. | § 19 UStG; VAT shown on charges counts too (§ 14c Abs. 2 UStG) | `VatPreset::SmallBusiness` on every line, no standard rated charges. |
-| `DE-USTG-10` | warning (BT-6 `taxCurrency`) | The invoice currency is not EUR, the VAT total is not zero and the VAT accounting currency (BT-6) is not EUR. | – | `->taxCurrency('EUR', $rate, $date)`. |
+| `DE-USTG-10` | warning (BT-6 `taxCurrency`) | The invoice currency is not EUR, the VAT total is not zero and the VAT accounting currency (BT-6) is not EUR. | Art. 230 MwStSystRL, § 16 Abs. 6 UStG | `->taxCurrency('EUR', $rate, $date)`. |
 | `DE-USTG-11` | error (BT-31 `seller.vatId`, BT-48 `buyer.vatId`) | A line uses `ReverseChargeEu` or `TriangularTransaction`, or a line of category `AE` without preset has a buyer in the VAT territory of another member state (services: Monaco counts as France, Northern Ireland does not count), and the seller's VAT identifier (or the tax representative's) or the buyer's VAT identifier is missing. A tax number is not sufficient. | § 14a Abs. 1 und 7 UStG | `->vatId()` for seller and buyer. |
 | `DE-USTG-12` | error (BT-151 `lines`); warning for possible distance sales | The flag `de.small_amount` is set and category `AE` or `K` is used (error), or the buyer is a consumer and the destination (deliver-to address if it has a country, otherwise the buyer's address) lies in another member state (warning: a distance sale only if goods are transported there). | § 33 Satz 3 UStDV; § 3c UStG | Remove `->smallAmount()` and issue a full invoice. |
 | `DE-USTG-13` | warning (BT-151 `lines`) | The flag `de.new_vehicle` is set and no line, allowance or charge uses category `K`. A warning, as the exemption may not apply in the individual case. | § 14a Abs. 4 UStG | `VatPreset::IntraCommunitySupply` on the vehicle lines, or remove `->newVehicle()`. |
+| `DE-USTG-14` | error (BT-151 `lines`) | A line uses `VatPreset::SmallBusiness` or the invoice has the small business flag, a line, allowance or charge uses category `K` and the flag `de.new_vehicle` is not set. | § 19 Abs. 1 Satz 2, Abs. 6 Satz 1 UStG | `VatPreset::SmallBusiness` on the lines; `->newVehicle()` for the intra-community supply of a new vehicle. |
+| `DE-USTG-15` | warning (BT-2 `issueDate`) | A line, allowance or charge uses category `K`, or a line uses `ReverseChargeEu` (or category `AE` without preset for a buyer in another member state), and the invoice date is after the 15th of the month following the supply. The supply date is the latest of the delivery date (BT-72), the end of the invoicing period (BG-14) and the ends of the line periods (BG-26). Skipped without a supply date, for documents that refer to a preceding invoice (BG-3: cancellations, corrections, re-issued and final invoices) and for the type codes 381, 261, 384 and 386. A warning, as a late invoice stays valid. | § 14a Abs. 1 Satz 2 und Abs. 3 Satz 1 UStG | Issue these invoices by the 15th of the following month. |
 
-Helpers used by the rules and available to you: `UstgRules::isSmallAmountInvoice($invoice)`, `UstgRules::isSmallBusinessInvoice($invoice)` and `UstgRules::hasServiceDate($invoice)`.
+Helpers used by the rules and available to you: `UstgRules::isSmallAmountInvoice($invoice)`, `UstgRules::isSmallBusinessInvoice($invoice)`, `UstgRules::hasServiceDate($invoice)` and `UstgRules::issuingDeadline($invoice)` (the 15th of the month after the supply, or `null` without a supply date).
 
 #### Leitweg-ID
 
@@ -632,6 +634,7 @@ With an advance invoice RE-2026-0040 of 1,000.00 EUR net plus 19 % VAT, the fina
 
 - Use `VatPreset::SmallBusiness` on every line. An invoice whose lines all use it is a small business invoice under section 34a UStDV: no service date is required (`DE-USTG-03`) or checked in the PDF; the tax number or VAT identifier is still required (`DE-USTG-02`), and the preset's text (BT-120) appears in the PDF.
 - Mark the seller as a small business so that VAT is rejected (`DE-USTG-09`): `quittio.seller.small_business = true` (applied by `Seller::apply($builder)`), the Managed issuer setting `tax_settings.small_business`, or `->flag(Meta::FLAG_SMALL_BUSINESS)`. `Flags::SMALL_BUSINESS` is the same flag (`small_business`). The flag does not set presets or texts.
+- A small business cannot use the exemption for intra-community supplies (category `K`, `DE-USTG-14`, section 19 (1) sentence 2 UStG); only the intra-community supply of a new vehicle (`->newVehicle()`) is excepted (section 19 (6) sentence 1 UStG).
 - Without a VAT identifier, EN 16931 needs a seller identifier (BT-29) or legal registration (BT-30) (BR-CO-26); in Laravel set `quittio.seller.identifiers` or `legal_registration` (see [configuration](configuration.md)).
 
 ```php
@@ -646,6 +649,7 @@ $builder = Seller::apply(InvoiceBuilder::make())   // quittio.seller.small_busin
 
 - Reverse charge rows (`AE`) must name "Steuerschuldnerschaft des Leistungsempfängers" (`DE-USTG-06`, warning). The texts of the reverse charge presets are accepted in every locale the pack ships, so English invoices with the presets pass as well; own texts must contain "Steuerschuldnerschaft".
 - Reverse charge in another member state and triangular transactions need the VAT identifiers of seller and buyer (`DE-USTG-11`); the rule does not apply to `ReverseChargeDomestic` (section 13b UStG).
+- Invoices for intra-community supplies and for services in another member state (`ReverseChargeEu`) must be issued by the 15th of the month following the supply (`DE-USTG-15`, warning; section 14a (1) sentence 2 and (3) sentence 1 UStG).
 - The PDF must show the reverse charge or exemption note and the VAT identifiers (see [mandatory PDF output](#mandatory-pdf-output)).
 - A seller tax representative (BG-11, `->taxRepresentative($name, $vatId, $address)`) satisfies `DE-USTG-02` and `BR-DE-16`; its VAT identifier satisfies `DE-USTG-11` and the mandatory output.
 - The pack does not check the format of a German tax number (Steuernummer). VAT identifiers are checked by the core plausibility rules (`QUITTIO-VATID-FORMAT`, for `DE` nine digits; optionally `QUITTIO-VIES`), which also warn about category `K` with a domestic or non-EU destination and `G` within the EU (see [validation](validation.md)).

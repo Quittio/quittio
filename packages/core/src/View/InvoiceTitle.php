@@ -12,7 +12,7 @@ use Quittio\Core\Enums\InvoiceTypeCode;
  * Label key of the document title for a type code (BT-3), specification 17.9.
  *
  * Codes without an own title use the title of their family: self-billed documents are a
- * "Gutschrift" (section 14 (2) sentence 2 UStG), commercial credit notes share the title of
+ * "Gutschrift" (section 14 (2) sentence 5 UStG), commercial credit notes share the title of
  * code 381, which must not be "Gutschrift" (BMF letter of 25 October 2013).
  */
 final class InvoiceTitle

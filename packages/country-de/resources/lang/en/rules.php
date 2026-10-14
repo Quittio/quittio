@@ -141,7 +141,7 @@ return [
         'hint' => 'Use VatPreset::SmallBusiness for all lines.',
     ],
     'DE-USTG-10' => [
-        'message' => 'For invoices in a foreign currency, the VAT amount should also be stated in EUR (BT-111 with BT-6 = EUR).',
+        'message' => 'For invoices in a foreign currency, the VAT amount should also be stated in EUR (BT-111 with BT-6 = EUR) (Article 230 VAT Directive, section 16 (6) UStG).',
         'hint' => 'Set ->taxCurrency(\'EUR\', $rate, $date).',
     ],
     'DE-USTG-11' => [
@@ -155,6 +155,14 @@ return [
     'DE-USTG-13' => [
         'message' => 'The intra-community supply of a new vehicle (section 14a (4) UStG) is marked, but no line uses the VAT category K (intra-community supply).',
         'hint' => 'Use VatPreset::IntraCommunitySupply for the vehicle lines, or remove ->newVehicle() if the vehicle is not supplied to another member state.',
+    ],
+    'DE-USTG-14' => [
+        'message' => 'A small business cannot treat a supply as a tax-exempt intra-community supply (VAT category K) (section 19 (1) sentence 2 UStG); only the intra-community supply of a new vehicle is excepted (section 19 (6) sentence 1 UStG).',
+        'hint' => 'Use VatPreset::SmallBusiness for the lines; for a new vehicle add ->newVehicle().',
+    ],
+    'DE-USTG-15' => [
+        'message' => 'Invoices for intra-community supplies and for services under section 3a (2) UStG in another member state must be issued by the 15th day of the month following the supply (section 14a (1) sentence 2 and (3) sentence 1 UStG); the deadline was :deadline.',
+        'hint' => 'Check the invoice date (BT-2) and the date of supply. The invoice stays valid, but it is issued late.',
     ],
     'DE-LEITWEG-ID' => [
         'message' => 'The check digits of the Leitweg-ID ":value" (BT-10) are wrong.',

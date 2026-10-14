@@ -431,3 +431,54 @@ it('checks the tax number of a German seller', function () {
         ->and(ustgCodes(ustg($seller('815/08152'))))->not->toContain('DE-TAX-NUMBER')
         ->and(ustgCodes(ustg($seller('11/111/11111', 'AT'))))->not->toContain('DE-TAX-NUMBER');
 });
+
+it('rejects intra-community supplies of small businesses except for new vehicles (section 19 (1) sentence 2 and (6) sentence 1 UStG)', function () {
+    $buyer = fn ($b) => $b->name('Cliente S.r.l.')->vatId('IT12345678901')->address('Via Roma 1', '00184', 'Roma', 'IT');
+    $mixed = Scenarios::base()->buyer($buyer)
+        ->line(fn ($l) => $l->name('Beratung')->quantity(1, UnitCode::Hour)->netPrice('100.00')->vat(VatPreset::SmallBusiness))
+        ->line(fn ($l) => $l->name('Ware')->quantity(1, UnitCode::Piece)->netPrice('100.00')->vat(VatPreset::IntraCommunitySupply));
+    $flagged = Scenarios::base()->buyer($buyer)->flag(Flags::SMALL_BUSINESS)
+        ->line(fn ($l) => $l->name('Ware')->quantity(1, UnitCode::Piece)->netPrice('100.00')->vat(VatPreset::IntraCommunitySupply));
+    $vehicle = Scenarios::base()->buyer($buyer)->flag(Flags::SMALL_BUSINESS)->newVehicle()
+        ->line(fn ($l) => $l->name('Pkw')->quantity(1, UnitCode::Piece)->netPrice('30000.00')->vat(VatPreset::IntraCommunitySupply)->attribute('Erstzulassung', '2026-09-01')->attribute('Kilometerstand', '12'));
+    $regular = Scenarios::base()->buyer($buyer)
+        ->line(fn ($l) => $l->name('Ware')->quantity(1, UnitCode::Piece)->netPrice('100.00')->vat(VatPreset::IntraCommunitySupply));
+
+    $finding = array_values(array_filter(ustg($mixed)->errors(), static fn ($m): bool => $m->code === 'DE-USTG-14'))[0];
+
+    expect(ustgCodes(ustg($mixed)))->toBe(['DE-USTG-14'])
+        ->and($finding->path)->toBe('lines')
+        ->and(ustgCodes(ustg($flagged)))->toBe(['DE-USTG-14'])
+        ->and(ustgCodes(ustg($vehicle)))->toBe([])
+        ->and(ustgCodes(ustg($regular)))->toBe([]);
+});
+
+it('warns about intra-community invoices issued after the 15th of the following month (section 14a (1) and (3) UStG)', function () {
+    $supply = fn (string $delivered, string $issued) => Scenarios::base()->issueDate($issued)->deliveryDate($delivered)
+        ->buyer(fn ($b) => $b->name('Cliente S.r.l.')->vatId('IT12345678901')->address('Via Roma 1', '00184', 'Roma', 'IT'))
+        ->line(fn ($l) => $l->name('Ware')->quantity(1, UnitCode::Piece)->netPrice('100.00')->vat(VatPreset::IntraCommunitySupply));
+    $service = fn (string $delivered, string $issued) => Scenarios::base()->issueDate($issued)->deliveryDate($delivered)
+        ->buyer(fn ($b) => $b->name('Client SARL')->vatId('FR12345678901')->address('1 Rue', '75002', 'Paris', 'FR'))
+        ->line(fn ($l) => $l->name('Beratung')->quantity(1, UnitCode::Hour)->netPrice('100.00')->vat(VatPreset::ReverseChargeEu));
+    $late = ustg($supply('2026-08-31', '2026-09-16'));
+    $warning = array_values(array_filter($late->warnings(), static fn ($m): bool => $m->code === 'DE-USTG-15'))[0];
+
+    expect(ustgCodes($late))->toBe(['DE-USTG-15'])
+        ->and($warning->path)->toBe('issueDate')
+        ->and($warning->message)->toContain('2026-09-15')
+        ->and(array_filter($late->errors(), static fn ($m): bool => str_starts_with($m->code, 'DE-')))->toBe([])
+        ->and(ustgCodes(ustg($supply('2026-08-31', '2026-09-15'))))->toBe([])
+        ->and(ustgCodes(ustg($supply('2026-12-10', '2027-01-16'))))->toBe(['DE-USTG-15'])
+        ->and(ustgCodes(ustg($supply('2026-12-10', '2027-01-15'))))->toBe([])
+        ->and(ustgCodes(ustg($service('2026-08-31', '2026-10-03'))))->toBe(['DE-USTG-15'])
+        ->and(ustgCodes(ustg($service('2026-08-31', '2026-10-03')->precedingInvoice('RE-2026-0001', '2026-09-01'))))->toBe([])
+        ->and(ustgCodes(ustg(Scenarios::make('simple')->issueDate('2026-12-01'))))->toBe([]);
+});
+
+it('takes the latest supply date for the issuing deadline', function () {
+    $builder = Scenarios::base()->deliveryDate('2026-07-01')->invoicingPeriod('2026-07-01', '2026-08-31')
+        ->line(fn ($l) => $l->name('Ware')->quantity(1, UnitCode::Piece)->netPrice('100.00')->vat(VatPreset::IntraCommunitySupply)->period('2026-09-01', '2026-09-30'));
+
+    expect(UstgRules::issuingDeadline($builder->build())?->toIsoString())->toBe('2026-10-15')
+        ->and(UstgRules::issuingDeadline(Scenarios::make('simple')->deliveryDate('2026-12-31')->build())?->toIsoString())->toBe('2027-01-15');
+});
