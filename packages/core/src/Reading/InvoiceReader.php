@@ -155,8 +155,8 @@ final class InvoiceReader
         }
 
         $expectedRelationship = $profile?->afRelationship();
-        if ($extracted?->relationship !== null && $expectedRelationship !== null && $extracted->relationship !== $expectedRelationship) {
-            $findings[] = new ValidationMessage(Severity::Warning, 'QUITTIO-READER-PDF-RELATIONSHIP', sprintf('The embedded file "%s" is attached with /AFRelationship /%s; the profile %s requires /%s.', $extracted->filename, $extracted->relationship, $profile?->name() ?? '', $expectedRelationship), ValidationLevel::L1);
+        if ($profile !== null && $extracted?->relationship !== null && $expectedRelationship !== null && $extracted->relationship !== $expectedRelationship) {
+            $findings[] = new ValidationMessage(Severity::Warning, 'QUITTIO-READER-PDF-RELATIONSHIP', sprintf('The embedded file "%s" is attached with /AFRelationship /%s; the profile %s requires /%s.', $extracted->filename, $extracted->relationship, $profile->name(), $expectedRelationship), ValidationLevel::L1);
         }
 
         // Stamps the declared amounts so that edits made before from() or a cancellation are detected.

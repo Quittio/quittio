@@ -17,13 +17,15 @@ use Quittio\Country\DE\Tests\Support\German;
  */
 
 $files = German::testSuiteFiles();
+// PHPUnit refuses an empty data set even for skipped or excluded tests.
+$cases = $files === [] ? ['test suite not downloaded' => ['']] : $files;
 
 it('reads every official test file', function (string $file) {
     $result = German::reader()->readFile($file);
 
     expect($result->profile)->toBeIn(['xrechnung', 'xrechnung-extension'])
         ->and(array_filter($result->findings, fn ($f) => $f->isError()))->toBe([]);
-})->with($files)->group('official')->skip($files === [], 'XRechnung test suite not downloaded (tools/fixtures/download.sh).');
+})->with($cases)->group('official')->skip($files === [], 'XRechnung test suite not downloaded (tools/fixtures/download.sh).');
 
 it('finds no rule violations in the official test files', function (string $file) {
     $result = German::reader()->readFile($file);
@@ -39,7 +41,7 @@ it('finds no rule violations in the official test files', function (string $file
     );
 
     expect(array_map(fn ($e) => $e->code.': '.$e->message.' ['.$e->path.']', array_values($errors)))->toBe([]);
-})->with($files)->group('official')->skip($files === [], 'XRechnung test suite not downloaded (tools/fixtures/download.sh).');
+})->with($cases)->group('official')->skip($files === [], 'XRechnung test suite not downloaded (tools/fixtures/download.sh).');
 
 it('writes the official test files back without loss', function (string $file) {
     $reader = German::reader();
@@ -51,7 +53,7 @@ it('writes the official test files back without loss', function (string $file) {
 
     expect(RoundTrip::comparable($second->data))->toEqual(RoundTrip::comparable($first->data))
         ->and(RoundTrip::numbers($second->data->paymentTerms?->toArray() ?? []))->toEqual(RoundTrip::numbers($first->data->paymentTerms?->toArray() ?? []));
-})->with($files)->group('official')->skip($files === [], 'XRechnung test suite not downloaded (tools/fixtures/download.sh).');
+})->with($cases)->group('official')->skip($files === [], 'XRechnung test suite not downloaded (tools/fixtures/download.sh).');
 
 it('converts the official test files to schema-valid JSON and back', function (string $file) {
     $json = German::reader()->readFile($file)->data->toJson();
@@ -60,4 +62,4 @@ it('converts the official test files to schema-valid JSON and back', function (s
     if (Quittio\Core\Serialization\JsonSchemaValidator::available()) {
         expect((new Quittio\Core\Serialization\JsonSchemaValidator)->validate($json))->toBe([]);
     }
-})->with($files)->group('official')->skip($files === [], 'XRechnung test suite not downloaded (tools/fixtures/download.sh).');
+})->with($cases)->group('official')->skip($files === [], 'XRechnung test suite not downloaded (tools/fixtures/download.sh).');
