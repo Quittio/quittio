@@ -62,7 +62,10 @@ defaults:
       path: ""
     values:
       layout: default
-      image: /assets/images/og-image.png
+      image:
+        path: /assets/images/og-image.png
+        width: 1200
+        height: 630
   # Every page below: Blade examples such as {{ $invoice->number }} must not be read as Liquid
   # (the theme's stylesheets still need Liquid, so this is set per page).
   - scope: { path: "index.md" }
