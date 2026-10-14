@@ -131,17 +131,17 @@ php tools/docs/generate.php        # JSON schema and field reference after model
 
 ## Open decisions
 
-The following points from the specification are still open and must be clarified with a tax adviser before a stable release. Defaults in the code are placeholders.
+The following points are still open and must be clarified with a tax adviser before a stable release. Defaults in the code are placeholders.
 
 1. Sign strategy for cancellations: decided, 381 with positive amounts by default, configurable (`corrections.cancellation_strategy`). The VAT of partial cancellations is rounded cumulatively with the earlier ones, so that all of them together reverse exactly the VAT of the original; a single part may differ by one cent from round2(taxable amount × rate) (within BR-CO-17, noted on the document). The tax adviser should confirm this one-cent alignment.
 2. Default strategy for corrections: cancel and reissue by default (country pack Germany), corrected invoice 384 configurable (`quittio-managed.correction.strategy`); to be confirmed by a tax adviser.
-3. Boundary between price reductions and a new e-invoice, cash discount in exports.
-4. Final invoices: the EN 16931 variant is available in the country pack Germany (`->deductAdvance()`: full service with full VAT, paid advance invoices referenced, deducted in BT-113 and itemised with their VAT per rate, section 14 (5) sentence 2 UStG); still open: the EXTENDED variant and the handling of unpaid advance invoices.
+3. Price reductions: boundary between a price reduction and a new e-invoice; whether a used cash discount needs a document; an own document type (e.g. "Rechnungskorrektur (Entgeltminderung)") instead of a partial cancellation; documents for reductions over several invoices such as annual bonuses (section 17 (4) UStG); cash discount in exports.
+4. Final invoices: the EN 16931 variant is available in the country pack Germany (`->deductAdvance()`: full service with full VAT, paid advance invoices referenced, deducted in BT-113 and itemised with their VAT per rate, section 14 (5) sentence 2 UStG); still open: the EXTENDED variant, unpaid and partially paid advance invoices (deduct only the amount received), deducting advance invoices as negative lines so that the XML shows only the remaining VAT (risk of a double input tax deduction by the buyer), and deducting self-billed invoices (389) from a final invoice of the supplier.
 5. Continuing invoices: representation of the payment schedule in XML.
-6. Cancellation of self-billed invoices.
+6. Cancellation of self-billed invoices (type code 261, title "Storno-Gutschrift", objection of the supplier under section 14 (2) sentence 6 UStG).
 7. Additional visualisation PDFs when sending XRechnung.
-8. Wording and legal references of the tax presets. Checked against the current law text: small business invoices follow section 34a UStDV (since 2025: "Steuerbefreiung für Kleinunternehmer", no service date required), retention notice section 14b (1) sentence 5 UStG; a final review by a tax adviser is still open.
-9. Default dunning fees and flat rates.
+8. Wording and legal references of the tax presets. Checked against the current law text: small business invoices follow section 34a UStDV (since 2025: "Steuerbefreiung für Kleinunternehmer", no service date required), retention notice section 14b (1) sentence 5 UStG, self-billed invoices section 14 (2) sentence 5 UStG; a final review by a tax adviser is still open. Also open: the prepayment notice should state the date of receipt (section 14 (4) sentence 1 no. 6 UStG) instead of the expected date of supply, a text or preset for non-taxable transactions in Germany (e.g. section 1 (1a) UStG), the severity of the UStG rules (`DE-USTG-06` as an error), the new rules `DE-USTG-14` (small business with an intra-community supply) and `DE-USTG-15` (issuing deadline), and whether `DE-USTG-15` should also check final invoices.
+9. Default dunning fees and flat rates; crediting the flat rate of section 288 (5) BGB against dunning fees and a warning for the combination; a notice on the start of default (section 286 BGB); dunning charges without VAT (UStAE 1.3 (6)).
 10. Licences of bundled XSD files, code lists and fonts.
 11. Trademark registration of the name "Quittio" (licence model decided: open core, see below).
 12. Order and scope of further country packs.
@@ -149,6 +149,8 @@ The following points from the specification are still open and must be clarified
 14. France: which platforms first, scope of e-reporting.
 15. When EN 16931-1:2026 becomes the default.
 16. Legal review of every country pack by a local tax adviser.
+17. E-invoicing obligation in Germany: block or only warn about a plain PDF and the profiles MINIMUM and BASIC WL for domestic B2B invoices, and from when (section 27 (38) UStG: 2027 above 800,000 EUR prior year turnover, 2028 for all).
+18. Retention: 8 years from the end of the year of issue, and which files to keep (ZUGFeRD PDF, XRechnung XML, an additional visualisation PDF).
 
 ## Licence
 
