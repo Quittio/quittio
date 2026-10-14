@@ -17,3 +17,10 @@
 /tools/validators/
 /build/
 packages/laravel/tests/Visual/__snapshots__/*.actual.png
+
+# Documentation website (Jekyll)
+/docs/_site/
+/docs/.jekyll-cache/
+/docs/.bundle/
+/docs/vendor/
+/docs/_config.ci.yml

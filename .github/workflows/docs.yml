@@ -1,0 +1,69 @@
+name: Docs
+
+# Builds the documentation website from docs/ and publishes it on GitHub Pages.
+# Repository settings: Pages → Build and deployment → Source: GitHub Actions.
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'docs/**'
+      - '.github/workflows/docs.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: docs
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '4.0'
+          bundler-cache: true
+          working-directory: docs
+      - id: pages
+        uses: actions/configure-pages@v5
+      # Repository link and "Edit this page" from the repository the workflow runs in.
+      - run: |
+          cat > _config.ci.yml <<YAML
+          aux_links:
+            GitHub:
+              - "${REPOSITORY_URL}"
+          aux_links_new_tab: true
+          gh_edit_link: true
+          gh_edit_link_text: Edit this page on GitHub
+          gh_edit_repository: "${REPOSITORY_URL}"
+          gh_edit_branch: "${GITHUB_REF_NAME}"
+          gh_edit_source: docs
+          gh_edit_view_mode: edit
+          YAML
+        env:
+          REPOSITORY_URL: ${{ github.server_url }}/${{ github.repository }}
+      - run: bundle exec jekyll build --baseurl "${{ steps.pages.outputs.base_path }}" --config _config.yml,_config.ci.yml
+        env:
+          JEKYLL_ENV: production
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/_site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

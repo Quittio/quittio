@@ -2,7 +2,7 @@
 
 E-invoicing for Laravel. Quittio creates, validates, reads and renders electronic invoices based on the European standard EN 16931. Germany is the first market; everything country-specific lives in country packs, so the core stays country-neutral.
 
-> **Status:** version 0.1.0 in preparation. The core scope of the roadmap (0.1–0.3) is implemented: data model, calculation, validation L1–L7, CII/UBL writers and readers, ZUGFeRD/Factur-X PDF/A-3, XRechnung, Peppol BIS, Laravel integration and the country pack Germany. Not released yet; APIs may still change, and the legal wording must be confirmed by a tax adviser (see open decisions). The Managed layer (numbering, lifecycle, payments, dunning runs, archive) is not part of this release.
+> **Status:** version 0.1.0 in preparation. The core scope of the roadmap (0.1–0.3) is implemented: data model, calculation, validation L1–L7, CII/UBL writers and readers, ZUGFeRD/Factur-X PDF/A-3, XRechnung, Peppol BIS, Laravel integration and the country pack Germany. The Managed layer 1.0 (issuer profiles, drafts, gapless numbering, archive, cancellations, corrections, mail delivery, audit log) is available as the separate package `quittio/managed`; payments, dunning runs and subscriptions follow later. Not released yet; APIs may still change, and the legal wording must be confirmed by a tax adviser (see open decisions).
 
 ## Packages
 
@@ -12,10 +12,11 @@ E-invoicing for Laravel. Quittio creates, validates, reads and renders electroni
 | `quittio/laravel` | Laravel integration: facade, configuration, Blade templates, commands, testing helpers. |
 | `quittio/country-de` | Country pack for Germany: UStG mandatory fields, tax presets, XRechnung profiles and BR-DE rules, DIN 5008 letter layouts. |
 | `quittio/quittio` | Meta package for a quick start: `quittio/laravel` plus `quittio/country-de`. |
+| `quittio/managed` | Managed layer (commercial licence): issuer profiles, drafts, gapless numbering, archive with hashes, cancellations and corrections, mail delivery, audit log, retention. |
 
 ## Requirements
 
-- PHP 8.3 or newer with `dom`, `libxml`, `mbstring`, `xmlwriter`, `zlib`; `intl` and `gd` recommended
+- PHP 8.3 or newer with `ctype`, `dom`, `gd`, `libxml`, `mbstring`, `xmlwriter`, `zlib`; `intl` recommended, `zip` for `quittio:schemas:download`
 - Laravel 13 (only for `quittio/laravel`)
 - Optional: Java 17+ for the KoSIT validator, veraPDF or Docker for PDF/A checks, `opis/json-schema` for JSON input validation
 
@@ -71,15 +72,21 @@ $result->xml();   // CII XML
 ## Documentation
 
 - [Getting started](docs/getting-started.md)
+- [Building invoices](docs/building-invoices.md)
 - [Formats and profiles](docs/formats.md)
 - [Validation](docs/validation.md)
 - [Templates and design](docs/templates.md)
 - [Quotes, delivery notes and other documents](docs/documents.md)
 - [Reading incoming invoices](docs/reading.md)
+- [Laravel integration](docs/laravel.md)
+- [Configuration](docs/configuration.md)
 - [Country packs](docs/country-packs.md)
 - [Testing](docs/testing.md)
 - [Artisan commands](docs/commands.md)
+- [Managed layer](docs/managed.md)
 - [Field reference](docs/field-reference.md) (generated)
+
+The same pages are published as a website with GitHub Pages (`.github/workflows/docs.yml`, Jekyll with the theme Just the Docs; repository settings: Pages → Source: GitHub Actions). Local preview: `cd docs && bundle install && bundle exec jekyll serve`.
 
 ## Development
 
@@ -88,6 +95,14 @@ composer install
 composer test        # Pest
 composer analyse     # PHPStan, level max
 composer lint        # Pint
+```
+
+The Managed tests run on SQLite by default; MySQL and PostgreSQL run in Docker:
+
+```bash
+docker compose -f tools/docker/databases/compose.yaml up -d --wait
+QUITTIO_DB=mysql vendor/bin/pest --testsuite=managed
+QUITTIO_DB=pgsql QUITTIO_DB_TRIGGERS=1 vendor/bin/pest --testsuite=managed
 ```
 
 Official validation (KoSIT validator and veraPDF) runs in CI and locally:
@@ -104,17 +119,17 @@ php tools/docs/generate.php        # JSON schema and field reference after model
 
 ## Maintenance
 
-- Base rate (Basiszinssatz) values are included up to 1 July 2026 (1.52 %, Deutsche Bundesbank). Add later values to `Quittio\Country\DE\Dunning\BaseRateTable` when published (changes on 1 January and 1 July), or at runtime with `withRate()`.
+- Base rate (Basiszinssatz) values are included up to 1 July 2026 (1.52 %, Deutsche Bundesbank). Add later values to `Quittio\Country\DE\Dunning\BaseRateTable` when published (changes on 1 January and 1 July), or at runtime with `withRate()`; interest for days from 1 January 2027 on is rejected until the next rate is added.
 - Code lists follow the EN 16931 Schematron 1.3.16 of the XRechnung configuration 2026-08-31 (`quittio:codelists:update`).
 
 ## Open decisions
 
 The following points from the specification are still open and must be clarified with a tax adviser before a stable release. Defaults in the code are placeholders.
 
-1. Sign strategy for cancellations: decided, 381 with positive amounts by default, configurable (`corrections.cancellation_strategy`).
-2. Default strategy for corrections (cancel and reissue, or corrected invoice 384).
+1. Sign strategy for cancellations: decided, 381 with positive amounts by default, configurable (`corrections.cancellation_strategy`). The VAT of partial cancellations is rounded cumulatively with the earlier ones, so that all of them together reverse exactly the VAT of the original; a single part may differ by one cent from round2(taxable amount × rate) (within BR-CO-17, noted on the document). The tax adviser should confirm this one-cent alignment.
+2. Default strategy for corrections: cancel and reissue by default (country pack Germany), corrected invoice 384 configurable (`quittio-managed.correction.strategy`); to be confirmed by a tax adviser.
 3. Boundary between price reductions and a new e-invoice, cash discount in exports.
-4. Final invoices: default variant and handling of unpaid advance invoices.
+4. Final invoices: the EN 16931 variant is available in the country pack Germany (`->deductAdvance()`: full service with full VAT, paid advance invoices referenced, deducted in BT-113 and itemised with their VAT per rate, section 14 (5) sentence 2 UStG); still open: the EXTENDED variant and the handling of unpaid advance invoices.
 5. Continuing invoices: representation of the payment schedule in XML.
 6. Cancellation of self-billed invoices.
 7. Additional visualisation PDFs when sending XRechnung.
@@ -130,4 +145,4 @@ The following points from the specification are still open and must be clarified
 
 ## Licence
 
-Open core: `quittio/core`, `quittio/laravel`, `quittio/country-de` and `quittio/quittio` are released under the MIT licence, see [LICENSE](LICENSE). The Managed layer (numbering, lifecycle, payments, dunning runs, archive) is planned as a separate, commercially licensed package.
+Open core: `quittio/core`, `quittio/laravel`, `quittio/country-de` and `quittio/quittio` are released under the MIT licence, see [LICENSE](LICENSE). The Managed layer `quittio/managed` is commercially licensed, see [packages/managed/LICENSE](packages/managed/LICENSE); the licence terms are still to be published.

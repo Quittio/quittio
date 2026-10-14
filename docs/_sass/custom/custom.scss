@@ -1,0 +1,4 @@
+// Package names in the package table of the start page stay on one line.
+.main-content .packages td:first-child code {
+  white-space: nowrap;
+}
