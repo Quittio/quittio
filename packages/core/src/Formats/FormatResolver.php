@@ -8,7 +8,7 @@ use Quittio\Core\Countries\ResolvedCountries;
 use Quittio\Core\Data\InvoiceData;
 
 /**
- * Chooses format and profile when none is given (specification 9.3).
+ * Chooses format and profile when none is given.
  */
 interface FormatResolver
 {

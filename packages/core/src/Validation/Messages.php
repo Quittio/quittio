@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Quittio\Core\Validation;
 
 /**
- * Creates validation messages from the message catalog (specification 12.6).
+ * Creates validation messages from the message catalog.
  *
  * The catalog key is "{namespace}::rules.{code}" with the entries "message" and "hint".
  * If no translation exists, the fallback text given by the rule is used.

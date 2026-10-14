@@ -13,7 +13,7 @@ use Quittio\Core\Support\Date;
  * Data of a payment reminder: open items, fees, interest and the new deadline.
  *
  * Level 0 is a friendly payment reminder (Zahlungserinnerung), level 1 the first formal
- * reminder (1. Mahnung), level 2 the second and so on (specification 15.9).
+ * reminder (1. Mahnung), level 2 the second and so on.
  *
  * Fees and default interest are damages, not consideration for a supply: they carry no
  * VAT, and {@see total()} adds them without VAT.

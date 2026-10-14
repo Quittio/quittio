@@ -21,7 +21,7 @@ use Quittio\Core\Xml\XmlSecurity;
 use Throwable;
 
 /**
- * Reads e-invoices from XML or PDF (specification 10.4).
+ * Reads e-invoices from XML or PDF.
  *
  * Detects the syntax and profile, keeps the declared totals and reports
  * differences to a recalculation instead of correcting them silently.

@@ -7,7 +7,7 @@ namespace Quittio\Core\Formats;
 use Quittio\Core\Profiles\Syntax;
 
 /**
- * Definition of an output format (specification 9.2).
+ * Definition of an output format.
  */
 final readonly class OutputFormat
 {

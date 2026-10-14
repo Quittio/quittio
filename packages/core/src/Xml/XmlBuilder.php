@@ -13,7 +13,7 @@ use RuntimeException;
  * Builds XML documents element by element.
  *
  * Empty values are skipped and containers without content are removed again,
- * so that no empty elements are written (specification 10.2). The output is
+ * so that no empty elements are written. The output is
  * deterministic: same input, same bytes.
  */
 final class XmlBuilder

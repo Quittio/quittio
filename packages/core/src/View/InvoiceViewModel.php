@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Quittio\Core\View;
 
 /**
- * The only object templates receive (specification 11.6). Every value is available
+ * The only object templates receive. Every value is available
  * formatted ($value->formatted or {{ $value }}) and raw ($value->raw).
  *
  * Templates contain no calculation logic; all values are calculated beforehand.

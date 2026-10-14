@@ -7,7 +7,7 @@ namespace Quittio\Core\Profiles;
 use Quittio\Core\Standards\StandardVersion;
 
 /**
- * Factur-X/ZUGFeRD EXTENDED: EN 16931 plus additional elements (specification 5.13).
+ * Factur-X/ZUGFeRD EXTENDED: EN 16931 plus additional elements.
  */
 final class Extended extends AbstractProfile
 {

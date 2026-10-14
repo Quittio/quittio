@@ -65,7 +65,7 @@ use Quittio\Core\Support\Decimal;
 use Quittio\Core\Support\Macroable;
 
 /**
- * Fluent builder for InvoiceData (specification 5.17).
+ * Fluent builder for InvoiceData.
  *
  * Amounts, prices and quantities are passed as strings or integers, never as floats.
  * The result is not yet calculated; totals and the VAT breakdown are set by the calculator.
@@ -727,7 +727,7 @@ class InvoiceBuilder
     }
 
     /**
-     * Percentage discount on all lines. Split into one allowance per VAT group (specification 7.5).
+     * Percentage discount on all lines. Split into one allowance per VAT group.
      */
     public function discountPercent(string $percent, ?string $reason = null, AllowanceReasonCode|RawCode|string|null $reasonCode = AllowanceReasonCode::Discount): static
     {
@@ -743,7 +743,7 @@ class InvoiceBuilder
     }
 
     /**
-     * Absolute discount distributed over all VAT groups in proportion to their line totals (specification 7.5).
+     * Absolute discount distributed over all VAT groups in proportion to their line totals.
      */
     public function discountAmount(string $amount, ?string $reason = null, AllowanceReasonCode|RawCode|string|null $reasonCode = AllowanceReasonCode::Discount): static
     {
@@ -993,7 +993,7 @@ class InvoiceBuilder
     /**
      * Starts an invoice from a quote, order confirmation, delivery note or proforma invoice:
      * parties, billable lines, document allowances and charges and payment data are taken
-     * over; number and issue date must be set (specification 13).
+     * over; number and issue date must be set.
      */
     public static function fromDocument(DocumentData $document): static
     {

@@ -15,7 +15,7 @@ use Throwable;
 
 /**
  * Imports the pages of an existing PDF (FPDI via mPDF), embeds the XML and writes
- * PDF/A-3 metadata and output intent (specification 11.13).
+ * PDF/A-3 metadata and output intent.
  *
  * The result is PDF/A compliant only if the source PDF is: all fonts embedded, no
  * encryption, no JavaScript. Check the result with veraPDF, ideally in CI.

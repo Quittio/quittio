@@ -15,7 +15,7 @@ use Quittio\Country\DE\Rules\UstgRules;
 use Quittio\Country\DE\Support\LeitwegId;
 
 /**
- * Formats that German law prescribes (specification 9.3 no. 3 and 4):
+ * Formats that German law prescribes:
  *
  * - public buyers (Leitweg-ID) receive XRechnung, whatever the seller's country;
  * - small amount invoices between parties in the German Inland (section 1 (2) UStG) may be

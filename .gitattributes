@@ -15,7 +15,6 @@
 /packages/*/tests export-ignore
 /testbench.yaml export-ignore
 /.editorconfig export-ignore
-/Quittio-Spezifikation.md export-ignore
 /CONTRIBUTING.md export-ignore
 
 # Third-party schemas are kept byte for byte as published.

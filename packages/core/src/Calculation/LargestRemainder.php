@@ -10,7 +10,7 @@ use Brick\Math\RoundingMode;
 
 /**
  * Distributes an amount over weights so that the rounded parts add up exactly
- * (largest remainder method, specification 7.5 and 7.6).
+ * (largest remainder method).
  *
  * Weights are signed: each part is total × weight / Σ weights, so a negative weight
  * (e.g. a VAT group that only contains returns) receives a part with the opposite sign.

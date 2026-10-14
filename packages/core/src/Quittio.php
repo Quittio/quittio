@@ -76,7 +76,7 @@ use Quittio\Core\Xml\Ubl\UblWriter;
 use Quittio\Core\Xml\XmlSerializer;
 
 /**
- * Entry point without Laravel (specification 14.6):
+ * Entry point without Laravel:
  *
  *     $quittio = Quittio::create(Config::fromArray([...]), [new CountryDE]);
  *     $result = $quittio->make($invoice)->format('zugferd')->render();
@@ -196,7 +196,7 @@ final class Quittio
     }
 
     /**
-     * Builder for the cancellation of an issued invoice (specification 17.3, 17.4). The sign
+     * Builder for the cancellation of an issued invoice. The sign
      * strategy comes from the argument, the configuration or the country pack (in this order).
      *
      * @param  list<array{line: string, quantity?: \Brick\Math\BigDecimal|int|string, amount?: string}>|null  $lines  partial cancellation; null = full

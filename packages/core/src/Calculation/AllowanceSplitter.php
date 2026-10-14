@@ -15,7 +15,7 @@ use Quittio\Core\Support\Amount;
 use Quittio\Core\Support\Decimal;
 
 /**
- * Splits a document discount over several VAT groups (specification 7.5).
+ * Splits a document discount over several VAT groups.
  *
  * A document allowance has exactly one VAT category and rate. A discount on
  * all lines is therefore split into one allowance per VAT group, in proportion

@@ -12,7 +12,7 @@ use Quittio\Core\Data\Note;
 use Quittio\Core\Enums\NoteSubjectCode;
 
 /**
- * Checks after rendering that the template printed all mandatory values (specification 11.8).
+ * Checks after rendering that the template printed all mandatory values.
  *
  * A custom template could omit mandatory information (e.g. the VAT identifier); then PDF
  * and XML would differ in content. Access keys are view model paths:

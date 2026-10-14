@@ -8,7 +8,7 @@ use Quittio\Core\Validation\ValidationLevel;
 use Quittio\Core\Validation\ValidationMessage;
 
 /**
- * Error classes of the BMF letter of 15 October 2025 (specification 12.2).
+ * Error classes of the BMF letter of 15 October 2025.
  */
 enum BmfErrorClass: string
 {

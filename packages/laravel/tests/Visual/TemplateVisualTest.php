@@ -6,7 +6,7 @@ use Quittio\Core\Testing\Scenarios;
 use Quittio\Laravel\Facades\Quittio;
 
 /*
-| Visual regression of the default Blade template (specification 11.12 scenarios).
+| Visual regression of the default Blade template (sample scenarios).
 | The first page of each PDF is rasterised with pdftoppm and compared pixel by pixel
 | with the baseline in __snapshots__. macOS and the Linux CI image (tools/visual/check-linux.sh)
 | produce the same images. Missing baselines are written on the first run outside CI;

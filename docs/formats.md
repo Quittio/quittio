@@ -88,7 +88,7 @@ Characters other than letters, digits, `.`, `_` and `-` in title and number beco
 
 ## Automatic choice
 
-Without a format, `Quittio\Core\Formats\DefaultFormatResolver` decides (specification 9.3). Domestic means that seller and buyer lie in the same VAT territory (`VatTerritory::sameVatTerritory()`: Monaco counts as France, excluded territories such as Büsingen or Heligoland as not domestic) or that the buyer has no country code.
+Without a format, `Quittio\Core\Formats\DefaultFormatResolver` decides. Domestic means that seller and buyer lie in the same VAT territory (`VatTerritory::sameVatTerritory()`: Monaco counts as France, excluded territories such as Büsingen or Heligoland as not domestic) or that the buyer has no country code.
 
 1. Domestic invoices: the format rules of the leading country pack, which decide only what the country prescribes ([German format choice](country-packs.md#format-choice)). Germany: a valid Leitweg-ID in BT-10 or a buyer electronic address with scheme `0204` → `xrechnung-cii` with `xrechnung`; small amount invoices (`smallAmount()`) between parties in the German Inland (without Büsingen and Heligoland) → `pdf`; everything else goes on to the next steps.
 2. A buyer that is not a consumer and is reachable via Peppol (only with a lookup, see below) → `peppol`.

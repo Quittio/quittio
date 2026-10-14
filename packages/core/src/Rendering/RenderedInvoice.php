@@ -11,7 +11,7 @@ use Quittio\Core\Validation\ValidationResult;
 use RuntimeException;
 
 /**
- * Result of a render run (specification 14.2). With several formats, every format is
+ * Result of a render run. With several formats, every format is
  * reachable via {@see self::as()}; all share the same calculation.
  */
 final class RenderedInvoice

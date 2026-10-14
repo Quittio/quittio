@@ -77,7 +77,7 @@ final class ViewModelFactory
     }
 
     /**
-     * View model for quotes, delivery notes, reminders and other documents (specification 13).
+     * View model for quotes, delivery notes, reminders and other documents.
      * Templates see the same structure as for invoices plus the "documentInfo" node.
      */
     public function buildDocument(DocumentData $document, ViewContext $context = new ViewContext): InvoiceViewModel

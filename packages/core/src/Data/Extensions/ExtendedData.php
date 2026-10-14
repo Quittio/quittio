@@ -11,7 +11,7 @@ use Quittio\Core\Mapping\Attributes as Q;
 
 /**
  * Document level data that exists only in the Factur-X/ZUGFeRD EXTENDED profile.
- * The selection covers the practically relevant elements (specification 5.13).
+ * The selection covers the practically relevant elements.
  */
 final readonly class ExtendedData
 {

@@ -32,7 +32,7 @@ use ReflectionClass;
 
 /**
  * Registers the Quittio manager, configuration, views, translations, commands and the
- * local preview route (specification 14).
+ * local preview route.
  */
 final class QuittioServiceProvider extends ServiceProvider
 {

@@ -36,7 +36,7 @@ use Quittio\Country\DE\Tax\VatPreset;
 use Quittio\Country\DE\Texts\LegalTexts;
 
 /**
- * Country pack for Germany (specification 25.6).
+ * Country pack for Germany.
  */
 class CountryDE extends AbstractCountryPack
 {
@@ -96,7 +96,7 @@ class CountryDE extends AbstractCountryPack
     }
 
     /**
-     * Values the PDF must show in addition to the base fields (specification 11.8). Paths
+     * Values the PDF must show in addition to the base fields. Paths
      * with "[*]" apply to every index; paths without a value in the view model are skipped.
      */
     public function mandatoryOutput(InvoiceData $invoice): MandatoryFieldList

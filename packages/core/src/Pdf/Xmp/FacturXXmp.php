@@ -8,7 +8,7 @@ use Quittio\Core\Pdf\EmbeddedXml;
 
 /**
  * XMP metadata for Factur-X/ZUGFeRD: the fx description and the PDF/A extension schema.
- * Without the extension schema the PDF is readable, but not valid PDF/A (specification 11.4).
+ * Without the extension schema the PDF is readable, but not valid PDF/A.
  */
 final class FacturXXmp
 {

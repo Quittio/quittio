@@ -15,7 +15,7 @@ use Quittio\Core\Validation\ValidationResult;
 use Quittio\Laravel\QuittioManager;
 
 /**
- * Fluent render call (specification 14.1):
+ * Fluent render call:
  * Quittio::make($order)->profile('en16931')->format('zugferd')->locale('de')->render().
  */
 class PendingInvoice

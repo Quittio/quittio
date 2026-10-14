@@ -20,7 +20,7 @@ use Quittio\Core\Support\Amount;
 use Quittio\Core\Support\Decimal;
 
 /**
- * Calculation according to EN 16931 (specification section 7).
+ * Calculation according to EN 16931.
  *
  * Amounts are rounded half up to two decimals at the defined points only.
  * VAT is calculated per VAT group (category and rate), not per line (BR-CO-17).
@@ -351,7 +351,7 @@ final class En16931Calculator implements TotalsCalculator
     }
 
     /**
-     * BT-111 = round2(BT-110 × exchange rate), specification 7.8.
+     * BT-111 = round2(BT-110 × exchange rate).
      *
      * A declared BT-111 in the totals belongs to the declared BT-110: it is kept only as long as the
      * recalculated BT-110 equals the declared one, otherwise it would be stale. Without an exchange

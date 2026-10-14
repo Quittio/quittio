@@ -24,7 +24,7 @@ use Quittio\Country\DE\Support\TaxNumber;
 use Quittio\Country\DE\Tax\VatPreset;
 
 /**
- * Mandatory invoice information according to the German VAT act (specification 2.3, 8.3):
+ * Mandatory invoice information according to the German VAT act:
  * section 14 (4) and 14a UStG, section 33 UStDV for small amount invoices and section 34a UStDV
  * for small business invoices.
  *

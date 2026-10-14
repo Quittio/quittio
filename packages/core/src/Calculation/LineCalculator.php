@@ -13,7 +13,7 @@ use Quittio\Core\Support\Amount;
 use Quittio\Core\Support\Decimal;
 
 /**
- * Calculates the invoice line net amount (BT-131), specification 7.2:
+ * Calculates the invoice line net amount (BT-131):
  *
  *   net price   BT-146 = BT-148 − BT-147 (if list price and discount are given)
  *   base amount B      = round2(BT-129 × BT-146 / (BT-149 ?: 1))

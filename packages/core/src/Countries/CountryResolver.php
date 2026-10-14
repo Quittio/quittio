@@ -7,7 +7,7 @@ namespace Quittio\Core\Countries;
 use Quittio\Core\Data\InvoiceData;
 
 /**
- * Selects the country packs for an invoice (specification 25.4).
+ * Selects the country packs for an invoice.
  */
 interface CountryResolver
 {

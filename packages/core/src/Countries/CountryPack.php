@@ -15,7 +15,7 @@ use Quittio\Core\View\AddressFormatter;
 use Quittio\Core\View\LetterLayout;
 
 /**
- * Everything that differs between countries (specification 25.3).
+ * Everything that differs between countries.
  *
  * A country pack may only add or tighten rules; it never relaxes EN 16931 rules.
  */
@@ -57,7 +57,7 @@ interface CountryPack
     public function profiles(): array;
 
     /**
-     * Format choice for domestic invoices (specification 9.3).
+     * Format choice for domestic invoices.
      *
      * @return list<FormatRule>
      */

@@ -12,7 +12,7 @@ use Quittio\Core\Rendering\RenderedInvoice as CoreRenderedInvoice;
 use Quittio\Core\Validation\ValidationResult;
 
 /**
- * Rendered invoice for Laravel (specification 14.2): usable as mail attachment and as
+ * Rendered invoice for Laravel: usable as mail attachment and as
  * HTTP response, storable on any filesystem disk.
  */
 final class RenderedInvoice implements Attachable, Responsable

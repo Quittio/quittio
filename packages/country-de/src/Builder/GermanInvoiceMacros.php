@@ -16,7 +16,7 @@ use Quittio\Country\DE\Support\Flags;
 use Quittio\Country\DE\Texts\LegalTexts;
 
 /**
- * Builder helpers for German special cases (specification 8.3):
+ * Builder helpers for German special cases:
  *
  *     InvoiceBuilder::make()->smallAmount()->...
  *     InvoiceBuilder::make()->propertyRelatedService()->...

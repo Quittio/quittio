@@ -20,8 +20,7 @@ use Quittio\Core\Support\Decimal;
 
 /**
  * What the earlier partial cancellations of an invoice cancelled per VAT group (category and
- * rate), so that the VAT of the next partial cancellation is rounded cumulatively
- * (specification 17.4).
+ * rate), so that the VAT of the next partial cancellation is rounded cumulatively.
  *
  * VAT is rounded per document and VAT group (BR-CO-17). Rounded per partial cancellation on its
  * own, the cancellations together can differ from the original by a cent per earlier part (e.g.

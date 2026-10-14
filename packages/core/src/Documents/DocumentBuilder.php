@@ -26,7 +26,7 @@ use Quittio\Core\Support\Decimal;
 use Quittio\Core\Support\Macroable;
 
 /**
- * Fluent builder for documents (specification 13). Parties, lines, notes, discounts and
+ * Fluent builder for documents. Parties, lines, notes, discounts and
  * payment data work exactly like in the {@see InvoiceBuilder}.
  */
 class DocumentBuilder

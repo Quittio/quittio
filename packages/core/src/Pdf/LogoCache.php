@@ -11,7 +11,7 @@ use ImagickPixel;
 use Quittio\Core\Exceptions\ConfigurationException;
 
 /**
- * Prepares logos for the PDF (specification 5.15, 11.11) and caches the result.
+ * Prepares logos for the PDF and caches the result.
  *
  * mPDF never fetches a logo itself: remote images (http and https only) are downloaded by
  * {@see RemoteImageFetcher} from public hosts and cached as local files; other stream

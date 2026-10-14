@@ -99,7 +99,7 @@ All notable changes to this project are documented in this file. The format foll
 
 ## [0.1.0] - Unreleased
 
-First release, covering the core scope of the roadmap (0.1 to 0.3).
+First release.
 
 ### Added
 

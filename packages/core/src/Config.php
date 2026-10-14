@@ -13,7 +13,7 @@ use Quittio\Core\Xml\XmlSecurity;
 use ReflectionClass;
 
 /**
- * Configuration of the core without Laravel (specification 14.6). The Laravel package
+ * Configuration of the core without Laravel. The Laravel package
  * translates config/quittio.php into it (Quittio\Laravel\Support\ConfigMapper), whose layout
  * differs from the keys of fromArray().
  */

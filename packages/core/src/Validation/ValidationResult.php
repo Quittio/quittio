@@ -7,7 +7,7 @@ namespace Quittio\Core\Validation;
 use JsonSerializable;
 
 /**
- * Result of a validation run (specification 12.3).
+ * Result of a validation run.
  */
 final readonly class ValidationResult implements JsonSerializable
 {

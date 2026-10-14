@@ -654,7 +654,7 @@ class Order extends Model implements ProvidesInvoiceData
 
 ## Calculation
 
-`Quittio\Core\Calculation\En16931Calculator` calculates line net amounts, document allowances and charges, the VAT breakdown and the totals (specification section 7). Every render, check and prepare run calls it, so data from the builder never needs to be calculated by hand. To calculate without rendering, call it directly or use `prepare()` ([Formats and profiles](formats.md#rendering-in-the-core)):
+`Quittio\Core\Calculation\En16931Calculator` calculates line net amounts, document allowances and charges, the VAT breakdown and the totals. Every render, check and prepare run calls it, so data from the builder never needs to be calculated by hand. To calculate without rendering, call it directly or use `prepare()` ([Formats and profiles](formats.md#rendering-in-the-core)):
 
 ```php
 use Quittio\Core\Calculation\En16931Calculator;
@@ -746,7 +746,7 @@ $draft = InvoiceBuilder::from($stored)
 
 ## Cancellations and corrections
 
-A cancellation is a new invoice with its own number that reverses an issued invoice and refers to it (BG-3); the original is never changed (specification 17). The core builds it with `Quittio::cancellation()`, which returns an `InvoiceBuilder`:
+A cancellation is a new invoice with its own number that reverses an issued invoice and refers to it (BG-3); the original is never changed. The core builds it with `Quittio::cancellation()`, which returns an `InvoiceBuilder`:
 
 ```php
 use Quittio\Core\Support\Date;

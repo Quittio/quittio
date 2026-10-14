@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Quittio\Core\Validation;
 
 /**
- * Validation levels (specification 12.1).
+ * Validation levels.
  */
 enum ValidationLevel: string
 {

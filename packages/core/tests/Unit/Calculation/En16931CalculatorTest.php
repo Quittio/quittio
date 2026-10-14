@@ -21,7 +21,7 @@ function amount(?Brick\Money\Money $money): ?string
     return $money === null ? null : Amount::format($money);
 }
 
-// Mandatory test cases from specification 7.11.
+// Mandatory test cases of the calculator.
 
 it('rounds on line level: 3 × 0.333', function () {
     $invoice = calc(Invoices::base()

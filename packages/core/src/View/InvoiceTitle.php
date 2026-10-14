@@ -9,7 +9,7 @@ use Quittio\Core\Data\InvoiceData;
 use Quittio\Core\Enums\InvoiceTypeCode;
 
 /**
- * Label key of the document title for a type code (BT-3), specification 17.9.
+ * Label key of the document title for a type code (BT-3).
  *
  * Codes without an own title use the title of their family: self-billed documents are a
  * "Gutschrift" (section 14 (2) sentence 5 UStG), commercial credit notes share the title of

@@ -16,7 +16,7 @@ use Quittio\Core\Pdf\RenderRequest;
 use Quittio\Core\Pdf\Xmp\FacturXXmp;
 
 /**
- * Default renderer: HTML/CSS to PDF/A-3b with mPDF, in pure PHP (specification 11.3).
+ * Default renderer: HTML/CSS to PDF/A-3b with mPDF, in pure PHP.
  *
  * PDF/A, the embedded XML and the XMP metadata are written in one pass.
  */

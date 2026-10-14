@@ -1,5 +1,5 @@
 {{--
-    Quittio default template (design levels 1 and 2, specification 11.5).
+    Quittio default template (design levels 1 and 2).
 
     The only variable is $invoice (Quittio\Core\View\InvoiceViewModel). Every value is
     available formatted ({{ $value }}) and raw ($value->raw). No calculation happens here.

@@ -27,7 +27,7 @@ use Quittio\Core\Xml\Ubl\UblWriter;
 use Quittio\Country\DE\CountryDE;
 
 /*
- * Partial cancellations with a CancellationHistory (specification 17.4): the VAT per VAT group is
+ * Partial cancellations with a CancellationHistory: the VAT per VAT group is
  * rounded cumulatively, so that all cancellations together reverse exactly the VAT of the original.
  */
 

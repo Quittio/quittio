@@ -47,7 +47,7 @@ use Quittio\Laravel\Testing\QuittioFake;
 final class Quittio extends Facade
 {
     /**
-     * Replaces rendering with a fast fake that records every call (specification 14.7).
+     * Replaces rendering with a fast fake that records every call.
      */
     public static function fake(): QuittioFake
     {

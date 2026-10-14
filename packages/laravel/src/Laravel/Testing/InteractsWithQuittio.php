@@ -13,7 +13,7 @@ use ReflectionClass;
 use ReflectionProperty;
 
 /**
- * Assertions for feature tests (specification 14.7).
+ * Assertions for feature tests.
  */
 trait InteractsWithQuittio
 {

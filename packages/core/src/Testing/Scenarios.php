@@ -17,7 +17,7 @@ use Quittio\Core\Enums\UnitCode;
 use Quittio\Core\Enums\VatCategory;
 
 /**
- * Example invoices for previews, tests and the official validation runs (specification 11.12).
+ * Example invoices for previews, tests and the official validation runs.
  *
  * The scenarios are country neutral and use VAT categories directly. Country packs
  * may provide their own scenarios with tax presets.

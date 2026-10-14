@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-// Validation message catalog (specification 12.6): message and solution hint per rule code.
+// Validation message catalog: message and solution hint per rule code.
 return [
     'QUITTIO-NOT-CALCULATED' => [
         'message' => 'The invoice has not been calculated. Totals (BG-22) and the VAT breakdown (BG-23) are missing.',

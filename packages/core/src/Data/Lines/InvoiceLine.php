@@ -93,7 +93,7 @@ final readonly class InvoiceLine
     }
 
     /**
-     * Copy with a new price including VAT (gross price mode, specification 7.6). The calculator
+     * Copy with a new price including VAT (gross price mode). The calculator
      * derives the net price again.
      *
      * @throws InvalidArgumentException for a line with a net price, use withNetPrice()

@@ -7,7 +7,7 @@ namespace Quittio\Core\Xml;
 use DOMDocument;
 
 /**
- * Safe XML loading for untrusted input (specification 10.4).
+ * Safe XML loading for untrusted input.
  *
  * - Documents with a DOCTYPE are rejected (no entity expansion, no XXE).
  * - No network access (LIBXML_NONET), no entity substitution (no LIBXML_NOENT).

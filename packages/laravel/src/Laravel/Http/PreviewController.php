@@ -12,7 +12,7 @@ use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
- * Browser preview of the sample scenarios (local environment only, specification 11.12).
+ * Browser preview of the sample scenarios (local environment only).
  */
 final readonly class PreviewController
 {

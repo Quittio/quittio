@@ -8,7 +8,7 @@ use Quittio\Core\Standards\StandardVersion;
 use Quittio\Core\Validation\Rules\PeppolRules;
 
 /**
- * Peppol BIS Billing 3.0, a UBL based CIUS of EN 16931 (specification 26.2).
+ * Peppol BIS Billing 3.0, a UBL based CIUS of EN 16931.
  */
 final class PeppolBis3 extends AbstractProfile
 {

@@ -26,7 +26,7 @@ use Quittio\Core\Support\Date;
 /**
  * Quote, order confirmation, delivery note, proforma invoice, payment reminder or account
  * statement. Shares parties, lines and calculation with {@see InvoiceData}, but never
- * produces e-invoice XML (specification 13). Payment reminders and account statements
+ * produces e-invoice XML. Payment reminders and account statements
  * have no lines: their amount comes from {@see Dunning} and {@see AccountStatement}.
  */
 final readonly class DocumentData

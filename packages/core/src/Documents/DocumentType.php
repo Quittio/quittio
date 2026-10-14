@@ -6,7 +6,7 @@ namespace Quittio\Core\Documents;
 
 /**
  * Commercial documents that share templates and calculation with invoices but carry no
- * e-invoice XML (specification 13).
+ * e-invoice XML.
  */
 enum DocumentType: string
 {

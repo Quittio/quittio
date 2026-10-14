@@ -14,7 +14,7 @@ use Quittio\Core\Tax\TaxPreset;
 use Quittio\Country\DE\CountryDE;
 
 /**
- * Tax presets for Germany (specification 8.2).
+ * Tax presets for Germany.
  *
  * The note texts and legal references are proposals and must be confirmed by a
  * tax adviser before the first release (legal review in the README).

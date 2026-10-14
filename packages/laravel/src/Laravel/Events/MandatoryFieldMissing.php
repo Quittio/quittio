@@ -8,7 +8,7 @@ use Quittio\Core\Countries\MandatoryField;
 use Quittio\Core\Data\InvoiceData;
 
 /**
- * Dispatched when a template omitted mandatory values (specification 11.8).
+ * Dispatched when a template omitted mandatory values.
  */
 final readonly class MandatoryFieldMissing
 {

@@ -37,7 +37,7 @@ use Quittio\Core\Support\Decimal;
 use Quittio\Core\View\IntlFormatter;
 
 /**
- * Full cancellation of an issued invoice (specification 17.1–17.3): a new invoice with its
+ * Full cancellation of an issued invoice: a new invoice with its
  * own number that reverses the original and refers to it (BG-3).
  *
  * Sign strategies (17.2):
@@ -82,7 +82,7 @@ final class Cancellation
      * @param  string|null  $title  document title in the PDF, e.g. "Stornorechnung"; without it the
      *         title comes from $policy ("cancellation_self_billed" for self-billed originals)
      * @param  list<array{line: string, quantity?: BigDecimal|int|string, amount?: string}>|null  $lines
-     *         partial cancellation (specification 17.4): whole lines, a quantity of a line or an
+     *         partial cancellation: whole lines, a quantity of a line or an
      *         amount of a line (e.g. a price reduction); null cancels the whole invoice.
      *         Quantities and amounts are magnitudes, negative lines keep their sign. For lines
      *         with a price including VAT (gross price mode) the amount includes VAT

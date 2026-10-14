@@ -13,7 +13,7 @@ use Quittio\Core\Support\Amount;
 use Quittio\Country\DE\CountryDE;
 use Quittio\Country\DE\Tax\VatPreset;
 
-it('builds and calculates the example from specification 5.17', function () {
+it('builds and calculates the builder example', function () {
     $invoice = InvoiceBuilder::make()
         ->number('RE-2026-0042')
         ->issueDate('2026-10-03')

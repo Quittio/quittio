@@ -61,7 +61,7 @@ use ReflectionClass;
 
 /**
  * Root of the Quittio facade: builds the core from the Laravel configuration, adds
- * events, Blade templates, storage and extension points (specification 14).
+ * events, Blade templates, storage and extension points.
  */
 class QuittioManager
 {

@@ -9,7 +9,7 @@ use Quittio\Country\DE\CountryDE;
 use Quittio\Country\DE\Tax\VatPreset;
 
 /**
- * Mandatory and informational texts for German invoices (specification 8.2, 8.3).
+ * Mandatory and informational texts for German invoices.
  *
  * The notices that a tax preset also states (reverse charge, intra-Community supply, export,
  * small business) are the preset's exemption reason texts, so that one notice has one wording.

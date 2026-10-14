@@ -197,7 +197,7 @@ final class LineBuilder
     }
 
     /**
-     * Price including VAT (gross price mode for B2C and shops, specification 7.6).
+     * Price including VAT (gross price mode for B2C and shops).
      * The calculator derives the net price so that the customer pays exactly the gross amount.
      */
     public function priceInclVat(BigDecimal|int|float|string $price): self

@@ -1,4 +1,4 @@
-{{-- Quotes, delivery notes, reminders and statements (specification 13). --}}
+{{-- Quotes, delivery notes, reminders and statements. --}}
 @if ($info)
     @if (count($info->packages) > 0)
         <div class="section">

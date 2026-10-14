@@ -11,7 +11,7 @@ use Quittio\Core\Data\Lines\InvoiceLine;
 use Quittio\Core\Support\Decimal;
 
 /**
- * Gross price mode for B2C and shops (specification 7.6).
+ * Gross price mode for B2C and shops.
  *
  * Shops calculate with prices including VAT, EN 16931 calculates net. Per VAT group:
  *

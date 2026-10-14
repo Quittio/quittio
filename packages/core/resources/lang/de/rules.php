@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-// Validation message catalog (specification 12.6): message and solution hint per rule code.
+// Validation message catalog: message and solution hint per rule code.
 return [
     'QUITTIO-NOT-CALCULATED' => [
         'message' => 'Die Rechnung wurde nicht berechnet. Summen (BG-22) und Steueraufschlüsselung (BG-23) fehlen.',

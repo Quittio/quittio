@@ -13,7 +13,7 @@ use Quittio\Laravel\Rendering\RenderedInvoice;
 use Quittio\Laravel\Templates\BladeTemplateEngine;
 
 /**
- * Renders the sample scenarios of specification 11.12 with a "PREVIEW" watermark.
+ * Renders the sample scenarios with a "PREVIEW" watermark.
  *
  * Template and locale may come from a request (preview route): only the views that rendering
  * accepts (see BladeTemplateEngine: "default", quittio.pdf.template, the shipped views under

@@ -13,7 +13,7 @@ use Quittio\Core\Data\Party\BuyerParty;
 use Quittio\Core\Exceptions\ConfigurationException;
 
 /**
- * Format resolution in the order of specification 9.3:
+ * Format resolution in this order:
  *
  * 1. explicit choice (handled by the caller),
  * 2. known Peppol participant of the buyer (optional lookup),

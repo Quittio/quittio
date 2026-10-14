@@ -13,7 +13,7 @@ use Quittio\Country\DE\CountryDE;
 
 /**
  * Default interest according to section 288 BGB: base rate plus 9 points (business)
- * or 5 points (consumer), split at every change of the base rate (specification 18.4).
+ * or 5 points (consumer), split at every change of the base rate.
  * Points, flat rate and day count basis come from the dunning law, by default
  * CountryDE::dunningLaw(). The base rates are those shipped with Quittio plus the rates
  * registered with BaseRates (configured or fetched from the Bundesbank), unless a table is given.

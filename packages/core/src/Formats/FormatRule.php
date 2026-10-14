@@ -7,7 +7,7 @@ namespace Quittio\Core\Formats;
 use Quittio\Core\Data\InvoiceData;
 
 /**
- * A rule of a country pack that decides the output format of an invoice (specification 9.3).
+ * A rule of a country pack that decides the output format of an invoice.
  */
 interface FormatRule
 {
