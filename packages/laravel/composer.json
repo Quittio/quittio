@@ -11,11 +11,11 @@
     ],
     "type": "library",
     "license": "MIT",
-    "homepage": "https://quittio.github.io/quittio/",
+    "homepage": "https://docs.quittio.dev",
     "support": {
         "issues": "https://github.com/Quittio/quittio/issues",
         "source": "https://github.com/Quittio/quittio",
-        "docs": "https://quittio.github.io/quittio/"
+        "docs": "https://docs.quittio.dev"
     },
     "authors": [
         {
