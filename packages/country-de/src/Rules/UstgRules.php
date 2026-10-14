@@ -19,6 +19,7 @@ use Quittio\Country\DE\CountryDE;
 use Quittio\Country\DE\Formats\GermanFormatRule;
 use Quittio\Country\DE\Support\Flags;
 use Quittio\Country\DE\Support\LeitwegId;
+use Quittio\Country\DE\Support\TaxNumber;
 use Quittio\Country\DE\Tax\VatPreset;
 
 /**
@@ -315,6 +316,12 @@ final class UstgRules
                 $country = $i->buyer->address->countryCode;
                 if (($country === '' || $country === CountryDE::CODE) && ! $i->buyer->isConsumer && ! $publicBuyer($i, $report) && $wrongCheckDigits($i->buyerReference)) {
                     $report->info('BT-10', 'buyerReference', ['value' => (string) $i->buyerReference]);
+                }
+            }, self::NS),
+            CallbackRule::l7('DE-TAX-NUMBER', 'The tax number ":value" (BT-32) of the seller is not a valid German tax number: it matches neither the 13-digit ELSTER format nor the notation of a federal state, or its check digit is wrong.', function (InvoiceData $i, RuleReporter $report): void {
+                $number = $i->seller->taxNumber;
+                if ($number !== null && trim($number) !== '' && $i->seller->address->countryCode === CountryDE::CODE && TaxNumber::validate($number) === false) {
+                    $report->warning('BT-32', 'seller.taxNumber', ['value' => $number]);
                 }
             }, self::NS),
         ];

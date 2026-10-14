@@ -93,6 +93,18 @@ discovered packs, then `countries` (so a subclass of `CountryDE` listed here rep
 discovered `CountryDE`), then `Quittio::registerCountry()`. `php artisan quittio:countries` and `php artisan about` list
 the active packs. Writing your own pack: see [Country packs](country-packs.md).
 
+### Country pack Germany (`config/quittio-de.php`)
+
+The German pack has a small configuration of its own (publish it with
+`php artisan vendor:publish --tag=quittio-de-config`):
+
+| Key | Type | Default | Effect |
+|---|---|---|---|
+| `base_rates` | array | `[]` | Base rates (§ 247 BGB) in addition to the table shipped with Quittio, ISO date (1 January or 1 July) => percent, e.g. `['2027-01-01' => '1.77']`; they win over the file |
+| `base_rate_file` | string\|null | `storage_path('app/quittio/base-rates.json')` | JSON file written by `php artisan quittio:base-rate:update`; `null` = not used |
+
+See [Country packs: base rate table](country-packs.md#base-rate-table).
+
 ## Seller
 
 Used by `Seller::fromConfig()` and `Seller::apply()` (see

@@ -160,6 +160,10 @@ return [
         'message' => 'The check digits of the Leitweg-ID ":value" (BT-10) are wrong.',
         'hint' => 'Check the Leitweg-ID with the public buyer.',
     ],
+    'DE-TAX-NUMBER' => [
+        'message' => 'The tax number ":value" (BT-32) of the seller is not a valid German tax number: it matches neither the 13-digit ELSTER format nor the notation of a federal state, or its check digit is wrong.',
+        'hint' => 'Copy the tax number from a notice of the tax office (e.g. 181/815/08155) or use the 13-digit ELSTER format. A VAT identifier (DE…) belongs in ->vatId().',
+    ],
     'DE-LEITWEG-ID-SUSPECT' => [
         'message' => 'The buyer reference ":value" (BT-10) is shaped like a Leitweg-ID, but its check digits are wrong. It is not treated as a Leitweg-ID, so the invoice is not issued as XRechnung automatically.',
         'hint' => 'If it is the Leitweg-ID of a public buyer, correct it (XRechnung is then chosen automatically) or set the format explicitly. An order number can be ignored.',

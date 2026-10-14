@@ -230,7 +230,7 @@ it('accepts small business invoices without service date (section 34a UStDV)', f
 });
 
 it('requires the VAT identifiers of both parties for reverse charge services in another member state', function () {
-    $taxNumberOnly = (new PartyBuilder)->name('Muster GmbH')->taxNumber('201/123/45678')->address('Hauptstraße 1', '12345', 'Musterstadt', 'DE')->contact('Max', '+49 30 123456', 'a@b.de')->buildSeller();
+    $taxNumberOnly = (new PartyBuilder)->name('Muster GmbH')->taxNumber('248/815/08156')->address('Hauptstraße 1', '12345', 'Musterstadt', 'DE')->contact('Max', '+49 30 123456', 'a@b.de')->buildSeller();
     $line = fn ($l) => $l->name('Beratung')->quantity(1, UnitCode::Hour)->netPrice('100.00')->vat(VatPreset::ReverseChargeEu);
     $withoutBuyerVatId = Scenarios::base()->line($line)
         ->buyer(fn ($b) => $b->name('Client SARL')->vatId(null)->legalRegistration('12345678900012')->address('1 Rue', '75002', 'Paris', 'FR'));
@@ -414,4 +414,20 @@ it('compares small amount invoices in a foreign currency by their EUR equivalent
 
     expect(ustgCodes(ustg($small('0.9'))))->not->toContain('DE-USTG-08')
         ->and(ustgCodes(ustg($small('1.2'))))->toContain('DE-USTG-08');
+});
+
+it('checks the tax number of a German seller', function () {
+    $seller = fn (string $number, string $country = 'DE') => Scenarios::make('simple')->seller(fn ($s) => $s->vatId(null)->taxNumber($number)->address('Hauptstraße 1', '12345', 'Musterstadt', $country));
+    $invalid = ustg($seller('11/111/11111'), 'de');
+    $warning = array_values(array_filter($invalid->messages, static fn ($m): bool => $m->code === 'DE-TAX-NUMBER'))[0];
+
+    expect($warning->severity->value)->toBe('warning')
+        ->and($warning->path)->toBe('seller.taxNumber')
+        ->and($warning->message)->toContain('„11/111/11111“')
+        ->and(ustgCodes(ustg($seller('198/815/08152'))))->not->toContain('DE-TAX-NUMBER')
+        ->and(ustgCodes(ustg($seller('9198081508152'))))->not->toContain('DE-TAX-NUMBER')
+        ->and(ustgCodes(ustg($seller('DE123456789'))))->toContain('DE-TAX-NUMBER')
+        // Not checkable (Bavarian notation without tax office number) or not a German seller.
+        ->and(ustgCodes(ustg($seller('815/08152'))))->not->toContain('DE-TAX-NUMBER')
+        ->and(ustgCodes(ustg($seller('11/111/11111', 'AT'))))->not->toContain('DE-TAX-NUMBER');
 });

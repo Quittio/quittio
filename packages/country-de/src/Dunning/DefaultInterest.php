@@ -15,16 +15,20 @@ use Quittio\Country\DE\CountryDE;
  * Default interest according to section 288 BGB: base rate plus 9 points (business)
  * or 5 points (consumer), split at every change of the base rate (specification 18.4).
  * Points, flat rate and day count basis come from the dunning law, by default
- * CountryDE::dunningLaw().
+ * CountryDE::dunningLaw(). The base rates are those shipped with Quittio plus the rates
+ * registered with BaseRates (configured or fetched from the Bundesbank), unless a table is given.
  */
 final readonly class DefaultInterest
 {
     private DunningLaw $law;
 
+    private BaseRateTable $rates;
+
     public function __construct(
-        private BaseRateTable $rates = new BaseRateTable,
+        ?BaseRateTable $rates = null,
         ?DunningLaw $law = null,
     ) {
+        $this->rates = $rates ?? BaseRates::table();
         $this->law = $law ?? (new CountryDE)->dunningLaw();
     }
 

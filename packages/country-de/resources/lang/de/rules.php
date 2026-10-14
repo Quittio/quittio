@@ -160,6 +160,10 @@ return [
         'message' => 'Die Prüfziffer der Leitweg-ID „:value“ (BT-10) ist falsch.',
         'hint' => 'Prüfen Sie die Leitweg-ID beim öffentlichen Auftraggeber.',
     ],
+    'DE-TAX-NUMBER' => [
+        'message' => 'Die Steuernummer „:value“ (BT-32) des Verkäufers ist keine gültige deutsche Steuernummer: Sie entspricht weder dem 13-stelligen ELSTER-Format noch der Schreibweise eines Bundeslandes, oder ihre Prüfziffer ist falsch.',
+        'hint' => 'Übernehmen Sie die Steuernummer aus einem Bescheid des Finanzamts (z. B. 181/815/08155) oder im 13-stelligen ELSTER-Format. Eine USt-IdNr. (DE…) gehört in ->vatId().',
+    ],
     'DE-LEITWEG-ID-SUSPECT' => [
         'message' => 'Die Käuferreferenz „:value“ (BT-10) hat die Form einer Leitweg-ID, aber ihre Prüfziffer ist falsch. Sie wird nicht als Leitweg-ID behandelt, die Rechnung wird daher nicht automatisch als XRechnung ausgegeben.',
         'hint' => 'Ist es die Leitweg-ID eines öffentlichen Auftraggebers, korrigieren Sie sie (dann wird automatisch XRechnung gewählt) oder geben Sie das Format ausdrücklich an. Eine Bestellnummer können Sie ignorieren.',

@@ -8,6 +8,8 @@ use Orchestra\Testbench\TestCase as Orchestra;
 use Quittio\Core\I18n\Translations;
 use Quittio\Core\Serialization\Snapshots\SnapshotUpcasterChain;
 use Quittio\Country\DE\CountryDE;
+use Quittio\Country\DE\Dunning\BaseRates;
+use Quittio\Country\DE\Laravel\GermanyServiceProvider;
 use Quittio\Laravel\Facades\Quittio;
 use Quittio\Laravel\QuittioServiceProvider;
 
@@ -19,11 +21,12 @@ abstract class TestCase extends Orchestra
         // The bridge points to the translator of the destroyed application.
         Translations::reset();
         SnapshotUpcasterChain::useDefault(null);
+        BaseRates::reset();
     }
 
     protected function getPackageProviders($app): array
     {
-        return [QuittioServiceProvider::class];
+        return [QuittioServiceProvider::class, GermanyServiceProvider::class];
     }
 
     protected function getPackageAliases($app): array
@@ -35,6 +38,8 @@ abstract class TestCase extends Orchestra
     {
         $app['config']->set('app.key', 'base64:'.base64_encode(str_repeat('q', 32)));
         $app['config']->set('quittio.countries', ['DE' => CountryDE::class]);
+        // A file of this process: parallel test processes must not share it.
+        $app['config']->set('quittio-de.base_rate_file', sys_get_temp_dir().'/quittio-base-rates-'.getmypid().'.json');
         $app['config']->set('quittio.pdf.cache_path', sys_get_temp_dir().'/quittio-mpdf');
         $app['config']->set('quittio.validation.mandatory_field_guard', 'exception');
         $app['config']->set('quittio.seller', [

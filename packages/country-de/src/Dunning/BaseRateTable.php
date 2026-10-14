@@ -10,8 +10,9 @@ use Quittio\Core\Support\Date;
 
 /**
  * Basiszinssatz according to section 247 BGB, published by the Deutsche Bundesbank and
- * changed on 1 January and 1 July. Rates after the last entry must be added with
- * withRate() (or the configuration of the application) when they are published.
+ * changed on 1 January and 1 July. Rates after the last entry are added with withRate(),
+ * BaseRates::register() or, in Laravel, the configuration quittio-de.base_rates and the
+ * command quittio:base-rate:update (BundesbankBaseRates).
  */
 final readonly class BaseRateTable
 {
@@ -53,7 +54,7 @@ final readonly class BaseRateTable
     public function rateOn(Date $date): BigDecimal
     {
         if (! $date->isBefore($this->validUntil())) {
-            throw new InvalidArgumentException(sprintf('No base rate is known for %s: the table ends before %s. Add the published rate with withRate().', $date->toIsoString(), $this->validUntil()->toIsoString()));
+            throw new InvalidArgumentException(sprintf('No base rate is known for %s: the table ends before %s. Add the published rate with withRate() or BaseRates::register() (Laravel: quittio-de.base_rates or php artisan quittio:base-rate:update).', $date->toIsoString(), $this->validUntil()->toIsoString()));
         }
 
         $rate = null;
@@ -75,7 +76,7 @@ final readonly class BaseRateTable
     public function periods(Date $from, Date $until): array
     {
         if ($until->isAfter($this->validUntil())) {
-            throw new InvalidArgumentException(sprintf('No base rate is known after %s. Add the published rate with withRate().', $this->validUntil()->addDays(-1)->toIsoString()));
+            throw new InvalidArgumentException(sprintf('No base rate is known after %s. Add the published rate with withRate() or BaseRates::register() (Laravel: quittio-de.base_rates or php artisan quittio:base-rate:update).', $this->validUntil()->addDays(-1)->toIsoString()));
         }
 
         $boundaries = [$from->toIsoString()];

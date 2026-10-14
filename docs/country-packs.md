@@ -476,6 +476,25 @@ A mistyped Leitweg-ID thus does not lead to ZUGFeRD unnoticed; an order number o
 | `isValid(?string $value): bool` | shape and check digits (ISO 7064 Mod 97-10) are correct |
 | `checkDigits(string $address): string` | the two check digits for coarse and fine address without hyphens, e.g. `checkDigits('0401100012345')` → `03` |
 
+#### Tax number
+
+`UstgRules::plausibility()` also checks the tax number (Steuernummer, BT-32) of a seller in Germany:
+
+| Rule | Severity | Reported when |
+|---|---|---|
+| `DE-TAX-NUMBER` | warning (BT-32 `seller.taxNumber`) | the seller's country is `DE` and the tax number is neither a valid 13-digit ELSTER number, a 12-digit federal number nor the notation of a federal state, or its check digit is wrong; also when a VAT identifier (`DE…`) was given as tax number. A Bavarian notation without the tax office number (`815/08152`) cannot be checked and is accepted. |
+
+The checks follow "Prüfung der Steuer- und Steueridentifikationsnummer" of ELSTER (Bayerisches Landesamt für Steuern): the ELSTER format `FFFF0BBBUUUUP` (NRW `FFFF0BBBBUUUP`) with the 0 at the 5th position, the excluded districts (000, 998, 999; at least 100 in the Bavarian group; NRW 0000, 0998, 0999 and `UUUP` above 0009) and the check digit procedure of the state: modified 11 procedure (Rhineland-Palatinate), 2 procedure (Baden-Württemberg, Hesse, Schleswig-Holstein), 11 procedure with the factors of the state (all others; Berlin with the variants A and B by tax office and district). Whether the tax office exists is not checked. A notation without the state (e.g. `93/815/08150`) is valid when it is valid for any state that uses this notation.
+
+`Quittio\Country\DE\Support\TaxNumber`:
+
+| Method | Result |
+|---|---|
+| `TaxNumber::parse(string $value, ?string $state = null): ?TaxNumber` | the valid number in any notation (`198/815/08152`, `9198081508152`, `919881508152`, `053 815 08158` …), or null; `$state` (ISO 3166-2:DE, e.g. `BY`) restricts a state notation to that state |
+| `TaxNumber::validate(string $value, ?string $state = null): ?bool` | `true` valid, `false` invalid, `null` plausible but not checkable |
+| `TaxNumber::looksLikeVatId(string $value): bool` | a VAT identifier (`DE` + 9 digits) |
+| `->elster`, `->state`, `->formatted()` | 13-digit ELSTER format, state, notation on tax notices (e.g. `198/815/08152`, `400/8150/8159`) |
+
 ### XRechnung rules
 
 `Quittio\Country\DE\Rules\XRechnungRules` (level L3) are the rules of the XRechnung profiles: they apply whenever the profile is `xrechnung` or `xrechnung-extension`, whatever the seller's country. Severity follows the flags of the official Schematron: "muss" rules (`fatal`) are errors, "soll" rules (`warning`) warnings and `BR-DE-TMP-32` (`information`) an info; the KoSIT validator remains authoritative (see [validation](validation.md)).
@@ -742,12 +761,45 @@ Prepayment invoices (386) without a service date get a `DE-USTG-03` warning inst
 | `lastChange(): Date` | date of the last entry, e.g. to warn when the table is outdated |
 | `validUntil(): Date` | first day without a known rate: the next 1 January or 1 July after the last entry (with the published table: 2027-01-01) |
 
-Rates after the last entry are unknown until they are published: interest for days from 1 January 2027 is rejected instead of silently using the old rate. Add new rates when the Deutsche Bundesbank publishes them:
+Rates after the last entry are unknown until they are published: interest for days from 1 January 2027 is rejected instead of silently using the old rate. There are three ways to add new rates, so that no new Quittio release is needed:
 
-```php
-$rates = (new BaseRateTable)->withRate('2027-01-01', '…');
-$interest = new DefaultInterest($rates);
-```
+1. **Laravel configuration** (`config/quittio-de.php`, publish it with `php artisan vendor:publish --tag=quittio-de-config`):
+
+   ```php
+   'base_rates' => ['2027-01-01' => '1.77'],
+   ```
+
+2. **Automatic update from the Deutsche Bundesbank** (Laravel): `php artisan quittio:base-rate:update` fetches the series `BBIN1.M.DE.BBK.BBKBAS2.EUR.ME` (Basiszinssatz gemäß BGB) from the statistics API and stores the rates the shipped table does not contain in `quittio-de.base_rate_file` (default `storage/app/quittio/base-rates.json`), also those before 2023 for older claims. It writes the file only when something changed; `--dry-run` shows the rates without writing. A value that differs from the shipped table is reported, and the Bundesbank value is used. Schedule it, e.g. weekly, so that the rate of 1 January and 1 July is there as soon as the Bundesbank has published it:
+
+   ```php
+   // routes/console.php
+   Schedule::command('quittio:base-rate:update')->weekly();
+   ```
+
+3. **Without Laravel:** `BaseRates::register(['2027-01-01' => '1.77'])` once at start-up, `BundesbankBaseRates::fetch()` to fetch the rates yourself, or a table for one calculation:
+
+   ```php
+   $rates = (new BaseRateTable)->withRate('2027-01-01', '1.77');
+   $interest = new DefaultInterest($rates);
+   ```
+
+`DefaultInterest` without a table uses `BaseRates::table()`: the shipped table, then the rates of the file, then those of `quittio-de.base_rates` (the configuration wins for the same date). The service provider `Quittio\Country\DE\Laravel\GermanyServiceProvider` registers file and configuration at boot; Laravel discovers it automatically.
+
+`Quittio\Country\DE\Dunning\BaseRates`:
+
+| Method | Result |
+|---|---|
+| `register(array $rates): void` | adds or replaces rates (ISO date => percent); only 1 January and 1 July, values such as `'1.77'` or `'-0.88'`, otherwise `InvalidArgumentException` |
+| `table(): BaseRateTable` | the shipped table with the registered rates |
+| `registered(): array` / `reset(): void` | the registered rates; removes them (tests) |
+
+`Quittio\Country\DE\Dunning\BundesbankBaseRates`:
+
+| Method | Result |
+|---|---|
+| `__construct(?Closure $http = null, int $timeout = 15)` | `$http` receives URL and timeout and returns the response body (for tests or an own HTTP client); default `file_get_contents()` |
+| `fetch(string $since = '2002-01'): array` | the January and July values from the given month on, ISO date => percent; `RuntimeException` when the API cannot be reached or returns no rates |
+| `parse(string $csv): array` | reads the CSV download (`2026-07;1,52;…`) |
 
 #### Default interest
 
@@ -755,7 +807,7 @@ $interest = new DefaultInterest($rates);
 
 | Method | Result |
 |---|---|
-| `__construct(BaseRateTable $rates = new BaseRateTable, ?DunningLaw $law = null)` | without a law, `CountryDE::dunningLaw()` is used (points, flat rate and day count) |
+| `__construct(?BaseRateTable $rates = null, ?DunningLaw $law = null)` | without a table, `BaseRates::table()` is used (shipped and registered rates); without a law, `CountryDE::dunningLaw()` (points, flat rate and day count) |
 | `calculate(Money $amount, Date $from, Date $until, bool $consumer = false, string $locale = 'de'): list<InterestCharge>` | one charge per base rate period from `$from` (first day with interest) to `$until` (exclusive); rate = base rate + 9 points, or + 5 points with `$consumer`; empty for a non-positive amount or `$until` not after `$from`; `InvalidArgumentException` for days the table does not cover |
 | `flatRate(string $currency = 'EUR'): ?Money` | 40.00 flat rate for business debtors (§ 288 (5) BGB), once per claim |
 
@@ -830,8 +882,8 @@ They are registered as the namespace `quittio-de` (e.g. `quittio-de::rules.DE-US
 
 - The legal wording and references of presets, rules and texts are proposals that must be confirmed by a tax adviser (see the open decisions in the README); the default correction strategy and the cancellation of self-billed invoices are open decisions as well.
 - Final invoices: only the EN 16931 variant (`deductAdvance()`) exists; the EXTENDED variant and the handling of unpaid advance invoices are open.
-- The base rate table ends with 1 July 2026; interest from 1 January 2027 needs the next published rate.
+- The shipped base rate table ends with 1 July 2026; later rates come from `quittio-de.base_rates` or `php artisan quittio:base-rate:update` (see [Base rate table](#base-rate-table)).
 - Default dunning fees and flat rates are an open decision; the documents layer does not track the § 288 (5) BGB flat rate per claim.
 - Distance sales (section 3c UStG) cannot be told from the data; `DE-USTG-12` only warns about possible ones.
-- German tax numbers are not checked for their format; territories without a distinct postcode cannot be detected.
+- Tax numbers are checked for format and check digit, not against the list of tax offices; territories without a distinct postcode cannot be detected.
 - The pack defines no buyer country rules, exporters (e.g. DATEV) or readers yet.

@@ -3,6 +3,7 @@
 providers:
   - Quittio\Laravel\QuittioServiceProvider
   - Quittio\Managed\ManagedServiceProvider
+  - Quittio\Country\DE\Laravel\GermanyServiceProvider
 
 env:
   - APP_KEY="base64:cXVpdHRpby1kZXZlbG9wbWVudC1rZXktMDAwMDAwMDA="

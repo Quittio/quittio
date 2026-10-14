@@ -75,7 +75,8 @@
         "laravel": {
             "providers": [
                 "Quittio\\Laravel\\QuittioServiceProvider",
-                "Quittio\\Managed\\ManagedServiceProvider"
+                "Quittio\\Managed\\ManagedServiceProvider",
+                "Quittio\\Country\\DE\\Laravel\\GermanyServiceProvider"
             ]
         },
         "quittio": {

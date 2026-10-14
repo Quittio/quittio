@@ -1,7 +1,8 @@
 # Artisan commands
 
 `quittio/laravel` registers its commands in the console; `quittio/managed` adds the commands
-for stored invoices and extends `quittio:install` and `quittio:render`. The commands return
+for stored invoices and extends `quittio:install` and `quittio:render`; `quittio/country-de`
+adds `quittio:base-rate:update`. The commands return
 exit code `0` on success and `1` on failure (the cases are listed per command), so CI jobs
 and the scheduler can react to them.
 
@@ -22,6 +23,7 @@ and the scheduler can react to them.
 | [`quittio:verify`](#quittioverify) | managed | Check the hashes of the archived documents |
 | [`quittio:retention:check`](#quittioretentioncheck) | managed | List (and delete) invoices past their retention period |
 | [`quittio:drafts:prune`](#quittiodraftsprune) | managed | Delete left-behind cancellation and correction drafts |
+| [`quittio:base-rate:update`](#quittiobase-rateupdate) | country-de | Fetch the Basiszinssatz (§ 247 BGB) from the Deutsche Bundesbank |
 
 `php artisan about` shows a section "Quittio" with the active country packs and profiles.
 
@@ -365,6 +367,28 @@ It lists them (draft, kind, original, created), asks, and deletes each through t
 `--older-than` or a declined confirmation exits with `1`. See
 [Cancellations and corrections](managed.md#cancellations-and-corrections).
 
+## quittio:base-rate:update
+
+```bash
+php artisan quittio:base-rate:update [--dry-run]
+```
+
+Fetches the base rate according to § 247 BGB from the statistics API of the Deutsche
+Bundesbank (series `BBIN1.M.DE.BBK.BBKBAS2.EUR.ME`) and stores the rates that the table
+shipped with Quittio does not contain in `quittio-de.base_rate_file` (default
+`storage/app/quittio/base-rates.json`). Default interest (`DefaultInterest`) then covers
+periods after the shipped table without a new release. Registered by the German country
+pack (`GermanyServiceProvider`).
+
+| Option | Effect |
+|---|---|
+| `--dry-run` | Show the rates, write nothing |
+
+It prints the latest rate and the new ones, warns when a value differs from the shipped table
+(the Bundesbank value is used) and writes the file only when something changed. Exit code `1`
+when the API cannot be reached or returns no rates, or when `quittio-de.base_rate_file` is
+empty. See [Country packs: base rate table](country-packs.md#base-rate-table).
+
 ## Scheduling
 
 ```php
@@ -374,6 +398,7 @@ use Illuminate\Support\Facades\Schedule;
 Schedule::command('quittio:verify')->weekly()->onOneServer();                  // exit code 1 on problems
 Schedule::command('quittio:drafts:prune --force')->daily()->onOneServer();
 Schedule::command('quittio:retention:check')->monthly()->onOneServer();        // report and RetentionExpired events
+Schedule::command('quittio:base-rate:update')->weekly()->onOneServer();        // new Basiszinssatz on 1 January and 1 July
 ```
 
 | Command | Recommendation |
@@ -382,6 +407,7 @@ Schedule::command('quittio:retention:check')->monthly()->onOneServer();        /
 | `quittio:drafts:prune` | Daily with `--force` |
 | `quittio:retention:check` | Monthly without `--delete` for a report; add `--delete --force` only when expired invoices should be deleted without review |
 | `quittio:schemas:download` | Not scheduled: in deployment or CI, when you use the KoSIT validator |
+| `quittio:base-rate:update` | Weekly (or daily in January and July): the new rate is stored as soon as the Bundesbank has published it |
 
 ## Publish tags
 
@@ -400,5 +426,6 @@ php artisan vendor:publish --tag=quittio-config
 | `quittio-managed-triggers` | managed | `database/migrations` (immutability triggers, recommended for production) |
 | `quittio-managed-views` | managed | `resources/views/vendor/quittio-managed` (mail view) |
 | `quittio-managed-lang` | managed | `lang/vendor/quittio-managed` (mail and invoice texts) |
+| `quittio-de-config` | country-de | `config/quittio-de.php` (base rates) |
 
 Publishing is only registered in the console.

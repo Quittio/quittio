@@ -23,6 +23,8 @@ All notable changes to this project are documented in this file. The format foll
 - Core: `LineBuilder::showGrossPrice()`; `InvoiceBuilder::payee()` accepts a `PayeeParty`, identifier schemes or a `PartyBuilder` callable; `Quittio::cancellation()` takes an optional `$title`; country pack readers (`CountryPack::readers()`) are used by `read()` and `validateFile()`.
 - Country pack Germany: info `DE-LEITWEG-ID-SUSPECT` for buyer references shaped like a Leitweg-ID with wrong check digits; warning `DE-USTG-13` when `newVehicle()` is used without a line of category K.
 - Managed: drafts record the authenticated user in `created_by_*`, with the relations `Invoice::createdBy()` and `Invoice::issuedBy()`; `ImmutabilityTriggers::refresh()` recreates the invoice update trigger after columns were added (MySQL/MariaDB/SQLite, and upgrades PostgreSQL triggers installed with 0.1.0).
+- Country pack Germany: the base rate (§ 247 BGB) can be updated without a release: `quittio-de.base_rates` in the new configuration `config/quittio-de.php`, `php artisan quittio:base-rate:update` fetching it from the statistics API of the Deutsche Bundesbank (`BundesbankBaseRates`), or `BaseRates::register()`; `DefaultInterest` uses these rates by default. The pack has a Laravel service provider of its own (`GermanyServiceProvider`, discovered automatically).
+- Country pack Germany: tax numbers (BT-32) of German sellers are checked for format and check digit according to the ELSTER procedures of every federal state (warning `DE-TAX-NUMBER`); `TaxNumber` parses the ELSTER, federal and state notations.
 
 ### Changed
 

@@ -36,7 +36,15 @@
             "country-packs": [
                 "Quittio\\Country\\DE\\CountryDE"
             ]
+        },
+        "laravel": {
+            "providers": [
+                "Quittio\\Country\\DE\\Laravel\\GermanyServiceProvider"
+            ]
         }
     },
-    "minimum-stability": "stable"
+    "minimum-stability": "stable",
+    "suggest": {
+        "laravel/framework": "Base rate configuration and php artisan quittio:base-rate:update"
+    }
 }

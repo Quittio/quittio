@@ -1,0 +1,22 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+
+    /*
+    |--------------------------------------------------------------------------
+    | Basiszinssatz (§ 247 BGB)
+    |--------------------------------------------------------------------------
+    | Quittio ships the published rates up to its release. Default interest for
+    | later periods needs the rates published since then:
+    |
+    | base_rates:     rates of your own, ISO date (1 January or 1 July) => percent,
+    |                 e.g. ['2027-01-01' => '1.27']. They win over the file below.
+    | base_rate_file: JSON file written by php artisan quittio:base-rate:update
+    |                 (fetched from the Deutsche Bundesbank); null = not used.
+    */
+    'base_rates' => [],
+    'base_rate_file' => storage_path('app/quittio/base-rates.json'),
+
+];
