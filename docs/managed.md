@@ -349,7 +349,7 @@ columns accept arrays only.
 | `defaults.due_days` | Integer: payment terms in days; the due date is the issue date plus these days |
 | `defaults.format` | Format of new drafts (`zugferd`, `xrechnung-cii`, `xrechnung-ubl`, `cii`, `ubl`, `peppol`, `pdf`, see [Formats](formats.md)); `null` or `auto` = automatic choice when the invoice is issued |
 | `defaults.profile` | Profile of new drafts (e.g. `xrechnung`) |
-| `tax_settings.small_business` | Small business (DE: section 19 UStG): new drafts get the flag `Meta::FLAG_SMALL_BUSINESS`, the German pack then rejects charged VAT (DE-USTG-09) |
+| `tax_settings.small_business` | Small business (DE: section 19 UStG): new drafts get the flag `Meta::FLAG_SMALL_BUSINESS`, the German pack then rejects charged VAT (DE-USTG-09) and the intra-community supply exemption except for new vehicles (DE-USTG-14) |
 | `texts.{locale}.intro`, `closing` | Intro and closing text of the PDF |
 | `texts.{locale}.payment_terms` | Text of the payment terms |
 | `texts.{locale}.footer_columns` | Footer columns, a list of lists of strings |
@@ -397,9 +397,10 @@ issued. Further methods of `Issuer`:
 
 With `tax_settings.small_business`, `builder()` sets the flag `Meta::FLAG_SMALL_BUSINESS`,
 and `Invoice::draft()` sets it also on data that was not built with `builder()`. The country
-pack decides what follows: the German pack rejects invoices that charge VAT (DE-USTG-09), so
-such a draft cannot be issued. Give the lines the preset `VatPreset::SmallBusiness` of the
-German pack (see [Country packs](country-packs.md)).
+pack decides what follows: the German pack rejects invoices that charge VAT (DE-USTG-09) or
+use the intra-community supply exemption except for new vehicles (DE-USTG-14), so such a draft
+cannot be issued. Give the lines the preset `VatPreset::SmallBusiness` of the German pack (see
+[Country packs](country-packs.md)).
 
 ### Branding check
 

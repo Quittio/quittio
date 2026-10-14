@@ -128,7 +128,7 @@ issuer profiles replace it.
 | `seller.electronic_address.value` | string\|null | `null` | Electronic address (BT-34); added only when set |
 | `seller.electronic_address.scheme` | string | `'EM'` | Scheme of the electronic address (EAS code, `EM` = e-mail) |
 | `seller.bank_accounts` | list | `[['iban' => null, 'bic' => null, 'name' => null]]` | `Seller::apply()` adds a credit transfer with the first entry whose `iban` is not empty (`bic` and `name` optional); the other entries are ignored. |
-| `seller.small_business` | bool | `false` | `Seller::apply()` marks the invoice as an invoice of a small business (Germany: § 19 UStG, `Meta::FLAG_SMALL_BUSINESS`); country packs then reject VAT on it. Use `VatPreset::SmallBusiness` for the lines. |
+| `seller.small_business` | bool | `false` | `Seller::apply()` marks the invoice as an invoice of a small business (Germany: § 19 UStG, `Meta::FLAG_SMALL_BUSINESS`); country packs then reject VAT on it (Germany also the intra-community supply exemption, except for new vehicles). Use `VatPreset::SmallBusiness` for the lines. |
 
 ## PDF and design
 

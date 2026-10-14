@@ -396,8 +396,8 @@ use Quittio\Country\DE\Tax\VatPreset;
 | `ZeroRatedPv` | `de.zero_rated_pv` | `Z` | 0 | – | 0 % rate for photovoltaic systems (section 12 (3) UStG); the rate itself is the statement, no exemption reason (BR-Z-10) |
 | `SmallBusiness` | `de.small_business` | `E` | 0 | – | small business exemption (section 19 (1) UStG), see [small businesses](#small-businesses) |
 | `ReverseChargeDomestic` | `de.reverse_charge_domestic` | `AE` | 0 | `VATEX-EU-AE` | domestic reverse charge (section 13b UStG) |
-| `ReverseChargeEu` | `de.reverse_charge_eu` | `AE` | 0 | `VATEX-EU-AE` | service whose recipient in another member state owes the VAT; both VAT identifiers required (`DE-USTG-11`) |
-| `IntraCommunitySupply` | `de.intra_community_supply` | `K` | 0 | `VATEX-EU-IC` | VAT-exempt intra-Community supply (section 4 no. 1b with section 6a UStG), also of new vehicles (`newVehicle()`) |
+| `ReverseChargeEu` | `de.reverse_charge_eu` | `AE` | 0 | `VATEX-EU-AE` | service whose recipient in another member state owes the VAT; both VAT identifiers required (`DE-USTG-11`); issue by the 15th of the following month (`DE-USTG-15`) |
+| `IntraCommunitySupply` | `de.intra_community_supply` | `K` | 0 | `VATEX-EU-IC` | VAT-exempt intra-Community supply (section 4 no. 1b with section 6a UStG), also of new vehicles (`newVehicle()`); not for small businesses except new vehicles (`DE-USTG-14`); issue by the 15th of the following month (`DE-USTG-15`) |
 | `TriangularTransaction` | `de.triangular_transaction` | `AE` | 0 | `VATEX-EU-AE` | intra-community triangular transaction (section 25b UStG), wording of section 14a (7) UStG; both VAT identifiers required |
 | `Export` | `de.export` | `G` | 0 | `VATEX-EU-G` | VAT-exempt export supply (section 4 no. 1a with section 6 UStG) |
 | `NotTaxableInGermany` | `de.not_taxable` | `O` | none | `VATEX-EU-O` | supply not taxable in Germany |
@@ -584,7 +584,7 @@ The automatic choice always uses `xrechnung`, also when the invoice carries exte
 |---|---|
 | `smallAmount()` | flag `de.small_amount` |
 | `propertyRelatedService(string $locale = 'de')` | flag `de.property_related_service` and the note `LegalTexts::PROPERTY_RETENTION` (subject `REG`) |
-| `newVehicle(string $locale = 'de')` | flag `de.new_vehicle` and the note `LegalTexts::NEW_VEHICLE` (subject `REG`); the vehicle details are your line attributes (`DE-USTG-07`), the vehicle lines use `VatPreset::IntraCommunitySupply` (`DE-USTG-13`) |
+| `newVehicle(string $locale = 'de')` | flag `de.new_vehicle` and the note `LegalTexts::NEW_VEHICLE` (subject `REG`); the vehicle details are your line attributes (`DE-USTG-07`), the vehicle lines use `VatPreset::IntraCommunitySupply` (`DE-USTG-13`), also for small businesses (`DE-USTG-14`) |
 | `selfBilled(string $locale = 'de')` | type code 389 and the note `LegalTexts::SELF_BILLING` (subject `REG`) |
 | `deductAdvance(InvoiceData $advance, string $locale = 'de')` | preceding invoice (BG-3), prepaid amount (BT-113) and the note `LegalTexts::ADVANCE_DEDUCTION` (subject `REG`) |
 | `consumerDefaultNotice(string $locale = 'de')` | the note `LegalTexts::CONSUMER_DEFAULT` (subject `PMT`) |
@@ -729,8 +729,8 @@ Prepayment invoices (386) without a service date get a `DE-USTG-03` warning inst
 |---|---|---|---|
 | `SMALL_AMOUNT` | `de.small_amount` | `smallAmount()` | small amount invoice: relaxed rules, PDF format, `DE-USTG-08`, `DE-USTG-12` |
 | `PROPERTY_RELATED_SERVICE` | `de.property_related_service` | `propertyRelatedService()` | `DE-USTG-05`, mandatory output |
-| `NEW_VEHICLE` | `de.new_vehicle` | `newVehicle()` | `DE-USTG-07`, `DE-USTG-13` |
-| `SMALL_BUSINESS` | `small_business` (`Meta::FLAG_SMALL_BUSINESS`) | seller configuration, Managed issuer, `->flag()` | `DE-USTG-09` |
+| `NEW_VEHICLE` | `de.new_vehicle` | `newVehicle()` | `DE-USTG-07`, `DE-USTG-13`, `DE-USTG-14` (exception) |
+| `SMALL_BUSINESS` | `small_business` (`Meta::FLAG_SMALL_BUSINESS`) | seller configuration, Managed issuer, `->flag()` | `DE-USTG-09`, `DE-USTG-14` |
 | `SMALL_AMOUNT_LIMIT` | `250.00` | – | limit of `DE-USTG-08` in EUR |
 
 ### Retention
