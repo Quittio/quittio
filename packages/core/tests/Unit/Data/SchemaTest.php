@@ -42,6 +42,10 @@ it('documents business terms in the field reference', function () {
     $markdown = (new FieldReference)->markdown();
 
     expect($markdown)->toContain('| `number` | BT-1 | 1 | MINIMUM |')
+        ->and($markdown)->toContain('| `seller.address.countryCode` | BT-40 | 1 | MINIMUM |')
+        ->and($markdown)->toContain('| `seller.address.city` | BT-37 | 0..1 | BASIC WL |')
+        ->and($markdown)->toContain('| `buyer.address.countryCode` | BT-55 | 1 | BASIC WL |')
+        ->and($markdown)->toContain('| `delivery.address.line1` | BT-75 | 0..1 | BASIC WL |')
         ->and($markdown)->toContain('`lines[].item.name`')
         ->and($markdown)->toContain('PDF only');
 });

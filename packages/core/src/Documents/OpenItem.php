@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Quittio\Core\Documents;
 
 use Brick\Money\Money;
+use Quittio\Core\Support\Amount;
 use Quittio\Core\Support\Date;
 
 /**
@@ -21,9 +22,15 @@ final readonly class OpenItem
         public ?string $description = null,
     ) {}
 
+    /**
+     * Amount still open (amount minus paid); negative for overpaid items and credits.
+     */
     public function open(): Money
     {
-        return $this->paid === null ? $this->amount : $this->amount->minus($this->paid);
+        $currency = $this->amount->getCurrency()->getCurrencyCode();
+        $amount = Amount::of($this->amount, $currency);
+
+        return $this->paid === null ? $amount : $amount->minus(Amount::of($this->paid, $currency));
     }
 
     public function isSettled(): bool

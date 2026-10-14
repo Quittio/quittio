@@ -4,11 +4,7 @@ declare(strict_types=1);
 
 namespace Quittio\Laravel\Commands;
 
-use Quittio\Core\Validation\Drivers\KositValidator;
-use Quittio\Core\Validation\Drivers\VeraPdfValidator;
-use Quittio\Core\Validation\ValidationDriver;
 use Quittio\Laravel\QuittioManager;
-use Quittio\Laravel\Support\ConfigMapper;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Throwable;
 
@@ -31,30 +27,12 @@ final class ValidateCommand extends QuittioCommand
             return self::FAILURE;
         }
 
-        $core = $quittio->core();
-        $settings = $quittio->settings();
-        $extra = [];
-        if ($this->flag('kosit')) {
-            $kosit = $settings->section('validation.drivers.kosit');
-            $extra[] = new KositValidator(
-                mode: $kosit->string('mode', KositValidator::MODE_DAEMON),
-                url: $kosit->string('url', 'http://127.0.0.1:8081'),
-                jar: $kosit->nullableString('jar'),
-                configurations: ConfigMapper::kositConfigurations($kosit),
-                timeout: $kosit->int('timeout', 30),
-            );
-        }
-        if ($this->flag('verapdf')) {
-            $vera = $settings->section('validation.drivers.verapdf');
-            $extra[] = new VeraPdfValidator(mode: $vera->string('mode', 'cli'), binary: $vera->string('binary', 'verapdf'), image: $vera->string('image', 'verapdf/cli'));
-        }
-        foreach ($extra as $driver) {
-            if (! $this->hasDriver($core->validators(), $driver)) {
-                $core->withValidator($driver);
-            }
-        }
+        $levels = array_values(array_filter(['kosit', 'verapdf'], $this->flag(...)));
 
         try {
+            // The drivers get all their settings of validation.drivers.*, as in a render run;
+            // the cached core of the application is not changed.
+            $core = $levels === [] ? $quittio->core() : $quittio->coreWithLevels($levels);
             $result = $core->validateFile($content);
             $read = $core->read($content);
         } catch (Throwable $e) {
@@ -81,19 +59,5 @@ final class ValidateCommand extends QuittioCommand
         }
 
         return $result->isValid() && ! $profileMismatch ? self::SUCCESS : self::FAILURE;
-    }
-
-    /**
-     * @param  list<ValidationDriver>  $drivers
-     */
-    private function hasDriver(array $drivers, ValidationDriver $driver): bool
-    {
-        foreach ($drivers as $existing) {
-            if ($existing->name() === $driver->name()) {
-                return true;
-            }
-        }
-
-        return false;
     }
 }

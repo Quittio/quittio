@@ -6,6 +6,7 @@ namespace Quittio\Core\Pdf\Renderers;
 
 use Mpdf\Config\ConfigVariables;
 use Mpdf\Config\FontVariables;
+use Mpdf\Container\SimpleContainer;
 use Mpdf\Mpdf;
 use Mpdf\MpdfException;
 use Mpdf\Output\Destination;
@@ -23,7 +24,8 @@ final class MpdfRenderer implements PdfRenderer
 {
     /**
      * @param  array<string, array<string, string>>  $fonts  additional fonts: family => [R => file, B => file, I => file, BI => file]
-     * @param  list<string>  $fontDirectories
+     * @param  list<string>  $fontDirectories  searched first, before the bundled Inter and the fonts of mPDF,
+     *         so that files with the same name (e.g. a published and edited Inter) replace them
      */
     public function __construct(
         private readonly ?string $tempDir = null,
@@ -99,7 +101,8 @@ final class MpdfRenderer implements PdfRenderer
             'mode' => 'utf-8',
             'format' => $request->paper,
             'tempDir' => $tempDir,
-            'fontDir' => [...$defaultFontDirs, dirname(__DIR__, 3).'/resources/fonts/inter', ...$this->fontDirectories],
+            // The first directory with the file wins: configured directories before the bundled ones.
+            'fontDir' => [...$this->fontDirectories, dirname(__DIR__, 3).'/resources/fonts/inter', ...$defaultFontDirs],
             'fontdata' => [...$defaultFontData, ...$fontData],
             'default_font' => $request->font ?? $this->defaultFont,
             'margin_left' => 20,
@@ -109,9 +112,23 @@ final class MpdfRenderer implements PdfRenderer
             'margin_header' => 8,
             'margin_footer' => 8,
             'simpleTables' => $this->simpleTables,
-            'packTableData' => true,
+            // packTableData raises "Trying to access array offset on int" warnings for a row
+            // above a cell with colspan (line group titles, subtotals), which fail the render
+            // where warnings are exceptions (Laravel). Unpacked tables need slightly more memory.
+            'packTableData' => false,
             'useSubstitutions' => false,
-        ]);
+            // Logos are prepared as local files (LogoCache); remote assets of templates are not redirected.
+            'curlFollowLocation' => false,
+            // <watermarktext> only sets the text; without this flag mPDF never prints it.
+            // PDF/A does not allow the transparency of watermarks.
+            'showWatermarkText' => ! $request->pdfa,
+            // Defence in depth: mPDF cannot fetch anything over HTTP (see DenyingHttpClient),
+            // so no bypass of LogoCache can turn a reference into a server-side request.
+        ], new SimpleContainer(['httpClient' => new DenyingHttpClient]));
+
+        // No remote base path: a relative reference must not become a URL from $_SERVER['HTTP_HOST'].
+        $mpdf->basepath = '';
+        $mpdf->basepathIsLocal = true;
 
         if ($request->pdfa) {
             $mpdf->PDFA = true;

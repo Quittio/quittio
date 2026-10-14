@@ -9,8 +9,9 @@ use Quittio\Core\Data\InvoiceData;
 /**
  * Projection of invoice data onto what an XML round trip can preserve.
  *
- * Package-internal inputs (presets, locale, PDF data, gross price inputs) and the
- * structured payment terms (written as text) are not part of the XML.
+ * Package-internal inputs (presets, locale, PDF data, gross price inputs, exemption
+ * reasons of lines and document allowances and charges) and the structured payment
+ * terms (written as text) are not part of the XML.
  */
 final class RoundTrip
 {
@@ -24,6 +25,13 @@ final class RoundTrip
         unset($data['buyer']['isConsumer']);
 
         $data['lines'] = array_map(self::line(...), $data['lines']);
+        foreach (['allowances', 'charges'] as $key) {
+            $data[$key] = array_map(static function (array $entry): array {
+                unset($entry['exemptionReason'], $entry['exemptionReasonCode']);
+
+                return $entry;
+            }, $data[$key] ?? []);
+        }
 
         return self::numbers($data);
     }

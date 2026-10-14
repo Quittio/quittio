@@ -29,15 +29,18 @@
 @endif
 
 @include($partials.'.marks')
+
+{{-- Address field at the position of the letter layout (a direct child of <body> for mPDF). --}}
+<div class="address">
+    <div class="notice-zone"></div>
+    <div class="sender-line">@include($partials.'.sender-line')</div>
+    <div class="address-lines">@include($partials.'.recipient')</div>
+</div>
+
 @include($partials.'.letterhead')
 
 <table><tr>
-    <td style="width: 95mm;" class="recipient">
-        <table class="address">
-            <tr><td class="sender-line">@include($partials.'.sender-line')</td></tr>
-            <tr><td class="address-lines">@include($partials.'.recipient')</td></tr>
-        </table>
-    </td>
+    <td style="width: 95mm;" class="recipient">&nbsp;</td>
     <td>
         @include($partials.'.meta')
     </td>

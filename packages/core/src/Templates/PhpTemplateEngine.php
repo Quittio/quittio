@@ -14,6 +14,10 @@ use Throwable;
  *
  * A template is a PHP file that receives $invoice (view model) and $e (escape function).
  * The name "default" refers to the template shipped with the core.
+ *
+ * Template names are never file paths: "custom" or "invoices/modern" resolve to
+ * "{path}/{name}.php" inside one of the configured directories (or the shipped templates),
+ * so a name from a request or from invoice data cannot include an arbitrary file.
  */
 final class PhpTemplateEngine implements TemplateEngine
 {
@@ -49,14 +53,15 @@ final class PhpTemplateEngine implements TemplateEngine
 
     private function resolve(string $template): string
     {
-        if (is_file($template)) {
-            return $template;
+        // Names only: no absolute paths, no stream wrappers, no parent directories.
+        if (preg_match('#^[A-Za-z0-9_-]+(?:/[A-Za-z0-9_.-]+)*$#', $template) !== 1 || str_contains($template, '..')) {
+            throw new InvalidArgumentException(sprintf('Invalid template name "%s": use a name inside a configured template directory, not a file path.', $template));
         }
 
-        $paths = [...$this->paths, dirname(__DIR__, 2).'/resources/templates'];
-        foreach ($paths as $path) {
-            $file = rtrim($path, '/').'/'.$template.'.php';
-            if (is_file($file)) {
+        foreach ([...$this->paths, dirname(__DIR__, 2).'/resources/templates'] as $path) {
+            $root = realpath($path);
+            $file = $root === false ? false : realpath($root.'/'.$template.'.php');
+            if ($root !== false && $file !== false && str_starts_with($file, $root.DIRECTORY_SEPARATOR) && is_file($file)) {
                 return $file;
             }
         }

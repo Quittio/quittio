@@ -8,9 +8,11 @@ use Brick\Math\BigDecimal;
 use Brick\Money\Money;
 use Quittio\Core\Calculation\CalculationException;
 use Quittio\Core\Codes\RawCode;
+use Quittio\Core\Data\AllowanceCharge\LineAllowanceCharge;
 use Quittio\Core\Data\Delivery\Period;
 use Quittio\Core\Data\InvoiceData;
 use Quittio\Core\Data\Lines\InvoiceLine;
+use Quittio\Core\Data\Note;
 use Quittio\Core\Data\Party\Address;
 use Quittio\Core\Data\Party\Contact;
 use Quittio\Core\Data\Presentation\Presentation;
@@ -21,11 +23,12 @@ use Quittio\Core\Documents\InterestCharge;
 use Quittio\Core\Documents\OpenItem;
 use Quittio\Core\Documents\Package;
 use Quittio\Core\Enums\InvoiceTypeCode;
-use Quittio\Core\Enums\NoteSubjectCode;
 use Quittio\Core\Enums\UnitCode;
 use Quittio\Core\Enums\VatCategory;
+use Quittio\Core\Exceptions\ConfigurationException;
 use Quittio\Core\Pdf\LogoCache;
 use Quittio\Core\Pdf\Qr\EpcGiroCodeGenerator;
+use Quittio\Core\Pdf\Qr\PaymentQrGenerator;
 use Quittio\Core\Pdf\Qr\QrImage;
 use Quittio\Core\Support\Amount;
 use Quittio\Core\Support\Date;
@@ -46,10 +49,21 @@ final class ViewModelFactory
     /** Top page margin of the default templates in millimetres. */
     public const float PAGE_MARGIN_TOP = 20.0;
 
+    public const array PAYMENT_QR_MODES = [Presentation::PAYMENT_QR_AUTO, Presentation::PAYMENT_QR_GIROCODE, Presentation::PAYMENT_QR_SWISS, Presentation::PAYMENT_QR_NONE];
+
+    /** Margin schemes and travel agents (section 25, 25a UStG): no separate VAT statement. */
+    public const array SPECIAL_SCHEME_CODES = ['VATEX-EU-D', 'VATEX-EU-F', 'VATEX-EU-I', 'VATEX-EU-J'];
+
     private ?DocumentData $document = null;
 
     /** @var array<string, string> labels of the current run including per invoice overrides */
     private array $labels = [];
+
+    /** @var array<string, string> view model nodes that stand for others (issuer, recipient) */
+    private array $aliases = [];
+
+    /** Self-billed invoice (section 14 (2) sentence 2 UStG): the buyer issues the document. */
+    private bool $selfBilled = false;
 
     public function build(InvoiceData $invoice, ViewContext $context = new ViewContext): InvoiceViewModel
     {
@@ -59,7 +73,7 @@ final class ViewModelFactory
 
         $this->document = null;
 
-        return new InvoiceViewModel($this->data($invoice, $context));
+        return new InvoiceViewModel($this->data($invoice, $context), aliases: $this->aliases);
     }
 
     /**
@@ -77,8 +91,9 @@ final class ViewModelFactory
         $labels = $this->labels;
 
         $type = $document->type;
-        $title = $labels[$type->labelKey()] ?? $type->value;
-        if ($document->dunning !== null && $document->dunning->level > 1) {
+        $typeLabel = $labels[$type->labelKey()] ?? $type->value;
+        $title = $typeLabel;
+        if ($document->dunning !== null && $document->dunning->level >= 1) {
             $title = str_replace(':level', (string) $document->dunning->level, $labels['document_payment_reminder_level'] ?? $title);
         }
 
@@ -87,6 +102,10 @@ final class ViewModelFactory
         $data['dateLabel'] = $labels['document_date'] ?? 'Date';
         $data['document'] = [
             ...(array) $data['document'],
+            // A document is no invoice: no type code (BT-3) of the internal draft, the name
+            // of the document type instead of "Commercial invoice".
+            'typeCode' => null,
+            'type' => $typeLabel,
             'kind' => $type->value,
             'isInvoice' => false,
             'showPrices' => $type->showsPrices(),
@@ -96,18 +115,33 @@ final class ViewModelFactory
         if ($document->delivery?->actualDeliveryDate !== null) {
             // The delivery date is shown as such; a derived service period would repeat it.
             $data['servicePeriod'] = null;
+            $data['deliveryDate'] = null;
         }
         if ($type === DocumentType::Proforma) {
             $data['legalNotes'] = [...(array) $data['legalNotes'], $labels['proforma_notice'] ?? ''];
+        }
+        if (in_array($type, [DocumentType::Quote, DocumentType::OrderConfirmation], true)) {
+            // Offers are no request to pay: no bank details, no payment QR code, no amount due.
+            $data['payment'] = null;
+            if (is_array($data['totals'])) {
+                $data['totals']['amountDue'] = null;
+            }
         }
         if (! $type->hasLineTotals()) {
             $data['payment'] = in_array($type, [DocumentType::PaymentReminder, DocumentType::AccountStatement], true) ? $data['payment'] : null;
             $data['paymentTerms'] = null;
         }
+        if ($document->dunning !== null && is_array($data['payment'])) {
+            // A reminder asks for the open items plus fees and interest, referencing the open invoices.
+            $remittance = $document->dunning->remittanceText();
+            $remittance = $remittance === '' ? $document->number : $remittance;
+            $data['payment']['remittance'] = $remittance;
+            $data['payment']['qrCode'] = $this->qrCode($document->dunning->total($document->currency)->getAmount(), $remittance);
+        }
 
         $this->document = null;
 
-        return new InvoiceViewModel($data);
+        return new InvoiceViewModel($data, aliases: $this->aliases);
     }
 
     /**
@@ -118,25 +152,42 @@ final class ViewModelFactory
         $this->invoice = $invoice;
         $this->context = $context;
         $this->presentation = $this->presentation($invoice, $context);
+        $this->selfBilled = $invoice->typeCode instanceof InvoiceTypeCode && $invoice->typeCode->isSelfBilled();
 
         $labels = $this->labels();
         $this->labels = [...$labels, ...$this->presentation->labels];
         $typeCode = $invoice->typeCodeValue();
 
+        $seller = $this->seller();
+        $buyer = $this->buyer();
+        // The issuer is shown in letterhead, sender line and footer, the recipient in the address
+        // field. A self-billed invoice ("Gutschrift") is issued by the buyer to the seller.
+        $issuer = $this->selfBilled ? $buyer : $seller;
+        $design = $this->design($issuer);
+        $this->aliases = $this->selfBilled ? ['issuer' => 'buyer', 'recipient' => 'seller'] : ['issuer' => 'seller', 'recipient' => 'buyer'];
+        if ($design['footerHasAddress'] === true) {
+            // The generated footer starts with the issuer's address lines.
+            $this->aliases['design.footerColumns[0]'] = 'issuer.address.lines';
+        }
+
         return [
             'number' => $invoice->number,
             'numberLabel' => $labels['invoice_number'],
             'dateLabel' => $labels['invoice_date'],
-            'title' => $this->presentation->title ?? $labels['title_'.$typeCode] ?? $labels['title_default'],
+            'title' => $this->presentation->title ?? InvoiceTitle::policyTitle($invoice, $this->context->country, $this->locale()) ?? $labels[InvoiceTitle::key($invoice)] ?? $labels['title_default'],
             'issueDate' => $this->date($invoice->issueDate),
             'dueDate' => $this->date($invoice->dueDate),
             'servicePeriod' => $this->servicePeriod(),
+            // A single date (delivery date or one-day period) is a "date of supply", not a period.
+            'servicePeriodLabel' => $this->servicePeriodIsDate() ? $labels['delivery_date'] : $labels['service_period'],
+            // BT-72 in addition to an invoicing period (otherwise servicePeriod already shows it).
+            'deliveryDate' => $invoice->invoicingPeriod === null ? null : $this->date($invoice->delivery?->actualDeliveryDate),
             'currency' => $invoice->currency,
             'document' => [
                 'typeCode' => $typeCode,
                 'type' => $invoice->typeCode instanceof InvoiceTypeCode ? $invoice->typeCode->label($this->locale()) : $typeCode,
                 'isCreditNote' => $invoice->isCreditNote(),
-                'isSelfBilled' => $invoice->typeCode instanceof InvoiceTypeCode && $invoice->typeCode->isSelfBilled(),
+                'isSelfBilled' => $this->selfBilled,
                 'profile' => $this->context->profile?->name(),
                 'profileKey' => $this->context->profile?->key(),
                 'kind' => 'invoice',
@@ -145,9 +196,16 @@ final class ViewModelFactory
                 'showTotals' => true,
             ],
             'documentInfo' => null,
-            'seller' => $this->seller(),
-            'buyer' => $this->buyer(),
-            'payee' => $invoice->payee === null ? null : ['name' => $invoice->payee->name],
+            'seller' => $seller,
+            'buyer' => $buyer,
+            'issuer' => $issuer,
+            'recipient' => $this->selfBilled ? $seller : $buyer,
+            'payee' => $invoice->payee === null ? null : [
+                'name' => $invoice->payee->name,
+                'identifier' => $invoice->payee->identifier?->value,
+                'legalRegistration' => $invoice->payee->legalRegistration?->value,
+            ],
+            'taxRepresentative' => $this->taxRepresentative(),
             'delivery' => $this->delivery(),
             'references' => $this->references($labels),
             'precedingInvoices' => array_map(fn ($p): array => [
@@ -176,7 +234,7 @@ final class ViewModelFactory
                 'closing' => Markdown::toHtml($this->presentation->closingText),
             ],
             'labels' => [...$labels, ...$this->presentation->labels],
-            'design' => $this->design(),
+            'design' => $design,
             'meta' => [
                 'locale' => $this->locale(),
                 'custom' => $invoice->meta->custom,
@@ -216,7 +274,8 @@ final class ViewModelFactory
                 'interest' => array_map(fn (InterestCharge $i): array => [
                     'description' => $i->description ?? str_replace(
                         [':rate', ':base', ':from', ':until'],
-                        [$f->percent($i->ratePercent, $locale), (string) $this->money($i->base), (string) $this->date($i->from), (string) $this->date($i->until)],
+                        // $until is exclusive: the text names the last day with interest.
+                        [$f->percent($i->ratePercent, $locale), (string) $this->money($i->base), (string) $this->date($i->from), (string) $this->date($i->lastDay())],
                         $labels['interest_text'] ?? '',
                     ),
                     'days' => $i->days(),
@@ -273,23 +332,42 @@ final class ViewModelFactory
     {
         $defaults = $context->defaults ?? new Presentation;
         $own = $invoice->presentation;
-        if ($own === null) {
-            return $defaults;
-        }
 
+        return $own === null ? $defaults : self::mergePresentation($own, $defaults);
+    }
+
+    /**
+     * $own over $defaults, property by property: values of $own that equal the defaults of
+     * an empty Presentation count as not set and keep the value of $defaults, unless $own
+     * names the property in $explicit (e.g. false, [] or "A4" over a configured value).
+     * Labels are merged key by key.
+     */
+    public static function mergePresentation(Presentation $own, Presentation $defaults): Presentation
+    {
         $empty = new Presentation;
         $merged = [];
         foreach ((new ReflectionClass(Presentation::class))->getProperties() as $property) {
+            $name = $property->getName();
             $value = $property->getValue($own);
-            $merged[$property->getName()] = $value === $property->getValue($empty) ? $property->getValue($defaults) : $value;
+            $merged[$name] = match (true) {
+                $name === 'explicit' => array_values(array_unique([...$defaults->explicit, ...$own->explicit])),
+                $own->isExplicit($name) => $value,
+                $name === 'labels' => [...$defaults->labels, ...$own->labels],
+                $value === $property->getValue($empty) => $property->getValue($defaults),
+                default => $value,
+            };
         }
 
         return $empty->with($merged);
     }
 
+    /**
+     * The locale of the render call wins (Quittio resolves it from the call, the invoice and
+     * the configuration), so that PDF and generated XML texts use the same language.
+     */
     private function locale(): string
     {
-        return $this->invoice->meta->locale ?? $this->context->locale;
+        return $this->context->locale ?? $this->invoice->meta->locale ?? 'en';
     }
 
     /**
@@ -299,7 +377,7 @@ final class ViewModelFactory
     {
         $translator = $this->context->translator();
         $labels = [];
-        foreach (['title_380', 'title_381', 'title_384', 'title_389', 'title_326', 'title_386', 'title_875', 'title_876', 'title_877', 'title_default'] as $key) {
+        foreach (InvoiceTitle::keys() as $key) {
             $labels[$key] = $translator->get('quittio::labels.'.$key, [], $this->locale());
         }
 
@@ -332,7 +410,7 @@ final class ViewModelFactory
             'name' => $seller->name,
             'tradingName' => $seller->tradingName,
             'displayName' => $seller->tradingName ?? $seller->name,
-            'address' => $this->address($seller->address),
+            'address' => $this->address($seller->address, [$seller->name]),
             'vatId' => $seller->vatId,
             'taxNumber' => $seller->taxNumber,
             'legalRegistration' => $seller->legalRegistration?->value,
@@ -353,6 +431,7 @@ final class ViewModelFactory
         return [
             'name' => $buyer->name,
             'tradingName' => $buyer->tradingName,
+            'displayName' => $buyer->tradingName ?? $buyer->name,
             'address' => $this->address($buyer->address, [$buyer->name]),
             'vatId' => $buyer->vatId,
             'customerNumber' => $buyer->identifier?->value,
@@ -369,7 +448,8 @@ final class ViewModelFactory
     private function address(Address $address, array $nameLines = []): array
     {
         $formatter = $this->context->country?->addressFormatter() ?? new InternationalAddressFormatter;
-        $sender = $this->invoice->seller->address->countryCode;
+        // The country line depends on the country of the issuer (sender of the letter).
+        $sender = ($this->selfBilled ? $this->invoice->buyer->address : $this->invoice->seller->address)->countryCode;
 
         return [
             'lines' => $formatter->format($address, $nameLines, $sender, $this->locale()),
@@ -407,6 +487,35 @@ final class ViewModelFactory
             'date' => $this->date($delivery->actualDeliveryDate),
             'address' => $delivery->address === null ? null : $this->address($delivery->address, self::filled([$delivery->recipientName])),
         ];
+    }
+
+    /**
+     * Seller's tax representative (BG-11), shown where the seller's own identifiers are missing.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function taxRepresentative(): ?array
+    {
+        $representative = $this->invoice->sellerTaxRepresentative;
+
+        return $representative === null ? null : [
+            'name' => $representative->name,
+            'vatId' => $representative->vatId,
+            'address' => $this->address($representative->address, [$representative->name]),
+        ];
+    }
+
+    /**
+     * Whether the service period is a single date (delivery date or a one-day period).
+     */
+    private function servicePeriodIsDate(): bool
+    {
+        $period = $this->invoice->invoicingPeriod;
+        if ($period !== null) {
+            return $period->start === null || $period->end === null || $period->start->compareTo($period->end) === 0;
+        }
+
+        return $this->invoice->delivery?->actualDeliveryDate !== null;
     }
 
     /**
@@ -482,7 +591,7 @@ final class ViewModelFactory
             'name' => $line->item->name,
             'description' => [
                 'text' => $line->item->description,
-                'html' => Markdown::toHtml($line->item->description),
+                'html' => $this->textHtml($line->item->description),
             ],
             'note' => $line->note,
             'sellerId' => $line->item->sellerId,
@@ -496,14 +605,17 @@ final class ViewModelFactory
             'grossUnitPrice' => $line->price->priceInclVat === null ? null : new FormattedValue($f->price($line->price->priceInclVat, $currency, $locale), $line->price->priceInclVat),
             'listPrice' => $line->price->grossPrice === null ? null : new FormattedValue($f->price($line->price->grossPrice, $currency, $locale), $line->price->grossPrice),
             'baseQuantity' => $line->price->baseQuantity === null ? null : new FormattedValue($f->quantity($line->price->baseQuantity, $locale), $line->price->baseQuantity),
+            // Price base quantity (BT-149) with unit, e.g. "100 Stk." for a price per 100 pieces; null for 1.
+            'unitPriceBase' => $this->priceBase($line),
             'showGrossPrice' => $showGross && $line->price->priceInclVat !== null,
             'total' => $this->money($line->netAmount),
-            'vatRate' => $line->vat->rate === null ? null : new FormattedValue($f->percent($line->vat->rate, $locale), $line->vat->rate),
+            // Margin schemes and travel agents: no rate either (no separate VAT statement).
+            'vatRate' => $line->vat->rate === null || $this->isSpecialScheme($line->vat->category) ? null : new FormattedValue($f->percent($line->vat->rate, $locale), $line->vat->rate),
             'vatCategory' => $line->vat->category->value,
             'period' => $line->period === null ? null : $this->period($line->period),
             'attributes' => array_map(static fn ($a): array => ['name' => $a->name, 'value' => $a->value], $line->item->attributes),
-            'allowances' => array_map(fn ($a): array => ['reason' => $a->reason ?? ($a->reasonCode === null ? null : $a->reasonCodeValue()), 'amount' => $this->money($a->amount), 'percent' => $a->percent === null ? null : new FormattedValue($f->percent($a->percent, $locale), $a->percent)], $line->allowances),
-            'charges' => array_map(fn ($c): array => ['reason' => $c->reason ?? ($c->reasonCode === null ? null : $c->reasonCodeValue()), 'amount' => $this->money($c->amount), 'percent' => $c->percent === null ? null : new FormattedValue($f->percent($c->percent, $locale), $c->percent)], $line->charges),
+            'allowances' => array_map(fn ($a): array => $this->lineAllowanceCharge($a), $line->allowances),
+            'charges' => array_map(fn ($c): array => $this->lineAllowanceCharge($c), $line->charges),
             'subLines' => array_map(fn (InvoiceLine $sub): array => $this->line($sub), $line->subLines),
             'highlight' => $line->presentation->highlight ?? false,
             'groupId' => $line->presentation?->groupId,
@@ -511,6 +623,35 @@ final class ViewModelFactory
             'alternativeTo' => $this->document?->options($line->id)->alternativeTo,
             'serialNumbers' => $this->document?->options($line->id)->serialNumbers ?? [],
         ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function lineAllowanceCharge(LineAllowanceCharge $entry): array
+    {
+        $reason = $entry->reason ?? ($entry->reasonCode === null ? null : $entry->reasonCodeValue());
+        $percent = $entry->percent === null ? null : new FormattedValue($this->context->formatter->percent($entry->percent, $this->locale()), $entry->percent);
+
+        return [
+            'reason' => $reason,
+            'amount' => $this->money($entry->amount),
+            'percent' => $percent,
+            'label' => self::join([$this->labels[$entry->isCharge() ? 'charge' : 'allowance'] ?? '', $reason, $percent?->formatted]),
+        ];
+    }
+
+    private function priceBase(InvoiceLine $line): ?FormattedValue
+    {
+        $base = $line->price->baseQuantity;
+        if ($base === null || $base->isEqualTo(1)) {
+            return null;
+        }
+
+        $unit = $line->price->baseQuantityUnit ?? $line->unit;
+        $label = $unit instanceof UnitCode ? $unit->label($this->locale()) : $unit->value;
+
+        return new FormattedValue(trim($this->context->formatter->quantity($base, $this->locale()).' '.$label), $base);
     }
 
     /**
@@ -562,15 +703,29 @@ final class ViewModelFactory
     {
         $f = $this->context->formatter;
         $entries = $charges ? $this->invoice->charges : $this->invoice->allowances;
+        // With several VAT groups (e.g. a document discount split by AllowanceSplitter) each row names its VAT rate.
+        $showVat = count($this->invoice->vatBreakdown) > 1;
 
-        return array_map(fn ($entry): array => [
-            'reason' => $entry->reason ?? $entry->reasonCodeValue(),
-            'amount' => $this->money($entry->amount),
-            'percent' => $entry->percent === null ? null : new FormattedValue($f->percent($entry->percent, $this->locale()), $entry->percent),
-            'base' => $this->money($entry->baseAmount),
-            'vatRate' => $entry->vatRate === null ? null : new FormattedValue($f->percent($entry->vatRate, $this->locale()), $entry->vatRate),
-            'vatCategory' => $entry->vatCategory->value,
-        ], $entries);
+        return array_map(function ($entry) use ($f, $charges, $showVat): array {
+            $reason = $entry->reason ?? $entry->reasonCodeValue();
+            $percent = $entry->percent === null ? null : new FormattedValue($f->percent($entry->percent, $this->locale()), $entry->percent);
+            $vatRate = $entry->vatRate === null ? null : new FormattedValue($f->percent($entry->vatRate, $this->locale()), $entry->vatRate);
+            $vat = match (true) {
+                ! $showVat => null,
+                $vatRate !== null && ! $entry->vatCategory->isZeroTax() => str_replace(':rate', $vatRate->formatted, $this->labels['allowance_vat_rate'] ?? ':rate'),
+                default => $entry->vatCategory->label($this->locale()),
+            };
+
+            return [
+                'reason' => $reason,
+                'amount' => $this->money($entry->amount),
+                'percent' => $percent,
+                'base' => $this->money($entry->baseAmount),
+                'vatRate' => $vatRate,
+                'vatCategory' => $entry->vatCategory->value,
+                'label' => self::join([$this->labels[$charges ? 'charge' : 'allowance'] ?? '', $reason, $percent?->formatted, $vat === null ? null : '('.$vat.')']),
+            ];
+        }, $entries);
     }
 
     /**
@@ -585,9 +740,18 @@ final class ViewModelFactory
         return array_map(function ($row) use ($labels, $f, $locale): array {
             $base = $this->money($row->taxableAmount);
             $rate = $row->rate === null ? null : new FormattedValue($f->percent($row->rate, $locale), $row->rate);
-            $label = $row->category->isZeroTax()
-                ? str_replace([':category', ':base'], [$row->category->label($locale), (string) $base], $labels['vat_row_exempt'])
-                : str_replace([':rate', ':base'], [(string) $rate, (string) $base], $labels['vat_row']);
+            // Margin schemes and travel agents are taxed on the margin: no "exempt", no VAT amount
+            // (section 14a (6) sentence 2 UStG forbids a separate VAT statement).
+            $special = $this->isSpecialScheme($row->category);
+            // Reverse charge, zero rate and "not subject to VAT" are no tax exemptions and are named as such.
+            $template = match (true) {
+                $special => $labels['vat_row_special_scheme'],
+                $row->category === VatCategory::ReverseCharge => $labels['vat_row_reverse_charge'],
+                $row->category === VatCategory::ZeroRated => $labels['vat_row_zero_rated'],
+                $row->category === VatCategory::NotSubjectToVat => $labels['vat_row_not_subject'],
+                default => $row->category->isZeroTax() ? $labels['vat_row_exempt'] : $labels['vat_row'],
+            };
+            $label = str_replace([':category', ':rate', ':base'], [$row->category->label($locale), (string) $rate, (string) $base], $template);
 
             return [
                 'label' => $label,
@@ -595,7 +759,8 @@ final class ViewModelFactory
                 'categoryLabel' => $row->category->label($locale),
                 'rate' => $rate,
                 'base' => $base,
-                'amount' => $this->money($row->taxAmount),
+                'amount' => $special ? null : $this->money($row->taxAmount),
+                'isSpecialScheme' => $special,
                 'exemptionReason' => $row->exemptionReason,
                 'exemptionReasonCode' => $row->exemptionReasonCode?->value,
             ];
@@ -641,8 +806,45 @@ final class ViewModelFactory
             'prepaid' => $this->money($t->prepaidAmount),
             'rounding' => $this->money($t->roundingAmount),
             'thirdPartyPayments' => $thirdParty,
-            'amountDue' => $this->money($t->amountDue),
+            // A refund is shown as a positive amount next to "Erstattungsbetrag" (negative invoices,
+            // e.g. cancellations); the raw value keeps the sign of BT-115 as in the XML.
+            'amountDue' => $this->isRefund() && $t->amountDue->isNegative()
+                ? new FormattedValue($this->context->formatter->money($t->amountDue->abs(), $this->locale()), $t->amountDue)
+                : $this->money($t->amountDue),
+            // Credit notes and negative invoices are no request to pay: the amount is refunded or
+            // offset. On a self-billed invoice the issuer (buyer) pays the amount out.
+            'amountDueLabel' => match (true) {
+                $this->isRefund() => $this->labels['refund_amount'] ?? $labels['refund_amount'],
+                $this->selfBilled => $this->labels['payout_amount'] ?? $labels['payout_amount'],
+                default => $this->labels['amount_due'] ?? $labels['amount_due'],
+            },
         ];
+    }
+
+    /**
+     * Margin scheme or travel agents (section 25, 25a UStG): the exempt VAT group carries one
+     * of their exemption codes. Taxed on the margin, without a separate VAT statement.
+     */
+    private function isSpecialScheme(VatCategory $category): bool
+    {
+        if ($category !== VatCategory::Exempt) {
+            return false;
+        }
+        foreach ($this->invoice->vatBreakdown as $row) {
+            if ($row->category === $category && in_array(strtoupper((string) $row->exemptionReasonCode?->value), self::SPECIAL_SCHEME_CODES, true)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Credit notes and negative invoices: the buyer does not pay, so no bank details for a transfer.
+     */
+    private function isRefund(): bool
+    {
+        return $this->invoice->isCreditNote() || ($this->invoice->totals?->amountDue->isNegative() ?? false);
     }
 
     /**
@@ -661,7 +863,7 @@ final class ViewModelFactory
             'meansCode' => (string) $instructions->meansCode->value,
             'means' => $instructions->meansCode instanceof RawCode ? $instructions->meansCode->value : $instructions->meansCode->label($this->locale()),
             'meansText' => $instructions->meansText,
-            'remittance' => $instructions->remittanceInformation ?? $this->invoice->number,
+            'remittance' => self::remittance($this->invoice),
             'accounts' => array_map(static fn ($t): array => [
                 'iban' => $t->isIban() ? trim(chunk_split(Iban::normalize($t->accountId), 4, ' ')) : $t->accountId,
                 'bic' => $t->serviceProviderId,
@@ -674,37 +876,86 @@ final class ViewModelFactory
                 'account' => $instructions->directDebit->debitedAccountId,
             ],
             'qrCode' => $qr,
+            'isRefund' => $this->isRefund(),
+            // Self-billed: the accounts are the seller's accounts the amount is paid out to.
+            'isPayout' => $this->selfBilled,
         ];
     }
 
     /**
-     * @return array{type: string, payload: string, dataUri: string}|null
+     * @param  BigDecimal|null  $value  amount instead of the amount due (payment reminders)
+     * @param  string|null  $remittance  remittance information instead of BT-83 (payment reminders)
+     * @return array{type: string, payload: string, dataUri: string, amount: ?FormattedValue, note: ?string}|null
      */
-    private function qrCode(): ?array
+    private function qrCode(?BigDecimal $value = null, ?string $remittance = null): ?array
     {
         $mode = $this->presentation->paymentQr;
-        if ($mode === Presentation::PAYMENT_QR_NONE) {
+        if (! in_array($mode, self::PAYMENT_QR_MODES, true)) {
+            throw new ConfigurationException(sprintf('Unknown payment QR code type "%s". Known types: %s.', $mode, implode(', ', self::PAYMENT_QR_MODES)));
+        }
+        // No payment request for refunds and self-billed invoices (the issuer pays out).
+        if ($mode === Presentation::PAYMENT_QR_NONE || $this->isRefund() || $this->selfBilled) {
             return null;
         }
 
         $generator = match (true) {
-            $mode === Presentation::PAYMENT_QR_AUTO => $this->context->paymentQr ?? $this->context->country?->paymentQr() ?? new EpcGiroCodeGenerator,
+            $mode === Presentation::PAYMENT_QR_AUTO => $this->context->paymentQr ?? $this->countryPaymentQr(),
             $mode === Presentation::PAYMENT_QR_GIROCODE => new EpcGiroCodeGenerator,
-            default => $this->context->paymentQr,
+            default => $this->context->paymentQr ?? throw new ConfigurationException(sprintf(
+                'The payment QR code type "%s" needs a generator, and Quittio ships none. Register one with withPaymentQrGenerator() (Laravel: quittio.pdf.payment_qr.generator), or use the type "auto", "girocode" or "none".',
+                $mode,
+            )),
         };
 
-        if ($generator === null || ! $generator->supports($this->invoice)) {
+        if ($generator === null || ($value === null && ! $generator->supports($this->invoice))) {
             return null;
         }
 
-        $amountOption = $this->context->options['girocode_amount'] ?? EpcGiroCodeGenerator::AMOUNT_DUE;
-        $payload = $generator->payload($this->invoice, ['amount' => $amountOption]);
+        $amountOption = $value === null ? $this->context->options['girocode_amount'] ?? EpcGiroCodeGenerator::AMOUNT_DUE : EpcGiroCodeGenerator::AMOUNT_DUE;
+        $payload = $generator->payload($this->invoice, ['amount' => $amountOption, 'value' => $value, 'remittance' => $remittance]);
+        if ($payload === null) {
+            return null;
+        }
 
-        return $payload === null ? null : [
+        $amount = null;
+        $note = null;
+        if ($value !== null) {
+            $amount = $this->money(Amount::fromDecimal($value, $this->invoice->currency));
+        } elseif ($generator instanceof EpcGiroCodeGenerator) {
+            $discount = $this->invoice->paymentTerms->discounts[0] ?? null;
+            $discounted = $amountOption === EpcGiroCodeGenerator::AMOUNT_DISCOUNTED && $discount !== null;
+            $value = $generator->amount($this->invoice, $discounted);
+            $amount = $value === null ? null : $this->money(Amount::fromDecimal($value, $this->invoice->currency));
+            if ($discounted && $amount !== null) {
+                // The code contains the amount after cash discount; it is only valid until the discount ends.
+                $note = str_replace([':amount', ':date'], [$amount->formatted, (string) $this->date($this->invoice->issueDate->addDays($discount->days))], $this->labels['girocode_discounted'] ?? '');
+            }
+        }
+
+        return [
             'type' => $generator->key(),
             'payload' => $payload,
             'dataUri' => QrImage::dataUri($payload),
+            'amount' => $amount,
+            'note' => $note,
         ];
+    }
+
+    /**
+     * Generator of the payment QR code type "auto" after a registered one: the type the country
+     * pack names (CountryDefaults::$paymentQr; GiroCode without pack), "none" prints no code;
+     * otherwise the pack's generator (CountryPack::paymentQr()), else the EPC GiroCode for
+     * "girocode". Other types without a generator of the pack print no code.
+     */
+    private function countryPaymentQr(): ?PaymentQrGenerator
+    {
+        $country = $this->context->country;
+        $type = $country?->defaults()->paymentQr ?? Presentation::PAYMENT_QR_GIROCODE;
+        if ($type === Presentation::PAYMENT_QR_NONE) {
+            return null;
+        }
+
+        return $country?->paymentQr() ?? ($type === Presentation::PAYMENT_QR_GIROCODE ? new EpcGiroCodeGenerator : null);
     }
 
     /**
@@ -723,27 +974,37 @@ final class ViewModelFactory
         if ($terms?->text !== null) {
             $lines[] = $terms->text;
         }
-        // Credit notes are refunds: no request to pay and no cash discount.
-        $payable = $due !== null && $due->isPositive() && ! $this->invoice->isCreditNote();
+        // Credit notes are refunds and offers are no request to pay: no due date, no amount after discount.
+        $offer = in_array($this->document?->type, [DocumentType::Quote, DocumentType::OrderConfirmation], true);
+        $payable = $due !== null && $due->isPositive() && ! $this->invoice->isCreditNote() && ! $offer;
         if ($this->invoice->dueDate !== null && $payable) {
-            $lines[] = str_replace(':date', (string) $this->date($this->invoice->dueDate), $labels['payable_until']);
+            // Self-billed: the issuer (buyer) pays the amount out, the recipient is not asked to pay.
+            $lines[] = str_replace(':date', (string) $this->date($this->invoice->dueDate), $labels[$this->selfBilled ? 'payout_until' : 'payable_until']);
         }
 
         $discounts = [];
-        foreach ($payable ? $terms->discounts ?? [] : [] as $discount) {
-            $until = $this->invoice->issueDate->addDays($discount->days);
-            $amount = (new EpcGiroCodeGenerator)->amount($this->invoice, true);
+        $generator = new EpcGiroCodeGenerator;
+        foreach ($terms->discounts ?? [] as $discount) {
             $percent = $this->context->formatter->percent($discount->percent, $this->locale());
-            $amountText = $amount === null ? '' : (string) $this->money(Amount::fromDecimal($amount, $this->invoice->currency));
-            $text = str_replace([':date', ':percent', ':amount'], [(string) $this->date($until), $percent, $amountText], $labels['cash_discount']);
-            $discounts[] = ['days' => $discount->days, 'percent' => $percent, 'until' => $this->date($until), 'text' => $text];
+            $until = null;
+            $amount = null;
+            if ($payable) {
+                $until = $this->date($this->invoice->issueDate->addDays($discount->days));
+                $value = $generator->discountedAmount($this->invoice, $discount);
+                $amount = $value === null ? null : $this->money(Amount::fromDecimal($value, $this->invoice->currency));
+                $text = str_replace([':date', ':percent', ':amount'], [(string) $until, $percent, (string) $amount], $labels[$this->selfBilled ? 'cash_discount_payout' : 'cash_discount']);
+            } else {
+                // The agreement as stated in BT-20, without a date or an amount to pay.
+                $text = str_replace([':days', ':percent'], [(string) $discount->days, $percent], $labels['cash_discount_terms']);
+            }
+            $discounts[] = ['days' => $discount->days, 'percent' => $percent, 'until' => $until, 'amount' => $amount, 'text' => $text];
             $lines[] = $text;
         }
         if ($terms?->lateFeeTerms?->text !== null) {
             $lines[] = $terms->lateFeeTerms->text;
         }
 
-        return ['lines' => $lines, 'discounts' => $discounts, 'dueDate' => $this->date($this->invoice->dueDate)];
+        return $lines === [] ? null : ['lines' => $lines, 'discounts' => $discounts, 'dueDate' => $this->date($this->invoice->dueDate)];
     }
 
     /**
@@ -753,19 +1014,40 @@ final class ViewModelFactory
      */
     private function legalNotes(): array
     {
+        return self::legalNoteTexts($this->invoice);
+    }
+
+    /**
+     * The "legalNotes" of the view model: exemption reasons (BT-120) and regulatory, legal
+     * and tax notes (BT-22), in this order and without duplicates.
+     *
+     * @return list<string>
+     */
+    public static function legalNoteTexts(InvoiceData $invoice): array
+    {
         $notes = [];
-        foreach ($this->invoice->vatBreakdown as $row) {
+        foreach ($invoice->vatBreakdown as $row) {
             if ($row->exemptionReason !== null && $row->category !== VatCategory::StandardRate) {
                 $notes[] = $row->exemptionReason;
             }
         }
-        foreach ($this->invoice->notes as $note) {
-            if (in_array($note->subjectCode, [NoteSubjectCode::RegulatoryInformation, NoteSubjectCode::LegalInformation, NoteSubjectCode::TaxDeclaration], true)) {
+        foreach ($invoice->notes as $note) {
+            if (in_array($note->subjectCode, MandatoryFieldGuard::LEGAL_NOTE_SUBJECTS, true)) {
                 $notes[] = $note->content;
             }
         }
 
         return array_values(array_unique($notes));
+    }
+
+    /**
+     * The notes outside "legalNotes" in the order of the view model's "notes".
+     *
+     * @return list<Note>
+     */
+    public static function otherNotes(InvoiceData $invoice): array
+    {
+        return array_values(array_filter($invoice->notes, static fn (Note $note): bool => ! in_array($note->subjectCode, MandatoryFieldGuard::LEGAL_NOTE_SUBJECTS, true)));
     }
 
     /**
@@ -775,99 +1057,196 @@ final class ViewModelFactory
     {
         $result = [];
         foreach ($this->invoice->notes as $note) {
-            if (in_array($note->subjectCode, [NoteSubjectCode::RegulatoryInformation, NoteSubjectCode::LegalInformation, NoteSubjectCode::TaxDeclaration], true)) {
+            if (in_array($note->subjectCode, MandatoryFieldGuard::LEGAL_NOTE_SUBJECTS, true)) {
                 continue;
             }
-            $result[] = ['subject' => $note->subjectCode?->value, 'content' => $note->content, 'html' => Markdown::toHtml($note->content)];
+            $result[] = ['subject' => $note->subjectCode?->value, 'content' => $note->content, 'html' => $this->textHtml($note->content)];
         }
 
         return $result;
     }
 
     /**
+     * @param  array<string, mixed>  $issuer  the party shown in letterhead, sender line and footer
      * @return array<string, mixed>
      */
-    private function design(): array
+    private function design(array $issuer): array
     {
         $p = $this->presentation;
         $colors = $p->colors ?? new \Quittio\Core\Data\Presentation\Colors;
+        $layouts = $this->context->country?->letterLayouts() ?? [];
         $layoutName = $p->letterLayout ?? $this->context->country?->defaults()->letterLayout ?? 'free';
-        $layout = $this->context->country?->letterLayouts()[$layoutName] ?? LetterLayout::free();
+        $layout = $layouts[$layoutName] ?? ($layoutName === 'free' ? LetterLayout::free() : throw new ConfigurationException(sprintf(
+            'Unknown letter layout "%s". Known layouts: %s.',
+            $layoutName,
+            implode(', ', array_unique(['free', ...array_keys($layouts)])),
+        )));
         $marks = ($this->context->options['fold_marks'] ?? false) === true;
+        $watermark = $p->watermark ?? (is_string($this->context->options['watermark'] ?? null) ? $this->context->options['watermark'] : null);
+        // Always prepared: mPDF never fetches a logo itself (remote URLs are downloaded from public hosts only).
+        $cache = is_string($this->context->options['logo_cache'] ?? null) ? $this->context->options['logo_cache'] : sys_get_temp_dir().'/quittio-mpdf/logos';
+        $logo = (new LogoCache($cache, pdfa: ($this->context->options['pdfa'] ?? false) === true))->resolve($p->logo);
+        // Own footer columns, also none at all when set explicitly to [].
+        $customFooter = $p->footerColumns !== [] || $p->isExplicit('footerColumns');
+        $footer = $customFooter ? $p->footerColumns : $this->footerColumns($issuer);
 
         return [
-            'primaryColor' => $colors->primary,
-            'secondaryColor' => $colors->secondary ?? $colors->primary,
-            'textColor' => $colors->text,
-            'mutedColor' => $colors->muted,
-            'font' => $p->font ?? 'inter',
-            'logo' => is_string($this->context->options['logo_cache'] ?? null)
-                ? (new LogoCache($this->context->options['logo_cache']))->resolve($p->logo)
-                : $p->logo,
+            // Values printed into <style>: only hex colours and plain font names (no CSS injection).
+            'primaryColor' => self::color($colors->primary),
+            'secondaryColor' => self::color($colors->secondary ?? $colors->primary),
+            'textColor' => self::color($colors->text),
+            'mutedColor' => self::color($colors->muted),
+            'font' => self::font($p->font ?? 'inter'),
+            'logo' => $logo,
             'letterLayout' => $layout->name,
+            // Address field position on the first page, independent of the letterhead height.
+            'addressTop' => $layout->addressTop,
+            'addressLeft' => $layout->addressLeft,
             'pageMarginTop' => self::PAGE_MARGIN_TOP,
             'letterheadHeight' => $layout->letterheadHeight(self::PAGE_MARGIN_TOP),
             'addressHeight' => $layout->addressHeight,
             'addressWidth' => $layout->addressWidth,
+            // DIN 5008: the sender line is the last line of the "Zusatz- und Vermerkzone",
+            // the recipient starts in the "Anschriftzone" at addressZoneTop below the field top.
+            'addressZoneTop' => $layout->addressZoneTop,
+            'senderLineHeight' => $layout->senderLineHeight,
+            'noticeZoneHeight' => max(0.0, round($layout->addressZoneTop - $layout->senderLineHeight, 2)),
             'foldMarks' => $marks ? $layout->foldMarks : [],
             'punchMark' => $marks ? $layout->punchMark : null,
             'paper' => $p->paper,
-            'watermark' => $p->watermark ?? (is_string($this->context->options['watermark'] ?? null) ? $this->context->options['watermark'] : null),
-            'senderLine' => $p->senderLine ?? $this->senderLine(),
-            'footerColumns' => $p->footerColumns !== [] ? $p->footerColumns : $this->footerColumns(),
+            'watermark' => $watermark,
+            // The watermark as CSS string literal for the HTML overlay (mPDF prints <watermarktext>).
+            'watermarkCss' => $watermark === null ? null : self::cssString($watermark),
+            'senderLine' => $p->senderLine ?? $this->senderLine($issuer),
+            'footerColumns' => $footer,
+            // The generated footer starts with the issuer's address; a custom footer may not.
+            'footerHasAddress' => ! $customFooter && $footer !== [],
             'showItemNumbers' => $p->showItemNumbers,
             'showGrossPrices' => $p->showGrossPrices,
         ];
     }
 
-    private function senderLine(): string
+    /**
+     * @param  array<string, mixed>  $issuer
+     */
+    private function senderLine(array $issuer): string
     {
-        $seller = $this->invoice->seller;
-        $address = $seller->address;
+        $address = is_array($issuer['address'] ?? null) ? $issuer['address'] : [];
+        $place = trim((is_string($address['postcode'] ?? null) ? $address['postcode'] : '').' '.(is_string($address['city'] ?? null) ? $address['city'] : ''));
 
-        return implode(' · ', array_filter([$seller->tradingName ?? $seller->name, $address->line1, trim(($address->postcode ?? '').' '.($address->city ?? ''))], static fn (?string $v): bool => $v !== null && $v !== ''));
+        return implode(' · ', self::filled([
+            is_string($issuer['displayName'] ?? null) ? $issuer['displayName'] : null,
+            is_string($address['street'] ?? null) ? $address['street'] : null,
+            $place,
+        ]));
     }
 
     /**
-     * Default footer: address, contact, bank details, registration.
+     * Default footer: address, contact, bank details, registration of the issuer.
      *
+     * @param  array<string, mixed>  $issuer
      * @return list<list<string>>
      */
-    private function footerColumns(): array
+    private function footerColumns(array $issuer): array
     {
-        $seller = $this->invoice->seller;
-        $labels = $this->labels();
-        $address = $this->address($seller->address, [$seller->name]);
-        $columns = [];
-        /** @var list<string> $lines */
-        $lines = $address['lines'];
-        $columns[] = $lines;
+        $labels = $this->labels;
+        $label = static fn (string $key): string => $labels[$key] ?? $key;
+        $string = static fn (mixed $value): ?string => is_string($value) && $value !== '' ? $value : null;
+        $address = is_array($issuer['address'] ?? null) ? $issuer['address'] : [];
+        $contact = is_array($issuer['contact'] ?? null) ? $issuer['contact'] : [];
 
-        $contact = array_values(array_filter([
-            $seller->contact?->phone === null ? null : $labels['phone'].': '.$seller->contact->phone,
-            $seller->contact?->email === null ? null : $labels['email'].': '.$seller->contact->email,
-            $seller->vatId === null ? null : $labels['vat_id'].': '.$seller->vatId,
-            $seller->taxNumber === null ? null : $labels['tax_number'].': '.$seller->taxNumber,
-        ]));
-        if ($contact !== []) {
-            $columns[] = $contact;
+        $columns = [];
+        // Exactly the issuer's address lines (the guard maps this column onto them).
+        $lines = is_array($address['lines'] ?? null) ? array_values(array_filter($address['lines'], is_string(...))) : [];
+        if ($lines !== []) {
+            $columns[] = $lines;
         }
 
+        $phone = $string($contact['phone'] ?? null);
+        $email = $string($contact['email'] ?? null);
+        $vatId = $string($issuer['vatId'] ?? null);
+        $taxNumber = $string($issuer['taxNumber'] ?? null);
+        $details = self::filled([
+            $phone === null ? null : $label('phone').': '.$phone,
+            $email === null ? null : $label('email').': '.$email,
+            $vatId === null ? null : $label('vat_id').': '.$vatId,
+            $taxNumber === null ? null : $label('tax_number').': '.$taxNumber,
+        ]);
+        if ($details !== []) {
+            $columns[] = $details;
+        }
+
+        // Bank details only as the seller's request to pay: not on refunds and not when the
+        // buyer issues the document (self-billed), the account then belongs to the recipient.
         $transfer = $this->invoice->paymentInstructions?->primaryCreditTransfer();
-        if ($transfer !== null) {
+        if ($transfer !== null && ! $this->isRefund() && ! $this->selfBilled) {
             $columns[] = self::filled([
                 $transfer->accountName,
-                $labels['iban'].': '.($transfer->isIban() ? trim(chunk_split(Iban::normalize($transfer->accountId), 4, ' ')) : $transfer->accountId),
-                $transfer->serviceProviderId === null ? null : $labels['bic'].': '.$transfer->serviceProviderId,
+                $label('iban').': '.($transfer->isIban() ? trim(chunk_split(Iban::normalize($transfer->accountId), 4, ' ')) : $transfer->accountId),
+                $transfer->serviceProviderId === null ? null : $label('bic').': '.$transfer->serviceProviderId,
             ]);
         }
 
-        $legal = self::filled([$seller->legalRegistration?->value, $seller->additionalLegalInfo]);
+        $legal = self::filled([$string($issuer['legalRegistration'] ?? null), $string($issuer['additionalLegalInfo'] ?? null)]);
         if ($legal !== []) {
             $columns[] = $legal;
         }
 
         return $columns;
+    }
+
+    /**
+     * Descriptions and notes are part of the XML: plain text unless Markdown is enabled.
+     */
+    private function textHtml(?string $text): string
+    {
+        return ($this->context->options['markdown'] ?? false) === true ? Markdown::toHtml($text) : Markdown::plain($text);
+    }
+
+    /**
+     * Remittance information (BT-83), otherwise the invoice number.
+     */
+    public static function remittance(InvoiceData $invoice): string
+    {
+        $remittance = $invoice->paymentInstructions?->remittanceInformation;
+
+        return $remittance === null || trim($remittance) === '' ? $invoice->number : $remittance;
+    }
+
+    private static function color(string $value): string
+    {
+        if (preg_match('/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/', $value) !== 1) {
+            throw new ConfigurationException(sprintf('Invalid colour "%s": use a hex colour such as "#1e40af".', $value));
+        }
+
+        return $value;
+    }
+
+    private static function font(string $value): string
+    {
+        if (preg_match('/^[A-Za-z0-9][A-Za-z0-9 _-]{0,63}$/', $value) !== 1) {
+            throw new ConfigurationException(sprintf('Invalid font name "%s": use the name of a registered font family such as "inter".', $value));
+        }
+
+        return $value;
+    }
+
+    /**
+     * Quoted CSS string with every character outside [A-Za-z0-9 ] escaped, safe inside <style>.
+     */
+    private static function cssString(string $value): string
+    {
+        $escaped = preg_replace_callback('/[^A-Za-z0-9 ]/u', static fn (array $m): string => sprintf('\\%X ', (int) mb_ord($m[0], 'UTF-8')), $value);
+
+        return '"'.($escaped ?? '').'"';
+    }
+
+    /**
+     * @param  list<string|null>  $values
+     */
+    private static function join(array $values, string $separator = ' '): string
+    {
+        return implode($separator, self::filled($values));
     }
 
     /**

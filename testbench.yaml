@@ -2,6 +2,7 @@
 #   vendor/bin/testbench quittio:preview --scenario=simple
 providers:
   - Quittio\Laravel\QuittioServiceProvider
+  - Quittio\Managed\ManagedServiceProvider
 
 env:
   - APP_KEY="base64:cXVpdHRpby1kZXZlbG9wbWVudC1rZXktMDAwMDAwMDA="

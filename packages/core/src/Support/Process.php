@@ -17,10 +17,7 @@ final class Process
      */
     public static function run(array $command, ?string $input = null, int $timeout = 60): array
     {
-        $process = proc_open($command, [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
-        if (! is_resource($process)) {
-            throw new RuntimeException(sprintf('Unable to start "%s".', $command[0] ?? ''));
-        }
+        $process = self::open($command, [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
 
         stream_set_blocking($pipes[1], false);
         stream_set_blocking($pipes[2], false);
@@ -77,5 +74,38 @@ final class Process
         }
 
         return ['exitCode' => $exitCode, 'stdout' => $stdout, 'stderr' => $stderr];
+    }
+
+    /**
+     * proc_open() that reports a program that cannot be started (e.g. java, verapdf or docker
+     * not installed) as RuntimeException, also where PHP warnings become exceptions (Laravel),
+     * so that validators can report themselves as unavailable.
+     *
+     * @param  list<string>  $command
+     * @param  array<int, list<string>>  $descriptors
+     * @param  array<int, resource>|null  $pipes
+     *
+     * @param-out array<int, resource> $pipes
+     *
+     * @return resource
+     */
+    public static function open(array $command, array $descriptors, ?array &$pipes)
+    {
+        $warning = null;
+        set_error_handler(static function (int $severity, string $message) use (&$warning): bool {
+            $warning = $message;
+
+            return true;
+        });
+        try {
+            $process = proc_open($command, $descriptors, $pipes);
+        } finally {
+            restore_error_handler();
+        }
+        if (! is_resource($process)) {
+            throw new RuntimeException(sprintf('Unable to start "%s"%s.', $command[0] ?? '', $warning === null ? '' : ': '.$warning));
+        }
+
+        return $process;
     }
 }

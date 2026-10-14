@@ -224,7 +224,7 @@ final class Scenarios
         return self::base()
             ->currency('USD')
             ->taxCurrency('EUR', '0.912345', '2026-10-02')
-            ->payment(PaymentMeansCode::CreditTransfer, iban: 'DE02120300000000202051', bic: 'BYLADEM1001')
+            ->payment(PaymentMeansCode::CreditTransfer, iban: 'DE02120300000000202051', bic: 'BYLADEM1001', accountName: 'Muster GmbH')
             ->line(fn ($l) => $l->name('Software licence')->quantity(5, UnitCode::Unit)->netPrice('399.00')->vat(VatCategory::StandardRate, '19'));
     }
 

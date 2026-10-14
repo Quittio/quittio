@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Quittio\Core\Validation\Rules;
 
-use Brick\Math\BigDecimal;
 use Brick\Math\RoundingMode;
 use Quittio\Core\Calculation\LineCalculator;
 use Quittio\Core\Data\InvoiceData;
@@ -40,6 +39,11 @@ final class PeppolRules
             $r('PEPPOL-EN16931-R003', 'A buyer reference (BT-10) or a purchase order reference (BT-13) must be provided.', function (InvoiceData $i, RuleReporter $report): void {
                 if (! Inspect::filled($i->buyerReference) && ! Inspect::filled($i->purchaseOrderReference)) {
                     $report->error('BT-10', 'buyerReference');
+                }
+            }),
+            $r('PEPPOL-EN16931-R005', 'The VAT accounting currency code (BT-6) must be different from the invoice currency code (BT-5) when provided. BT-6 is therefore not written.', function (InvoiceData $i, RuleReporter $report): void {
+                if ($i->taxCurrency !== null && $i->taxCurrency === $i->currency) {
+                    $report->warning('BT-6', 'taxCurrency');
                 }
             }),
             $r('PEPPOL-EN16931-R010', 'The buyer electronic address (BT-49) must be provided.', function (InvoiceData $i, RuleReporter $report): void {
@@ -90,19 +94,15 @@ final class PeppolRules
                     $report->error('BT-89', 'paymentInstructions.directDebit.mandateReference');
                 }
             }),
-            $r('PEPPOL-EN16931-R120', 'The invoice line net amount of line :line must equal quantity × (net price / base quantity) + charges − allowances.', function (InvoiceData $i, RuleReporter $report): void {
+            // As the official rule: u:slack(BT-131, quantity × (price / base quantity) + charges − allowances, 0.02),
+            // unrounded, so that declared amounts of other systems (e.g. in cancellations) pass.
+            $r('PEPPOL-EN16931-R120', 'The invoice line net amount of line :line must equal quantity × (net price / base quantity) + charges − allowances (tolerance 0.02).', function (InvoiceData $i, RuleReporter $report): void {
                 foreach ($i->allLines() as $line) {
-                    if ($line->netAmount === null || $line->price->netPrice === null) {
+                    $expected = LineCalculator::exactAmount($line);
+                    if ($line->netAmount === null || $expected === null) {
                         continue;
                     }
-                    $expected = LineCalculator::baseAmount($line->quantity, $line->price->netPrice, $line->price->baseQuantity);
-                    foreach ($line->allowances as $a) {
-                        $expected = $expected->minus($a->amount?->getAmount() ?? BigDecimal::zero());
-                    }
-                    foreach ($line->charges as $c) {
-                        $expected = $expected->plus($c->amount?->getAmount() ?? BigDecimal::zero());
-                    }
-                    if (! $line->netAmount->getAmount()->isEqualTo($expected)) {
+                    if ($line->netAmount->getAmount()->minus($expected)->abs()->isGreaterThan('0.02')) {
                         $report->error('BT-131', "line {$line->id}.netAmount", ['line' => $line->id]);
                     }
                 }

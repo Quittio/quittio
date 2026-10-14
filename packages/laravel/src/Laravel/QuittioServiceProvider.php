@@ -11,8 +11,11 @@ use Illuminate\Foundation\Console\AboutCommand;
 use Illuminate\Routing\Router;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Translation\Translator as IlluminateTranslator;
+use Quittio\Core\Exceptions\ConfigurationException;
 use Quittio\Core\I18n\Translations;
 use Quittio\Core\Profiles\Profile;
+use Quittio\Core\Serialization\Snapshots\SnapshotUpcaster;
+use Quittio\Core\Serialization\Snapshots\SnapshotUpcasterChain;
 use Quittio\Laravel\Commands\BenchmarkCommand;
 use Quittio\Laravel\Commands\CodeListsUpdateCommand;
 use Quittio\Laravel\Commands\CountriesCommand;
@@ -40,6 +43,19 @@ final class QuittioServiceProvider extends ServiceProvider
         $this->app->singleton(QuittioManager::class, static fn (Application $app): QuittioManager => new QuittioManager($app));
         $this->app->alias(QuittioManager::class, 'quittio');
         $this->app->singleton(Preview::class);
+        $this->app->singleton(SnapshotUpcasterChain::class, function (Application $app): SnapshotUpcasterChain {
+            $chain = new SnapshotUpcasterChain;
+            $classes = $app->make(Repository::class)->get('quittio.snapshots.upcasters', []);
+            foreach (is_array($classes) ? $classes : [] as $class) {
+                $upcaster = is_string($class) ? $app->make($class) : $class;
+                if (! $upcaster instanceof SnapshotUpcaster) {
+                    throw new ConfigurationException(sprintf('quittio.snapshots.upcasters: %s is not a SnapshotUpcaster.', is_string($class) ? $class : get_debug_type($class)));
+                }
+                $chain->register($upcaster);
+            }
+
+            return $chain;
+        });
     }
 
     public function boot(): void
@@ -48,6 +64,8 @@ final class QuittioServiceProvider extends ServiceProvider
         $this->loadTranslationsFrom(self::corePath('resources/lang'), 'quittio');
 
         $this->bridgeTranslations();
+        // InvoiceData::fromSnapshot() uses the configured upcasters.
+        SnapshotUpcasterChain::useDefault($this->app->make(SnapshotUpcasterChain::class));
         $this->registerPublishing();
         $this->registerPreviewRoutes();
 

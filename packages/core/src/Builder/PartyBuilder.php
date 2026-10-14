@@ -11,13 +11,14 @@ use Quittio\Core\Data\Party\Address;
 use Quittio\Core\Data\Party\BuyerParty;
 use Quittio\Core\Data\Party\Contact;
 use Quittio\Core\Data\Party\ElectronicAddress;
+use Quittio\Core\Data\Party\PayeeParty;
 use Quittio\Core\Data\Party\SellerParty;
 use Quittio\Core\Enums\ElectronicAddressScheme;
 use Quittio\Core\Enums\IdentifierScheme;
 use Quittio\Core\Exceptions\InvalidInvoiceData;
 
 /**
- * Fluent builder for the seller (BG-4) and the buyer (BG-7).
+ * Fluent builder for the seller (BG-4), the buyer (BG-7) and the payee (BG-10).
  */
 final class PartyBuilder
 {
@@ -77,6 +78,16 @@ final class PartyBuilder
         return $builder;
     }
 
+    public static function fromPayee(PayeeParty $payee): self
+    {
+        $builder = new self;
+        $builder->name = $payee->name;
+        $builder->identifiers = $payee->identifier === null ? [] : [$payee->identifier];
+        $builder->legalRegistration = $payee->legalRegistration;
+
+        return $builder;
+    }
+
     public function fromModel(ProvidesParty $model): self
     {
         $model->fillParty($this);
@@ -127,7 +138,8 @@ final class PartyBuilder
     }
 
     /**
-     * Adds an identifier (BT-29 seller, BT-46 buyer), e.g. a GLN or the customer number.
+     * Adds an identifier (BT-29 seller, BT-46 buyer, BT-60 payee), e.g. a GLN or the customer
+     * number. Buyer and payee take the first one.
      */
     public function identifier(string $value, IdentifierScheme|RawCode|string|null $scheme = null): self
     {
@@ -202,6 +214,19 @@ final class PartyBuilder
             additionalLegalInfo: $this->additionalLegalInfo,
             electronicAddress: $this->electronicAddress,
             contact: $this->contact,
+        );
+    }
+
+    /**
+     * Payee (BG-10): name, the first identifier (BT-60) and the legal registration (BT-61);
+     * the other values of the builder do not belong to the payee.
+     */
+    public function buildPayee(): PayeeParty
+    {
+        return new PayeeParty(
+            name: $this->name ?? throw InvalidInvoiceData::missing('BT-59', 'payee name'),
+            identifier: $this->identifiers[0] ?? null,
+            legalRegistration: $this->legalRegistration,
         );
     }
 

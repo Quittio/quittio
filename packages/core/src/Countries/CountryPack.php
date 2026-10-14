@@ -28,6 +28,11 @@ interface CountryPack
 
     public function defaults(): CountryDefaults;
 
+    /**
+     * Tax presets of the country by key (e.g. "de.small_business"). Informational metadata for
+     * applications, e.g. to offer them in a form or to resolve a stored LineVat::$presetKey; the
+     * core does not apply it: lines take a preset with LineBuilder::vat().
+     */
     public function taxPresets(): TaxPresetCollection;
 
     /**
@@ -60,16 +65,40 @@ interface CountryPack
 
     public function mandatoryOutput(InvoiceData $invoice): MandatoryFieldList;
 
+    /**
+     * Legal and informational texts of the country by key and locale. Informational metadata
+     * for applications and the pack's own presets and rules; the core adds none of them to an
+     * invoice by itself.
+     */
     public function legalTexts(): LegalTextCatalog;
 
+    /**
+     * Numbering requirements; the Managed layer applies pattern and resets (see NumberingRules).
+     */
     public function numberingRules(): NumberingRules;
 
+    /**
+     * Retention period of issued invoices; the Managed layer stores the end of it.
+     */
     public function retention(): RetentionRule;
 
+    /**
+     * Statutory late payment rules. Informational metadata for applications, e.g. to compute
+     * fees and default interest for DocumentBuilder::fee() and interest(); the core does not
+     * apply them.
+     */
     public function dunningLaw(): DunningLaw;
 
+    /**
+     * Cancellation and correction strategies and titles; see CorrectionPolicy for who uses what.
+     */
     public function correctionPolicy(): CorrectionPolicy;
 
+    /**
+     * Payment QR code generator of the country, used for the type "auto" unless
+     * CountryDefaults::$paymentQr is "none" (an application's generator registered with
+     * Quittio::withPaymentQrGenerator() comes first); null = the EPC GiroCode for "girocode".
+     */
     public function paymentQr(): ?PaymentQrGenerator;
 
     public function addressFormatter(): AddressFormatter;
@@ -82,12 +111,17 @@ interface CountryPack
     public function letterLayouts(): array;
 
     /**
+     * Export formats the pack declares (e.g. DATEV). Informational metadata for applications;
+     * Quittio runs no exporter.
+     *
      * @return list<Exporter>
      */
     public function exporters(): array;
 
     /**
-     * Readers for national formats.
+     * Readers for national formats. Quittio::read() and validateFile() try them after the
+     * CII and UBL readers, for every registered pack; return new instances on every call
+     * (readers keep the state of one document).
      *
      * @return list<FormatReader>
      */

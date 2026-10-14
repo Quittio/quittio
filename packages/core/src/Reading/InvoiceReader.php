@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Quittio\Core\Reading;
 
 use Brick\Money\Money;
+use Quittio\Core\Calculation\DeclaredAmounts;
 use Quittio\Core\Calculation\En16931Calculator;
 use Quittio\Core\Calculation\TotalsCalculator;
 use Quittio\Core\Data\InvoiceData;
@@ -27,6 +28,11 @@ use Throwable;
  */
 final class InvoiceReader
 {
+    /** Namespace of ZUGFeRD 1.0, which is recognised but not supported. */
+    public const string NS_ZUGFERD_1 = 'urn:ferd:CrossIndustryDocument:invoice:1p0';
+
+    private const int DEFAULT_MAX_PDF_BYTES = 25 * 1024 * 1024;
+
     /** @var list<FormatReader> */
     private array $readers;
 
@@ -63,19 +69,17 @@ final class InvoiceReader
     }
 
     /**
-     * Reads a file path or the binary content of an XML or PDF file.
+     * Reads the content (bytes) of an XML or PDF e-invoice.
+     *
+     * The argument is always treated as content, never as a file name; use readFile() for paths.
      */
-    public function read(string $pathOrContent): ReadResult
+    public function read(string $content): ReadResult
     {
-        $content = $this->load($pathOrContent);
-        $embeddedFilename = null;
+        $extracted = null;
 
         if (str_starts_with(ltrim(substr($content, 0, 1024)), '%PDF')) {
-            $embedded = $this->pdfExtractor->extract($content);
-            if ($embedded === null) {
-                throw new UnreadableInvoiceException('The PDF does not contain an embedded e-invoice (factur-x.xml, xrechnung.xml or zugferd-invoice.xml).');
-            }
-            [$embeddedFilename, $xml] = $embedded;
+            $extracted = $this->extract($content);
+            $xml = $extracted->xml;
         } else {
             $xml = $content;
         }
@@ -85,25 +89,81 @@ final class InvoiceReader
             if ($reader->canRead($document)) {
                 $result = $reader->read($document, $xml);
 
-                return $this->complete($result, $embeddedFilename === null ? null : $content, $embeddedFilename);
+                return $this->complete($result, $extracted === null ? null : $content, $extracted);
             }
         }
 
         $root = $document->documentElement;
+        if ($root?->namespaceURI === self::NS_ZUGFERD_1) {
+            throw new UnreadableInvoiceException('ZUGFeRD 1.0 invoices (urn:ferd:CrossIndustryDocument:invoice:1p0) are not supported. ZUGFeRD 1.0 does not conform to EN 16931; ask the sender for ZUGFeRD 2.x, Factur-X or XRechnung.');
+        }
+
         throw new UnreadableInvoiceException(sprintf('Unknown invoice format (root element "%s" in namespace "%s").', $root?->localName, $root?->namespaceURI));
     }
 
-    private function complete(ReadResult $result, ?string $raw, ?string $embeddedFilename): ReadResult
+    /**
+     * Reads an XML or PDF e-invoice from a local file.
+     */
+    public function readFile(string $path): ReadResult
+    {
+        if (str_contains($path, "\0") || ! is_file($path) || ! is_readable($path)) {
+            throw new UnreadableInvoiceException(sprintf('The file "%s" does not exist or is not readable.', $path));
+        }
+
+        $size = filesize($path);
+        $limit = max($this->maxXmlBytes, $this->maxPdfBytes());
+        if ($size !== false && $size > $limit) {
+            throw new UnreadableInvoiceException(sprintf('The file "%s" exceeds the size limit of %d bytes.', $path, $limit));
+        }
+
+        $content = file_get_contents($path);
+        if ($content === false) {
+            throw new UnreadableInvoiceException(sprintf('Unable to read file "%s".', $path));
+        }
+
+        return $this->read($content);
+    }
+
+    private function extract(string $pdf): ExtractedXml
+    {
+        if ($this->pdfExtractor instanceof DiagnosingXmlExtractor) {
+            $extracted = $this->pdfExtractor->extractFile($pdf);
+        } else {
+            $embedded = $this->pdfExtractor->extract($pdf);
+            $extracted = $embedded === null ? null : new ExtractedXml($embedded[0], $embedded[1]);
+        }
+
+        if ($extracted === null) {
+            throw new UnreadableInvoiceException('The PDF does not contain an embedded e-invoice (factur-x.xml, xrechnung.xml or zugferd-invoice.xml).');
+        }
+
+        return $extracted;
+    }
+
+    private function maxPdfBytes(): int
+    {
+        return $this->pdfExtractor instanceof PdfEmbeddedFileExtractor ? $this->pdfExtractor->maxPdfBytes() : self::DEFAULT_MAX_PDF_BYTES;
+    }
+
+    private function complete(ReadResult $result, ?string $raw, ?ExtractedXml $extracted): ReadResult
     {
         $profile = $result->specificationId === null ? null : $this->profiles->bySpecificationId($result->specificationId);
-        $findings = [...$result->findings, ...$this->compareWithRecalculation($result->data)];
+        $findings = [...$result->findings, ...($extracted->findings ?? []), ...$this->compareWithRecalculation($result->data)];
 
         if ($result->specificationId !== null && $profile === null) {
             $findings[] = new ValidationMessage(Severity::Info, 'QUITTIO-READER-UNKNOWN-PROFILE', sprintf('The specification identifier "%s" (BT-24) is not known to this installation.', $result->specificationId), ValidationLevel::L1, 'BT-24');
         }
 
+        $expectedRelationship = $profile?->afRelationship();
+        if ($extracted?->relationship !== null && $expectedRelationship !== null && $extracted->relationship !== $expectedRelationship) {
+            $findings[] = new ValidationMessage(Severity::Warning, 'QUITTIO-READER-PDF-RELATIONSHIP', sprintf('The embedded file "%s" is attached with /AFRelationship /%s; the profile %s requires /%s.', $extracted->filename, $extracted->relationship, $profile?->name() ?? '', $expectedRelationship), ValidationLevel::L1);
+        }
+
+        // Stamps the declared amounts so that edits made before from() or a cancellation are detected.
+        $data = $result->data->with(['meta' => $result->data->meta->withAmountsFingerprint(DeclaredAmounts::fingerprint($result->data))]);
+
         return new ReadResult(
-            data: $result->data,
+            data: $data,
             syntax: $result->syntax,
             specificationId: $result->specificationId,
             profile: $profile?->key(),
@@ -112,7 +172,7 @@ final class InvoiceReader
             findings: $findings,
             xml: $result->xml,
             raw: $raw ?? $result->xml,
-            embeddedFilename: $embeddedFilename,
+            embeddedFilename: $extracted?->filename,
         );
     }
 
@@ -121,7 +181,8 @@ final class InvoiceReader
      */
     private function compareWithRecalculation(InvoiceData $declared): array
     {
-        if ($declared->totals === null) {
+        // Profiles without lines (Factur-X MINIMUM, BASIC WL) cannot be recalculated from lines.
+        if ($declared->totals === null || $declared->lines === []) {
             return [];
         }
 
@@ -160,19 +221,5 @@ final class InvoiceReader
         $compare('BT-115', 'Amount due', $d->amountDue, $r?->amountDue);
 
         return $findings;
-    }
-
-    private function load(string $pathOrContent): string
-    {
-        if (strlen($pathOrContent) < 4096 && ! str_contains($pathOrContent, "\0") && ! str_contains($pathOrContent, '<') && is_file($pathOrContent)) {
-            $content = file_get_contents($pathOrContent);
-            if ($content === false) {
-                throw new UnreadableInvoiceException(sprintf('Unable to read file "%s".', $pathOrContent));
-            }
-
-            return $content;
-        }
-
-        return $pathOrContent;
     }
 }

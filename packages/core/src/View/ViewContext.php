@@ -20,7 +20,8 @@ final readonly class ViewContext
      * @param  array<string, mixed>  $options  e.g. girocode_amount (due|discounted), watermark
      */
     public function __construct(
-        public string $locale = 'en',
+        /** null = the invoice's locale (meta), then English */
+        public ?string $locale = null,
         public ?CountryPack $country = null,
         public ?Profile $profile = null,
         public Formatter $formatter = new IntlFormatter,

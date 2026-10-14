@@ -30,7 +30,7 @@ final readonly class QueuedInvoice
         $connection = $this->connection ?? $config->get('quittio.queue.connection');
         $queue = $this->queue ?? $config->get('quittio.queue.queue');
 
-        $job = new RenderInvoice($this->data->toJson(), $this->options, $disk, $path);
+        $job = new RenderInvoice(json_encode($this->data->toSnapshot(), JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), $this->options, $disk, $path);
         $job->onConnection(is_string($connection) ? $connection : null);
         $job->onQueue(is_string($queue) ? $queue : null);
 

@@ -9,6 +9,7 @@ use Brick\Money\Money;
 use Quittio\Core\Codes\RawCode;
 use Quittio\Core\Enums\AllowanceReasonCode;
 use Quittio\Core\Enums\VatCategory;
+use Quittio\Core\Enums\VatExemptionReasonCode;
 use Quittio\Core\Mapping\Attributes as Q;
 use Quittio\Core\Profiles\ProfileLevel;
 
@@ -32,8 +33,12 @@ final readonly class DocumentAllowance extends DocumentAllowanceCharge
         ?string $reason = null,
         #[Q\Bt('BT-98'), Q\Cardinality('0..1'), Q\Level(ProfileLevel::BasicWl), Q\Cii('ram:ReasonCode'), Q\Ubl('cbc:AllowanceChargeReasonCode')]
         AllowanceReasonCode|RawCode|null $reasonCode = null,
+        #[Q\Internal]
+        ?string $exemptionReason = null,
+        #[Q\Internal]
+        VatExemptionReasonCode|RawCode|null $exemptionReasonCode = null,
     ) {
-        parent::__construct($amount, $vatCategory, $vatRate, $baseAmount, $percent, $reason, $reasonCode);
+        parent::__construct($amount, $vatCategory, $vatRate, $baseAmount, $percent, $reason, $reasonCode, $exemptionReason, $exemptionReasonCode);
     }
 
     public function isCharge(): bool

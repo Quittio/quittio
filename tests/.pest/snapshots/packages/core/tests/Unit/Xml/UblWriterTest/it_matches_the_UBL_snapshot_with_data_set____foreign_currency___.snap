@@ -78,18 +78,10 @@
   </cac:Delivery>
   <cac:PaymentMeans>
     <cbc:PaymentMeansCode>30</cbc:PaymentMeansCode>
+    <cbc:PaymentID>RE-2026-0042</cbc:PaymentID>
     <cac:PayeeFinancialAccount>
       <cbc:ID>DE02120300000000202051</cbc:ID>
       <cbc:Name>Muster GmbH</cbc:Name>
-      <cac:FinancialInstitutionBranch>
-        <cbc:ID>BYLADEM1001</cbc:ID>
-      </cac:FinancialInstitutionBranch>
-    </cac:PayeeFinancialAccount>
-  </cac:PaymentMeans>
-  <cac:PaymentMeans>
-    <cbc:PaymentMeansCode>30</cbc:PaymentMeansCode>
-    <cac:PayeeFinancialAccount>
-      <cbc:ID>DE02120300000000202051</cbc:ID>
       <cac:FinancialInstitutionBranch>
         <cbc:ID>BYLADEM1001</cbc:ID>
       </cac:FinancialInstitutionBranch>

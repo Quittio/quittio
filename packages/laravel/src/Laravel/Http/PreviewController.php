@@ -35,7 +35,12 @@ final readonly class PreviewController
         $format = $request->query('format') === 'pdf' ? 'pdf' : 'html';
         $template = $request->query('template');
         $locale = $request->query('locale');
-        $result = $this->preview->render($scenario, $format, is_string($template) ? $template : null, is_string($locale) ? $locale : null);
+        // Request parameters never name files or arbitrary views (see Preview::allowsTemplate()).
+        if (($template !== null && (! is_string($template) || ! $this->preview->allowsTemplate($template)))
+            || ($locale !== null && (! is_string($locale) || ! $this->preview->allowsLocale($locale)))) {
+            throw new NotFoundHttpException;
+        }
+        $result = $this->preview->render($scenario, $format, $template, $locale);
 
         if ($format === 'pdf') {
             return $result->stream();

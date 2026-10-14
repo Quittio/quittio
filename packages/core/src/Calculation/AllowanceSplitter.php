@@ -18,9 +18,10 @@ use Quittio\Core\Support\Decimal;
  * Splits a document discount over several VAT groups (specification 7.5).
  *
  * A document allowance has exactly one VAT category and rate. A discount on
- * all lines is therefore split into one allowance per VAT group. Rounding
- * differences are distributed with the largest remainder method, so that the
- * parts add up exactly to the total discount.
+ * all lines is therefore split into one allowance per VAT group, in proportion
+ * to the signed line sum of the group. Rounding differences are distributed with
+ * the largest remainder method, so that the parts add up exactly to the total
+ * discount. A group with a negative sum (returns) receives a negative part.
  *
  * For percentage discounts, base amount and percentage are kept on a part only
  * if the part equals round2(base × percent / 100); otherwise only the amount is
@@ -64,6 +65,15 @@ final class AllowanceSplitter
             ? $amount->getAmount()
             : Decimal::round($total->multipliedBy($percent ?? BigDecimal::zero())->dividedBy(100, 10, RoundingMode::HalfUp), 2);
 
+        if ($discount->isZero()) {
+            return [];
+        }
+        if ($total->isZero()) {
+            throw new CalculationException('A discount amount cannot be split over invoice lines that add up to zero. Add the allowance for one VAT group instead.');
+        }
+
+        // Signed weights: a VAT group with a negative sum (e.g. only returns) receives a
+        // negative part, exactly as if the discount had been applied to every line.
         $parts = LargestRemainder::distribute($discount, array_map(static fn (array $g): BigDecimal => $g['sum'], $groups));
 
         $result = [];

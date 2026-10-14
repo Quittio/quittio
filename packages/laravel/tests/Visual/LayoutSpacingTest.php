@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Quittio\Core\Data\Presentation\Presentation;
 use Quittio\Core\Testing\Scenarios;
 use Quittio\Laravel\Facades\Quittio;
 
@@ -53,3 +54,21 @@ it('keeps the address below the sender line', function () {
 
     expect($gap)->toBeGreaterThan(4.5);
 })->group('visual')->skip(fn () => ! popplerAvailable(), 'pdftotext is not available.');
+
+it('keeps the address field at the letter layout position, whatever the logo height', function (string $layout, float $top) {
+    $logo = sys_get_temp_dir().'/quittio-layout-logo.png';
+    $image = imagecreatetruecolor(300, 120);
+    imagepng($image, $logo);
+    $presentation = new Presentation(letterLayout: $layout, logo: $logo);
+
+    $pdf = Quittio::make(Scenarios::make('simple')->build())->format('pdf')->presentation($presentation)->validate(false)->render()->pdf();
+    // DIN 5008: the sender line closes the 17.7 mm "Zusatz- und Vermerkzone", the recipient
+    // starts in the "Anschriftzone" below it.
+    $recipient = wordTop($pdf, 'Kunde');
+
+    expect($recipient)->toBeGreaterThan($top + 17.5)
+        ->and($recipient)->toBeLessThan($top + 20.0);
+})->with([
+    'DIN 5008 form A' => ['din5008a', 27.0],
+    'DIN 5008 form B' => ['din5008b', 45.0],
+])->group('visual')->skip(fn () => ! popplerAvailable() || ! extension_loaded('gd'), 'pdftotext or GD is not available.');

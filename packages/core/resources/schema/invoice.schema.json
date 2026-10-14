@@ -601,6 +601,40 @@
                         }
                     ],
                     "description": "BT-98, cardinality 0..1"
+                },
+                "exemptionReason": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "internal"
+                },
+                "exemptionReasonCode": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "examples": [
+                                "VATEX-EU-AE",
+                                "VATEX-EU-IC",
+                                "VATEX-EU-G",
+                                "VATEX-EU-O",
+                                "VATEX-EU-D",
+                                "VATEX-EU-F",
+                                "VATEX-EU-I",
+                                "VATEX-EU-J",
+                                "VATEX-EU-79-C",
+                                "VATEX-EU-132"
+                            ]
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "internal"
                 }
             },
             "additionalProperties": false,
@@ -709,6 +743,40 @@
                         }
                     ],
                     "description": "BT-105, cardinality 0..1"
+                },
+                "exemptionReason": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "internal"
+                },
+                "exemptionReasonCode": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "examples": [
+                                "VATEX-EU-AE",
+                                "VATEX-EU-IC",
+                                "VATEX-EU-G",
+                                "VATEX-EU-O",
+                                "VATEX-EU-D",
+                                "VATEX-EU-F",
+                                "VATEX-EU-I",
+                                "VATEX-EU-J",
+                                "VATEX-EU-79-C",
+                                "VATEX-EU-132"
+                            ]
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "internal"
                 }
             },
             "additionalProperties": false,
@@ -2625,6 +2693,13 @@
                             "type": "null"
                         }
                     ],
+                    "description": "PDF only"
+                },
+                "explicit": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
                     "description": "PDF only"
                 }
             },

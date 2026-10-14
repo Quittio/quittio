@@ -1,4 +1,5 @@
 includes:
+    - vendor/larastan/larastan/extension.neon
     - vendor/phpstan/phpstan-strict-rules/rules.neon
 
 parameters:
@@ -7,5 +8,13 @@ parameters:
         - packages/core/src
         - packages/country-de/src
         - packages/laravel/src
+        - packages/managed/src
+        - packages/managed/database
+        # Analyses the HasInvoices trait in the context of a customer model.
+        - packages/managed/tests/Fixtures/Customer.php
     tmpDir: .phpstan.cache
     treatPhpDocTypesAsCertain: false
+    strictRules:
+        # Larastan forwards Eloquent builder calls through static @method tags,
+        # which this rule would report for every query.
+        dynamicCallOnStaticMethod: false

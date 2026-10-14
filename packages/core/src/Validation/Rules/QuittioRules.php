@@ -5,10 +5,14 @@ declare(strict_types=1);
 namespace Quittio\Core\Validation\Rules;
 
 use Brick\Math\BigDecimal;
+use Quittio\Core\Calculation\CalculationException;
+use Quittio\Core\Calculation\LineCalculator;
 use Quittio\Core\Countries\CountryGeneric;
 use Quittio\Core\Data\InvoiceData;
 use Quittio\Core\Data\Lines\InvoiceLine;
+use Quittio\Core\Data\Meta;
 use Quittio\Core\Enums\InvoiceTypeCode;
+use Quittio\Core\Profiles\Syntax;
 use Quittio\Core\Validation\Rule;
 
 /**
@@ -48,32 +52,94 @@ final class QuittioRules
                     }
                 }
             }),
-            $r('QUITTIO-EXEMPTION-CONFLICT', 'Lines with VAT category :category and the same rate use different exemption reasons. Only one reason per VAT breakdown can be transmitted.', function (InvoiceData $i, RuleReporter $report): void {
-                $reasons = [];
-                foreach ($i->lines as $line) {
-                    $key = $line->vat->groupKey();
-                    $reason = ($line->vat->exemptionReason ?? '').'|'.($line->vat->exemptionReasonCode->value ?? '');
-                    if ($reason === '|') {
-                        continue;
+            // EN 16931 does not require unique identifiers (the official XRechnung test suite has
+            // sub lines with the same one), but references to lines, e.g. partial cancellations,
+            // need them; InvoiceBuilder rejects duplicates.
+            $r('QUITTIO-LINE-ID-DUPLICATE', 'The line identifier :line (BT-126) is used more than once. Lines cannot be referred to unambiguously, e.g. in partial cancellations.', function (InvoiceData $i, RuleReporter $report): void {
+                $seen = [];
+                foreach ($i->allLines() as $line) {
+                    if (($seen[$line->id] ?? 0) === 1) {
+                        $report->warning('BT-126', "line {$line->id}.id", ['line' => $line->id]);
                     }
-                    if (isset($reasons[$key]) && $reasons[$key] !== $reason) {
-                        $report->warning('BT-120', "line {$line->id}.vat.exemptionReason", ['category' => $line->vat->category->value]);
-                    }
-                    $reasons[$key] ??= $reason;
+                    $seen[$line->id] = ($seen[$line->id] ?? 0) + 1;
                 }
             }),
-            $r('QUITTIO-VAT-ROUNDING', 'The VAT amount of category :category (:rate %) differs from taxable amount × rate by :value. The official rules tolerate this, but the amount is not rounded commercially.', function (InvoiceData $i, RuleReporter $report): void {
-                foreach ($i->vatBreakdown as $index => $breakdown) {
-                    if ($breakdown->rate === null || $breakdown->category->isZeroTax()) {
+            $r('QUITTIO-SUBLINE-VAT', 'Sub line :line uses VAT category and rate :value, its parent line uses :expected. Sub lines must have the VAT category and rate of their parent line, because the VAT breakdown is calculated from the parent lines.', function (InvoiceData $i, RuleReporter $report): void {
+                foreach ($i->lines as $line) {
+                    self::checkSubLineVat($line, $report);
+                }
+            }),
+            $r('QUITTIO-PRECEDING-INVOICES-CII', 'The invoice refers to :value preceding invoices (BG-3). CII (ZUGFeRD/Factur-X, XRechnung CII) transmits only the first reference; UBL transmits all of them.', function (InvoiceData $i, RuleReporter $report): void {
+                if (count($i->precedingInvoices) > 1 && in_array(Syntax::Cii, $report->context()->profile->syntaxes(), true)) {
+                    $report->warning('BT-25', 'precedingInvoices', ['value' => count($i->precedingInvoices)]);
+                }
+            }),
+            // One breakdown per category and rate (BR-E-01 …) carries one code (BT-121); the calculator
+            // joins the reason texts (BT-120), so the legally required notes are kept and a warning
+            // suffices; the code is omitted, because it would hold only for part of the group.
+            $r('QUITTIO-EXEMPTION-CONFLICT', 'Lines with VAT category :category and the same rate use different exemption reason codes (:value). A VAT breakdown carries only one code (BT-121): it is omitted and the reason texts are joined in BT-120. Issue separate invoices if the recipient needs the codes.', function (InvoiceData $i, RuleReporter $report): void {
+                $codes = [];
+                foreach ($i->lines as $line) {
+                    $key = $line->vat->groupKey();
+                    if (! $line->vat->category->requiresExemptionReason() || (! Inspect::filled($line->vat->exemptionReason) && $line->vat->exemptionReasonCode === null)) {
                         continue;
                     }
-                    $expected = $breakdown->taxableAmount->getAmount()->multipliedBy($breakdown->rate)->dividedBy(100, 2, \Brick\Math\RoundingMode::HalfUp);
-                    $difference = $breakdown->taxAmount->getAmount()->minus($expected);
-                    if (! $difference->isZero() && $difference->abs()->isLessThanOrEqualTo(1)) {
-                        $report->warning('BT-117', "vatBreakdown[{$index}].taxAmount", [
-                            'category' => $breakdown->category->value,
-                            'rate' => $breakdown->rate->toString(),
-                            'value' => $difference->toString(),
+                    $code = $line->vat->exemptionReasonCode->value ?? '–';
+                    if (isset($codes[$key]) && ! in_array($code, $codes[$key], true)) {
+                        $report->warning('BT-121', "line {$line->id}.vat.exemptionReasonCode", ['category' => $line->vat->category->value, 'value' => implode(', ', [...$codes[$key], $code])]);
+                    }
+                    $codes[$key][] = $code;
+                    $codes[$key] = array_values(array_unique($codes[$key]));
+                }
+            }),
+            $r('QUITTIO-DECLARED-AMOUNTS', 'The declared line net amounts (BT-131) or VAT category tax amounts (BT-117) of the original document differ from the recalculation by more than tolerated (BT-131: 0.02, PEPPOL-EN16931-R120; BT-117: less than one currency unit, BR-CO-17) and were recalculated. The document may not reverse the original exactly; compare its totals with the original.', function (InvoiceData $i, RuleReporter $report): void {
+                if ($i->meta->hasFlag(Meta::FLAG_DECLARED_AMOUNTS_RECALCULATED)) {
+                    $report->warning('BT-131', 'lines');
+                }
+            }),
+            // BG-DEX-09 exists only in the XRechnung extension for UBL invoices (cac:PrepaidPayment,
+            // BR-DEX-09). CII and UBL credit notes cannot carry it, other profiles apply BR-CO-16
+            // without the third party amounts.
+            $r('QUITTIO-THIRD-PARTY-PAYMENTS', 'Third party payments (BG-DEX-09) can only be transmitted in an XRechnung UBL invoice (XRechnung extension). In CII, in credit notes and in other profiles the amount due (BT-115) would contradict BR-CO-16. Use XRechnung UBL with an invoice type code (cancellations: strategy negative_invoice) or invoice the amounts as lines.', function (InvoiceData $i, RuleReporter $report): void {
+                if (($i->xrechnungExtension->thirdPartyPayments ?? []) === []) {
+                    return;
+                }
+                $profile = $report->context()->profile;
+                $syntax = $report->context()->option('syntax') ?? ($profile->syntaxes() === [Syntax::Cii] ? Syntax::Cii : null);
+                if ($syntax === Syntax::Cii || $i->isCreditNote() || ! str_contains($profile->specificationId(), 'urn:xeinkauf.de:kosit:xrechnung')) {
+                    $report->error('BG-DEX-09', 'xrechnungExtension.thirdPartyPayments');
+                }
+            }),
+            // Also for a partial cancellation aligned with the earlier ones when its VAT differs by more
+            // than 0.01 or has the sign of neither its taxable amount nor zero.
+            $r('QUITTIO-VAT-ROUNDING', 'The VAT amount of category :category (:rate %) differs from taxable amount × rate by :value. The official rules tolerate this, but the amount is not rounded commercially.', function (InvoiceData $i, RuleReporter $report): void {
+                self::vatRounding($i, $report->warning(...), self::vatAligned($i) ? false : null);
+            }),
+            // A partial cancellation whose VAT is rounded cumulatively with the earlier ones of the
+            // original (Corrections\CancellationHistory): intended within 0.01 and with the sign of
+            // the taxable amount, so only an information.
+            $r('QUITTIO-CANCELLATION-VAT-ALIGNED', 'The VAT amount of category :category (:rate %) differs from taxable amount × rate by :value: it is aligned with the earlier partial cancellations of the original, so that all cancellations together reverse exactly its VAT (cumulative rounding, at most 0.01, within the tolerance of BR-CO-17).', function (InvoiceData $i, RuleReporter $report): void {
+                if (self::vatAligned($i)) {
+                    self::vatRounding($i, $report->info(...), true);
+                }
+            }),
+            // Declared line net amounts kept from another system (Meta::FLAG_DECLARED_AMOUNTS), like
+            // QUITTIO-VAT-ROUNDING for BT-117. Lines with sub lines and gross prices are excluded.
+            $r('QUITTIO-LINE-ROUNDING', 'The net amount of line :line differs from quantity × price ± allowances and charges by :value, e.g. rounded by another system and kept from the original document. EN 16931 does not check this (Peppol tolerates 0.02), but the amount is not rounded commercially.', function (InvoiceData $i, RuleReporter $report): void {
+                $calculator = new LineCalculator;
+                foreach ($i->allLines() as $line) {
+                    if ($line->netAmount === null || $line->subLines !== [] || $line->price->isGrossMode()) {
+                        continue;
+                    }
+                    try {
+                        $expected = $calculator->calculate($line->with(['netAmount' => null]), $i->currency)->netAmount;
+                    } catch (CalculationException) {
+                        continue;
+                    }
+                    if ($expected !== null && ! $expected->isEqualTo($line->netAmount)) {
+                        $report->warning('BT-131', "line {$line->id}.netAmount", [
+                            'line' => $line->id,
+                            'value' => $line->netAmount->getAmount()->minus($expected->getAmount())->toString(),
                         ]);
                     }
                 }
@@ -123,6 +189,77 @@ final class QuittioRules
                     $report->error(null, 'standardVersion', ['value' => $profile->name()]);
                 }
             }),
+            // A proforma invoice is no invoice for tax purposes (section 14 UStG); as e-invoice
+            // XML with VAT amounts it would be booked as an invoice (section 14c UStG risk).
+            $r('QUITTIO-PROFORMA', 'Type code 325 (proforma invoice) is not an invoice. Use DocumentBuilder::proforma() for proforma documents; e-invoice formats must not carry a proforma.', function (InvoiceData $i, RuleReporter $report): void {
+                if ($i->typeCodeValue() === InvoiceTypeCode::ProformaInvoice->value) {
+                    $report->error('BT-3', 'typeCode');
+                }
+            }),
         ];
+    }
+
+    /**
+     * The VAT breakdown of a partial cancellation aligned with the earlier ones and kept as declared.
+     */
+    private static function vatAligned(InvoiceData $invoice): bool
+    {
+        return $invoice->meta->hasFlag(Meta::FLAG_CANCELLATION_VAT_ALIGNED) && $invoice->meta->hasFlag(Meta::FLAG_DECLARED_AMOUNTS);
+    }
+
+    /**
+     * Reports VAT amounts (BT-117) that differ from round2(taxable amount × rate) within the
+     * tolerance of BR-CO-17: all ($aligned null), or of a partial cancellation aligned with the
+     * earlier ones only those within 0.01 and with the sign of the taxable amount ($aligned true) or
+     * only the others ($aligned false).
+     *
+     * @param  callable(?string, ?string, array<string, string|int>): void  $report
+     */
+    private static function vatRounding(InvoiceData $invoice, callable $report, ?bool $aligned = null): void
+    {
+        foreach ($invoice->vatBreakdown as $index => $breakdown) {
+            if ($breakdown->rate === null || $breakdown->category->isZeroTax()) {
+                continue;
+            }
+            $taxable = $breakdown->taxableAmount->getAmount();
+            $tax = $breakdown->taxAmount->getAmount();
+            $expected = $taxable->multipliedBy($breakdown->rate)->dividedBy(100, 2, \Brick\Math\RoundingMode::HalfUp);
+            $difference = $tax->minus($expected);
+            if ($difference->isZero() || $difference->abs()->isGreaterThan(1)) {
+                continue;
+            }
+            // Aligned VAT of a partial cancellation: within 0.01 and with the sign of the taxable
+            // amount (0.00 on 0.00) it is intended ($aligned true), otherwise not ($aligned false).
+            if ($aligned !== null) {
+                $wrongSign = $taxable->isZero() ? ! $tax->isZero() : (! $tax->isZero() && $tax->getSign() !== $taxable->getSign());
+                if ($aligned === ($wrongSign || $difference->abs()->isGreaterThan('0.01'))) {
+                    continue;
+                }
+            }
+            $report('BT-117', "vatBreakdown[{$index}].taxAmount", [
+                'category' => $breakdown->category->value,
+                'rate' => $breakdown->rate->toString(),
+                'value' => $difference->toString(),
+            ]);
+        }
+    }
+
+    private static function checkSubLineVat(InvoiceLine $parent, RuleReporter $report): void
+    {
+        foreach ($parent->subLines as $sub) {
+            if ($sub->vat->groupKey() !== $parent->vat->groupKey()) {
+                $report->error('BT-151', "line {$sub->id}.vat", [
+                    'line' => $sub->id,
+                    'value' => self::vatLabel($sub),
+                    'expected' => self::vatLabel($parent),
+                ]);
+            }
+            self::checkSubLineVat($sub, $report);
+        }
+    }
+
+    private static function vatLabel(InvoiceLine $line): string
+    {
+        return $line->vat->category->value.($line->vat->rate === null ? '' : ' '.$line->vat->rate->toString().' %');
     }
 }

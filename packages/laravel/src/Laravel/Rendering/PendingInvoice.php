@@ -9,6 +9,7 @@ use Quittio\Core\Config;
 use Quittio\Core\Data\InvoiceData;
 use Quittio\Core\Data\Presentation\Presentation;
 use Quittio\Core\Profiles\Profile;
+use Quittio\Core\Rendering\PreparedInvoice;
 use Quittio\Core\Rendering\RenderOptions;
 use Quittio\Core\Validation\ValidationResult;
 use Quittio\Laravel\QuittioManager;
@@ -141,9 +142,23 @@ class PendingInvoice
         return $this->manager->renderInvoice($this->data, $this->options());
     }
 
+    /**
+     * Validates like a render run without rendering. An explicit validation request: it
+     * validates whatever validation.mode or withoutValidation() say and never throws a
+     * ValidationException.
+     */
     public function check(): ValidationResult
     {
         return $this->manager->check($this->data, $this->options());
+    }
+
+    /**
+     * Calculates and validates without rendering, whatever validation.mode or
+     * withoutValidation() say; see {@see PreparedInvoice}.
+     */
+    public function prepare(): PreparedInvoice
+    {
+        return $this->manager->prepare($this->data, $this->options());
     }
 
     /**

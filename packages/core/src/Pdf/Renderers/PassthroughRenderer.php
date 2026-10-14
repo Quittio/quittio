@@ -24,9 +24,12 @@ final class PassthroughRenderer implements PdfRenderer
         }
     }
 
+    /**
+     * PDF/A and the embedded XML are added by the post processor of this renderer.
+     */
     public function supportsEmbedding(): bool
     {
-        return false;
+        return true;
     }
 
     public function render(RenderRequest $request): string

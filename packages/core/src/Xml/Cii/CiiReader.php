@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Quittio\Core\Xml\Cii;
 
 use Brick\Math\BigDecimal;
+use Brick\Math\RoundingMode;
+use Brick\Money\Money;
 use DOMDocument;
 use DOMElement;
 use InvalidArgumentException;
@@ -28,6 +30,7 @@ use Quittio\Core\Data\Lines\Item;
 use Quittio\Core\Data\Lines\ItemAttribute;
 use Quittio\Core\Data\Lines\LineVat;
 use Quittio\Core\Data\Lines\Price;
+use Quittio\Core\Data\Meta;
 use Quittio\Core\Data\Note;
 use Quittio\Core\Data\Party\Address;
 use Quittio\Core\Data\Party\BuyerParty;
@@ -62,11 +65,11 @@ use Quittio\Core\Enums\UnitCode;
 use Quittio\Core\Enums\VatCategory;
 use Quittio\Core\Enums\VatExemptionReasonCode;
 use Quittio\Core\Profiles\Syntax;
+use Quittio\Core\Reading\DeclaredExemptionReasons;
 use Quittio\Core\Reading\FormatReader;
 use Quittio\Core\Reading\ReadResult;
 use Quittio\Core\Reading\XPathReader;
 use Quittio\Core\Standards\StandardVersion;
-use Quittio\Core\Support\Amount;
 use Quittio\Core\Validation\Severity;
 use Quittio\Core\Xml\PaymentTermsText;
 
@@ -78,7 +81,8 @@ use Quittio\Core\Xml\PaymentTermsText;
  */
 final class CiiReader extends XPathReader implements FormatReader
 {
-    private string $currency = 'EUR';
+    /** Deepest accepted sub line hierarchy (ParentLineID chains). */
+    public const int MAX_SUBLINE_DEPTH = 32;
 
     public function canRead(DOMDocument $document): bool
     {
@@ -96,11 +100,22 @@ final class CiiReader extends XPathReader implements FormatReader
         $deliveryNode = $this->node($root, 'rsm:SupplyChainTradeTransaction/ram:ApplicableHeaderTradeDelivery') ?? $root;
         $settlement = $this->node($root, 'rsm:SupplyChainTradeTransaction/ram:ApplicableHeaderTradeSettlement') ?? $root;
 
-        $this->currency = $this->value($settlement, 'ram:InvoiceCurrencyCode') ?? 'EUR';
         $taxCurrency = $this->value($settlement, 'ram:TaxCurrencyCode');
+        $taxTotalNodes = $this->nodes($settlement, 'ram:SpecifiedTradeSettlementHeaderMonetarySummation/ram:TaxTotalAmount');
+        $amountCurrency = null;
+        foreach ($taxTotalNodes as $taxTotalNode) {
+            $id = trim($taxTotalNode->getAttribute('currencyID'));
+            if ($id !== '' && $id !== $taxCurrency) {
+                $amountCurrency = $id;
+                break;
+            }
+        }
+        $this->currency = $this->invoiceCurrency($this->value($settlement, 'ram:InvoiceCurrencyCode'), $amountCurrency);
+        $this->checkAmountCurrencies($document, $this->currency, $taxCurrency, $taxTotalNodes);
         $specificationId = $this->value($root, 'rsm:ExchangedDocumentContext/ram:GuidelineSpecifiedDocumentContextParameter/ram:ID');
 
-        $declaredTotals = $this->totals($settlement, $taxCurrency);
+        $hasLines = $this->nodes($root, 'rsm:SupplyChainTradeTransaction/ram:IncludedSupplyChainTradeLineItem') !== [];
+        $declaredTotals = $this->totals($settlement, $taxCurrency, $hasLines);
         $declaredBreakdown = $this->vatBreakdown($settlement);
 
         [$taxPointDate, $taxPointDateCode] = $this->taxPoint($settlement);
@@ -109,7 +124,7 @@ final class CiiReader extends XPathReader implements FormatReader
 
         $data = new InvoiceData(
             number: $this->value($root, 'rsm:ExchangedDocument/ram:ID') ?? '',
-            issueDate: $this->date($this->value($root, 'rsm:ExchangedDocument/ram:IssueDateTime/udt:DateTimeString'), 'BT-2') ?? \Quittio\Core\Support\Date::today(),
+            issueDate: $this->issueDate($this->ciiDate($root, 'rsm:ExchangedDocument/ram:IssueDateTime/udt:DateTimeString', 'BT-2')),
             typeCode: $this->code($this->value($root, 'rsm:ExchangedDocument/ram:TypeCode'), InvoiceTypeCode::class, 'BT-3') ?? new RawCode(''),
             currency: $this->currency,
             seller: $this->seller($agreement),
@@ -118,7 +133,7 @@ final class CiiReader extends XPathReader implements FormatReader
             taxCurrency: $taxCurrency,
             taxPointDate: $taxPointDate,
             taxPointDateCode: $taxPointDateCode,
-            dueDate: $this->date($this->value($settlement, 'ram:SpecifiedTradePaymentTerms/ram:DueDateDateTime/udt:DateTimeString'), 'BT-9'),
+            dueDate: $this->ciiDate($settlement, 'ram:SpecifiedTradePaymentTerms/ram:DueDateDateTime/udt:DateTimeString', 'BT-9'),
             buyerReference: $this->value($agreement, 'ram:BuyerReference'),
             projectReference: $this->project($agreement),
             contractReference: $this->value($agreement, 'ram:ContractReferencedDocument/ram:IssuerAssignedID'),
@@ -146,10 +161,12 @@ final class CiiReader extends XPathReader implements FormatReader
             prepaidAmount: $declaredTotals?->prepaidAmount,
             roundingAmount: $declaredTotals?->roundingAmount,
             extended: $extended,
+            meta: $this->meta($settlement, $taxCurrency),
             standardVersion: $specificationId !== null && str_starts_with($specificationId, 'urn:cen.eu:en16931:2026')
                 ? StandardVersion::En16931_2026
                 : StandardVersion::En16931_2017,
         );
+        $data = DeclaredExemptionReasons::apply($data);
 
         return new ReadResult(
             data: $data,
@@ -368,10 +385,11 @@ final class CiiReader extends XPathReader implements FormatReader
             }
 
             $mime = self::nonEmpty($binary?->getAttribute('mimeCode'));
-            $filename = self::nonEmpty($binary?->getAttribute('filename'));
+            $rawFilename = self::nonEmpty($binary?->getAttribute('filename'));
+            $filename = $this->attachmentFilename($rawFilename);
             $mimeType = $mime === null ? null : MimeType::tryFrom($mime);
             if ($content !== null && ($mimeType === null || $filename === null)) {
-                $this->finding('QUITTIO-READER-ATTACHMENT', sprintf('The attached document "%s" has an unsupported MIME code or no file name and was skipped.', $filename ?? '?'), 'BT-125-1');
+                $this->finding('QUITTIO-READER-ATTACHMENT', sprintf('The attached document "%s" has an unsupported MIME code or no usable file name and was skipped.', self::excerpt($rawFilename ?? '?')), $mimeType === null ? 'BT-125-1' : 'BT-125-2');
                 $content = null;
             }
 
@@ -381,7 +399,7 @@ final class CiiReader extends XPathReader implements FormatReader
                 externalUri: $this->value($node, 'ram:URIID'),
                 content: $content,
                 mimeType: $content === null ? null : $mimeType,
-                filename: $content === null ? null : basename((string) $filename),
+                filename: $content === null ? null : $filename,
             );
         }
 
@@ -391,7 +409,7 @@ final class CiiReader extends XPathReader implements FormatReader
     private function delivery(DOMElement $node): ?Delivery
     {
         $shipTo = $this->node($node, 'ram:ShipToTradeParty');
-        $date = $this->date($this->value($node, 'ram:ActualDeliverySupplyChainEvent/ram:OccurrenceDateTime/udt:DateTimeString'), 'BT-72');
+        $date = $this->ciiDate($node, 'ram:ActualDeliverySupplyChainEvent/ram:OccurrenceDateTime/udt:DateTimeString', 'BT-72');
         if ($shipTo === null && $date === null) {
             return null;
         }
@@ -411,8 +429,8 @@ final class CiiReader extends XPathReader implements FormatReader
             return null;
         }
 
-        $start = $this->date($this->value($node, 'ram:StartDateTime/udt:DateTimeString'), 'BT-73');
-        $end = $this->date($this->value($node, 'ram:EndDateTime/udt:DateTimeString'), 'BT-74');
+        $start = $this->ciiDate($node, 'ram:StartDateTime/udt:DateTimeString', 'BT-73');
+        $end = $this->ciiDate($node, 'ram:EndDateTime/udt:DateTimeString', 'BT-74');
 
         return $start === null && $end === null ? null : new Period($start, $end);
     }
@@ -425,50 +443,110 @@ final class CiiReader extends XPathReader implements FormatReader
         $date = null;
         $code = null;
         foreach ($this->nodes($settlement, 'ram:ApplicableTradeTax') as $tax) {
-            $date ??= $this->date($this->value($tax, 'ram:TaxPointDate/udt:DateString'), 'BT-7');
+            $date ??= $this->ciiDate($tax, 'ram:TaxPointDate/udt:DateString', 'BT-7');
             $value = $this->value($tax, 'ram:DueDateTypeCode');
             if ($value !== null && $code === null) {
                 $code = TaxPointDateCode::fromCii($value);
+                if ($code instanceof RawCode) {
+                    $this->finding('QUITTIO-READER-UNKNOWN-CODE', sprintf('The VAT point date code "%s" (BT-8) is not part of UNTDID 2475 (5, 29, 72) and was kept as raw value.', self::excerpt($value)), 'BT-8', Severity::Warning);
+                }
             }
         }
 
         return [$date, $code];
     }
 
+    /**
+     * BT-20 and the cash discounts. EXTENDED repeats SpecifiedTradePaymentTerms for further
+     * discount tiers and for installments; the text and the penalty terms come from the first
+     * group, the discounts from all groups.
+     */
     private function paymentTerms(DOMElement $settlement): ?PaymentTerms
     {
-        $node = $this->node($settlement, 'ram:SpecifiedTradePaymentTerms');
-        if ($node === null) {
+        $groups = $this->nodes($settlement, 'ram:SpecifiedTradePaymentTerms');
+        if ($groups === []) {
             return null;
         }
 
-        $parsed = PaymentTermsText::parse($this->value($node, 'ram:Description'));
+        $parsed = PaymentTermsText::parse($this->value($groups[0], 'ram:Description'));
         $discounts = array_map(
-            fn (array $d): CashDiscount => new CashDiscount($d['days'], BigDecimal::of($d['percent']), $d['base'] === null ? null : Amount::of($d['base'], $this->currency, round: true)),
+            fn (array $d): CashDiscount => new CashDiscount($d['days'], BigDecimal::of($d['percent']), $this->money($d['base'], $this->currency, 'BT-20')),
             $parsed['discounts'],
         );
 
-        $discountNode = $this->node($node, 'ram:ApplicableTradePaymentDiscountTerms');
-        if ($discounts === [] && $discountNode !== null) {
-            $percent = $this->decimal($this->value($discountNode, 'ram:CalculationPercent'), 'BT-20');
-            if ($percent !== null) {
-                $discounts[] = new CashDiscount(
-                    (int) ($this->value($discountNode, 'ram:BasisPeriodMeasure') ?? 0),
-                    $percent,
-                    $this->money($this->value($discountNode, 'ram:BasisAmount'), $this->currency, 'BT-20'),
-                );
+        if ($discounts === []) {
+            foreach ($groups as $group) {
+                foreach ($this->nodes($group, 'ram:ApplicableTradePaymentDiscountTerms') as $discountNode) {
+                    $percent = $this->decimal($this->value($discountNode, 'ram:CalculationPercent'), 'BT-20');
+                    if ($percent !== null) {
+                        $discounts[] = new CashDiscount(
+                            $this->days($discountNode) ?? 0,
+                            $percent,
+                            $this->money($this->value($discountNode, 'ram:BasisAmount'), $this->currency, 'BT-20'),
+                        );
+                    }
+                }
             }
         }
 
-        $penaltyNode = $this->node($node, 'ram:ApplicableTradePaymentPenaltyTerms');
+        $penaltyNode = null;
+        foreach ($groups as $group) {
+            $penaltyNode ??= $this->node($group, 'ram:ApplicableTradePaymentPenaltyTerms');
+        }
         $penalty = $penaltyNode === null ? null : new PenaltyTerms(
-            days: ($days = $this->value($penaltyNode, 'ram:BasisPeriodMeasure')) === null ? null : (int) $days,
+            days: $this->days($penaltyNode),
             percent: $this->decimal($this->value($penaltyNode, 'ram:CalculationPercent'), 'BT-20'),
         );
 
         $terms = new PaymentTerms(text: $parsed['text'], discounts: $discounts, lateFeeTerms: $penalty);
 
         return $terms->isEmpty() ? null : $terms;
+    }
+
+    /**
+     * BasisPeriodMeasure in days; weeks (WEE) are converted, other units are not read.
+     */
+    private function days(DOMElement $terms): ?int
+    {
+        $value = $this->value($terms, 'ram:BasisPeriodMeasure');
+        if ($value === null) {
+            return null;
+        }
+        if (preg_match('/^\d{1,5}$/', $value) !== 1) {
+            $this->finding('QUITTIO-READER-NUMBER', sprintf('The number of days "%s" (BT-20) is not a whole number and was not read.', self::excerpt($value)), 'BT-20', Severity::Error);
+
+            return null;
+        }
+        $unit = $this->attribute($terms, 'ram:BasisPeriodMeasure', 'unitCode') ?? 'DAY';
+        if (! in_array($unit, ['DAY', 'WEE'], true)) {
+            $this->finding('QUITTIO-READER-UNIT', sprintf('The payment terms period "%s %s" (BT-20) is not given in days or weeks and was not read.', $value, self::excerpt($unit)), 'BT-20');
+
+            return null;
+        }
+
+        return (int) $value * ($unit === 'WEE' ? 7 : 1);
+    }
+
+    /**
+     * EXTENDED: exchange rate behind BT-111 (invoice currency × rate = VAT accounting currency).
+     */
+    private function meta(DOMElement $settlement, ?string $taxCurrency): Meta
+    {
+        $node = $this->node($settlement, 'ram:TaxApplicableTradeCurrencyExchange');
+        if ($node === null) {
+            return new Meta;
+        }
+
+        $source = $this->value($node, 'ram:SourceCurrencyCode');
+        $target = $this->value($node, 'ram:TargetCurrencyCode');
+        if (($source !== null && $source !== $this->currency) || ($target !== null && $target !== $taxCurrency)) {
+            $this->finding('QUITTIO-READER-EXCHANGE-RATE', sprintf('The exchange rate converts %s to %s, but the invoice currency is %s and the VAT accounting currency %s (BT-5, BT-6).', self::excerpt($source ?? '?'), self::excerpt($target ?? '?'), $this->currency, $taxCurrency ?? '-'), 'BT-6');
+        }
+
+        return new Meta(
+            exchangeRate: $this->decimal($this->value($node, 'ram:ConversionRate'), 'BT-6'),
+            exchangeRateDate: $this->ciiDate($node, 'ram:ConversionRateDateTime/udt:DateTimeString', 'BT-6'),
+        );
     }
 
     private function paymentInstructions(DOMElement $settlement): ?PaymentInstructions
@@ -521,7 +599,7 @@ final class CiiReader extends XPathReader implements FormatReader
         foreach ($this->nodes($settlement, 'ram:InvoiceReferencedDocument') as $node) {
             $number = $this->value($node, 'ram:IssuerAssignedID');
             if ($number !== null) {
-                $references[] = new PrecedingInvoiceReference($number, $this->date($this->value($node, 'ram:FormattedIssueDateTime/qdt:DateTimeString'), 'BT-26'));
+                $references[] = new PrecedingInvoiceReference($number, $this->ciiDate($node, 'ram:FormattedIssueDateTime/qdt:DateTimeString', 'BT-26'));
             }
         }
 
@@ -570,31 +648,46 @@ final class CiiReader extends XPathReader implements FormatReader
         return $result;
     }
 
-    private function totals(DOMElement $settlement, ?string $taxCurrency): ?Totals
+    private function totals(DOMElement $settlement, ?string $taxCurrency, bool $hasLines): ?Totals
     {
         $node = $this->node($settlement, 'ram:SpecifiedTradeSettlementHeaderMonetarySummation');
         if ($node === null) {
+            $this->missingTotals($hasLines);
+
             return null;
         }
 
         $c = $this->currency;
-        $vatTotal = $this->value($node, 'ram:TaxTotalAmount[@currencyID="'.$c.'"]') ?? $this->value($node, 'ram:TaxTotalAmount[not(@currencyID)]');
+        // BT-110 is the TaxTotalAmount in the invoice currency only; BT-111 the one in the VAT accounting currency.
+        $vatTotal = $this->amountIn($node, 'ram:TaxTotalAmount', $c);
+        if ($vatTotal === null && ($vatTotal = $this->amountIn($node, 'ram:TaxTotalAmount', '')) !== null) {
+            $this->finding('QUITTIO-READER-CURRENCY', 'The total VAT amount (BT-110) has no currencyID; it was read in the invoice currency.', 'BT-110');
+        }
         $vatInTaxCurrency = $taxCurrency !== null && $taxCurrency !== $c
-            ? $this->money($this->value($node, 'ram:TaxTotalAmount[@currencyID="'.$taxCurrency.'"]'), $taxCurrency, 'BT-111')
+            ? $this->money($this->amountIn($node, 'ram:TaxTotalAmount', $taxCurrency), $taxCurrency, 'BT-111')
             : null;
 
+        $allowanceSum = $this->money($this->value($node, 'ram:AllowanceTotalAmount'), $c, 'BT-107');
+        $chargeSum = $this->money($this->value($node, 'ram:ChargeTotalAmount'), $c, 'BT-108');
+        $netTotal = $this->requiredTotal($node, 'ram:TaxBasisTotalAmount', 'BT-109', 'BR-13', 'Invoice total amount without VAT');
+
         return new Totals(
-            lineNetSum: $this->money($this->value($node, 'ram:LineTotalAmount'), $c, 'BT-106') ?? Amount::zero($c),
-            netTotal: $this->money($this->value($node, 'ram:TaxBasisTotalAmount'), $c, 'BT-109') ?? Amount::zero($c),
-            grossTotal: $this->money($this->value($node, 'ram:GrandTotalAmount'), $c, 'BT-112') ?? Amount::zero($c),
-            amountDue: $this->money($this->value($node, 'ram:DuePayableAmount'), $c, 'BT-115') ?? Amount::zero($c),
-            allowanceSum: $this->money($this->value($node, 'ram:AllowanceTotalAmount'), $c, 'BT-107'),
-            chargeSum: $this->money($this->value($node, 'ram:ChargeTotalAmount'), $c, 'BT-108'),
+            lineNetSum: $this->lineNetSum($this->money($this->value($node, 'ram:LineTotalAmount'), $c, 'BT-106'), $hasLines, $netTotal, $allowanceSum, $chargeSum),
+            netTotal: $netTotal,
+            grossTotal: $this->requiredTotal($node, 'ram:GrandTotalAmount', 'BT-112', 'BR-14', 'Invoice total amount with VAT'),
+            amountDue: $this->requiredTotal($node, 'ram:DuePayableAmount', 'BT-115', 'BR-15', 'Amount due for payment'),
+            allowanceSum: $allowanceSum,
+            chargeSum: $chargeSum,
             vatTotal: $this->money($vatTotal, $c, 'BT-110'),
             vatTotalInTaxCurrency: $vatInTaxCurrency,
             prepaidAmount: $this->money($this->value($node, 'ram:TotalPrepaidAmount'), $c, 'BT-113'),
             roundingAmount: $this->money($this->value($node, 'ram:RoundingAmount'), $c, 'BT-114'),
         );
+    }
+
+    private function requiredTotal(DOMElement $node, string $path, string $bt, string $rule, string $label): Money
+    {
+        return $this->money($this->value($node, $path), $this->currency, $bt) ?? $this->missingAmount($bt, $rule, $label);
     }
 
     /**
@@ -605,8 +698,8 @@ final class CiiReader extends XPathReader implements FormatReader
         $result = [];
         foreach ($this->nodes($settlement, 'ram:ApplicableTradeTax') as $node) {
             $result[] = new VatBreakdown(
-                taxableAmount: $this->money($this->value($node, 'ram:BasisAmount'), $this->currency, 'BT-116') ?? Amount::zero($this->currency),
-                taxAmount: $this->money($this->value($node, 'ram:CalculatedAmount'), $this->currency, 'BT-117') ?? Amount::zero($this->currency),
+                taxableAmount: $this->money($this->value($node, 'ram:BasisAmount'), $this->currency, 'BT-116') ?? $this->missingAmount('BT-116', 'BR-45', 'VAT category taxable amount'),
+                taxAmount: $this->money($this->value($node, 'ram:CalculatedAmount'), $this->currency, 'BT-117') ?? $this->missingAmount('BT-117', 'BR-46', 'VAT category tax amount'),
                 category: $this->category($this->value($node, 'ram:CategoryCode'), 'BT-118'),
                 rate: $this->decimal($this->value($node, 'ram:RateApplicablePercent'), 'BT-119'),
                 exemptionReason: $this->value($node, 'ram:ExemptionReason'),
@@ -626,6 +719,8 @@ final class CiiReader extends XPathReader implements FormatReader
     {
         /** @var array<string, array{line: InvoiceLine, parent: ?string}> $byId */
         $byId = [];
+        /** @var array<string, array{0: bool, 1: bool}> $quantity */
+        $quantity = [];
         $order = [];
         foreach ($this->nodes($root, 'rsm:SupplyChainTradeTransaction/ram:IncludedSupplyChainTradeLineItem') as $index => $node) {
             $line = $this->line($node);
@@ -635,15 +730,48 @@ final class CiiReader extends XPathReader implements FormatReader
                 $key .= '#'.$index;
             }
             $byId[$key] = ['line' => $line, 'parent' => $this->value($node, 'ram:AssociatedDocumentLineDocument/ram:ParentLineID')];
+            $quantity[$key] = [
+                $this->node($node, 'ram:SpecifiedLineTradeDelivery/ram:BilledQuantity') !== null,
+                $this->attribute($node, 'ram:SpecifiedLineTradeDelivery/ram:BilledQuantity', 'unitCode') !== null,
+            ];
             $order[] = $key;
+        }
+
+        // A parent that does not exist, the line itself or a cycle of lines cannot carry
+        // sub lines; such lines are read as top-level lines and reported.
+        $parents = [];
+        foreach ($order as $key) {
+            $parent = $byId[$key]['parent'];
+            if ($parent === null) {
+                continue;
+            }
+            if (! isset($byId[$parent])) {
+                $this->finding('QUITTIO-READER-PARENT-LINE', sprintf('Line %s refers to the parent line "%s" (ParentLineID), which does not exist; it is read as a top-level line.', $key, self::excerpt($parent)), 'BT-126');
+
+                continue;
+            }
+            $problem = $this->parentProblem($key, $parent, $byId);
+            if ($problem !== null) {
+                $this->finding('QUITTIO-READER-PARENT-LINE', sprintf(
+                    $problem === 'cycle'
+                        ? 'Line %s refers to the parent line "%s" (ParentLineID), which leads back to line %1$s; it is read as a top-level line.'
+                        : 'Line %s refers to the parent line "%s" (ParentLineID) in a hierarchy deeper than %d levels; it is read as a top-level line.',
+                    $key,
+                    self::excerpt($parent),
+                    self::MAX_SUBLINE_DEPTH,
+                ), 'BT-126', Severity::Error);
+
+                continue;
+            }
+            $parents[$key] = $parent;
         }
 
         $children = [];
         foreach ($order as $key) {
-            $parent = $byId[$key]['parent'];
-            if ($parent !== null && isset($byId[$parent])) {
-                $children[$parent][] = $key;
+            if (isset($parents[$key])) {
+                $children[$parents[$key]][] = $key;
             }
+            $this->checkQuantity($key, isset($parents[$key]), ...$quantity[$key]);
         }
 
         $build = function (string $key) use (&$build, $byId, $children): InvoiceLine {
@@ -655,13 +783,108 @@ final class CiiReader extends XPathReader implements FormatReader
 
         $lines = [];
         foreach ($order as $key) {
-            $parent = $byId[$key]['parent'];
-            if ($parent === null || ! isset($byId[$parent])) {
+            if (! isset($parents[$key])) {
                 $lines[] = $build($key);
             }
         }
 
         return $lines;
+    }
+
+    /**
+     * Follows the parent chain of a line: "cycle" if it leads back to the line itself,
+     * "depth" if it is deeper than MAX_SUBLINE_DEPTH, null otherwise.
+     *
+     * @param  array<string, array{line: InvoiceLine, parent: ?string}>  $byId
+     */
+    private function parentProblem(string $key, string $parent, array $byId): ?string
+    {
+        $seen = [$key => true];
+        $current = $parent;
+        $depth = 0;
+        while ($current !== null && isset($byId[$current])) {
+            if ($current === $key) {
+                return 'cycle';
+            }
+            if (isset($seen[$current])) {
+                // A cycle further up that does not contain this line; its members are reported themselves.
+                return null;
+            }
+            if (++$depth > self::MAX_SUBLINE_DEPTH) {
+                return 'depth';
+            }
+            $seen[$current] = true;
+            $current = $byId[$current]['parent'];
+        }
+
+        return null;
+    }
+
+    /**
+     * BT-146 to BT-150. The price base quantity may be given on the net price, on the gross
+     * price or on both; a gross price with another base quantity is converted to the base
+     * quantity of the net price.
+     */
+    private function price(DOMElement $agreement, string $lineId): Price
+    {
+        $net = 'ram:NetPriceProductTradePrice';
+        $gross = 'ram:GrossPriceProductTradePrice';
+        $netBase = $this->decimal($this->value($agreement, $net.'/ram:BasisQuantity'), 'BT-149');
+        $grossBase = $this->decimal($this->value($agreement, $gross.'/ram:BasisQuantity'), 'BT-149');
+        $netUnit = $this->attribute($agreement, $net.'/ram:BasisQuantity', 'unitCode');
+        $grossUnit = $this->attribute($agreement, $gross.'/ram:BasisQuantity', 'unitCode');
+        $grossPrice = $this->decimal($this->value($agreement, $gross.'/ram:ChargeAmount'), 'BT-148');
+        $discount = $this->decimal($this->value($agreement, $gross.'/ram:AppliedTradeAllowanceCharge/ram:ActualAmount'), 'BT-147');
+
+        if ($netBase !== null && $grossBase !== null && (! $netBase->isEqualTo($grossBase) || ($netUnit !== null && $grossUnit !== null && $netUnit !== $grossUnit))) {
+            $convertible = ! $grossBase->isZero() && ($netUnit === null || $grossUnit === null || $netUnit === $grossUnit);
+            if ($convertible) {
+                $convert = static fn (?BigDecimal $value): ?BigDecimal => $value?->multipliedBy($netBase)->dividedBy($grossBase, 6, RoundingMode::HalfUp)->strippedOfTrailingZeros();
+                $grossPrice = $convert($grossPrice);
+                $discount = $convert($discount);
+            }
+            $this->finding('QUITTIO-READER-BASE-QUANTITY', sprintf(
+                $convertible
+                    ? 'Line %s states the gross price for %s %s and the net price for %s %s (BT-149); the gross price was converted to the base quantity of the net price.'
+                    : 'Line %s states the gross price for %s %s and the net price for %s %s (BT-149); the units differ, so the gross price could not be converted.',
+                $lineId,
+                $grossBase->toString(),
+                $grossUnit ?? '',
+                $netBase->toString(),
+                $netUnit ?? '',
+            ), 'BT-149', $convertible ? Severity::Info : Severity::Warning);
+        }
+
+        $baseUnit = $netBase !== null ? $netUnit : $grossUnit;
+
+        return new Price(
+            netPrice: $this->decimal($this->value($agreement, $net.'/ram:ChargeAmount'), 'BT-146'),
+            discount: $discount,
+            grossPrice: $grossPrice,
+            baseQuantity: $netBase ?? $grossBase,
+            baseQuantityUnit: $this->code($baseUnit, UnitCode::class, 'BT-150'),
+        );
+    }
+
+    /**
+     * BT-129 and BT-130 are mandatory for invoice lines (BR-22, BR-23). Sub lines of the
+     * extension may omit the quantity; 0 is used then.
+     */
+    private function checkQuantity(string $lineId, bool $subLine, bool $hasQuantity, bool $hasUnit): void
+    {
+        if (! $hasQuantity) {
+            $subLine
+                ? $this->finding('QUITTIO-READER-SUBLINE-QUANTITY', sprintf('Sub line %s has no quantity (BT-129); 0 is used.', $lineId), 'BT-129', Severity::Info)
+                : $this->finding('BR-22', sprintf('Line %s has no invoiced quantity (BT-129); 0 is used.', $lineId), 'BT-129', Severity::Error);
+
+            return;
+        }
+
+        if (! $hasUnit) {
+            $subLine
+                ? $this->finding('QUITTIO-READER-SUBLINE-UNIT', sprintf('Sub line %s has no unit of measure for its quantity (BT-130).', $lineId), 'BT-130', Severity::Info)
+                : $this->finding('BR-23', sprintf('Line %s has no unit of measure for the invoiced quantity (BT-130).', $lineId), 'BT-130', Severity::Error);
+        }
     }
 
     private function line(DOMElement $node): InvoiceLine
@@ -712,14 +935,10 @@ final class CiiReader extends XPathReader implements FormatReader
         return new InvoiceLine(
             id: $this->value($node, 'ram:AssociatedDocumentLineDocument/ram:LineID') ?? '',
             quantity: $this->decimal($this->value($delivery, 'ram:BilledQuantity'), 'BT-129') ?? BigDecimal::zero(),
-            unit: $this->code($this->attribute($delivery, 'ram:BilledQuantity', 'unitCode') ?? '', UnitCode::class, 'BT-130') ?? new RawCode(''),
-            price: new Price(
-                netPrice: $this->decimal($this->value($agreement, 'ram:NetPriceProductTradePrice/ram:ChargeAmount'), 'BT-146'),
-                discount: $this->decimal($this->value($agreement, 'ram:GrossPriceProductTradePrice/ram:AppliedTradeAllowanceCharge/ram:ActualAmount'), 'BT-147'),
-                grossPrice: $this->decimal($this->value($agreement, 'ram:GrossPriceProductTradePrice/ram:ChargeAmount'), 'BT-148'),
-                baseQuantity: $this->decimal($this->value($agreement, 'ram:NetPriceProductTradePrice/ram:BasisQuantity'), 'BT-149'),
-                baseQuantityUnit: $this->code($this->attribute($agreement, 'ram:NetPriceProductTradePrice/ram:BasisQuantity', 'unitCode'), UnitCode::class, 'BT-150'),
-            ),
+            unit: ($unitCode = $this->attribute($delivery, 'ram:BilledQuantity', 'unitCode')) === null
+                ? new RawCode('')
+                : ($this->code($unitCode, UnitCode::class, 'BT-130') ?? new RawCode('')),
+            price: $this->price($agreement, $this->value($node, 'ram:AssociatedDocumentLineDocument/ram:LineID') ?? ''),
             vat: new LineVat(
                 category: $this->category($this->value($settlement, 'ram:ApplicableTradeTax/ram:CategoryCode'), 'BT-151'),
                 rate: $this->decimal($this->value($settlement, 'ram:ApplicableTradeTax/ram:RateApplicablePercent'), 'BT-152'),
@@ -748,15 +967,17 @@ final class CiiReader extends XPathReader implements FormatReader
 
     private function extended(DOMElement $agreement, DOMElement $delivery, DOMElement $settlement): ?ExtendedData
     {
+        // Installments are the payment terms groups with a partial payment amount; further
+        // groups without one carry additional cash discount tiers.
         $installments = [];
-        $terms = $this->nodes($settlement, 'ram:SpecifiedTradePaymentTerms');
-        if (count($terms) > 1) {
-            foreach ($terms as $node) {
-                $date = $this->date($this->value($node, 'ram:DueDateDateTime/udt:DateTimeString'), 'BT-9');
-                if ($date !== null) {
-                    $installments[] = new Installment($date, $this->money($this->value($node, 'ram:PartialPaymentAmount'), $this->currency, 'BT-20'), $this->value($node, 'ram:Description'));
-                }
+        foreach ($this->nodes($settlement, 'ram:SpecifiedTradePaymentTerms[ram:PartialPaymentAmount]') as $node) {
+            $date = $this->ciiDate($node, 'ram:DueDateDateTime/udt:DateTimeString', 'BT-9');
+            if ($date === null) {
+                $this->finding('QUITTIO-READER-INSTALLMENT', 'A partial payment (EXTENDED) has no due date and was not read.', 'BT-9');
+
+                continue;
             }
+            $installments[] = new Installment($date, $this->money($this->value($node, 'ram:PartialPaymentAmount'), $this->currency, 'BT-20'), $this->value($node, 'ram:Description'));
         }
 
         $references = [];
@@ -767,7 +988,7 @@ final class CiiReader extends XPathReader implements FormatReader
             }
             $references[] = new DocumentReference(
                 id: $this->value($node, 'ram:IssuerAssignedID') ?? '',
-                issueDate: $this->date($this->value($node, 'ram:FormattedIssueDateTime/qdt:DateTimeString'), 'BT-122'),
+                issueDate: $this->ciiDate($node, 'ram:FormattedIssueDateTime/qdt:DateTimeString', 'BT-122'),
                 typeCode: $type === null ? null : new RawCode($type),
                 description: $this->value($node, 'ram:Name'),
             );

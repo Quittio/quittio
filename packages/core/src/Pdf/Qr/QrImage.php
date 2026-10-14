@@ -28,7 +28,8 @@ final class QrImage
      */
     public static function png(string $payload, int $size = 400, string $errorCorrection = 'M'): string
     {
-        return (new Png)->output(new QrCode($payload, $errorCorrection), $size);
+        // Compression 9: the default (0) writes about 480 KB per code into every PDF.
+        return (new Png)->output(new QrCode($payload, $errorCorrection), $size, [255, 255, 255], [0, 0, 0], 9);
     }
 
     /**

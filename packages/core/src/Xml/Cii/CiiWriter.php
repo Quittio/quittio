@@ -14,13 +14,16 @@ use Quittio\Core\Data\Extensions\ExtendedParty;
 use Quittio\Core\Data\Identifier;
 use Quittio\Core\Data\InvoiceData;
 use Quittio\Core\Data\Lines\InvoiceLine;
+use Quittio\Core\Data\Lines\LineVat;
 use Quittio\Core\Data\Party\Address;
 use Quittio\Core\Data\Party\Contact;
 use Quittio\Core\Data\Party\ElectronicAddress;
+use Quittio\Core\Data\Payment\CashDiscount;
 use Quittio\Core\Data\Payment\PaymentInstructions;
 use Quittio\Core\Data\References\DocumentReference;
 use Quittio\Core\Enums\DocumentReferenceTypeCode;
 use Quittio\Core\Enums\TaxPointDateCode;
+use Quittio\Core\Enums\VatCategory;
 use Quittio\Core\Mapping\FieldMatrix;
 use Quittio\Core\Profiles\Capabilities\RequiresVatBreakdownRate;
 use Quittio\Core\Profiles\Profile;
@@ -264,13 +267,7 @@ final class CiiWriter implements XmlSerializer
             });
 
             $x->required('ram:SpecifiedLineTradeSettlement', function (XmlBuilder $x) use ($line, $extended): void {
-                $x->required('ram:ApplicableTradeTax', function (XmlBuilder $x) use ($line): void {
-                    $x->element('ram:TypeCode', 'VAT');
-                    $x->element('ram:CategoryCode', $line->vat->category->value);
-                    if ($line->vat->rate !== null && $line->vat->category->requiresRate()) {
-                        $x->element('ram:RateApplicablePercent', Format::percent($line->vat->rate));
-                    }
-                });
+                $x->required('ram:ApplicableTradeTax', fn (XmlBuilder $x) => $this->categoryTax($x, $line->vat->category, $line->vat->rate));
                 if ($line->period !== null) {
                     $this->period($x, 'ram:BillingSpecifiedPeriod', $line->period);
                 }
@@ -328,7 +325,8 @@ final class CiiWriter implements XmlSerializer
             if ($en16931 && $seller->contact !== null) {
                 $this->contact($x, $seller->contact);
             }
-            $this->address($x, $seller->address);
+            // MINIMUM contains only the seller country code (BT-40) of the postal address.
+            $this->address($x, $seller->address, countryOnly: ! $this->level->includes(ProfileLevel::BasicWl));
             $this->electronicAddress($x, $seller->electronicAddress);
             $this->taxRegistration($x, $seller->vatId, 'VA');
             $this->taxRegistration($x, $seller->taxNumber, 'FC');
@@ -475,7 +473,8 @@ final class CiiWriter implements XmlSerializer
         if ($basicWl) {
             $x->element('ram:CreditorReferenceID', $instructions?->directDebit?->creditorId);
             $x->element('ram:PaymentReference', $instructions?->remittanceInformation);
-            $x->element('ram:TaxCurrencyCode', $invoice->taxCurrency);
+            // BT-6 only if it differs from BT-5 (BR-53 in the CII Schematron requires that).
+            $x->element('ram:TaxCurrencyCode', $invoice->taxCurrency === $invoice->currency ? null : $invoice->taxCurrency);
         }
         $x->element('ram:InvoiceCurrencyCode', $invoice->currency);
 
@@ -494,6 +493,20 @@ final class CiiWriter implements XmlSerializer
                 }
                 $x->element('ram:Name', $payee->name);
                 $x->group('ram:SpecifiedLegalOrganization', fn (XmlBuilder $x) => $this->identifier($x, 'ram:ID', $payee->legalRegistration));
+            });
+        }
+
+        // EXTENDED can state the exchange rate behind BT-111: invoice currency × rate = tax currency.
+        $rate = $invoice->meta->exchangeRate;
+        if ($extended && $rate !== null && $invoice->taxCurrency !== null && $invoice->taxCurrency !== $invoice->currency) {
+            $rateDate = $invoice->meta->exchangeRateDate;
+            $x->group('ram:TaxApplicableTradeCurrencyExchange', function (XmlBuilder $x) use ($invoice, $rate, $rateDate): void {
+                $x->element('ram:SourceCurrencyCode', $invoice->currency);
+                $x->element('ram:TargetCurrencyCode', $invoice->taxCurrency);
+                $x->element('ram:ConversionRate', $rate->toString());
+                if ($rateDate !== null) {
+                    $x->required('ram:ConversionRateDateTime', fn (XmlBuilder $x) => $this->dateTime($x, $rateDate));
+                }
             });
         }
 
@@ -658,13 +671,26 @@ final class CiiWriter implements XmlSerializer
                 }
                 $discount = $terms->discounts[0] ?? null;
                 if ($discount !== null) {
-                    $x->group('ram:ApplicableTradePaymentDiscountTerms', function (XmlBuilder $x) use ($discount): void {
-                        $x->element('ram:BasisPeriodMeasure', (string) $discount->days, ['unitCode' => 'DAY']);
-                        $x->element('ram:BasisAmount', $this->amount($discount->baseAmount));
-                        $x->element('ram:CalculationPercent', Format::percent($discount->percent));
-                    });
+                    $this->discountTerms($x, $discount);
                 }
             }
+        });
+
+        // A payment terms group holds one cash discount; EXTENDED repeats the group for further
+        // tiers (BT-20 and BT-9 stay in the first group).
+        if ($extended && $terms !== null) {
+            foreach (array_slice($terms->discounts, 1) as $discount) {
+                $x->group('ram:SpecifiedTradePaymentTerms', fn (XmlBuilder $x) => $this->discountTerms($x, $discount));
+            }
+        }
+    }
+
+    private function discountTerms(XmlBuilder $x, CashDiscount $discount): void
+    {
+        $x->group('ram:ApplicableTradePaymentDiscountTerms', function (XmlBuilder $x) use ($discount): void {
+            $x->element('ram:BasisPeriodMeasure', (string) $discount->days, ['unitCode' => 'DAY']);
+            $x->element('ram:BasisAmount', $this->amount($discount->baseAmount));
+            $x->element('ram:CalculationPercent', Format::percent($discount->percent));
         });
     }
 
@@ -679,14 +705,52 @@ final class CiiWriter implements XmlSerializer
             $x->element('ram:ActualAmount', $this->amount($entry->amount));
             $x->element('ram:ReasonCode', $entry->reasonCodeValue());
             $x->element('ram:Reason', $entry->reason);
-            $x->required('ram:CategoryTradeTax', function (XmlBuilder $x) use ($entry): void {
-                $x->element('ram:TypeCode', 'VAT');
-                $x->element('ram:CategoryCode', $entry->vatCategory->value);
-                if ($entry->vatRate !== null && $entry->vatCategory->requiresRate()) {
-                    $x->element('ram:RateApplicablePercent', Format::percent($entry->vatRate));
-                }
-            });
+            $x->required('ram:CategoryTradeTax', fn (XmlBuilder $x) => $this->categoryTax($x, $entry->vatCategory, $entry->vatRate));
         });
+    }
+
+    /**
+     * VAT category of a line (BG-30) or a document allowance or charge (BT-95, BT-102).
+     *
+     * EXTENDED repeats the exemption reason and code of the VAT breakdown (BT-120, BT-121) for
+     * the categories that require one: the Factur-X rules BR-FXEXT-{E,AE,K,G,O}-08rev only
+     * count lines and allowances or charges whose reason and code match the breakdown.
+     * EN 16931 and the profiles below have no such elements on these levels.
+     */
+    private function categoryTax(XmlBuilder $x, VatCategory $category, ?BigDecimal $rate): void
+    {
+        [$reason, $code] = $this->level === ProfileLevel::Extended && $category->requiresExemptionReason()
+            ? $this->breakdownExemption($category, $rate)
+            : [null, null];
+
+        $x->element('ram:TypeCode', 'VAT');
+        $x->element('ram:ExemptionReason', $reason);
+        $x->element('ram:CategoryCode', $category->value);
+        $x->element('ram:ExemptionReasonCode', $code);
+        if ($rate !== null && $category->requiresRate()) {
+            $x->element('ram:RateApplicablePercent', Format::percent($rate));
+        }
+    }
+
+    /**
+     * Exemption reason and code of the VAT breakdown row (one per category and rate) that
+     * contains the given category and rate.
+     *
+     * @return array{0: ?string, 1: ?string}
+     */
+    private function breakdownExemption(VatCategory $category, ?BigDecimal $rate): array
+    {
+        // The breakdown carries a rate for every category except O, zero when the input had none.
+        $key = LineVat::key($category, $category->requiresRate() ? ($rate ?? BigDecimal::zero()) : null);
+        foreach ($this->invoice->vatBreakdown as $breakdown) {
+            if (LineVat::key($breakdown->category, $breakdown->rate) === $key) {
+                $code = $breakdown->exemptionReasonCode;
+
+                return [$breakdown->exemptionReason, $code === null ? null : (string) $code->value];
+            }
+        }
+
+        return [null, null];
     }
 
     private function lineAllowanceCharge(XmlBuilder $x, LineAllowanceCharge $entry): void
@@ -712,8 +776,14 @@ final class CiiWriter implements XmlSerializer
         });
     }
 
-    private function address(XmlBuilder $x, Address $address): void
+    private function address(XmlBuilder $x, Address $address, bool $countryOnly = false): void
     {
+        if ($countryOnly) {
+            $x->group('ram:PostalTradeAddress', fn (XmlBuilder $x) => $x->element('ram:CountryID', $address->countryCode));
+
+            return;
+        }
+
         $x->group('ram:PostalTradeAddress', function (XmlBuilder $x) use ($address): void {
             $x->element('ram:PostcodeCode', $address->postcode);
             $x->element('ram:LineOne', $address->line1);

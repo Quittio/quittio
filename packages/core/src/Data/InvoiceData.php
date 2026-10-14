@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Quittio\Core\Data;
 
+use Brick\Math\RoundingMode;
 use Brick\Money\Money;
 use InvalidArgumentException;
 use Quittio\Core\Codes\RawCode;
@@ -33,6 +34,8 @@ use Quittio\Core\Mapping\Attributes as Q;
 use Quittio\Core\Profiles\ProfileLevel;
 use Quittio\Core\Serialization\ArrayHydrator;
 use Quittio\Core\Serialization\ArrayNormalizer;
+use Quittio\Core\Serialization\Snapshots\SnapshotUpcasterChain;
+use Quittio\Core\Serialization\Snapshots\SnapshotVersionException;
 use Quittio\Core\Standards\StandardVersion;
 use Quittio\Core\Support\Date;
 use Quittio\Core\Testing\InvoiceFactory;
@@ -159,6 +162,31 @@ final readonly class InvoiceData
         return $this->totals !== null;
     }
 
+    /**
+     * Copy with the exchange rate implied by the declared VAT totals (BT-111 / BT-110, ten
+     * decimals), e.g. for data read from XML, which carries no exchange rate. A recalculation
+     * then reproduces BT-111, also with changed or negated amounts. Data with an exchange rate,
+     * without a VAT accounting currency (BT-6) or without a declared non-zero BT-110 is returned unchanged.
+     */
+    public function withImpliedExchangeRate(): self
+    {
+        $declared = $this->totals?->vatTotalInTaxCurrency;
+        $vatTotal = $this->totals?->vatTotal;
+        if ($this->meta->exchangeRate !== null
+            || $this->taxCurrency === null
+            || $this->taxCurrency === $this->currency
+            || $declared === null
+            || $vatTotal === null
+            || $vatTotal->isZero()
+            || $declared->getCurrency()->getCurrencyCode() !== $this->taxCurrency) {
+            return $this;
+        }
+
+        $rate = $declared->getAmount()->dividedBy($vatTotal->getAmount(), 10, RoundingMode::HalfUp)->strippedOfTrailingZeros();
+
+        return $this->with(['meta' => $this->meta->with(['exchangeRate' => $rate])]);
+    }
+
     public function typeCodeValue(): string
     {
         return (string) $this->typeCode->value;
@@ -246,5 +274,28 @@ final readonly class InvoiceData
     public function toSnapshot(): array
     {
         return ['_version' => self::SNAPSHOT_VERSION] + $this->toArray();
+    }
+
+    /**
+     * Restores a stored snapshot of any older version through the upcaster chain.
+     * Snapshots without "_version" are treated as version 1.
+     *
+     * @param  array<array-key, mixed>  $snapshot
+     */
+    public static function fromSnapshot(array $snapshot, ?SnapshotUpcasterChain $chain = null): self
+    {
+        $version = $snapshot['_version'] ?? 1;
+        if (! is_int($version)) {
+            throw new SnapshotVersionException('The snapshot version must be an integer.');
+        }
+
+        $data = [];
+        foreach ($snapshot as $key => $value) {
+            if ($key !== '_version') {
+                $data[(string) $key] = $value;
+            }
+        }
+
+        return self::fromArray(($chain ?? SnapshotUpcasterChain::default())->upcast($data, $version));
     }
 }

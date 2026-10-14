@@ -44,7 +44,6 @@ it('detects rule violations', function (Closure $build, string $code) {
     'BR-53 tax currency without rate' => [fn () => Invoices::simple()->currency('USD')->taxCurrency('EUR')->build(), 'BR-53'],
     'BR-S-05 standard rate zero' => [fn () => Invoices::base()->line(fn ($l) => $l->name('A')->quantity(1)->netPrice('10')->vat(VatCategory::StandardRate, '0'))->build(), 'BR-S-05'],
     'BR-E-10 exempt without reason' => [fn () => Invoices::base()->line(fn ($l) => $l->name('A')->quantity(1)->netPrice('10')->vat(VatCategory::Exempt, '0'))->build(), 'BR-E-10'],
-    'BR-Z-10 zero rated with reason' => [fn () => Invoices::base()->line(fn ($l) => $l->name('A')->quantity(1)->netPrice('10')->vat(VatCategory::ZeroRated, '0', 'Why'))->build(), 'BR-Z-10'],
     'BR-AE-02 reverse charge without buyer VAT id' => [fn () => Invoices::base()->buyer(fn ($b) => $b->vatId(null))->line(fn ($l) => $l->name('A')->quantity(1)->netPrice('10')->vat(VatCategory::ReverseCharge, '0', 'Reverse charge'))->build(), 'BR-AE-02'],
     'BR-IC-12 intra-community without deliver to country' => [fn () => Invoices::base()->buyer(fn ($b) => $b->vatId('FR12345678901'))->line(fn ($l) => $l->name('A')->quantity(1)->netPrice('10')->vat(VatCategory::IntraCommunitySupply, '0', 'Intra-community supply'))->build(), 'BR-IC-12'],
     'BR-O-02 not taxable with VAT id' => [fn () => Invoices::base()->line(fn ($l) => $l->name('A')->quantity(1)->netPrice('10')->vat(VatCategory::NotSubjectToVat, null, 'Not taxable'))->build(), 'BR-O-02'],
@@ -61,6 +60,47 @@ it('detects rule violations', function (Closure $build, string $code) {
     'QUITTIO-DUE-DATE' => [fn () => Invoices::simple()->dueDate('2026-09-01')->build(), 'QUITTIO-DUE-DATE'],
     'QUITTIO-ATTACHMENT-FILENAME' => [fn () => Invoices::simple()->attachment('A', 'x', 'text/csv', 'a.csv')->attachment('B', 'y', 'text/csv', 'a.csv')->build(), 'QUITTIO-ATTACHMENT-FILENAME'],
 ]);
+
+it('reports BR-Z-10 for a declared zero rated VAT breakdown with exemption reason', function () {
+    $invoice = (new Quittio\Core\Calculation\En16931Calculator)->calculate(Invoices::base()->line(fn ($l) => $l->name('A')->quantity(1)->netPrice('10')->vat(VatCategory::ZeroRated, '0'))->build());
+    $declared = $invoice->with(['vatBreakdown' => [$invoice->vatBreakdown[0]->with(['exemptionReason' => 'Why'])]]);
+
+    expect(Validate::codes(Validate::data($declared, calculate: false)))->toContain('BR-Z-10');
+});
+
+it('requires exactly one VAT breakdown for categories other than S (BR-E-01, BR-Z-01)', function () {
+    $invoice = (new Quittio\Core\Calculation\En16931Calculator)->calculate(Invoices::base()->line(fn ($l) => $l->name('A')->quantity(1)->netPrice('10')->vat(VatCategory::Exempt, '0', 'Exempt'))->build());
+    $twice = $invoice->with(['vatBreakdown' => [$invoice->vatBreakdown[0], $invoice->vatBreakdown[0]]]);
+
+    expect(Validate::codes(Validate::data($twice, calculate: false)))->toContain('BR-E-01')
+        ->and(Validate::codes(Validate::data($invoice, calculate: false)))->not->toContain('BR-E-01');
+});
+
+it('requires sub lines with the VAT category and rate of their parent line', function () {
+    $bundle = fn (string $rate) => Invoices::base()
+        ->line(fn ($l) => $l->name('Bundle')->quantity(1)->vat(VatCategory::StandardRate, '19')
+            ->subLine(fn ($s) => $s->name('Book')->quantity(1)->netPrice('10.00')->vat(VatCategory::StandardRate, $rate))
+            ->subLine(fn ($s) => $s->name('Pen')->quantity(1)->netPrice('5.00')->vat(VatCategory::StandardRate, '19')))
+        ->build();
+
+    expect(Validate::codes(Validate::data($bundle('7'), 'extended')))->toContain('QUITTIO-SUBLINE-VAT')
+        ->and(Validate::codes(Validate::data($bundle('19.00'), 'extended')))->not->toContain('QUITTIO-SUBLINE-VAT');
+});
+
+it('warns that CII transmits only one preceding invoice reference', function () {
+    $twice = Invoices::simple()->precedingInvoice('INV-1', '2026-09-01')->precedingInvoice('INV-2', '2026-09-02')->build();
+    $once = Invoices::simple()->precedingInvoice('INV-1', '2026-09-01')->build();
+
+    expect(Validate::codes(Validate::data($twice)))->toContain('QUITTIO-PRECEDING-INVOICES-CII')
+        ->and(Validate::codes(Validate::data($twice, 'peppol')))->not->toContain('QUITTIO-PRECEDING-INVOICES-CII')
+        ->and(Validate::codes(Validate::data($once)))->not->toContain('QUITTIO-PRECEDING-INVOICES-CII');
+});
+
+it('reports PEPPOL-EN16931-R005 when the tax currency equals the invoice currency', function () {
+    $result = Validate::data(Invoices::simple()->taxCurrency('EUR', '1')->build(), 'peppol');
+
+    expect(array_values(array_map(fn ($m) => $m->severity, array_filter($result->messages, fn ($m) => $m->code === 'PEPPOL-EN16931-R005'))))->toBe([Severity::Warning]);
+});
 
 it('reports BR-61 for credit transfer without account', function () {
     $invoice = InvoiceBuilder::from(Invoices::simple()->build())

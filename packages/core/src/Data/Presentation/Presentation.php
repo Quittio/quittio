@@ -26,6 +26,9 @@ final readonly class Presentation
      * @param  list<list<string>>  $footerColumns
      * @param  list<LineGroup>  $lineGroups
      * @param  array<string, string>  $labels
+     * @param  list<string>  $explicit  properties whose value wins even when it equals the default,
+     *                                  e.g. ['showGrossPrices', 'paper', 'footerColumns'] to switch
+     *                                  off, set A4 or clear a configured value for this invoice
      */
     public function __construct(
         #[Q\PdfOnly]
@@ -64,5 +67,15 @@ final readonly class Presentation
         public array $labels = [],
         #[Q\PdfOnly]
         public ?string $title = null,
+        #[Q\PdfOnly, Q\ListOf('string')]
+        public array $explicit = [],
     ) {}
+
+    /**
+     * Whether $property is set explicitly (see $explicit), also to its default value.
+     */
+    public function isExplicit(string $property): bool
+    {
+        return in_array($property, $this->explicit, true);
+    }
 }

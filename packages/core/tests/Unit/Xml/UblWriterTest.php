@@ -71,3 +71,21 @@ it('converts between CII and UBL without loss', function (string $scenario) {
 
     expect(RoundTrip::comparable($fromUbl))->toEqual(RoundTrip::comparable($fromCii));
 })->with(['simple', 'mixed-vat', 'allowances', 'intra-eu', 'foreign-currency', 'attachments']);
+
+it('writes the payment means text and the credit note due date only once for several accounts (UBL-SR-45, UBL-SR-46)', function (string $type) {
+    $invoice = (new En16931Calculator)->calculate(Scenarios::make('simple')->type($type)
+        ->payment('58', iban: 'DE02120300000000202051', meansText: 'SEPA-Überweisung', remittanceInformation: 'RE-2026-0042')
+        ->creditTransfer('DE89370400440532013000')
+        ->build());
+    $xml = (new UblWriter)->serialize($invoice, ProfileRegistry::withDefaults()->get('en16931'));
+    $dom = new DOMDocument;
+    $dom->loadXML($xml);
+    $xpath = new DOMXPath($dom);
+    $xpath->registerNamespace('cac', 'urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2');
+    $xpath->registerNamespace('cbc', 'urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2');
+
+    expect($xpath->query('//cac:PaymentMeans')?->length)->toBe(2)
+        ->and($xpath->query('//cac:PaymentMeans/cbc:PaymentMeansCode/@name')?->length)->toBe(1)
+        ->and($xpath->query('//cac:PaymentMeans/cbc:PaymentDueDate')?->length)->toBeLessThanOrEqual(1)
+        ->and((new XsdValidator)->validateXml($xml))->toBe([]);
+})->with(['380', '381']);

@@ -81,6 +81,32 @@ final class LineCalculator
     }
 
     /**
+     * Unrounded line amount as PEPPOL-EN16931-R120 checks it: quantity × (net price / base
+     * quantity) + line charges − line allowances (BT-129, BT-146, BT-149, BT-141, BT-136).
+     * Null without net price (BT-146).
+     */
+    public static function exactAmount(InvoiceLine $line): ?BigDecimal
+    {
+        $price = $line->price->netPrice;
+        if ($price === null) {
+            return null;
+        }
+
+        $baseQuantity = $line->price->baseQuantity;
+        $value = $baseQuantity === null || $baseQuantity->isZero()
+            ? $line->quantity->multipliedBy($price)
+            : $line->quantity->multipliedBy($price->dividedBy($baseQuantity, 20, RoundingMode::HalfUp));
+        foreach ($line->allowances as $allowance) {
+            $value = $value->minus($allowance->amount?->getAmount() ?? BigDecimal::zero());
+        }
+        foreach ($line->charges as $charge) {
+            $value = $value->plus($charge->amount?->getAmount() ?? BigDecimal::zero());
+        }
+
+        return $value;
+    }
+
+    /**
      * Smallest-precision net price (2 to 10 decimals) for which the line formula yields exactly $amount.
      */
     public static function priceFor(BigDecimal $amount, BigDecimal $quantity, ?BigDecimal $baseQuantity): BigDecimal

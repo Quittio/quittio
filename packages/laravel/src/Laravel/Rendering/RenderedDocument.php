@@ -30,6 +30,14 @@ final class RenderedDocument implements Attachable, Responsable
         return $this->result->data();
     }
 
+    /**
+     * Whether a PDF was rendered (false after htmlOnly()).
+     */
+    public function hasPdf(): bool
+    {
+        return $this->result->hasPdf();
+    }
+
     public function pdf(): string
     {
         return $this->result->pdf();

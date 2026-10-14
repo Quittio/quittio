@@ -124,6 +124,14 @@ final class LineBuilder
         return $this;
     }
 
+    /**
+     * Identifier set with id(); null when the invoice builder assigns one.
+     */
+    public function explicitId(): ?string
+    {
+        return $this->id;
+    }
+
     public function name(string $name): self
     {
         $this->name = $name;
@@ -145,9 +153,9 @@ final class LineBuilder
         return $this;
     }
 
-    public function quantity(BigDecimal|int|string $quantity, UnitCode|RawCode|string|null $unit = null): self
+    public function quantity(BigDecimal|int|float|string $quantity, UnitCode|RawCode|string|null $unit = null): self
     {
-        $this->quantity = $quantity;
+        $this->quantity = Decimal::rejectFloat($quantity);
         if ($unit !== null) {
             $this->unit($unit);
         }
@@ -165,10 +173,10 @@ final class LineBuilder
     /**
      * Net price per base quantity (BT-146, BT-149, BT-150).
      */
-    public function netPrice(BigDecimal|int|string $price, BigDecimal|int|string|null $baseQuantity = null, UnitCode|RawCode|string|null $baseQuantityUnit = null): self
+    public function netPrice(BigDecimal|int|float|string $price, BigDecimal|int|float|string|null $baseQuantity = null, UnitCode|RawCode|string|null $baseQuantityUnit = null): self
     {
-        $this->netPrice = $price;
-        $this->baseQuantity = $baseQuantity;
+        $this->netPrice = Decimal::rejectFloat($price);
+        $this->baseQuantity = Decimal::rejectFloat($baseQuantity);
         if ($baseQuantityUnit !== null) {
             $this->baseQuantityUnit = is_string($baseQuantityUnit) ? (UnitCode::tryFrom($baseQuantityUnit) ?? new RawCode($baseQuantityUnit)) : $baseQuantityUnit;
         }
@@ -180,10 +188,10 @@ final class LineBuilder
      * List price before price discount (BT-148) and the discount per unit (BT-147).
      * The net price is derived as list price minus discount unless set explicitly.
      */
-    public function listPrice(BigDecimal|int|string $grossPrice, BigDecimal|int|string|null $discount = null): self
+    public function listPrice(BigDecimal|int|float|string $grossPrice, BigDecimal|int|float|string|null $discount = null): self
     {
-        $this->grossPrice = $grossPrice;
-        $this->priceDiscount = $discount;
+        $this->grossPrice = Decimal::rejectFloat($grossPrice);
+        $this->priceDiscount = Decimal::rejectFloat($discount);
 
         return $this;
     }
@@ -192,9 +200,9 @@ final class LineBuilder
      * Price including VAT (gross price mode for B2C and shops, specification 7.6).
      * The calculator derives the net price so that the customer pays exactly the gross amount.
      */
-    public function priceInclVat(BigDecimal|int|string $price): self
+    public function priceInclVat(BigDecimal|int|float|string $price): self
     {
-        $this->priceInclVat = $price;
+        $this->priceInclVat = Decimal::rejectFloat($price);
 
         return $this;
     }
@@ -202,8 +210,9 @@ final class LineBuilder
     /**
      * Sets the VAT treatment, either via a preset of a country pack or as category and rate.
      */
-    public function vat(TaxPreset|VatCategory $presetOrCategory, BigDecimal|int|string|null $rate = null, ?string $exemptionReason = null, VatExemptionReasonCode|RawCode|string|null $exemptionReasonCode = null): self
+    public function vat(TaxPreset|VatCategory $presetOrCategory, BigDecimal|int|float|string|null $rate = null, ?string $exemptionReason = null, VatExemptionReasonCode|RawCode|string|null $exemptionReasonCode = null): self
     {
+        $rate = Decimal::rejectFloat($rate);
         if ($presetOrCategory instanceof TaxPreset) {
             $this->preset = $presetOrCategory;
             $this->vatCategory = null;
@@ -362,9 +371,25 @@ final class LineBuilder
         return $this;
     }
 
+    /**
+     * Highlights the line in the PDF and HTML (the default templates shade it and mark it in
+     * the secondary colour).
+     */
     public function highlight(bool $highlight = true): self
     {
         $this->presentation = ($this->presentation ?? new LinePresentation)->with(['highlight' => $highlight]);
+
+        return $this;
+    }
+
+    /**
+     * Prints the price including VAT below the net unit price of this line (true) or not
+     * (false), whatever Presentation::$showGrossPrices says for the invoice; null follows the
+     * presentation again. It is printed only for lines with a price including VAT (priceInclVat()).
+     */
+    public function showGrossPrice(?bool $show = true): self
+    {
+        $this->presentation = ($this->presentation ?? new LinePresentation)->with(['showGrossPrice' => $show]);
 
         return $this;
     }

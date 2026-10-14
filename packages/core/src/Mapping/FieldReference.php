@@ -6,6 +6,7 @@ namespace Quittio\Core\Mapping;
 
 use Quittio\Core\Data\InvoiceData;
 use Quittio\Core\Mapping\Attributes\ListOf;
+use Quittio\Core\Profiles\ProfileLevel;
 use ReflectionClass;
 use ReflectionNamedType;
 use ReflectionUnionType;
@@ -22,14 +23,14 @@ final class FieldReference
     {
         $this->seen = [];
         $rows = [];
-        $this->walk(InvoiceData::class, '', null, $rows);
+        $this->walk(InvoiceData::class, '', null, null, $rows);
 
         $lines = [
             '# Field reference',
             '',
             'Generated from the mapping attributes of the data model (`php tools/docs/generate.php`). Do not edit by hand.',
             '',
-            'Paths use the property names of `InvoiceData`; `[]` marks lists. "Level" is the lowest Factur-X/ZUGFeRD profile that carries the field.',
+            'Paths use the property names of `InvoiceData`; `[]` marks lists. "Level" is the lowest Factur-X/ZUGFeRD profile that carries the field at this path (a part is never written without its parent, e.g. the buyer address starts with BASIC WL).',
             '',
             '| Path | BT | Card. | Level | CII | UBL | Notes |',
             '|---|---|---|---|---|---|---|',
@@ -45,10 +46,12 @@ final class FieldReference
      * @param  class-string  $class
      * @param  list<list<string>>  $rows
      */
-    private function walk(string $class, string $prefix, ?string $parentProperty, array &$rows): void
+    private function walk(string $class, string $prefix, ?string $parentTerm, ?ProfileLevel $parentLevel, array &$rows): void
     {
         foreach (FieldMatrix::fields($class) as $name => $field) {
             $path = $prefix.$name;
+            $level = FieldMatrix::level($class, $name, $parentLevel);
+            $bt = FieldMatrix::businessTerm($class, $name, $parentTerm);
             $notes = array_filter([
                 $field->computed ? 'calculated' : null,
                 $field->pdfOnly ? 'PDF only' : null,
@@ -62,9 +65,9 @@ final class FieldReference
             $isList = $this->isList($class, $name);
             $rows[] = [
                 '`'.$path.($isList ? '[]' : '').'`',
-                FieldMatrix::businessTerm($class, $name, $parentProperty) ?? '',
+                $bt ?? '',
                 $field->cardinality ?? '',
-                $field->bt === null ? '' : $field->level->label(),
+                $field->bt === null ? '' : $level->label(),
                 $field->cii === null ? '' : '`'.$field->cii.'`',
                 $field->ubl === null ? '' : '`'.$field->ubl.'`',
                 implode(', ', $notes),
@@ -72,7 +75,7 @@ final class FieldReference
 
             if ($child !== null && ! isset($this->seen[$child.'@'.$path])) {
                 $this->seen[$child.'@'.$path] = true;
-                $this->walk($child, $path.($isList ? '[].' : '.'), $name, $rows);
+                $this->walk($child, $path.($isList ? '[].' : '.'), $bt, $level, $rows);
             }
         }
     }

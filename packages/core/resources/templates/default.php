@@ -11,6 +11,7 @@
 $design = $invoice->design;
 $labels = $invoice->labels;
 $primary = $e($design->primaryColor);
+$secondary = $e($design->secondaryColor);
 $text = $e($design->textColor);
 $muted = $e($design->mutedColor);
 $doc = $invoice->document;
@@ -31,10 +32,11 @@ $columns = $prices ? 6 : 3;
     .letterhead td { height: <?= $e($design->letterheadHeight) ?>mm; }
     .company { font-size: 14pt; font-weight: bold; color: <?= $primary ?>; }
     /* mPDF ignores margin and padding of blocks inside table cells; spacing there uses cell padding. */
-    .address { width: <?= $e($design->addressWidth) ?>mm; }
-    .address td { padding: 0; }
-    .address td.sender-line { font-size: 6.5pt; color: <?= $muted ?>; border-bottom: 0.2mm solid <?= $muted ?>; padding-bottom: 1mm; }
-    .address td.address-lines { padding-top: 2mm; }
+    /* The address field is positioned on the page (letter layout, e.g. DIN 5008), whatever the letterhead height. */
+    .address { position: absolute; top: <?= $e($design->addressTop) ?>mm; left: <?= $e($design->addressLeft) ?>mm; width: <?= $e($design->addressWidth) ?>mm; height: <?= $e($design->addressHeight) ?>mm; overflow: visible; }
+    /* DIN 5008: the sender line closes the "Zusatz- und Vermerkzone", the recipient starts in the "Anschriftzone". */
+    .notice-zone { height: <?= $e($design->noticeZoneHeight) ?>mm; }
+    .sender-line { font-size: 6.5pt; color: <?= $muted ?>; border-bottom: 0.2mm solid <?= $muted ?>; height: <?= $e(max(0, $design->senderLineHeight - 1)) ?>mm; padding-bottom: 1mm; }
     .recipient { height: <?= $e($design->addressHeight) ?>mm; }
     .mark { position: absolute; left: 5mm; width: 5mm; height: 0; border-top: 0.2mm solid <?= $muted ?>; }
     .meta td { padding: 0.6mm 0; }
@@ -45,15 +47,22 @@ $columns = $prices ? 6 : 3;
     .lines .num { text-align: right; white-space: nowrap; }
     .lines .group td { font-weight: bold; background-color: #f3f4f6; }
     .lines .sub td { color: <?= $muted ?>; font-size: 8pt; }
+    /* Highlighted lines (LineBuilder::highlight()): shaded, marked in the secondary colour. */
+    .lines .highlight td { background-color: #f8fafc; }
+    .lines .highlight td.position { border-left: 0.8mm solid <?= $secondary ?>; }
     .description { color: <?= $muted ?>; font-size: 8pt; }
     .totals { width: 80mm; margin-left: auto; margin-top: 4mm; page-break-inside: avoid; }
     .totals td { padding: 1mm 1.5mm; }
-    .totals .due td { font-weight: bold; font-size: 10.5pt; border-top: 0.4mm solid <?= $primary ?>; }
+    .totals .due td { font-weight: bold; font-size: 10.5pt; border-top: 0.4mm solid <?= $secondary ?>; }
     .section { margin-top: 6mm; page-break-inside: avoid; }
-    .section-title { font-weight: bold; color: <?= $primary ?>; margin-bottom: 1mm; }
+    .section-title { font-weight: bold; color: <?= $secondary ?>; margin-bottom: 1mm; }
     .stack td { padding: 0; }
     .stack td.gap { padding-top: 4mm; }
     .footer td { font-size: 7pt; color: <?= $muted ?>; padding-right: 3mm; }
+    <?php if ($design->watermarkCss): ?>
+    /* Watermark for browsers; mPDF ignores generated content and prints <watermarktext> instead. */
+    body::before { content: <?= $design->watermarkCss ?>; position: fixed; top: 45%; left: 0; right: 0; text-align: center; font-size: 72pt; font-weight: bold; color: rgba(0, 0, 0, 0.08); transform: rotate(-35deg); pointer-events: none; z-index: 1000; }
+    <?php endif ?>
 </style>
 </head>
 <body>
@@ -71,21 +80,24 @@ $columns = $prices ? 6 : 3;
 <?php foreach ($design->foldMarks as $mark): ?><div class="mark" style="top: <?= $e($mark) ?>mm;"></div><?php endforeach ?>
 <?php if ($design->punchMark): ?><div class="mark" style="top: <?= $e($design->punchMark) ?>mm; width: 8mm;"></div><?php endif ?>
 
+<?php /* The recipient is the buyer; on a self-billed invoice (Gutschrift) the buyer issues it to the seller. */ ?>
+<div class="address">
+    <div class="notice-zone"></div>
+    <div class="sender-line"><?= $e($design->senderLine) ?></div>
+    <div class="address-lines"><?php foreach ($invoice->recipient->address->lines as $line): ?><?= $e($line) ?><br><?php endforeach ?></div>
+</div>
+
 <table class="letterhead"><tr>
     <td>&nbsp;</td>
     <td class="right">
         <?php if ($design->logo): ?><img src="<?= $e($design->logo) ?>" style="max-height: 20mm; max-width: 60mm;"><br><?php endif ?>
-        <span class="company"><?= $e($invoice->seller->displayName) ?></span>
+        <span class="company"><?= $e($invoice->issuer->displayName) ?></span>
+        <?php if (! $design->footerHasAddress): ?><div class="small muted"><?php foreach ($invoice->issuer->address->lines as $line): ?><?= $e($line) ?><br><?php endforeach ?></div><?php endif ?>
     </td>
 </tr></table>
 
 <table><tr>
-    <td style="width: 95mm;" class="recipient">
-        <table class="address">
-            <tr><td class="sender-line"><?= $e($design->senderLine) ?></td></tr>
-            <tr><td class="address-lines"><?php foreach ($invoice->buyer->address->lines as $line): ?><?= $e($line) ?><br><?php endforeach ?></td></tr>
-        </table>
-    </td>
+    <td style="width: 95mm;" class="recipient">&nbsp;</td>
     <td>
         <table class="meta">
             <tr><td class="label"><?= $e($invoice->numberLabel) ?></td><td class="right"><?= $e($invoice->number) ?></td></tr>
@@ -100,7 +112,10 @@ $columns = $prices ? 6 : 3;
             <tr><td class="label"><?= $e($labels->delivery_date) ?></td><td class="right"><?= $e($info->deliveryDate) ?></td></tr>
             <?php endif ?>
             <?php if ($invoice->servicePeriod): ?>
-            <tr><td class="label"><?= $e($labels->service_period) ?></td><td class="right"><?= $e($invoice->servicePeriod) ?></td></tr>
+            <tr><td class="label"><?= $e($invoice->servicePeriodLabel) ?></td><td class="right"><?= $e($invoice->servicePeriod) ?></td></tr>
+            <?php endif ?>
+            <?php if ($invoice->deliveryDate): ?>
+            <tr><td class="label"><?= $e($labels->delivery_date) ?></td><td class="right"><?= $e($invoice->deliveryDate) ?></td></tr>
             <?php endif ?>
             <?php if ($invoice->buyer->customerNumber): ?>
             <tr><td class="label"><?= $e($labels->customer_number) ?></td><td class="right"><?= $e($invoice->buyer->customerNumber) ?></td></tr>
@@ -108,14 +123,21 @@ $columns = $prices ? 6 : 3;
             <?php foreach ($invoice->references as $reference): ?>
             <tr><td class="label"><?= $e($reference->label) ?></td><td class="right"><?= $e($reference->value) ?></td></tr>
             <?php endforeach ?>
+            <?php $supplier = $doc->isSelfBilled ? $labels->supplier.' ' : ''; ?>
             <?php if ($invoice->seller->vatId): ?>
-            <tr><td class="label"><?= $e($labels->vat_id) ?></td><td class="right"><?= $e($invoice->seller->vatId) ?></td></tr>
+            <tr><td class="label"><?= $e($supplier.$labels->vat_id) ?></td><td class="right"><?= $e($invoice->seller->vatId) ?></td></tr>
             <?php endif ?>
             <?php if ($invoice->seller->taxNumber): ?>
-            <tr><td class="label"><?= $e($labels->tax_number) ?></td><td class="right"><?= $e($invoice->seller->taxNumber) ?></td></tr>
+            <tr><td class="label"><?= $e($supplier.$labels->tax_number) ?></td><td class="right"><?= $e($invoice->seller->taxNumber) ?></td></tr>
+            <?php endif ?>
+            <?php if ($invoice->taxRepresentative): ?>
+            <tr><td class="label"><?= $e($labels->tax_representative) ?></td><td class="right"><?php foreach ($invoice->taxRepresentative->address->lines as $line): ?><?= $e($line) ?><br><?php endforeach ?><?= $e($labels->vat_id) ?> <?= $e($invoice->taxRepresentative->vatId) ?></td></tr>
             <?php endif ?>
             <?php if ($invoice->buyer->vatId): ?>
-            <tr><td class="label"><?= $e($labels->buyer) ?> <?= $e($labels->vat_id) ?></td><td class="right"><?= $e($invoice->buyer->vatId) ?></td></tr>
+            <tr><td class="label"><?= $e($doc->isSelfBilled ? $labels->vat_id : $labels->buyer.' '.$labels->vat_id) ?></td><td class="right"><?= $e($invoice->buyer->vatId) ?></td></tr>
+            <?php endif ?>
+            <?php if ($invoice->delivery && $invoice->delivery->address): ?>
+            <tr><td class="label"><?= $e($labels->deliver_to) ?></td><td class="right"><?php foreach ($invoice->delivery->address->lines as $line): ?><?= $e($line) ?><br><?php endforeach ?></td></tr>
             <?php endif ?>
         </table>
     </td>
@@ -146,8 +168,8 @@ $columns = $prices ? 6 : 3;
     <?php foreach ($invoice->lineGroups as $group): ?>
         <?php if ($group->title): ?><tr class="group"><td colspan="<?= $columns ?>"><?= $e($group->title) ?></td></tr><?php endif ?>
         <?php foreach ($group->lines as $line): ?>
-            <tr>
-                <td><?= $e($line->position) ?></td>
+            <tr<?= $line->highlight ? ' class="highlight"' : '' ?>>
+                <td class="position"><?= $e($line->position) ?></td>
                 <td>
                     <?php if ($line->optional): ?><span class="muted">[<?= $e($labels->optional_line) ?>]</span> <?php endif ?>
                     <?php if ($line->alternativeTo): ?><span class="muted">[<?= $e($invoice->label('alternative_line', ['position' => (string) $line->alternativeTo])) ?>]</span> <?php endif ?>
@@ -156,14 +178,14 @@ $columns = $prices ? 6 : 3;
                     <?php if ($line->description->html): ?><div class="description"><?= $line->description->html ?></div><?php endif ?>
                     <?php if ($line->period): ?><div class="description"><?= $e($labels->service_period) ?>: <?= $e($line->period) ?></div><?php endif ?>
                     <?php foreach ($line->attributes as $attribute): ?><div class="description"><?= $e($attribute->name) ?>: <?= $e($attribute->value) ?></div><?php endforeach ?>
-                    <?php foreach ($line->allowances as $allowance): ?><div class="description"><?= $e($labels->allowance) ?> <?= $e($allowance->reason) ?> <?= $e($allowance->percent) ?>: −<?= $e($allowance->amount) ?></div><?php endforeach ?>
-                    <?php foreach ($line->charges as $charge): ?><div class="description"><?= $e($labels->charge) ?> <?= $e($charge->reason) ?> <?= $e($charge->percent) ?>: <?= $e($charge->amount) ?></div><?php endforeach ?>
+                    <?php foreach ($line->allowances as $allowance): ?><div class="description"><?= $e($allowance->label) ?>: −<?= $e($allowance->amount) ?></div><?php endforeach ?>
+                    <?php foreach ($line->charges as $charge): ?><div class="description"><?= $e($charge->label) ?>: <?= $e($charge->amount) ?></div><?php endforeach ?>
                     <?php if ($line->note): ?><div class="description"><?= $e($line->note) ?></div><?php endif ?>
                     <?php if (count($line->serialNumbers) > 0): ?><div class="description"><?= $e($labels->serial_numbers) ?>: <?php foreach ($line->serialNumbers as $i => $serial): ?><?= $i > 0 ? ', ' : '' ?><?= $e($serial) ?><?php endforeach ?></div><?php endif ?>
                 </td>
                 <td class="num"><?= $e($line->quantity) ?> <?= $e($line->unit->label) ?></td>
                 <?php if ($prices): ?>
-                <td class="num"><?= $e($line->showGrossPrice ? $line->grossUnitPrice : $line->unitPrice) ?></td>
+                <td class="num"><?= $e($line->unitPrice) ?><?php if ($line->unitPriceBase): ?> / <?= $e($line->unitPriceBase) ?><?php endif ?><?php if ($line->showGrossPrice): ?><div class="description"><?= $e($labels->unit_price_gross) ?> <?= $e($line->grossUnitPrice) ?></div><?php endif ?></td>
                 <td class="num"><?= $e($line->vatRate) ?></td>
                 <td class="num"><?= $e($line->total) ?></td>
                 <?php endif ?>
@@ -174,7 +196,7 @@ $columns = $prices ? 6 : 3;
                     <td><?= $e($sub->name) ?></td>
                     <td class="num"><?= $e($sub->quantity) ?> <?= $e($sub->unit->label) ?></td>
                     <?php if ($prices): ?>
-                    <td class="num"><?= $e($sub->unitPrice) ?></td>
+                    <td class="num"><?= $e($sub->unitPrice) ?><?php if ($sub->unitPriceBase): ?> / <?= $e($sub->unitPriceBase) ?><?php endif ?></td>
                     <td class="num"><?= $e($sub->vatRate) ?></td>
                     <td class="num"><?= $e($sub->total) ?></td>
                     <?php endif ?>
@@ -192,10 +214,10 @@ $columns = $prices ? 6 : 3;
     <?php if ($invoice->totals->allowanceSum || $invoice->totals->chargeSum): ?>
         <tr><td><?= $e($labels->line_net_sum) ?></td><td class="right"><?= $e($invoice->totals->lineNetSum) ?></td></tr>
         <?php foreach ($invoice->allowances as $allowance): ?>
-            <tr><td><?= $e($labels->allowance) ?> <?= $e($allowance->reason) ?> <?= $e($allowance->percent) ?></td><td class="right">−<?= $e($allowance->amount) ?></td></tr>
+            <tr><td><?= $e($allowance->label) ?></td><td class="right">−<?= $e($allowance->amount) ?></td></tr>
         <?php endforeach ?>
         <?php foreach ($invoice->charges as $charge): ?>
-            <tr><td><?= $e($labels->charge) ?> <?= $e($charge->reason) ?> <?= $e($charge->percent) ?></td><td class="right"><?= $e($charge->amount) ?></td></tr>
+            <tr><td><?= $e($charge->label) ?></td><td class="right"><?= $e($charge->amount) ?></td></tr>
         <?php endforeach ?>
     <?php endif ?>
     <tr><td><?= $e($labels->net_total) ?></td><td class="right"><?= $e($invoice->totals->netTotal) ?></td></tr>
@@ -206,7 +228,7 @@ $columns = $prices ? 6 : 3;
     <?php if ($invoice->totals->prepaid): ?><tr><td><?= $e($labels->prepaid) ?></td><td class="right">−<?= $e($invoice->totals->prepaid) ?></td></tr><?php endif ?>
     <?php if ($invoice->totals->rounding): ?><tr><td><?= $e($labels->rounding) ?></td><td class="right"><?= $e($invoice->totals->rounding) ?></td></tr><?php endif ?>
     <?php foreach ($invoice->totals->thirdPartyPayments as $payment): ?><tr><td><?= $e($payment->description) ?></td><td class="right"><?= $e($payment->amount) ?></td></tr><?php endforeach ?>
-    <tr class="due"><td><?= $e($labels->amount_due) ?></td><td class="right"><?= $e($invoice->totals->amountDue) ?></td></tr>
+    <?php if ($invoice->totals->amountDue): ?><tr class="due"><td><?= $e($invoice->totals->amountDueLabel) ?></td><td class="right"><?= $e($invoice->totals->amountDue) ?></td></tr><?php endif ?>
 </table>
 <?php if ($invoice->totals->taxCurrencyNote): ?><p class="small muted right"><?= $e($invoice->totals->taxCurrencyNote) ?></p><?php endif ?>
 <?php endif ?>
@@ -269,7 +291,10 @@ $columns = $prices ? 6 : 3;
 </div>
 <?php endif ?>
 
-<?php if ($invoice->paymentTerms || $invoice->payment): ?>
+<?php $accounts = $invoice->payment && ! $invoice->payment->isRefund; ?>
+<?php /* A direct debit collects from the buyer: not on refunds and not on payouts (self-billed). */ ?>
+<?php $debit = $invoice->payment && $invoice->payment->directDebit && ! $invoice->payment->isRefund && ! $invoice->payment->isPayout; ?>
+<?php if ($invoice->paymentTerms || $accounts || $debit): ?>
 <div class="section">
     <table><tr>
         <td>
@@ -282,10 +307,11 @@ $columns = $prices ? 6 : 3;
                 </td></tr>
                 <?php $gap = 'gap'; ?>
             <?php endif ?>
-            <?php if ($invoice->payment): ?>
+            <?php if ($accounts): ?>
                 <?php foreach ($invoice->payment->accounts as $account): ?>
                     <tr><td class="<?= $gap ?>">
-                        <div class="section-title"><?= $e($labels->bank_details) ?></div>
+                        <div class="section-title"><?= $e($invoice->payment->isPayout ? $labels->payout_account : $labels->bank_details) ?></div>
+                        <?php if ($invoice->payee): ?><?= $e($labels->payee) ?>: <?= $e($invoice->payee->name) ?><br><?php endif ?>
                         <?php if ($account->name): ?><?= $e($labels->account_holder) ?>: <?= $e($account->name) ?><br><?php endif ?>
                         <?= $e($labels->iban) ?>: <?= $e($account->iban) ?><br>
                         <?php if ($account->bic): ?><?= $e($labels->bic) ?>: <?= $e($account->bic) ?><br><?php endif ?>
@@ -293,12 +319,12 @@ $columns = $prices ? 6 : 3;
                     </td></tr>
                     <?php $gap = 'gap'; ?>
                 <?php endforeach ?>
-                <?php if ($invoice->payment->directDebit): ?>
-                    <tr><td class="<?= $gap ?>"><?= $e($labels->direct_debit) ?>
-                        <?php if ($invoice->payment->directDebit->mandate): ?><?= $e($labels->mandate) ?>: <?= $e($invoice->payment->directDebit->mandate) ?><?php endif ?>
-                        <?php if ($invoice->payment->directDebit->creditorId): ?> · <?= $e($labels->creditor_id) ?>: <?= $e($invoice->payment->directDebit->creditorId) ?><?php endif ?>
-                    </td></tr>
-                <?php endif ?>
+            <?php endif ?>
+            <?php if ($debit): ?>
+                <tr><td class="<?= $gap ?>"><?= $e($labels->direct_debit) ?>
+                    <?php if ($invoice->payment->directDebit->mandate): ?><?= $e($labels->mandate) ?>: <?= $e($invoice->payment->directDebit->mandate) ?><?php endif ?>
+                    <?php if ($invoice->payment->directDebit->creditorId): ?> · <?= $e($labels->creditor_id) ?>: <?= $e($invoice->payment->directDebit->creditorId) ?><?php endif ?>
+                </td></tr>
             <?php endif ?>
             </table>
         </td>
@@ -306,6 +332,7 @@ $columns = $prices ? 6 : 3;
             <td style="width: 32mm;" class="right">
                 <img src="<?= $e($invoice->payment->qrCode->dataUri) ?>" style="width: 28mm; height: 28mm;"><br>
                 <span class="small muted"><?= $e($labels->girocode) ?></span>
+                <?php if ($invoice->payment->qrCode->note): ?><br><span class="small muted"><?= $e($invoice->payment->qrCode->note) ?></span><?php endif ?>
             </td>
         <?php endif ?>
     </tr></table>

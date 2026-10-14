@@ -38,7 +38,7 @@ final class FieldMatrixRule implements Rule
     public function check(InvoiceData $invoice, ValidationContext $context): iterable
     {
         $messages = [];
-        $this->walk($invoice, '', null, $context, $messages);
+        $this->walk($invoice, '', null, null, false, $context, $messages);
 
         $hasSubLines = array_filter($invoice->lines, static fn ($line): bool => $line->subLines !== []) !== [];
         if ($hasSubLines && ! in_array($context->profile->key(), ['extended', 'xrechnung-extension'], true)) {
@@ -49,9 +49,18 @@ final class FieldMatrixRule implements Rule
     }
 
     /**
+     * A field is not part of a profile if its level, raised to the level of its parent field,
+     * is above the profile's level (see FieldMatrix::level()). The finding of a field covers its
+     * parts: below a field that is EXTENDED or XRechnung extension only the walk stops, below a
+     * field that was reported as not allowed its parts are not reported as not allowed again
+     * (but parts that are EXTENDED only still are).
+     *
+     * @param  string|null  $parentTerm  business term of the parent field (BT-55 instead of BT-40 below BG-8)
+     * @param  ProfileLevel|null  $parentLevel  effective level of the parent field
+     * @param  bool  $parentReported  the parent field was reported as not part of the profile
      * @param  list<ValidationMessage>  $messages
      */
-    private function walk(object $dto, string $path, ?string $parentProperty, ValidationContext $context, array &$messages): void
+    private function walk(object $dto, string $path, ?string $parentTerm, ?ProfileLevel $parentLevel, bool $parentReported, ValidationContext $context, array &$messages): void
     {
         $profile = $context->profile;
         $values = get_object_vars($dto);
@@ -59,16 +68,25 @@ final class FieldMatrixRule implements Rule
         foreach (FieldMatrix::fields($dto::class) as $name => $field) {
             $value = $values[$name] ?? null;
             $childPath = $path === '' ? $name : $path.'.'.$name;
-            $bt = FieldMatrix::businessTerm($dto::class, $name, $parentProperty);
+            $bt = FieldMatrix::businessTerm($dto::class, $name, $parentTerm);
+            $level = FieldMatrix::level($dto::class, $name, $parentLevel);
             $present = ! ($value === null || $value === '' || $value === []);
+            $reported = $parentReported;
 
             if ($present) {
                 if ($field->extendedOnly && $profile->level() !== ProfileLevel::Extended) {
                     $messages[] = $this->message($context, Severity::Error, 'QUITTIO-PROFILE-EXTENDED-ONLY', 'The field :field is available only in profile EXTENDED, not in :profile.', $childPath, $bt);
-                } elseif ($field->xrechnungExtensionOnly && $profile->key() !== 'xrechnung-extension') {
+
+                    continue;
+                }
+                if ($field->xrechnungExtensionOnly && $profile->key() !== 'xrechnung-extension') {
                     $messages[] = $this->message($context, Severity::Error, 'QUITTIO-PROFILE-XRECHNUNG-EXTENSION-ONLY', 'The field :field is available only in the XRechnung extension, not in :profile.', $childPath, $bt);
-                } elseif (! $field->pdfOnly && ! $field->internal && ! $field->computed && $bt !== null && ! $profile->level()->includes($field->level)) {
+
+                    continue;
+                }
+                if (! $parentReported && ! $field->pdfOnly && ! $field->internal && ! $field->computed && $bt !== null && ! $profile->level()->includes($level)) {
                     $messages[] = $this->message($context, Severity::Warning, 'QUITTIO-PROFILE-NOT-ALLOWED', 'The field :field (:bt) is not part of profile :profile and will not be written to the XML.', $childPath, $bt);
+                    $reported = true;
                 }
             } elseif ($bt !== null && $this->isRequired($bt, $field->requiredIn, $context)) {
                 $messages[] = $this->message($context, Severity::Error, 'QUITTIO-PROFILE-REQUIRED', 'The field :field (:bt) is mandatory in profile :profile.', $childPath, $bt);
@@ -80,7 +98,7 @@ final class FieldMatrixRule implements Rule
 
             foreach (is_array($value) ? $value : [$value] as $index => $child) {
                 if ($this->isDto($child)) {
-                    $this->walk($child, is_array($value) ? $childPath.'['.$index.']' : $childPath, $name, $context, $messages);
+                    $this->walk($child, is_array($value) ? $childPath.'['.$index.']' : $childPath, $bt, $level, $reported, $context, $messages);
                 }
             }
         }

@@ -15,4 +15,9 @@ final class InvalidInvoiceData extends InvalidArgumentException implements Quitt
     {
         return new self(sprintf('Missing %s (%s).', $what, $bt));
     }
+
+    public static function duplicateLineId(string $id): self
+    {
+        return new self(sprintf('The line identifier "%s" (BT-126) is used more than once. Line identifiers must be unique, also across sub lines.', $id));
+    }
 }

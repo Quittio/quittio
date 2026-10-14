@@ -42,7 +42,7 @@ final class MakeTemplateCommand extends QuittioCommand
         ));
 
         $this->components->info(sprintf('Template created in %s', $target));
-        $this->line(sprintf("Use it per call with ->template('invoices.%s.layout') or globally via quittio.pdf.template.", $name));
+        $this->line(sprintf("Use it per call with ->template('invoices.%s.layout') (allowed by quittio.pdf.templates) or globally via quittio.pdf.template.", $name));
 
         return self::SUCCESS;
     }

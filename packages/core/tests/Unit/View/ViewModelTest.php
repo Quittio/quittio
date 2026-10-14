@@ -5,7 +5,9 @@ declare(strict_types=1);
 use Quittio\Core\Calculation\En16931Calculator;
 use Quittio\Core\Countries\MandatoryField;
 use Quittio\Core\Countries\MandatoryFieldList;
+use Quittio\Core\Data\Presentation\Colors;
 use Quittio\Core\Data\Presentation\Presentation;
+use Quittio\Core\Enums\VatCategory;
 use Quittio\Core\Templates\PhpTemplateEngine;
 use Quittio\Core\Tests\Support\Invoices;
 use Quittio\Core\View\FormattedValue;
@@ -132,17 +134,239 @@ it('scales large logos once and caches them', function () {
     expect($first)->not->toBe($dir.'/logo.png')
         ->and($second)->toBe($first)
         ->and(array_slice((array) getimagesize((string) $first), 0, 2))->toBe([600, 150])
-        ->and($cache->resolve('data:image/png;base64,AAA'))->toBe('data:image/png;base64,AAA')
+        ->and($cache->resolve('data:image/png;base64,AAA'))->toBeNull()
         ->and($cache->resolve(null))->toBeNull();
 })->skip(! extension_loaded('gd'), 'GD is not available.');
 
 it('asks only for payment on invoices, not on credit notes', function () {
     $credit = (new En16931Calculator)->calculate(Invoices::simple()->type('381')->paymentTerms(fn ($t) => $t->dueInDays(14)->cashDiscount(7, '2'))->build());
     $view = (new ViewModelFactory)->build($credit, new ViewContext(locale: 'en'));
+    $terms = implode(' ', $view->paymentTerms->lines->toArray());
 
+    // The discount agreement is stated as in BT-20, but without a date or an amount to pay.
     expect($view->payment->qrCode)->toBeNull()
-        ->and(implode(' ', $view->paymentTerms->lines->toArray()))->not->toContain('Please pay')
-        ->and(implode(' ', $view->paymentTerms->lines->toArray()))->not->toContain('cash discount')
+        ->and($view->payment->isRefund)->toBeTrue()
+        ->and($view->totals->amountDueLabel)->toBe('Amount to be refunded')
+        ->and($terms)->not->toContain('Please pay')
+        ->and($terms)->toContain('For payment within 7 days we grant a cash discount of 2%.')
+        ->and($terms)->not->toContain('amount')
         ->and((new Quittio\Core\Pdf\Qr\EpcGiroCodeGenerator)->supports($credit))->toBeFalse()
-        ->and(viewModel()->payment->qrCode)->not->toBeNull();
+        ->and(viewModel()->payment->qrCode)->not->toBeNull()
+        ->and(viewModel()->payment->isRefund)->toBeFalse()
+        ->and(viewModel()->totals->amountDueLabel)->toBe('Amount due');
+});
+
+it('records only printed leaf values, not counting or iterating', function () {
+    $invoice = (new En16931Calculator)->calculate(Invoices::simple()->note('Reverse charge', 'REG')->build());
+    $counted = (new ViewModelFactory)->build($invoice);
+    (new PhpTemplateEngine([templateDir('<?php if (count($invoice->legalNotes) > 0 && ! $invoice->notes->isEmpty()): ?>x<?php endif ?><?php foreach ($invoice->lineGroups as $group): endforeach ?>')]))->render('custom', $counted);
+    $printed = (new ViewModelFactory)->build($invoice);
+    (new PhpTemplateEngine([templateDir('<?php foreach ($invoice->legalNotes as $note): ?><?= $e($note) ?><?php endforeach ?><?php foreach ($invoice->lineGroups as $g): foreach ($g->lines as $l): ?><?= $e($l->period) ?><?php endforeach; endforeach ?>')]))->render('custom', $printed);
+
+    // The lines have no period: reading null values is not recorded.
+    expect($counted->accessLog()->accessed('legalNotes'))->toBeFalse()
+        ->and($counted->accessLog()->accessed('lineGroups'))->toBeFalse()
+        ->and($printed->accessLog()->accessed('legalNotes'))->toBeTrue()
+        ->and($printed->accessLog()->accessed('legalNotes[*]'))->toBeTrue()
+        ->and($printed->accessLog()->accessed('lineGroups[*].lines[*].period'))->toBeFalse()
+        ->and($printed->accessLog()->accessed('lineGroups[*].lines[*].name'))->toBeFalse()
+        ->and($printed->accessLog()->accessed('lines[*].period'))->toBeFalse();
+});
+
+it('requires regulatory notes and the tax representative in the PDF', function () {
+    $invoice = (new En16931Calculator)->calculate(Invoices::simple()
+        ->note('Gutschrift', 'REG')
+        ->taxRepresentative('Fiskal GmbH', 'DE111111111', Quittio\Core\Data\Party\Address::make('Weg 2', '10115', 'Berlin', 'DE'))
+        ->build());
+    $fields = array_map(static fn (MandatoryField $f): string => $f->accessKey, MandatoryFieldGuard::baseFields($invoice)->fields);
+
+    $view = (new ViewModelFactory)->build($invoice, new ViewContext(locale: 'de'));
+    $html = (new PhpTemplateEngine)->render('default', $view);
+
+    expect($fields)->toContain('legalNotes[*]')
+        ->and($fields)->toContain('taxRepresentative.vatId')
+        ->and((new MandatoryFieldGuard)->check(MandatoryFieldGuard::baseFields($invoice), $view->accessLog()))->toBe([])
+        ->and($html)->toContain('Steuerlicher Vertreter')
+        ->and($html)->toContain('DE111111111')
+        ->and($html)->toContain('Gutschrift');
+
+    $custom = (new ViewModelFactory)->build($invoice);
+    (new PhpTemplateEngine([templateDir('<?php foreach ($invoice->notes as $note): ?><?= $note->html ?><?php endforeach ?>')]))->render('custom', $custom);
+    $missing = (new MandatoryFieldGuard(MandatoryFieldGuard::MODE_LOG))->check(new MandatoryFieldList([new MandatoryField('legalNotes', 'Notes'), new MandatoryField('taxRepresentative.vatId', 'Representative')]), $custom->accessLog());
+
+    expect($missing)->toHaveCount(2);
+});
+
+it('states the amount after each cash discount tier', function () {
+    $invoice = (new En16931Calculator)->calculate(Invoices::simple()->paymentTerms(fn ($t) => $t->dueInDays(30)->cashDiscount(7, '3')->cashDiscount(14, '2'))->build());
+    $view = (new ViewModelFactory)->build($invoice, new ViewContext(locale: 'de'));
+    $discounts = $view->paymentTerms->discounts;
+
+    expect(spaces((string) $discounts[0]->amount))->toBe('1.154,30 €')
+        ->and(spaces((string) $discounts[1]->amount))->toBe('1.166,20 €')
+        ->and((string) $discounts[1]->until)->toBe('17.10.2026')
+        ->and(spaces($discounts[1]->text))->toBe('Bei Zahlung bis 17.10.2026 gewähren wir 2 % Skonto (Zahlbetrag 1.166,20 €).');
+});
+
+it('titles every type code by its family', function (string $code, string $title) {
+    $invoice = (new En16931Calculator)->calculate(Invoices::simple()->type($code)->build());
+
+    expect((new ViewModelFactory)->build($invoice, new ViewContext(locale: 'de'))->title)->toBe($title);
+})->with([
+    'invoice' => ['380', 'Rechnung'],
+    'self-billed invoice' => ['389', 'Gutschrift'],
+    'self-billed credit note' => ['261', 'Gutschrift'],
+    'self-billed debit note' => ['527', 'Gutschrift'],
+    'credit note' => ['381', 'Rechnungskorrektur'],
+    'factored credit note' => ['396', 'Rechnungskorrektur'],
+    'credit note goods' => ['81', 'Rechnungskorrektur'],
+    'forwarder credit note' => ['532', 'Rechnungskorrektur'],
+    'proforma' => ['325', 'Proforma-Rechnung'],
+    'prepayment' => ['386', 'Anzahlungsrechnung'],
+    'debit note' => ['383', 'Rechnung'],
+]);
+
+it('shows the price base quantity and gross prices next to the net price', function () {
+    $net = (new En16931Calculator)->calculate(Invoices::base()
+        ->line(fn ($l) => $l->name('Screws')->quantity(250, 'H87')->netPrice('12.3456', '100')->vat(VatCategory::StandardRate, '19'))
+        ->line(fn ($l) => $l->name('Nuts')->quantity(3, 'H87')->netPrice('2.00')->vat(VatCategory::StandardRate, '19'))
+        ->build());
+    $view = (new ViewModelFactory)->build($net, new ViewContext(locale: 'de'));
+    $gross = (new En16931Calculator)->calculate(Invoices::base()
+        ->line(fn ($l) => $l->name('Shirt')->quantity(3, 'H87')->priceInclVat('9.99')->vat(VatCategory::StandardRate, '19'))
+        ->build());
+    // The unit price column stays net, like the line total next to it; the gross price is added below.
+    $grossHtml = spaces((new PhpTemplateEngine)->render('default', (new ViewModelFactory)->build($gross, new ViewContext(locale: 'de', defaults: new Presentation(showGrossPrices: true)))));
+
+    expect((string) $view->lines[0]->unitPriceBase)->toBe('100 Stk.')
+        ->and($view->lines[1]->unitPriceBase)->toBeNull()
+        ->and(spaces((new PhpTemplateEngine)->render('default', $view)))->toContain('12,3456 € / 100 Stk.')
+        ->and($grossHtml)->toContain('8,393 €<div class="description">Einzelpreis brutto 9,99 €</div>');
+});
+
+it('names reverse charge, zero rate and non-taxable rows correctly', function (VatCategory $category, ?string $rate, string $label) {
+    $invoice = (new En16931Calculator)->calculate(Invoices::simple()
+        ->line(fn ($l) => $l->name('Other')->quantity(1, 'H87')->netPrice('50.00')->vat($category, $rate, 'Reason', null))
+        ->build());
+    $labels = array_map(static fn ($row): string => spaces((string) $row->label), iterator_to_array((new ViewModelFactory)->build($invoice, new ViewContext(locale: 'de'))->vatRows));
+
+    expect($labels)->toContain($label);
+})->with([
+    'reverse charge' => [VatCategory::ReverseCharge, '0', 'Keine USt. (Steuerschuldnerschaft des Leistungsempfängers) auf 50,00 €'],
+    'zero rate' => [VatCategory::ZeroRated, '0', '0 % USt. (Nullsatz) auf 50,00 €'],
+    'exempt' => [VatCategory::Exempt, '0', 'Umsatzsteuerfrei (Steuerbefreit) auf 50,00 €'],
+]);
+
+it('names the VAT rate of split document allowances', function () {
+    $invoice = (new En16931Calculator)->calculate(Invoices::simple()
+        ->line(fn ($l) => $l->name('Book')->quantity(1, 'H87')->netPrice('20.00')->vat(VatCategory::StandardRate, '7'))
+        ->discountPercent('10', 'Project')
+        ->build());
+    $labels = array_map(static fn ($a): string => spaces((string) $a->label), iterator_to_array((new ViewModelFactory)->build($invoice, new ViewContext(locale: 'de'))->allowances));
+
+    expect($labels)->toBe(['Nachlass Project 10 % (19 % USt.)', 'Nachlass Project 10 % (7 % USt.)']);
+});
+
+it('labels a single delivery date and shows it next to an invoicing period', function () {
+    $date = (new ViewModelFactory)->build((new En16931Calculator)->calculate(Invoices::simple()->build()), new ViewContext(locale: 'de'));
+    $period = (new ViewModelFactory)->build((new En16931Calculator)->calculate(Invoices::simple()->invoicingPeriod('2026-09-01', '2026-09-30')->build()), new ViewContext(locale: 'de'));
+
+    expect($date->servicePeriodLabel)->toBe('Leistungsdatum')
+        ->and($date->deliveryDate)->toBeNull()
+        ->and($period->servicePeriodLabel)->toBe('Leistungszeitraum')
+        ->and((string) $period->deliveryDate)->toBe('30.09.2026')
+        ->and((new PhpTemplateEngine)->render('default', $period))->toContain('30.09.2026');
+});
+
+it('uses the locale of the render call before the locale of the invoice', function () {
+    $invoice = (new En16931Calculator)->calculate(Invoices::simple()->locale('de')->build());
+
+    expect((new ViewModelFactory)->build($invoice, new ViewContext(locale: 'en'))->title)->toBe('Invoice')
+        ->and((new ViewModelFactory)->build($invoice)->title)->toBe('Rechnung');
+});
+
+it('shows payee and delivery address', function () {
+    $invoice = (new En16931Calculator)->calculate(Invoices::simple()
+        ->payee('Factor Bank AG')
+        ->deliverTo('Warehouse', Quittio\Core\Data\Party\Address::make('Dock 7', '20457', 'Hamburg', 'DE'))
+        ->build());
+    $html = (new PhpTemplateEngine)->render('default', (new ViewModelFactory)->build($invoice, new ViewContext(locale: 'en')));
+
+    expect($html)->toContain('Payee: Factor Bank AG')
+        ->and($html)->toContain('Deliver to')
+        ->and($html)->toContain('Dock 7');
+});
+
+it('notes the discounted amount and deadline of the payment QR code', function () {
+    $invoice = (new En16931Calculator)->calculate(Invoices::simple()->paymentTerms(fn ($t) => $t->dueInDays(30)->cashDiscount(10, '2'))->build());
+    $view = (new ViewModelFactory)->build($invoice, new ViewContext(locale: 'en', options: ['girocode_amount' => 'discounted']));
+
+    expect($view->payment->qrCode->payload)->toContain('EUR1166.20')
+        ->and(spaces((string) $view->payment->qrCode->note))->toBe('QR code with the amount after cash discount (1,166.20 €), valid until 13/10/2026.')
+        ->and(viewModel()->payment->qrCode->note)->toBeNull();
+});
+
+it('shows the watermark in HTML with an escaped CSS overlay', function () {
+    $view = viewModel('de', new Presentation(watermark: 'ENTWURF </style><b>'));
+    $html = (new PhpTemplateEngine)->render('default', $view);
+
+    expect($html)->toContain('body::before { content: "ENTWURF \\3C \\2F style\\3E \\3C b\\3E ";')
+        ->and($html)->not->toContain('</style><b>')
+        ->and(viewModel()->design->watermarkCss)->toBeNull();
+});
+
+it('places the address field at the position of the letter layout', function () {
+    $layout = new Quittio\Core\View\LetterLayout('test', addressTop: 27.0, addressLeft: 25.0);
+    $country = new class($layout) extends Quittio\Core\Countries\AbstractCountryPack
+    {
+        public function __construct(private readonly Quittio\Core\View\LetterLayout $layout) {}
+
+        public function code(): string
+        {
+            return 'XX';
+        }
+
+        public function letterLayouts(): array
+        {
+            return ['test' => $this->layout];
+        }
+    };
+    $invoice = (new En16931Calculator)->calculate(Invoices::simple()->build());
+    $view = (new ViewModelFactory)->build($invoice, new ViewContext(locale: 'en', country: $country, defaults: new Presentation(letterLayout: 'test')));
+
+    expect((new PhpTemplateEngine)->render('default', $view))->toContain('.address { position: absolute; top: 27mm; left: 25mm;');
+});
+
+it('shows the gross price per line with LineBuilder::showGrossPrice(), over the presentation', function () {
+    $invoice = (new En16931Calculator)->calculate(Invoices::base()
+        ->line(fn ($l) => $l->name('Shirt')->quantity(3, 'H87')->priceInclVat('9.99')->vat(VatCategory::StandardRate, '19')->showGrossPrice())
+        ->line(fn ($l) => $l->name('Cap')->quantity(1, 'H87')->priceInclVat('5.95')->vat(VatCategory::StandardRate, '19'))
+        ->line(fn ($l) => $l->name('Socks')->quantity(2, 'H87')->priceInclVat('3.50')->vat(VatCategory::StandardRate, '19')->showGrossPrice(false))
+        ->build());
+    $plain = (new ViewModelFactory)->build($invoice, new ViewContext(locale: 'de'));
+    $gross = (new ViewModelFactory)->build($invoice, new ViewContext(locale: 'de', defaults: new Presentation(showGrossPrices: true)));
+    $html = spaces((new PhpTemplateEngine)->render('default', $plain));
+
+    expect($invoice->lines[0]->presentation?->showGrossPrice)->toBeTrue()
+        ->and([$plain->lines[0]->showGrossPrice, $plain->lines[1]->showGrossPrice, $plain->lines[2]->showGrossPrice])->toBe([true, false, false])
+        ->and([$gross->lines[0]->showGrossPrice, $gross->lines[1]->showGrossPrice, $gross->lines[2]->showGrossPrice])->toBe([true, true, false])
+        ->and($html)->toContain('Einzelpreis brutto 9,99 €')
+        ->and($html)->not->toContain('Einzelpreis brutto 5,95 €');
+});
+
+it('highlights lines and uses the secondary colour in the default template', function () {
+    $invoice = (new En16931Calculator)->calculate(Invoices::base()
+        ->line(fn ($l) => $l->name('Consulting')->quantity(10, 'HUR')->netPrice('100.00')->vat(VatCategory::StandardRate, '19'))
+        ->line(fn ($l) => $l->name('Express surcharge')->quantity(1, 'C62')->netPrice('50.00')->vat(VatCategory::StandardRate, '19')->highlight())
+        ->build());
+    $render = static fn (?Presentation $presentation): string => (new PhpTemplateEngine)->render('default', (new ViewModelFactory)->build($invoice, new ViewContext(locale: 'en', defaults: $presentation)));
+    $html = $render(new Presentation(colors: new Colors(primary: '#1e40af', secondary: '#0f766e')));
+
+    expect(substr_count($html, '<tr class="highlight">'))->toBe(1)
+        ->and($html)->toMatch('#<tr class="highlight">\s*<td class="position">2</td>#')
+        ->and($html)->toContain('.lines .highlight td.position { border-left: 0.8mm solid #0f766e; }')
+        ->and($html)->toContain('.section-title { font-weight: bold; color: #0f766e;')
+        ->and($html)->toContain('.lines th { background-color: #1e40af;')
+        // Without a secondary colour the primary colour is used.
+        ->and($render(null))->toContain('.section-title { font-weight: bold; color: #1e40af;');
 });

@@ -72,11 +72,17 @@ it('maps presets to category, rate and VATEX code', function (VatPreset $preset,
     [VatPreset::Export, VatCategory::Export, '0', VatExemptionReasonCode::Export],
     [VatPreset::NotTaxableInGermany, VatCategory::NotSubjectToVat, null, VatExemptionReasonCode::NotSubjectToVat],
     [VatPreset::MarginArt, VatCategory::Exempt, '0', VatExemptionReasonCode::WorksOfArt],
+    [VatPreset::ZeroRatedPv, VatCategory::ZeroRated, '0', null],
+    [VatPreset::ReverseChargeEu, VatCategory::ReverseCharge, '0', VatExemptionReasonCode::ReverseCharge],
+    [VatPreset::TriangularTransaction, VatCategory::ReverseCharge, '0', VatExemptionReasonCode::ReverseCharge],
+    [VatPreset::MarginSecondHand, VatCategory::Exempt, '0', VatExemptionReasonCode::SecondHandGoods],
+    [VatPreset::MarginAntiques, VatCategory::Exempt, '0', VatExemptionReasonCode::CollectorsItems],
+    [VatPreset::TravelAgency, VatCategory::Exempt, '0', VatExemptionReasonCode::TravelAgents],
 ]);
 
 it('provides German and English note texts for every exempt preset', function () {
     foreach (VatPreset::cases() as $preset) {
-        if ($preset->category() === VatCategory::StandardRate) {
+        if ($preset->category() === VatCategory::StandardRate || $preset->category() === VatCategory::ZeroRated) {
             expect($preset->exemptionReason())->toBeNull();
 
             continue;
@@ -94,7 +100,25 @@ it('creates exemption presets with a legal reference', function () {
     $preset = VatPreset::exempt('§ 4 Nr. 14 UStG');
 
     expect($preset->category())->toBe(VatCategory::Exempt)
-        ->and($preset->exemptionReason('de'))->toBe('Steuerfrei nach § 4 Nr. 14 UStG');
+        ->and($preset->key())->toBe('de.exempt')
+        ->and($preset->exemptionReason('de'))->toBe('Steuerfrei nach § 4 Nr. 14 UStG')
+        ->and($preset->exemptionReason('en'))->toBe('Exempt from VAT according to § 4 Nr. 14 UStG');
+});
+
+it('defaults the text of exemption presets to German like the enum presets', function () {
+    $preset = VatPreset::exempt('§ 4 Nr. 14 UStG', 'VATEX-EU-132-1C');
+    $line = fn ($l) => $l->name('Heilbehandlung')->quantity(1, UnitCode::Piece)->netPrice('90.00')->vat($preset);
+    $withoutLocale = InvoiceBuilder::make()->number('RE-1')->issueDate('2026-10-03')->currency('EUR')
+        ->seller(fn ($s) => $s->name('Praxis')->vatId('DE123456789')->address('Hauptstraße 1', '12345', 'Musterstadt', 'DE'))
+        ->buyer(fn ($b) => $b->name('Kunde')->address('Weg 1', '54321', 'Beispielstadt', 'DE'))
+        ->line($line)
+        ->build();
+
+    expect($preset->exemptionReason())->toBe('Steuerfrei nach § 4 Nr. 14 UStG')
+        ->and(VatPreset::SmallBusiness->exemptionReason())->toBe(VatPreset::SmallBusiness->exemptionReason('de'))
+        ->and($preset->exemptionReason('fr'))->toBe('Exempt from VAT according to § 4 Nr. 14 UStG')
+        ->and($preset->exemptionReasonCode()?->value)->toBe('VATEX-EU-132-1C')
+        ->and($withoutLocale->lines[0]->vat->exemptionReason)->toBe('Steuerfrei nach § 4 Nr. 14 UStG');
 });
 
 it('exposes German defaults and retention rules', function () {

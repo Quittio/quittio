@@ -6,6 +6,7 @@ namespace Quittio\Tests;
 
 use Orchestra\Testbench\TestCase as Orchestra;
 use Quittio\Core\I18n\Translations;
+use Quittio\Core\Serialization\Snapshots\SnapshotUpcasterChain;
 use Quittio\Country\DE\CountryDE;
 use Quittio\Laravel\Facades\Quittio;
 use Quittio\Laravel\QuittioServiceProvider;
@@ -17,6 +18,7 @@ abstract class TestCase extends Orchestra
         parent::tearDown();
         // The bridge points to the translator of the destroyed application.
         Translations::reset();
+        SnapshotUpcasterChain::useDefault(null);
     }
 
     protected function getPackageProviders($app): array

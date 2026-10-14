@@ -6,6 +6,7 @@ namespace Quittio\Laravel\Commands;
 
 use Quittio\Core\Data\InvoiceData;
 use Quittio\Core\Validation\ValidationException;
+use Quittio\Laravel\Contracts\ManagedInvoiceRenderer;
 use Quittio\Laravel\QuittioManager;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Throwable;
@@ -14,7 +15,7 @@ use Throwable;
 final class RenderCommand extends QuittioCommand
 {
     protected $signature = 'quittio:render
-        {invoice? : Invoice of the Managed layer (not available in this release)}
+        {invoice? : Stored invoice of the Managed layer (number, UUID or id)}
         {--json= : JSON file with invoice data (InvoiceData::toJson())}
         {--format= : Output format, default: automatic choice}
         {--profile= : Profile}
@@ -24,10 +25,16 @@ final class RenderCommand extends QuittioCommand
 
     public function handle(QuittioManager $quittio): int
     {
-        if ($this->stringArgument('invoice') !== null) {
-            $this->components->error('Rendering stored invoices needs the Managed layer, which is not part of this release. Use --json.');
+        $stored = $this->stringArgument('invoice');
+        if ($stored !== null) {
+            if (! $this->laravel->bound(ManagedInvoiceRenderer::class)) {
+                $this->components->error('Rendering stored invoices needs the package quittio/managed. Use --json for invoice data from a file.');
 
-            return self::FAILURE;
+                return self::FAILURE;
+            }
+            $renderer = $this->laravel->make(ManagedInvoiceRenderer::class);
+
+            return $renderer instanceof ManagedInvoiceRenderer ? $renderer->render($stored, $this) : self::FAILURE;
         }
 
         $file = $this->stringOption('json');

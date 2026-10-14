@@ -107,7 +107,8 @@ final class UblWriter implements XmlSerializer
             $x->element('cbc:TaxPointDate', $i->taxPointDate?->toIsoString());
         }
         $x->element('cbc:DocumentCurrencyCode', $i->currency);
-        $x->element('cbc:TaxCurrencyCode', $i->taxCurrency);
+        // BT-6 only if it differs from BT-5 (BR-53, PEPPOL-EN16931-R005).
+        $x->element('cbc:TaxCurrencyCode', $i->taxCurrency === $i->currency ? null : $i->taxCurrency);
         $x->element('cbc:AccountingCost', $i->buyerAccountingReference);
         $x->element('cbc:BuyerReference', $i->buyerReference);
 
@@ -137,6 +138,7 @@ final class UblWriter implements XmlSerializer
         $x->group('cac:DespatchDocumentReference', fn (XmlBuilder $x) => $x->element('cbc:ID', $i->despatchAdviceReference));
         $x->group('cac:ReceiptDocumentReference', fn (XmlBuilder $x) => $x->element('cbc:ID', $i->receivingAdviceReference));
         if (! $this->creditNote) {
+            // CreditNote: after the AdditionalDocumentReferences, see below.
             $x->group('cac:OriginatorDocumentReference', fn (XmlBuilder $x) => $x->element('cbc:ID', $i->tenderReference));
         }
         $x->group('cac:ContractDocumentReference', fn (XmlBuilder $x) => $x->element('cbc:ID', $i->contractReference));
@@ -164,13 +166,16 @@ final class UblWriter implements XmlSerializer
             });
         }
         if ($this->creditNote) {
-            // CreditNote has no OriginatorDocumentReference and no ProjectReference.
+            // CreditNote has no ProjectReference (BT-11 is an AdditionalDocumentReference with
+            // code 50), and its OriginatorDocumentReference (BT-17) follows the
+            // AdditionalDocumentReferences.
             $x->group('cac:AdditionalDocumentReference', function (XmlBuilder $x) use ($i): void {
                 $x->element('cbc:ID', $i->projectReference?->id);
                 if ($i->projectReference !== null) {
                     $x->element('cbc:DocumentTypeCode', DocumentReferenceTypeCode::CallForTender->value);
                 }
             });
+            $x->group('cac:OriginatorDocumentReference', fn (XmlBuilder $x) => $x->element('cbc:ID', $i->tenderReference));
         } else {
             $x->group('cac:ProjectReference', fn (XmlBuilder $x) => $x->element('cbc:ID', $i->projectReference?->id));
         }
@@ -271,8 +276,10 @@ final class UblWriter implements XmlSerializer
             $transfers = $instructions->creditTransfers === [] ? [null] : $instructions->creditTransfers;
             foreach ($transfers as $index => $transfer) {
                 $x->group('cac:PaymentMeans', function (XmlBuilder $x) use ($instructions, $transfer, $index, $i): void {
-                    $x->element('cbc:PaymentMeansCode', (string) $instructions->meansCode->value, ['name' => $instructions->meansText]);
-                    if ($this->creditNote) {
+                    // BT-82 and the credit note due date may occur only once (UBL-SR-45, UBL-SR-46);
+                    // further accounts repeat only the code and the payment id (UBL-SR-44).
+                    $x->element('cbc:PaymentMeansCode', (string) $instructions->meansCode->value, ['name' => $index === 0 ? $instructions->meansText : null]);
+                    if ($this->creditNote && $index === 0) {
                         $x->element('cbc:PaymentDueDate', $i->dueDate?->toIsoString());
                     }
                     $x->element('cbc:PaymentID', $instructions->remittanceInformation);

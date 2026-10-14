@@ -26,7 +26,8 @@ use Quittio\Core\Support\Date;
 /**
  * Quote, order confirmation, delivery note, proforma invoice, payment reminder or account
  * statement. Shares parties, lines and calculation with {@see InvoiceData}, but never
- * produces e-invoice XML (specification 13).
+ * produces e-invoice XML (specification 13). Payment reminders and account statements
+ * have no lines: their amount comes from {@see Dunning} and {@see AccountStatement}.
  */
 final readonly class DocumentData
 {
@@ -74,6 +75,14 @@ final readonly class DocumentData
         }
         if ($type === DocumentType::AccountStatement && $statement === null) {
             throw new InvalidArgumentException('An account statement requires statement data.');
+        }
+        if (in_array($type, [DocumentType::PaymentReminder, DocumentType::AccountStatement], true) && ($lines !== [] || $allowances !== [] || $charges !== [])) {
+            // Their amount is the sum of open items, fees and interest; lines would add VAT
+            // to fees and leave the amount to pay ambiguous.
+            throw new InvalidArgumentException(sprintf(
+                'A %s lists open items and has no lines, allowances or charges. Use openItem(), fee() and interest() instead.',
+                str_replace('_', ' ', $type->value),
+            ));
         }
         if (($type->hasLineTotals() || $type === DocumentType::DeliveryNote) && $lines === []) {
             throw new InvalidArgumentException(sprintf('A %s requires at least one line.', str_replace('_', ' ', $type->value)));

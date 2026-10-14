@@ -32,7 +32,7 @@ final readonly class CustomTaxPreset implements TaxPreset
     public static function make(
         string $key,
         VatCategory $category,
-        BigDecimal|int|string|null $rate = null,
+        BigDecimal|int|float|string|null $rate = null,
         VatExemptionReasonCode|RawCode|string|null $code = null,
         array|string|null $reason = null,
     ): self {

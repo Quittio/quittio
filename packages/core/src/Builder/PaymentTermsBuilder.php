@@ -24,6 +24,24 @@ final class PaymentTermsBuilder
 
     private ?PenaltyTerms $lateFee = null;
 
+    /**
+     * Continues existing terms (InvoiceBuilder::paymentTerms() with a callable after from()).
+     */
+    public static function fromTerms(PaymentTerms $terms): self
+    {
+        $builder = new self;
+        $builder->text = $terms->text;
+        $builder->dueDays = $terms->dueDays;
+        $builder->discounts = array_map(static fn (CashDiscount $d): array => [
+            'days' => $d->days,
+            'percent' => (string) $d->percent,
+            'base' => $d->baseAmount === null ? null : Amount::format($d->baseAmount),
+        ], $terms->discounts);
+        $builder->lateFee = $terms->lateFeeTerms;
+
+        return $builder;
+    }
+
     public function text(?string $text): self
     {
         $this->text = $text;

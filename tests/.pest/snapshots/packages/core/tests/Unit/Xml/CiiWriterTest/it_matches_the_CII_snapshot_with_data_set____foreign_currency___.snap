@@ -106,6 +106,7 @@
       </ram:ActualDeliverySupplyChainEvent>
     </ram:ApplicableHeaderTradeDelivery>
     <ram:ApplicableHeaderTradeSettlement>
+      <ram:PaymentReference>RE-2026-0042</ram:PaymentReference>
       <ram:TaxCurrencyCode>EUR</ram:TaxCurrencyCode>
       <ram:InvoiceCurrencyCode>USD</ram:InvoiceCurrencyCode>
       <ram:SpecifiedTradeSettlementPaymentMeans>
@@ -113,15 +114,6 @@
         <ram:PayeePartyCreditorFinancialAccount>
           <ram:IBANID>DE02120300000000202051</ram:IBANID>
           <ram:AccountName>Muster GmbH</ram:AccountName>
-        </ram:PayeePartyCreditorFinancialAccount>
-        <ram:PayeeSpecifiedCreditorFinancialInstitution>
-          <ram:BICID>BYLADEM1001</ram:BICID>
-        </ram:PayeeSpecifiedCreditorFinancialInstitution>
-      </ram:SpecifiedTradeSettlementPaymentMeans>
-      <ram:SpecifiedTradeSettlementPaymentMeans>
-        <ram:TypeCode>30</ram:TypeCode>
-        <ram:PayeePartyCreditorFinancialAccount>
-          <ram:IBANID>DE02120300000000202051</ram:IBANID>
         </ram:PayeePartyCreditorFinancialAccount>
         <ram:PayeeSpecifiedCreditorFinancialInstitution>
           <ram:BICID>BYLADEM1001</ram:BICID>

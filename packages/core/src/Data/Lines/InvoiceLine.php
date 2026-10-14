@@ -6,6 +6,7 @@ namespace Quittio\Core\Data\Lines;
 
 use Brick\Math\BigDecimal;
 use Brick\Money\Money;
+use InvalidArgumentException;
 use Quittio\Core\Codes\RawCode;
 use Quittio\Core\Data\AllowanceCharge\LineAllowance;
 use Quittio\Core\Data\AllowanceCharge\LineCharge;
@@ -18,6 +19,7 @@ use Quittio\Core\Data\References\DocumentReference;
 use Quittio\Core\Enums\UnitCode;
 use Quittio\Core\Mapping\Attributes as Q;
 use Quittio\Core\Profiles\ProfileLevel;
+use Quittio\Core\Support\Decimal;
 
 /**
  * Invoice line (BG-25).
@@ -70,6 +72,44 @@ final readonly class InvoiceLine
         #[Q\PdfOnly]
         public ?LinePresentation $presentation = null,
     ) {}
+
+    /**
+     * Copy with a new net price (BT-146); gross price and discount are dropped.
+     *
+     * @throws InvalidArgumentException for a line with a price including VAT: the gross price
+     *                                  mode applies to all lines of an invoice, use withPriceInclVat()
+     */
+    public function withNetPrice(BigDecimal|int|float|string $price): self
+    {
+        $price = Decimal::of($price);
+        if ($this->price->isGrossMode()) {
+            throw new InvalidArgumentException(sprintf('Line %s has a price including VAT. The gross price mode applies to all lines of an invoice; change the price with withPriceInclVat().', $this->id));
+        }
+
+        return $this->with([
+            'price' => $this->price->with(['netPrice' => $price, 'grossPrice' => null, 'discount' => null]),
+            'netAmount' => null,
+        ]);
+    }
+
+    /**
+     * Copy with a new price including VAT (gross price mode, specification 7.6). The calculator
+     * derives the net price again.
+     *
+     * @throws InvalidArgumentException for a line with a net price, use withNetPrice()
+     */
+    public function withPriceInclVat(BigDecimal|int|float|string $price): self
+    {
+        $price = Decimal::of($price);
+        if (! $this->price->isGrossMode() && ($this->price->netPrice !== null || $this->price->grossPrice !== null)) {
+            throw new InvalidArgumentException(sprintf('Line %s has a net price. The gross price mode applies to all lines of an invoice; change the price with withNetPrice().', $this->id));
+        }
+
+        return $this->with([
+            'price' => $this->price->with(['priceInclVat' => $price, 'netPrice' => null, 'grossPrice' => null, 'discount' => null]),
+            'netAmount' => null,
+        ]);
+    }
 
     public function hasSubLines(): bool
     {

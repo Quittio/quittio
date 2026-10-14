@@ -2,10 +2,17 @@
 
 declare(strict_types=1);
 
+use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\ServiceProvider;
+use Quittio\Core\Pdf\Renderers\MpdfRenderer;
+use Quittio\Core\Quittio as CoreQuittio;
 use Quittio\Core\Testing\Scenarios;
 use Quittio\Core\Validation\Drivers\KositArtifacts;
+use Quittio\Laravel\Contracts\ManagedInstaller;
+use Quittio\Laravel\Contracts\ManagedInvoiceRenderer;
 use Quittio\Laravel\Facades\Quittio;
+use Quittio\Laravel\QuittioServiceProvider;
 
 function tempDirectory(): string
 {
@@ -62,6 +69,43 @@ it('validates files', function () {
     $this->artisan('quittio:validate', ['file' => $dir.'/missing.xml'])->assertFailed();
 });
 
+it('validates with all configured settings of the KoSIT and veraPDF drivers', function () {
+    $dir = tempDirectory();
+    file_put_contents($dir.'/valid.pdf', Quittio::make(Scenarios::make('simple')->build())->format('zugferd')->render()->pdf());
+    config([
+        'quittio.validation.drivers.kosit' => ['mode' => 'cli', 'jar' => '/nonexistent/validator.jar', 'java' => '/nonexistent/java', 'timeout' => 7, 'fail_on_unavailable' => false],
+        'quittio.validation.drivers.verapdf' => ['mode' => 'docker', 'docker' => '/nonexistent/docker', 'timeout' => 9, 'fail_on_unavailable' => false],
+    ]);
+    Quittio::flush();
+
+    // fail_on_unavailable = false: missing programs are warnings, the file stays valid.
+    $this->artisan('quittio:validate', ['file' => $dir.'/valid.pdf', '--kosit' => true, '--verapdf' => true])
+        ->expectsOutputToContain('KOSIT-UNAVAILABLE')
+        ->expectsOutputToContain('VERAPDF-UNAVAILABLE')
+        ->expectsOutputToContain('The file is valid.')
+        ->assertSuccessful();
+
+    $drivers = [];
+    foreach (Quittio::coreWithLevels(['kosit', 'verapdf'])->validators() as $driver) {
+        $drivers[$driver->name()] = $driver;
+    }
+    $value = static fn (string $driver, string $property): mixed => (new ReflectionProperty($drivers[$driver], $property))->getValue($drivers[$driver]);
+
+    expect($value('kosit', 'java'))->toBe('/nonexistent/java')
+        ->and($value('kosit', 'timeout'))->toBe(7)
+        ->and($value('kosit', 'failOnUnavailable'))->toBeFalse()
+        ->and($value('verapdf', 'mode'))->toBe('docker')
+        ->and($value('verapdf', 'docker'))->toBe('/nonexistent/docker')
+        ->and($value('verapdf', 'timeout'))->toBe(9)
+        ->and($value('verapdf', 'failOnUnavailable'))->toBeFalse()
+        // The cached core of the application keeps the configured levels.
+        ->and(array_map(static fn ($driver): string => $driver->name(), Quittio::core()->validators()))->not->toContain('kosit')->not->toContain('verapdf');
+
+    config()->set('quittio.validation.drivers.kosit.fail_on_unavailable', true);
+    Quittio::flush();
+    $this->artisan('quittio:validate', ['file' => $dir.'/valid.pdf', '--kosit' => true])->assertFailed();
+});
+
 it('reads files', function () {
     $dir = tempDirectory();
     file_put_contents($dir.'/invoice.xml', Quittio::make(Scenarios::make('simple')->build())->format('ubl')->render()->xml());
@@ -101,7 +145,49 @@ it('creates a template from the default', function () {
 
     $this->artisan('make:quittio-template', ['name' => 'acme'])->assertFailed();
     $this->artisan('make:quittio-template', ['name' => 'Bad Name'])->assertFailed();
+
+    // The preview accepts the same views as rendering (quittio.pdf.templates).
+    $preview = tempDirectory().'/acme.html';
+    $this->artisan('quittio:preview', ['--template' => 'invoices.acme.layout', '--format' => 'html', '--output' => $preview])->assertSuccessful();
+    expect(file_get_contents($preview))->toContain('Zahlbetrag');
+    $this->artisan('quittio:preview', ['--template' => 'invoices.acme.partials.totals', '--format' => 'html'])->assertFailed();
+    $this->artisan('quittio:preview', ['--template' => 'invoices.missing.layout', '--format' => 'html'])->assertFailed();
+
+    config()->set('quittio.pdf.templates', []);
+    $this->artisan('quittio:preview', ['--template' => 'invoices.acme.layout', '--format' => 'html'])->assertFailed();
     File::deleteDirectory($target);
+});
+
+it('publishes the fonts so that the renderer finds them', function () {
+    // --tag=quittio-fonts copies the bundled fonts to resources/fonts/quittio.
+    $mapping = ServiceProvider::pathsToPublish(QuittioServiceProvider::class, 'quittio-fonts');
+    expect(array_values($mapping))->toBe([resource_path('fonts/quittio')]);
+
+    // Published into an application directory of this process: the shared Testbench skeleton
+    // must not change while other test processes render with it.
+    $base = sys_get_temp_dir().'/quittio-fonts-'.getmypid();
+    File::deleteDirectory($base);
+    app()->setBasePath($base);
+    $published = resource_path('fonts/quittio');
+    $directories = static fn (): array => (new ReflectionProperty(MpdfRenderer::class, 'fontDirectories'))->getValue((new ReflectionProperty(CoreQuittio::class, 'renderer'))->getValue(Quittio::flush()->core()));
+
+    expect($directories())->not->toContain($published);
+
+    File::copyDirectory((string) array_key_first($mapping), $published);
+    // Fonts that exist only in the published directories (Inter is published to quittio/inter).
+    copy($published.'/inter/Inter-Regular.ttf', $published.'/inter/PublishedTest-Regular.ttf');
+    copy($published.'/inter/Inter-Bold.ttf', $published.'/PublishedTest-Bold.ttf');
+    config()->set('quittio.pdf.font_directories', ['/configured/fonts']);
+    config()->set('quittio.pdf.fonts', ['publishedtest' => ['R' => 'PublishedTest-Regular.ttf', 'B' => 'PublishedTest-Bold.ttf']]);
+    config()->set('quittio.pdf.font', 'publishedtest');
+
+    expect($directories())->toBe(['/configured/fonts', $published, $published.'/inter'])
+        ->and(Quittio::make(Scenarios::make('simple')->build())->format('pdf')->render()->pdf())->toStartWith('%PDF-');
+
+    // Configured explicitly, a directory is not added twice and keeps its position.
+    config()->set('quittio.pdf.font_directories', [$published.'/inter/', '/configured/fonts']);
+    expect($directories())->toBe([$published.'/inter/', '/configured/fonts', $published]);
+    File::deleteDirectory($base);
 });
 
 it('publishes the configuration', function () {
@@ -145,6 +231,8 @@ it('downloads the validator artifacts and compiles the Peppol rules', function (
     $target = tempDirectory();
 
     $this->artisan('quittio:schemas:download', ['--path' => $target])
+        // The daemon is started on the port of the default URL (the validator itself defaults to 8080).
+        ->expectsOutputToContain('-D -P 8081')
         ->expectsOutputToContain("'jar' => '{$target}/validator.jar'")
         ->expectsOutputToContain('peppol-scenarios.xml')
         ->assertSuccessful();
@@ -181,4 +269,41 @@ it('regenerates code lists when the Schematron is available', function () {
 
 it('fails gracefully without Schematron', function () {
     $this->artisan('quittio:codelists:update', ['xsl' => '/missing.xsl'])->assertFailed();
+});
+
+it('points to quittio/managed when the Managed layer is missing', function () {
+    $this->artisan('quittio:install', ['--managed' => true])->expectsOutputToContain('quittio/managed')->assertFailed();
+    $this->artisan('quittio:render', ['invoice' => 'RE-1'])->expectsOutputToContain('quittio/managed')->assertFailed();
+});
+
+it('delegates to the Managed layer when it is installed', function () {
+    $calls = [];
+    $this->app->instance(ManagedInstaller::class, new class($calls) implements ManagedInstaller
+    {
+        public function __construct(private array &$calls) {}
+
+        public function install(Command $command, bool $force): int
+        {
+            $this->calls[] = 'install';
+
+            return 0;
+        }
+    });
+    $this->app->instance(ManagedInvoiceRenderer::class, new class($calls) implements ManagedInvoiceRenderer
+    {
+        public function __construct(private array &$calls) {}
+
+        public function render(string $invoice, Command $command): int
+        {
+            $this->calls[] = 'render '.$invoice;
+
+            return 0;
+        }
+    });
+
+    $this->artisan('quittio:install', ['--managed' => true])->assertSuccessful();
+    $this->artisan('quittio:render', ['invoice' => 'RE-2026-0042'])->assertSuccessful();
+
+    expect($calls)->toBe(['install', 'render RE-2026-0042']);
+    File::delete(config_path('quittio.php'));
 });

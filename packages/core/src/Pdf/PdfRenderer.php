@@ -12,8 +12,9 @@ interface PdfRenderer
     public function render(RenderRequest $request): string;
 
     /**
-     * Whether the renderer creates PDF/A-3 with embedded files itself. Otherwise the
-     * result is passed to a post processor.
+     * Whether the renderer creates the PDF/A and embeds the requested files itself (or with
+     * its own post processor). Otherwise Quittio passes the result to MpdfPostProcessor when
+     * the request asks for PDF/A or an embedded XML.
      */
     public function supportsEmbedding(): bool;
 }

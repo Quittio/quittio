@@ -16,7 +16,9 @@
     "type": "library",
     "license": "MIT",
     "require": {
+        "ext-ctype": "*",
         "ext-dom": "*",
+        "ext-gd": "*",
         "ext-libxml": "*",
         "ext-mbstring": "*",
         "ext-xmlwriter": "*",
@@ -33,7 +35,7 @@
     },
     "suggest": {
         "ext-intl": "Locale-aware number and date formatting",
-        "ext-gd": "Logo scaling and image handling in PDFs",
+        "ext-zip": "Unpack the KoSIT validator configuration (quittio:schemas:download)",
         "opis/json-schema": "Validate JSON input against the shipped invoice schema",
         "quittio/laravel": "Laravel integration with Blade templates, facade, commands and testing helpers",
         "quittio/country-de": "Country pack for Germany (UStG, XRechnung, DIN 5008)"

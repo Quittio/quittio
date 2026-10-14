@@ -2,14 +2,22 @@
 
 declare(strict_types=1);
 
+use Brick\Math\BigDecimal;
+use Brick\Money\Money;
 use Quittio\Core\Builder\InvoiceBuilder;
 use Quittio\Core\Calculation\En16931Calculator;
 use Quittio\Core\Documents\DocumentBuilder;
 use Quittio\Core\Documents\DocumentCalculator;
 use Quittio\Core\Documents\DocumentData;
 use Quittio\Core\Documents\DocumentType;
+use Quittio\Core\Documents\Dunning;
+use Quittio\Core\Documents\DunningFee;
+use Quittio\Core\Documents\InterestCharge;
+use Quittio\Core\Documents\OpenItem;
 use Quittio\Core\Documents\Package;
 use Quittio\Core\Enums\VatCategory;
+use Quittio\Core\Support\Amount;
+use Quittio\Core\Support\Date;
 use Quittio\Core\Templates\PhpTemplateEngine;
 use Quittio\Core\View\ViewContext;
 use Quittio\Core\View\ViewModelFactory;
@@ -70,7 +78,7 @@ it('renders delivery notes without prices', function () {
         ->reference('ORDER-7', '2026-09-28')
         ->deliveryDate('2026-10-01')
         ->serialisedLine(fn ($l) => $l->name('Laptop')->quantity(2, 'H87'), ['SN-1', 'SN-2'])
-        ->package(new Package('1', 'Box', Brick\Math\BigDecimal::of('4.2')))
+        ->package(new Package('1', 'Box', BigDecimal::of('4.2')))
         ->build();
     $html = documentHtml($note);
 
@@ -148,3 +156,91 @@ it('requires type specific data', function (Closure $build) {
 })->with([
     'quote without lines' => [fn () => documentParties(DocumentBuilder::quote())->build()],
 ])->throws(InvalidArgumentException::class);
+
+it('rejects lines, allowances and charges on reminders and account statements', function (Closure $build) {
+    $build();
+})->with([
+    'reminder with a line' => [fn () => documentParties(DocumentBuilder::paymentReminder())
+        ->openItem('INV-42', '2026-08-01', '1190.00')
+        ->line(documentLine('Reminder fee', 1, '5.00'))
+        ->build()],
+    'statement with a line' => [fn () => documentParties(DocumentBuilder::accountStatement())
+        ->openItem('INV-42', '2026-09-20', '1190.00')
+        ->line(documentLine('Item', 1, '5.00'))
+        ->build()],
+])->throws(InvalidArgumentException::class, 'has no lines');
+
+it('starts reminders at level 0 (payment reminder) and rejects negative levels', function () {
+    $reminder = documentParties(DocumentBuilder::paymentReminder())->openItem('INV-42', '2026-08-01', '1190.00')->build();
+
+    expect($reminder->dunning?->level)->toBe(0)
+        ->and(fn () => new Dunning(-1, []))->toThrow(InvalidArgumentException::class);
+});
+
+it('adds fees in any money context without VAT and names the open invoices for the remittance', function () {
+    $dunning = new Dunning(
+        level: 1,
+        openItems: [
+            new OpenItem('INV-41', Date::parse('2026-07-01'), Money::of('100.00', 'EUR'), paid: Money::of('100.00', 'EUR')),
+            new OpenItem('INV-42', Date::parse('2026-08-01'), Amount::of('1190.00', 'EUR')),
+            new OpenItem('INV-43', Date::parse('2026-08-05'), Amount::of('50.00', 'EUR'), paid: Amount::of('10.00', 'EUR')),
+        ],
+        fees: [new DunningFee('Flat rate (section 288 (5) BGB)', Money::of('40.00', 'EUR'))],
+    );
+
+    expect($dunning->total('EUR')->getAmount()->toString())->toBe('1270.00')
+        ->and($dunning->openInvoiceNumbers())->toBe(['INV-42', 'INV-43'])
+        ->and($dunning->remittanceText())->toBe('INV-42, INV-43')
+        ->and($dunning->remittanceText(10))->toBe('INV-42');
+});
+
+it('counts default interest actual/actual per calendar year', function (string $from, string $until, ?int $dayCount, string $expected) {
+    $charge = new InterestCharge(Amount::of('1000.00', 'EUR'), BigDecimal::of('10.52'), Date::parse($from), Date::parse($until), dayCount: $dayCount);
+
+    expect($charge->total()->getAmount()->toString())->toBe($expected);
+})->with([
+    'full leap year' => ['2028-01-01', '2029-01-01', null, '105.20'],
+    'full common year' => ['2027-01-01', '2028-01-01', null, '105.20'],
+    'across the turn of the year' => ['2027-12-01', '2028-02-01', null, '17.85'],
+    'fixed basis 365' => ['2028-01-01', '2029-01-01', 365, '105.49'],
+    'fixed basis 360' => ['2027-01-01', '2027-01-31', 360, '8.77'],
+    'no days' => ['2027-01-01', '2027-01-01', null, '0.00'],
+]);
+
+it('names the last day with interest and rejects unknown day count bases', function () {
+    $charge = new InterestCharge(Amount::of('1000.00', 'EUR'), BigDecimal::of('10.27'), Date::parse('2026-02-01'), Date::parse('2026-03-01'));
+
+    expect($charge->days())->toBe(28)
+        ->and($charge->lastDay()->toIsoString())->toBe('2026-02-28')
+        ->and(fn () => new InterestCharge(Amount::of('1.00', 'EUR'), BigDecimal::one(), Date::parse('2026-01-01'), Date::parse('2026-02-01'), dayCount: 364))
+        ->toThrow(InvalidArgumentException::class);
+});
+
+it('accepts only items of the statement period when an opening balance is given', function () {
+    $statement = function (bool $opening, string $date): DocumentData {
+        $builder = documentParties(DocumentBuilder::accountStatement())
+            ->statementPeriod('2026-09-01', '2026-09-30')
+            ->openItem('INV-'.$date, $date, '100.00');
+
+        return ($opening ? $builder->openingBalance('500.00') : $builder)->build();
+    };
+
+    expect(fn () => $statement(true, '2026-08-15'))->toThrow(InvalidArgumentException::class, 'opening balance already contains it')
+        ->and(fn () => $statement(false, '2026-10-01'))->toThrow(InvalidArgumentException::class, 'after the end of the statement period')
+        ->and($statement(false, '2026-08-15')->statement?->balance('EUR')->getAmount()->toString())->toBe('100.00')
+        ->and($statement(true, '2026-09-15')->statement?->balance('EUR')->getAmount()->toString())->toBe('600.00');
+});
+
+it('names the document type in the view model instead of the type code of the internal draft', function (Closure $build, string $type) {
+    $view = (new ViewModelFactory)->buildDocument((new DocumentCalculator)->calculate($build()), new ViewContext(locale: 'en'));
+
+    expect($view->document->typeCode)->toBeNull()
+        ->and((string) $view->document->type)->toBe($type)
+        ->and($view->document->isInvoice)->toBeFalse()
+        ->and($view->document->isCreditNote)->toBeFalse();
+})->with([
+    'quote' => [fn () => quote(), 'Quote'],
+    'delivery note' => [fn () => documentParties(DocumentBuilder::deliveryNote())->line(fn ($l) => $l->name('Laptop')->quantity(1, 'H87'))->build(), 'Delivery note'],
+    'reminder' => [fn () => documentParties(DocumentBuilder::paymentReminder(2))->openItem('INV-42', '2026-08-01', '1190.00')->build(), 'Payment reminder'],
+    'statement' => [fn () => documentParties(DocumentBuilder::accountStatement())->statementPeriod('2026-09-01', '2026-09-30')->openItem('INV-42', '2026-09-20', '1190.00')->build(), 'Account statement'],
+]);

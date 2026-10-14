@@ -100,6 +100,10 @@ return [
     'BR-DEX-15' => [
         'message' => 'Unterpositionen werden von XRechnung in CII nicht unterstützt. Verwenden Sie für die XRechnung-Extension die Syntax UBL.',
     ],
+    'DE-XRECHNUNG-EXT-01' => [
+        'message' => 'Die XRechnung-Extension kennt in UBL keine Gutschriftsanzeige (CreditNote). Stornieren Sie mit der Strategie negative_invoice (Rechnungsart 380 mit negativen Beträgen).',
+        'hint' => 'Setzen Sie corrections.cancellation_strategy auf negative_invoice oder übergeben Sie die Strategie beim Storno.',
+    ],
     'DE-USTG-01' => [
         'message' => 'Name und vollständige Anschrift des leistenden Unternehmers und des Leistungsempfängers müssen angegeben sein (§ 14 Abs. 4 Nr. 1 UStG).',
         'hint' => 'Ergänzen Sie Straße, Postleitzahl und Ort bei Verkäufer und Käufer.',
@@ -121,8 +125,8 @@ return [
         'hint' => 'Verwenden Sie ->propertyRelatedService(); der Builder ergänzt den Hinweis.',
     ],
     'DE-USTG-06' => [
-        'message' => 'Rechnungen mit Steuerschuldnerschaft des Leistungsempfängers müssen die Angabe „Steuerschuldnerschaft des Leistungsempfängers“ enthalten (§ 14a Abs. 5 UStG).',
-        'hint' => 'Verwenden Sie die Presets VatPreset::ReverseChargeDomestic oder VatPreset::ReverseChargeEu.',
+        'message' => 'Rechnungen mit Steuerschuldnerschaft des Leistungsempfängers müssen die Angabe „Steuerschuldnerschaft des Leistungsempfängers“ enthalten (§ 14a Abs. 1 und 5 UStG).',
+        'hint' => 'Verwenden Sie die Presets VatPreset::ReverseChargeDomestic, VatPreset::ReverseChargeEu oder VatPreset::TriangularTransaction; ihre Texte werden in jeder Sprache des Länderpakets akzeptiert.',
     ],
     'DE-USTG-07' => [
         'message' => 'Bei der innergemeinschaftlichen Lieferung neuer Fahrzeuge müssen die Fahrzeugmerkmale (BG-32) bei jeder Position angegeben sein (§ 14a Abs. 4 UStG).',
@@ -140,8 +144,24 @@ return [
         'message' => 'Bei Rechnungen in fremder Währung soll der Steuerbetrag zusätzlich in Euro angegeben werden (BT-111 mit BT-6 = EUR).',
         'hint' => 'Setzen Sie ->taxCurrency(\'EUR\', $kurs, $datum).',
     ],
+    'DE-USTG-11' => [
+        'message' => 'Bei Reverse-Charge-Leistungen in einem anderen EU-Mitgliedstaat und bei innergemeinschaftlichen Dreiecksgeschäften müssen die USt-IdNr. des Verkäufers (BT-31) und des Käufers (BT-48) angegeben werden (§ 14a Abs. 1 und 7 UStG).',
+        'hint' => 'Ergänzen Sie ->vatId(…) bei Verkäufer und Käufer; die Steuernummer genügt hier nicht.',
+    ],
+    'DE-USTG-12' => [
+        'message' => 'Die Erleichterungen für Kleinbetragsrechnungen gelten nicht für Fernverkäufe, innergemeinschaftliche Lieferungen und Leistungen mit Steuerschuldnerschaft des Leistungsempfängers (§ 33 Satz 3 UStDV).',
+        'hint' => 'Entfernen Sie ->smallAmount() und stellen Sie eine vollständige Rechnung aus.',
+    ],
+    'DE-USTG-13' => [
+        'message' => 'Die innergemeinschaftliche Lieferung eines neuen Fahrzeugs (§ 14a Abs. 4 UStG) ist markiert, aber keine Position verwendet die Steuerkategorie K (innergemeinschaftliche Lieferung).',
+        'hint' => 'Verwenden Sie VatPreset::IntraCommunitySupply für die Fahrzeugpositionen oder entfernen Sie ->newVehicle(), wenn das Fahrzeug nicht in einen anderen Mitgliedstaat geliefert wird.',
+    ],
     'DE-LEITWEG-ID' => [
         'message' => 'Die Prüfziffer der Leitweg-ID „:value“ (BT-10) ist falsch.',
         'hint' => 'Prüfen Sie die Leitweg-ID beim öffentlichen Auftraggeber.',
+    ],
+    'DE-LEITWEG-ID-SUSPECT' => [
+        'message' => 'Die Käuferreferenz „:value“ (BT-10) hat die Form einer Leitweg-ID, aber ihre Prüfziffer ist falsch. Sie wird nicht als Leitweg-ID behandelt, die Rechnung wird daher nicht automatisch als XRechnung ausgegeben.',
+        'hint' => 'Ist es die Leitweg-ID eines öffentlichen Auftraggebers, korrigieren Sie sie (dann wird automatisch XRechnung gewählt) oder geben Sie das Format ausdrücklich an. Eine Bestellnummer können Sie ignorieren.',
     ],
 ];

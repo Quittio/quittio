@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Quittio\Laravel\Commands;
 
+use Quittio\Laravel\Contracts\ManagedInstaller;
 use Symfony\Component\Console\Attribute\AsCommand;
 
 #[AsCommand(name: 'quittio:install')]
@@ -12,15 +13,18 @@ final class InstallCommand extends QuittioCommand
     protected $signature = 'quittio:install
         {--views : Also publish the Blade templates}
         {--fonts : Also publish the fonts}
-        {--managed : Install the Managed layer (not available in this release)}
+        {--managed : Also install the Managed layer (requires quittio/managed)}
         {--force : Overwrite existing files}';
 
     protected $description = 'Publish the Quittio configuration and optionally templates and fonts';
 
     public function handle(): int
     {
-        if ($this->flag('managed')) {
-            $this->components->warn('The Managed layer (numbering, lifecycle, payments) is not part of this release. Installing the core integration only.');
+        $managed = $this->flag('managed');
+        if ($managed && ! $this->laravel->bound(ManagedInstaller::class)) {
+            $this->components->error('The Managed layer needs the package quittio/managed: composer require quittio/managed');
+
+            return self::FAILURE;
         }
 
         $tags = ['quittio-config'];
@@ -33,6 +37,13 @@ final class InstallCommand extends QuittioCommand
 
         foreach ($tags as $tag) {
             $this->call('vendor:publish', ['--tag' => $tag, '--force' => $this->flag('force')]);
+        }
+
+        if ($managed) {
+            $installer = $this->laravel->make(ManagedInstaller::class);
+            if ($installer instanceof ManagedInstaller && $installer->install($this, $this->flag('force')) !== self::SUCCESS) {
+                return self::FAILURE;
+            }
         }
 
         $this->newLine();

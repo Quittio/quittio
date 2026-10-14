@@ -12,6 +12,9 @@ final readonly class LetterLayout
 {
     /**
      * @param  list<float>  $foldMarks  distances of fold marks from the top edge
+     * @param  float  $addressZoneTop  start of the recipient address within the address field
+     *                                 (DIN 5008: below the 17.7 mm "Zusatz- und Vermerkzone", whose
+     *                                 last line holds the sender line)
      */
     public function __construct(
         public string $name,
@@ -22,6 +25,7 @@ final readonly class LetterLayout
         public float $senderLineHeight = 5.0,
         public array $foldMarks = [],
         public ?float $punchMark = null,
+        public float $addressZoneTop = 17.7,
     ) {}
 
     /**

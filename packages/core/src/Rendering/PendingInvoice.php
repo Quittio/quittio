@@ -148,10 +148,21 @@ class PendingInvoice
     }
 
     /**
-     * Validates without rendering a PDF (XML levels run if the format has XML).
+     * Validates without rendering a PDF (XML levels run if the format writes or embeds XML).
+     * An explicit validation request: validate() and withoutValidation() do not apply, the
+     * result is returned and never thrown; see {@see Quittio::prepare()}.
      */
     public function check(): ValidationResult
     {
         return $this->quittio->check($this->data, $this->options());
+    }
+
+    /**
+     * Calculates and validates without rendering, whatever the validation mode; see
+     * {@see PreparedInvoice} and {@see Quittio::prepare()}.
+     */
+    public function prepare(): PreparedInvoice
+    {
+        return $this->quittio->prepare($this->data, $this->options());
     }
 }

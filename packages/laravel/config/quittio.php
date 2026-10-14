@@ -10,17 +10,14 @@ return [
     |--------------------------------------------------------------------------
     | country: country pack used when it cannot be derived from the seller (BT-40).
     | profile: null = default of the format (EN 16931 for ZUGFeRD/Factur-X).
-    | format:  null = automatic choice by the format resolver (zugferd, xrechnung-cii,
-    |          xrechnung-ubl, cii, ubl, peppol, pdf, html, json).
+    | format:  null or 'auto' = automatic choice by the format resolver; or one of
+    |          zugferd, xrechnung-cii, xrechnung-ubl, cii, ubl, peppol, pdf, html, json.
     */
     'defaults' => [
         'country' => env('QUITTIO_COUNTRY', 'DE'),
-        'standard' => 'en16931-2017',
         'profile' => null,
         'format' => null,
-        'currency' => null,
         'locale' => null,
-        'timezone' => null,
         'due_days' => 14,
     ],
 
@@ -37,28 +34,22 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Networks and platforms
-    |--------------------------------------------------------------------------
-    | Transmission via Peppol or national platforms is provided by separate
-    | packages. The entries are kept here so that the configuration stays stable.
-    */
-    'networks' => [
-        'mail' => ['enabled' => true],
-        'peppol' => ['enabled' => false, 'provider' => null, 'participant_ids' => [], 'lookup_cache_ttl' => 86400],
-        'fr-platform' => ['enabled' => false, 'provider' => null],
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
     | Seller
     |--------------------------------------------------------------------------
-    | Used by Seller::fromConfig() when the Managed layer is not in use.
+    | Used by Seller::fromConfig(). With quittio/managed, issuer profiles replace it.
+    | small_business: Seller::apply() marks invoices of a small business (DE:
+    |                 section 19 UStG), invoices with VAT are then rejected. Use
+    |                 VatPreset::SmallBusiness for the lines.
+    | identifiers:    seller identifiers (BT-29) as ['value' => ..., 'scheme' => null].
+    |                 Without a VAT identifier (e.g. a small business with tax number
+    |                 only) EN 16931 needs BT-29 or legal_registration (BT-30), BR-CO-26.
     */
     'seller' => [
         'name' => env('QUITTIO_SELLER_NAME'),
         'vat_id' => env('QUITTIO_SELLER_VAT_ID'),
         'tax_number' => env('QUITTIO_SELLER_TAX_NUMBER'),
         'legal_registration' => null,
+        'identifiers' => [],
         'additional_legal_info' => null,
         'address' => ['line1' => null, 'line2' => null, 'postcode' => null, 'city' => null, 'country' => 'DE'],
         'contact' => ['name' => null, 'phone' => null, 'email' => null],
@@ -73,13 +64,28 @@ return [
     |--------------------------------------------------------------------------
     | renderer: mpdf, or a driver registered with Quittio::extend('renderer', ...).
     | template: Blade view (design level 3: your own view with the same view model).
-    | logo:     absolute path, URL or data URI of a PNG or SVG in target size.
+    | templates: further views that ->template() or presentation data may select besides
+    |           "template" and quittio::templates.* ("prefix.*" for every view below a prefix;
+    |           make:quittio-template creates views under "invoices."). Others are refused.
+    | paper:    null = default of the country pack (DE: A4); a size set here wins.
+    | logo:     absolute path, http(s) URL or data URI of a PNG, JPEG or SVG (at most
+    |           10 MB and 25 megapixels; URLs only from public hosts). For PDF/A (ZUGFeRD)
+    |           logos are flattened to RGB PNG; SVG needs the imagick extension.
+    | markdown: descriptions and notes as Markdown instead of plain text. They are
+    |           also in the e-invoice XML; formatting can change the displayed text
+    |           (e.g. "*" for emphasis), so it is off by default.
+    | payment_qr: type auto | girocode | swiss-qr-bill | none; generator: a class implementing
+    |           Quittio\Core\Pdf\Qr\PaymentQrGenerator, used for "auto" before the country
+    |           pack's and required for "swiss-qr-bill" (Quittio ships no Swiss generator).
+    | font_directories: searched for the files of "fonts"; resources/fonts/quittio and its
+    |           subdirectories (--tag=quittio-fonts publishes Inter there) follow when they exist.
     */
     'pdf' => [
         'renderer' => 'mpdf',
         'template' => 'quittio::templates.default.layout',
+        'templates' => ['invoices.*'],
         'layout' => null,
-        'paper' => 'A4',
+        'paper' => null,
         'pdfa' => true,
         'font' => 'inter',
         'fonts' => [],
@@ -90,8 +96,9 @@ return [
         'footer_columns' => [],
         'texts' => ['salutation' => null, 'intro' => null, 'closing' => null],
         'show_item_numbers' => false,
+        'markdown' => false,
         'fold_marks' => false,
-        'payment_qr' => ['type' => 'auto', 'girocode_amount' => 'due'],
+        'payment_qr' => ['type' => 'auto', 'girocode_amount' => 'due', 'generator' => null],
         'filename' => '{title}_{number}.{ext}',
         'cache_path' => storage_path('framework/cache/quittio'),
         'renderers' => [
@@ -117,6 +124,8 @@ return [
         'drivers' => [
             'kosit' => [
                 'mode' => 'daemon',
+                // The validator listens on 8080 unless started with "-P 8081" (or mapped, e.g.
+                // docker run -p 8081:8080); quittio:schemas:download prints the start command.
                 'url' => env('QUITTIO_KOSIT_URL', 'http://127.0.0.1:8081'),
                 'jar' => null,
                 'scenarios' => null,
@@ -127,7 +136,7 @@ return [
                 'timeout' => 30,
                 'fail_on_unavailable' => true,
             ],
-            'verapdf' => ['mode' => 'cli', 'binary' => 'verapdf', 'image' => 'verapdf/cli', 'timeout' => 120, 'fail_on_unavailable' => true],
+            'verapdf' => ['mode' => 'cli', 'binary' => 'verapdf', 'image' => 'verapdf/cli', 'docker' => 'docker', 'timeout' => 120, 'fail_on_unavailable' => true],
             'vies' => ['enabled' => false, 'cache_ttl' => 86400, 'timeout' => 5],
         ],
     ],
@@ -144,14 +153,36 @@ return [
         'cancellation_strategy' => env('QUITTIO_CANCELLATION_STRATEGY'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Snapshots
+    |--------------------------------------------------------------------------
+    | Upcasters (classes implementing SnapshotUpcaster) that bring stored invoice
+    | snapshots of older versions to the current data model when they are read.
+    */
+    'snapshots' => [
+        'upcasters' => [],
+    ],
+
     'reader' => [
         'max_xml_bytes' => 10 * 1024 * 1024,
         'max_pdf_bytes' => 25 * 1024 * 1024,
         'max_decompressed_bytes' => 50 * 1024 * 1024,
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Format resolver
+    |--------------------------------------------------------------------------
+    | driver:        default, or a resolver registered with Quittio::extend('format_resolver', ...)
+    |                (its factory receives this array).
+    | peppol_lookup: for the default resolver, an invokable class (resolved from the container)
+    |                that receives the BuyerParty and returns true when the buyer is reachable
+    |                via Peppol; the automatic choice then picks "peppol". null = no lookup.
+    */
     'format_resolver' => [
         'driver' => 'default',
+        'peppol_lookup' => null,
         'b2c_embed_xml' => false,
         'auto_upgrade_profile' => true,
     ],
@@ -174,17 +205,5 @@ return [
         'enabled' => env('QUITTIO_PREVIEW', null),
         'path' => '_quittio/preview',
         'middleware' => ['web'],
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Managed layer
-    |--------------------------------------------------------------------------
-    | Numbering, lifecycle, payments, dunning and archive. Not part of this
-    | release; the block is kept so that enabling it later needs no new keys.
-    */
-    'managed' => [
-        'enabled' => false,
-        'table_prefix' => 'quittio_',
     ],
 ];

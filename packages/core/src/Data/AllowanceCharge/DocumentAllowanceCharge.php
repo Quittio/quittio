@@ -10,10 +10,15 @@ use Brick\Money\Money;
 use InvalidArgumentException;
 use Quittio\Core\Codes\RawCode;
 use Quittio\Core\Enums\VatCategory;
+use Quittio\Core\Enums\VatExemptionReasonCode;
 use ReflectionClass;
 
 /**
  * Common structure of document level allowances (BG-20) and charges (BG-21).
+ *
+ * The exemption reason and code are package-internal inputs like on LineVat: EN 16931
+ * carries them on the VAT breakdown (BT-120, BT-121). The calculator uses them when the
+ * VAT group of the entry has no invoice lines that provide a reason.
  */
 abstract readonly class DocumentAllowanceCharge
 {
@@ -25,6 +30,8 @@ abstract readonly class DocumentAllowanceCharge
         public ?BigDecimal $percent = null,
         public ?string $reason = null,
         public BackedEnum|RawCode|null $reasonCode = null,
+        public ?string $exemptionReason = null,
+        public VatExemptionReasonCode|RawCode|null $exemptionReasonCode = null,
     ) {}
 
     abstract public function isCharge(): bool;

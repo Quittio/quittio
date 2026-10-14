@@ -10,7 +10,9 @@ use Quittio\Core\Standards\StandardVersion;
 
 /**
  * XRechnung 3.0 extension: adds sub invoice lines (UBL only) and third party payments.
- * The specification identifier switches automatically when extension data is used.
+ * Choose it explicitly with ->profile('xrechnung-extension'): neither the automatic format
+ * choice nor the profile xrechnung switch to it when extension data is used; with xrechnung
+ * such data is reported as an error.
  */
 final class XRechnung30Extension extends XRechnung30 implements ExtendsCodeLists
 {
@@ -31,9 +33,12 @@ final class XRechnung30Extension extends XRechnung30 implements ExtendsCodeLists
         return self::SPECIFICATION_ID;
     }
 
-    public function xmpConformanceLevel(): ?string
+    /**
+     * ZUGFeRD 2.x names XRechnung documents, also with the extension, "XRECHNUNG".
+     */
+    public function xmpConformanceLevel(): string
     {
-        return null;
+        return 'XRECHNUNG';
     }
 
     /**

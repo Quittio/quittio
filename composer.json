@@ -4,7 +4,9 @@
     "type": "project",
     "license": "MIT",
     "require": {
+        "ext-ctype": "*",
         "ext-dom": "*",
+        "ext-gd": "*",
         "ext-libxml": "*",
         "ext-mbstring": "*",
         "ext-xmlwriter": "*",
@@ -15,6 +17,7 @@
         "illuminate/bus": "^13.0",
         "illuminate/console": "^13.0",
         "illuminate/contracts": "^13.0",
+        "illuminate/database": "^13.0",
         "illuminate/events": "^13.0",
         "illuminate/filesystem": "^13.0",
         "illuminate/http": "^13.0",
@@ -32,6 +35,7 @@
         "setasign/fpdi": "^2.6"
     },
     "require-dev": {
+        "larastan/larastan": "^3.12",
         "laravel/pint": "^1.20",
         "opis/json-schema": "^2.6",
         "orchestra/testbench": "^11.0",
@@ -44,12 +48,15 @@
         "quittio/core": "self.version",
         "quittio/laravel": "self.version",
         "quittio/country-de": "self.version",
-        "quittio/quittio": "self.version"
+        "quittio/quittio": "self.version",
+        "quittio/managed": "self.version"
     },
     "autoload": {
         "psr-4": {
             "Quittio\\Core\\": "packages/core/src/",
-            "Quittio\\": "packages/laravel/src/",
+            "Quittio\\Managed\\": "packages/managed/src/",
+            "Quittio\\Managed\\Database\\Factories\\": "packages/managed/database/factories/",
+            "Quittio\\Laravel\\": "packages/laravel/src/Laravel/",
             "Quittio\\Country\\DE\\": "packages/country-de/src/"
         },
         "files": [
@@ -60,13 +67,15 @@
         "psr-4": {
             "Quittio\\Core\\Tests\\": "packages/core/tests/",
             "Quittio\\Tests\\": "packages/laravel/tests/",
-            "Quittio\\Country\\DE\\Tests\\": "packages/country-de/tests/"
+            "Quittio\\Country\\DE\\Tests\\": "packages/country-de/tests/",
+            "Quittio\\Managed\\Tests\\": "packages/managed/tests/"
         }
     },
     "extra": {
         "laravel": {
             "providers": [
-                "Quittio\\Laravel\\QuittioServiceProvider"
+                "Quittio\\Laravel\\QuittioServiceProvider",
+                "Quittio\\Managed\\ManagedServiceProvider"
             ]
         },
         "quittio": {
@@ -82,7 +91,8 @@
         "test:country-de": "pest --testsuite=country-de",
         "analyse": "phpstan analyse --memory-limit=1G",
         "lint": "pint --test",
-        "format": "pint"
+        "format": "pint",
+        "test:managed": "pest --testsuite=managed"
     },
     "config": {
         "sort-packages": true,

@@ -100,6 +100,10 @@ return [
     'BR-DEX-15' => [
         'message' => 'Sub invoice lines are not supported by XRechnung in CII. Use the UBL syntax for the XRechnung extension.',
     ],
+    'DE-XRECHNUNG-EXT-01' => [
+        'message' => 'The XRechnung extension has no credit note in UBL. Cancel with the strategy negative_invoice (type code 380 with negative amounts).',
+        'hint' => 'Set corrections.cancellation_strategy to negative_invoice or pass the strategy when cancelling.',
+    ],
     'DE-USTG-01' => [
         'message' => 'Name and full address of the seller and the buyer must be stated (section 14 (4) no. 1 UStG).',
         'hint' => 'Add street, post code and city for seller and buyer.',
@@ -121,8 +125,8 @@ return [
         'hint' => 'Use ->propertyRelatedService(); the builder adds the note.',
     ],
     'DE-USTG-06' => [
-        'message' => 'Reverse charge invoices must state "Steuerschuldnerschaft des Leistungsempfängers" (section 14a (5) UStG).',
-        'hint' => 'Use the presets VatPreset::ReverseChargeDomestic or VatPreset::ReverseChargeEu.',
+        'message' => 'Reverse charge invoices must state "Steuerschuldnerschaft des Leistungsempfängers" (section 14a (1) and (5) UStG).',
+        'hint' => 'Use the presets VatPreset::ReverseChargeDomestic, VatPreset::ReverseChargeEu or VatPreset::TriangularTransaction; their texts are accepted in every language of the country pack.',
     ],
     'DE-USTG-07' => [
         'message' => 'The intra-community supply of a new vehicle requires the vehicle details (BG-32) on every line (section 14a (4) UStG).',
@@ -140,8 +144,24 @@ return [
         'message' => 'For invoices in a foreign currency, the VAT amount should also be stated in EUR (BT-111 with BT-6 = EUR).',
         'hint' => 'Set ->taxCurrency(\'EUR\', $rate, $date).',
     ],
+    'DE-USTG-11' => [
+        'message' => 'Reverse charge services in another EU member state and intra-community triangular transactions must state the VAT identifiers of the seller (BT-31) and the buyer (BT-48) (section 14a (1) and (7) UStG).',
+        'hint' => 'Add ->vatId(…) for seller and buyer; the tax number is not sufficient here.',
+    ],
+    'DE-USTG-12' => [
+        'message' => 'The simplifications for small amount invoices do not apply to distance sales, intra-community supplies and reverse charge supplies (section 33 sentence 3 UStDV).',
+        'hint' => 'Remove ->smallAmount() and issue a full invoice.',
+    ],
+    'DE-USTG-13' => [
+        'message' => 'The intra-community supply of a new vehicle (section 14a (4) UStG) is marked, but no line uses the VAT category K (intra-community supply).',
+        'hint' => 'Use VatPreset::IntraCommunitySupply for the vehicle lines, or remove ->newVehicle() if the vehicle is not supplied to another member state.',
+    ],
     'DE-LEITWEG-ID' => [
         'message' => 'The check digits of the Leitweg-ID ":value" (BT-10) are wrong.',
         'hint' => 'Check the Leitweg-ID with the public buyer.',
+    ],
+    'DE-LEITWEG-ID-SUSPECT' => [
+        'message' => 'The buyer reference ":value" (BT-10) is shaped like a Leitweg-ID, but its check digits are wrong. It is not treated as a Leitweg-ID, so the invoice is not issued as XRechnung automatically.',
+        'hint' => 'If it is the Leitweg-ID of a public buyer, correct it (XRechnung is then chosen automatically) or set the format explicitly. An order number can be ignored.',
     ],
 ];

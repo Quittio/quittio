@@ -28,6 +28,7 @@ enum VatPreset: string implements TaxPreset
     case ReverseChargeDomestic = 'de.reverse_charge_domestic';
     case ReverseChargeEu = 'de.reverse_charge_eu';
     case IntraCommunitySupply = 'de.intra_community_supply';
+    case TriangularTransaction = 'de.triangular_transaction';
     case Export = 'de.export';
     case NotTaxableInGermany = 'de.not_taxable';
     case MarginSecondHand = 'de.margin_second_hand';
@@ -36,20 +37,25 @@ enum VatPreset: string implements TaxPreset
     case TravelAgency = 'de.travel_agency';
 
     /**
-     * Tax exemption with a specific legal reference, e.g. VatPreset::exempt('§ 4 Nr. 14 UStG').
+     * Tax exemption with a specific legal reference, e.g. VatPreset::exempt('§ 4 Nr. 14 UStG'). The
+     * text ("de.exempt" in tax.php) defaults to German like the cases.
      */
     public static function exempt(string $paragraph, VatExemptionReasonCode|RawCode|string|null $code = null): TaxPreset
     {
-        return CustomTaxPreset::make(
+        CountryDE::registerTranslations();
+        $translator = Translations::translator();
+        $reasons = [];
+        foreach (CountryDE::locales() as $locale) {
+            $reasons[$locale] = $translator->get(CountryDE::TRANSLATION_NAMESPACE.'::tax.de.exempt', ['paragraph' => $paragraph], $locale);
+        }
+
+        return new CustomVatPreset(CustomTaxPreset::make(
             key: 'de.exempt',
             category: VatCategory::Exempt,
             rate: '0',
             code: $code,
-            reason: [
-                'de' => 'Steuerfrei nach '.$paragraph,
-                'en' => 'Exempt from VAT according to '.$paragraph,
-            ],
-        );
+            reason: $reasons,
+        ));
     }
 
     public function key(): string
@@ -62,7 +68,7 @@ enum VatPreset: string implements TaxPreset
         return match ($this) {
             self::Standard19, self::Reduced7 => VatCategory::StandardRate,
             self::ZeroRatedPv => VatCategory::ZeroRated,
-            self::ReverseChargeDomestic, self::ReverseChargeEu => VatCategory::ReverseCharge,
+            self::ReverseChargeDomestic, self::ReverseChargeEu, self::TriangularTransaction => VatCategory::ReverseCharge,
             self::IntraCommunitySupply => VatCategory::IntraCommunitySupply,
             self::Export => VatCategory::Export,
             self::NotTaxableInGermany => VatCategory::NotSubjectToVat,
@@ -83,7 +89,7 @@ enum VatPreset: string implements TaxPreset
     public function exemptionReasonCode(): ?VatExemptionReasonCode
     {
         return match ($this) {
-            self::ReverseChargeDomestic, self::ReverseChargeEu => VatExemptionReasonCode::ReverseCharge,
+            self::ReverseChargeDomestic, self::ReverseChargeEu, self::TriangularTransaction => VatExemptionReasonCode::ReverseCharge,
             self::IntraCommunitySupply => VatExemptionReasonCode::IntraCommunitySupply,
             self::Export => VatExemptionReasonCode::Export,
             self::NotTaxableInGermany => VatExemptionReasonCode::NotSubjectToVat,
@@ -97,7 +103,9 @@ enum VatPreset: string implements TaxPreset
 
     public function exemptionReason(?string $locale = null): ?string
     {
-        if ($this === self::Standard19 || $this === self::Reduced7) {
+        // Taxed and zero-rated supplies carry no exemption reason (BR-S-10, BR-Z-10): the 0 % rate
+        // for photovoltaic systems (section 12 (3) UStG) is stated as the rate itself.
+        if ($this === self::Standard19 || $this === self::Reduced7 || $this === self::ZeroRatedPv) {
             return null;
         }
 

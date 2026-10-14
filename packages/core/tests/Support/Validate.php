@@ -19,14 +19,15 @@ final class Validate
 {
     /**
      * @param  list<CountryPack>  $packs
+     * @param  array<string, mixed>  $options  validation options, e.g. ['syntax' => Syntax::Cii]
      */
-    public static function data(InvoiceData $invoice, Profile|string $profile = 'en16931', array $packs = [], string $locale = 'en', ?VatIdVerifier $verifier = null, bool $calculate = true): ValidationResult
+    public static function data(InvoiceData $invoice, Profile|string $profile = 'en16931', array $packs = [], string $locale = 'en', ?VatIdVerifier $verifier = null, bool $calculate = true, array $options = []): ValidationResult
     {
         $profile = ProfileRegistry::withDefaults()->get($profile);
         $invoice = $calculate ? (new En16931Calculator)->calculate($invoice) : $invoice;
 
         return (new PhpRulesDriver(vatIdVerifier: $verifier))->validate(
-            new ValidationSubject($invoice, new ValidationContext($profile, $packs, $locale)),
+            new ValidationSubject($invoice, new ValidationContext($profile, $packs, $locale, options: $options)),
         );
     }
 

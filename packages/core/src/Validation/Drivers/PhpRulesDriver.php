@@ -46,6 +46,24 @@ final class PhpRulesDriver implements ValidationDriver
         return $this->levels;
     }
 
+    /**
+     * The same driver (additional rules, VAT identifier verifier) with other levels.
+     *
+     * @param  list<ValidationLevel>  $levels
+     */
+    public function withLevels(array $levels): self
+    {
+        return new self($this->additionalRules, $this->vatIdVerifier, $levels);
+    }
+
+    /**
+     * The same driver with an online VAT identifier check (e.g. VIES).
+     */
+    public function withVatIdVerifier(?VatIdVerifier $verifier): self
+    {
+        return new self($this->additionalRules, $verifier, $this->levels);
+    }
+
     public function supports(ValidationSubject $subject): bool
     {
         return true;

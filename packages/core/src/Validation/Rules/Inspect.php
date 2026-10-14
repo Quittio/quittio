@@ -8,6 +8,7 @@ use Brick\Math\BigDecimal;
 use Quittio\Core\Data\InvoiceData;
 use Quittio\Core\Data\Lines\InvoiceLine;
 use Quittio\Core\Enums\VatCategory;
+use Quittio\Core\Profiles\ProfileLevel;
 
 /**
  * Helpers shared by the rule sets.
@@ -30,6 +31,15 @@ final class Inspect
         }
 
         return array_values($categories);
+    }
+
+    /**
+     * MINIMUM and BASIC WL carry no invoice lines (BG-25): line based rules do not apply to
+     * documents of these profiles without lines, e.g. when they are read.
+     */
+    public static function withoutLinesByProfile(InvoiceData $invoice, RuleReporter $report): bool
+    {
+        return $invoice->lines === [] && ! $report->context()->profile->level()->includes(ProfileLevel::Basic);
     }
 
     public static function uses(InvoiceData $invoice, VatCategory $category): bool

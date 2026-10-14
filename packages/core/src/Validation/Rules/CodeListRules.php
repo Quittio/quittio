@@ -29,6 +29,11 @@ final class CodeListRules
                 static fn (InvoiceData $i): array => ['currency' => ['BT-5', $i->currency]]),
             self::rule('BR-CL-05', 'The VAT accounting currency code (BT-6) ":value" is not an ISO 4217 currency code.', CodeList::CURRENCIES,
                 static fn (InvoiceData $i): array => ['taxCurrency' => ['BT-6', $i->taxCurrency]]),
+            CallbackRule::l3('BR-CL-06', 'The VAT point date code (BT-8) ":value" is not part of UNTDID 2005 (3 issue date, 35 delivery date, 432 payment date).', static function (InvoiceData $i, RuleReporter $report): void {
+                if ($i->taxPointDateCode instanceof RawCode) {
+                    $report->error('BT-8', 'taxPointDateCode', ['value' => $i->taxPointDateCode->value]);
+                }
+            }),
             self::rule('BR-CL-07', 'The object identifier scheme ":value" is not part of UNTDID 1153.', CodeList::OBJECT_IDENTIFIERS,
                 static function (InvoiceData $i): array {
                     $codes = ['invoicedObject.scheme' => ['BT-18-1', $i->invoicedObject?->scheme]];

@@ -74,7 +74,7 @@ final class En16931Rules
                 }
             }),
             $r('BR-16', 'An invoice shall have at least one invoice line (BG-25).', function (InvoiceData $i, RuleReporter $report): void {
-                if ($i->lines === []) {
+                if ($i->lines === [] && ! Inspect::withoutLinesByProfile($i, $report)) {
                     $report->error('BG-25', 'lines');
                 }
             }),
@@ -300,7 +300,7 @@ final class En16931Rules
 
         return [
             $r('BR-CO-10', 'Sum of invoice line net amount (BT-106) = Σ invoice line net amount (BT-131).', function (InvoiceData $i, RuleReporter $report) use ($sum): void {
-                if ($i->totals !== null && ! $i->totals->lineNetSum->getAmount()->isEqualTo($sum(array_map(static fn (InvoiceLine $l): ?Money => $l->netAmount, $i->lines)))) {
+                if ($i->totals !== null && ! Inspect::withoutLinesByProfile($i, $report) && ! $i->totals->lineNetSum->getAmount()->isEqualTo($sum(array_map(static fn (InvoiceLine $l): ?Money => $l->netAmount, $i->lines)))) {
                     $report->error('BT-106', 'totals.lineNetSum');
                 }
             }),
@@ -342,7 +342,9 @@ final class En16931Rules
                 }
             }),
             // The official Schematron accepts a deviation of up to one currency unit; smaller
-            // deviations are reported as warning QUITTIO-VAT-ROUNDING.
+            // deviations are reported as warning QUITTIO-VAT-ROUNDING (as information
+            // QUITTIO-CANCELLATION-VAT-ALIGNED for partial cancellations aligned with earlier ones,
+            // within 0.01 and with the sign of the taxable amount).
             $r('BR-CO-17', 'VAT category tax amount (BT-117) = VAT category taxable amount (BT-116) × VAT category rate (BT-119) / 100, rounded to two decimals. Category :category, rate :rate.', function (InvoiceData $i, RuleReporter $report): void {
                 foreach ($i->vatBreakdown as $index => $breakdown) {
                     if ($breakdown->rate === null || $breakdown->category->isZeroTax()) {

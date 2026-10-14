@@ -51,7 +51,9 @@ final class VatCategoryRules
 
     private static function breakdownPresent(VatCategory $category, string $prefix): Rule
     {
-        $single = in_array($category, [VatCategory::ReverseCharge, VatCategory::IntraCommunitySupply, VatCategory::Export, VatCategory::NotSubjectToVat], true);
+        // Only "S" may have several breakdowns (one per rate); BR-Z-01, BR-E-01, BR-AE-01,
+        // BR-IC-01, BR-G-01 and BR-O-01 require exactly one.
+        $single = $category !== VatCategory::StandardRate;
 
         return CallbackRule::l3(
             $prefix.'-01',
@@ -151,7 +153,7 @@ final class VatCategoryRules
             $prefix.'-08',
             'For each VAT rate of category ":category" the taxable amount (BT-116) shall equal the sum of line net amounts minus allowances plus charges of this category and rate.',
             function (InvoiceData $i, RuleReporter $report) use ($category): void {
-                if (! $i->isCalculated()) {
+                if (! $i->isCalculated() || Inspect::withoutLinesByProfile($i, $report)) {
                     return;
                 }
 

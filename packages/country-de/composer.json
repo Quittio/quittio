@@ -12,7 +12,10 @@
     "type": "library",
     "license": "MIT",
     "require": {
+        "ext-ctype": "*",
         "php": "^8.3",
+        "brick/math": "^1.0",
+        "brick/money": "^0.15.2",
         "quittio/core": "self.version"
     },
     "autoload": {

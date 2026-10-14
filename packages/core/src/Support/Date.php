@@ -65,6 +65,15 @@ final readonly class Date implements JsonSerializable, Stringable
             return new self((int) $m[1], (int) $m[2], (int) $m[3]);
         }
 
+        // Free-form strings must name a calendar date (year, month and day). Expressions
+        // relative to today ("tomorrow", "+2000 days", "next monday 2026") and digit strings
+        // such as "202610", which Carbon would read as a time of today, are rejected.
+        $parts = date_parse($value);
+        if ($parts['year'] === false || $parts['month'] === false || $parts['day'] === false
+            || $parts['error_count'] > 0 || preg_match('/^\d+$/', $value) === 1) {
+            throw new InvalidArgumentException(sprintf('Unable to parse date "%s".', $value));
+        }
+
         try {
             $carbon = CarbonImmutable::parse($value, $timezone);
         } catch (Throwable $e) {
@@ -72,6 +81,35 @@ final readonly class Date implements JsonSerializable, Stringable
         }
 
         return new self((int) $carbon->format('Y'), (int) $carbon->format('n'), (int) $carbon->format('j'));
+    }
+
+    /**
+     * Strict CII date in format 102 (YYYYMMDD), as used for incoming documents.
+     *
+     * @throws InvalidArgumentException
+     */
+    public static function fromFormat102(string $value): self
+    {
+        if (preg_match('/^(\d{4})(\d{2})(\d{2})$/', $value, $m) !== 1) {
+            throw new InvalidArgumentException(sprintf('"%s" is not a date in format 102 (YYYYMMDD).', $value));
+        }
+
+        return new self((int) $m[1], (int) $m[2], (int) $m[3]);
+    }
+
+    /**
+     * Strict ISO 8601 calendar date (YYYY-MM-DD) with an optional time zone (Z, +01:00),
+     * as used by UBL (xs:date). The time zone does not shift the calendar date.
+     *
+     * @throws InvalidArgumentException
+     */
+    public static function fromIsoDate(string $value): self
+    {
+        if (preg_match('/^(\d{4})-(\d{2})-(\d{2})(?:Z|[+-](?:0\d|1[0-4]):[0-5]\d)?$/', $value, $m) !== 1) {
+            throw new InvalidArgumentException(sprintf('"%s" is not an ISO date (YYYY-MM-DD).', $value));
+        }
+
+        return new self((int) $m[1], (int) $m[2], (int) $m[3]);
     }
 
     public static function today(DateTimeZone|string|null $timezone = null): self

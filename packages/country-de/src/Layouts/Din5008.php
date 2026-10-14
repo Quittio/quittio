@@ -7,9 +7,12 @@ namespace Quittio\Country\DE\Layouts;
 use Quittio\Core\View\LetterLayout;
 
 /**
- * DIN 5008 business letter layouts (specification 5.15): the address field starts
- * 27 mm (form A) or 45 mm (form B) from the top edge and 20 mm from the left edge;
- * fold marks at 87/192 mm (A) or 105/210 mm (B), punch mark at 148.5 mm.
+ * DIN 5008 business letter layouts (specification 5.15): the address field of 85 × 45 mm starts
+ * 27 mm (form A) or 45 mm (form B) from the top edge and 20 mm from the left edge. In both forms it
+ * holds the Zusatz- und Vermerkzone (17.7 mm, five lines filled from the bottom; without further
+ * notes its last line is the Rücksendeangabe) and the Anschriftzone (27.3 mm, six lines), which
+ * starts 44.7 mm (A) or 62.7 mm (B) from the top edge. Fold marks at 87/192 mm (A) or
+ * 105/210 mm (B), punch mark at 148.5 mm.
  */
 final class Din5008
 {

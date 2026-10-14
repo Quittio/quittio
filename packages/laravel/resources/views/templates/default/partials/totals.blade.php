@@ -17,7 +17,9 @@
     @foreach ($invoice->totals->thirdPartyPayments as $payment)
         <tr><td>{{ $payment->description }}</td><td class="right">{{ $payment->amount }}</td></tr>
     @endforeach
-    <tr class="due"><td>{{ $labels->amount_due }}</td><td class="right">{{ $invoice->totals->amountDue }}</td></tr>
+    @if ($invoice->totals->amountDue)
+        <tr class="due"><td>{{ $invoice->totals->amountDueLabel }}</td><td class="right">{{ $invoice->totals->amountDue }}</td></tr>
+    @endif
 </table>
 @if ($invoice->totals->taxCurrencyNote)
     <p class="small muted right">{{ $invoice->totals->taxCurrencyNote }}</p>

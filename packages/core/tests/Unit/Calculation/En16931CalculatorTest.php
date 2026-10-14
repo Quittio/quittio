@@ -207,3 +207,91 @@ it('sums sub lines into a parent line without own price', function () {
         ->and($invoice->lines[0]->subLines[0]->id)->toBe('1.1')
         ->and(amount($invoice->totals?->lineNetSum))->toBe('25.50');
 });
+
+it('writes exemption reasons only for categories that allow them (BR-S-10, BR-Z-10)', function () {
+    $invoice = calc(Invoices::base()
+        ->line(fn ($l) => $l->name('PV module')->quantity(1)->netPrice('100')->vat(VatCategory::ZeroRated, '0', 'Zero rate according to section 12 (3) UStG'))
+        ->line(fn ($l) => $l->name('Cable')->quantity(1)->netPrice('10')->vat(VatCategory::StandardRate, '19', 'Not a reason', 'VATEX-EU-G'))
+        ->build());
+    $xml = (new Quittio\Core\Xml\Cii\CiiWriter)->serialize($invoice, Quittio\Core\Profiles\ProfileRegistry::withDefaults()->get('en16931'));
+
+    expect(array_map(fn ($b) => [$b->exemptionReason, $b->exemptionReasonCode], $invoice->vatBreakdown))->toBe([[null, null], [null, null]])
+        ->and($xml)->not->toContain('ExemptionReason')
+        ->and(Quittio\Core\Tests\Support\Validate::codes(Quittio\Core\Tests\Support\Validate::data($invoice)))->not->toContain('BR-Z-10')->not->toContain('BR-S-10');
+});
+
+it('takes the exemption reason of a document charge whose VAT group has no lines', function () {
+    $invoice = calc(Invoices::simple()
+        ->charge(VatCategory::Exempt, '0', amount: '5.00', reason: 'Insurance', exemptionReason: 'Exempt according to section 4 no. 10 UStG', exemptionReasonCode: 'VATEX-EU-132')
+        ->build());
+
+    $exempt = $invoice->vatBreakdown[1];
+
+    expect($exempt->category)->toBe(VatCategory::Exempt)
+        ->and(amount($exempt->taxableAmount))->toBe('5.00')
+        ->and($exempt->exemptionReason)->toBe('Exempt according to section 4 no. 10 UStG')
+        ->and($exempt->exemptionReasonCode?->value)->toBe('VATEX-EU-132')
+        ->and(Quittio\Core\Tests\Support\Validate::codes(Quittio\Core\Tests\Support\Validate::data($invoice)))->not->toContain('BR-E-10');
+});
+
+it('keeps the sign of vouchers and returns in gross price mode', function (array $lines, array $nets, string $due) {
+    $builder = Invoices::base();
+    foreach ($lines as [$quantity, $gross]) {
+        $builder->line(fn ($l) => $l->name('Item')->quantity($quantity)->priceInclVat($gross)->vat(VatCategory::StandardRate, '19'));
+    }
+    $invoice = calc($builder->build());
+
+    expect(array_map(fn ($l) => amount($l->netAmount), $invoice->lines))->toBe($nets)
+        ->and(array_filter($invoice->lines, fn ($l) => $l->price->netPrice?->isNegative() === true))->toBe([])
+        ->and(amount($invoice->totals?->amountDue))->toBe($due);
+})->with([
+    'voucher' => [[[1, '119.00'], [-1, '11.90']], ['100.00', '-10.00'], '107.10'],
+    'return' => [[[1, '119.00'], [-1, '23.80']], ['100.00', '-20.00'], '95.20'],
+    'full return' => [[[1, '119.00'], [-1, '119.00']], ['100.00', '-100.00'], '0.00'],
+    'cents' => [[[2, '10.00'], [-3, '5.00'], [7, '0.99']], ['16.81', '-12.60', '5.82'], '11.93'],
+    // The group needs one more cent; the voucher of 0.01 has the largest remainder but keeps its -0.01.
+    'voucher of one cent' => [[[1, '0.12'], [1, '0.06'], [-1, '0.01'], [1, '0.12'], [3, '0.06'], [1, '0.06']], ['0.10', '0.05', '-0.01', '0.10', '0.16', '0.05'], '0.53'],
+]);
+
+it('rejects a negative price including VAT', function () {
+    calc(Invoices::base()->line(fn ($l) => $l->name('Voucher')->quantity(1)->priceInclVat('-10.00')->vat(VatCategory::StandardRate, '19'))->build());
+})->throws(CalculationException::class, 'negative quantity');
+
+it('splits a percentage discount over a VAT group with returns with the opposite sign', function () {
+    $invoice = calc(Invoices::base()
+        ->line(fn ($l) => $l->name('Sale')->quantity(1)->netPrice('100.00')->vat(VatCategory::StandardRate, '19'))
+        ->line(fn ($l) => $l->name('Return')->quantity(-1)->netPrice('50.00')->vat(VatCategory::StandardRate, '7'))
+        ->discountPercent('10', 'Discount on everything')
+        ->build());
+
+    expect(array_map(fn ($a) => amount($a->amount), $invoice->allowances))->toBe(['10.00', '-5.00'])
+        ->and(array_map(fn ($b) => amount($b->taxableAmount), $invoice->vatBreakdown))->toBe(['90.00', '-45.00'])
+        ->and(amount($invoice->totals?->vatTotal))->toBe('13.95');
+});
+
+it('distributes with signed weights and rejects weights that add up to zero', function () {
+    $parts = Quittio\Core\Calculation\LargestRemainder::distribute(BigDecimal::of('10.00'), ['a' => BigDecimal::of('300'), 'b' => BigDecimal::of('-100')]);
+
+    expect(array_map(fn ($p) => $p->toString(), $parts))->toBe(['a' => '15.00', 'b' => '-5.00'])
+        ->and(array_map(fn ($p) => $p->toString(), Quittio\Core\Calculation\LargestRemainder::distribute(BigDecimal::of('-1.00'), [BigDecimal::one(), BigDecimal::one(), BigDecimal::one()])))->toBe(['-0.34', '-0.33', '-0.33'])
+        ->and(fn () => Quittio\Core\Calculation\LargestRemainder::distribute(BigDecimal::of('1.00'), [BigDecimal::one(), BigDecimal::of('-1')]))->toThrow(CalculationException::class);
+});
+
+it('keeps a declared VAT total in tax currency without exchange rate only while the VAT total is unchanged', function () {
+    $declared = calc(Invoices::simple()->currency('USD')->taxCurrency('EUR', '0.9')->build());
+    $withoutRate = $declared->with(['meta' => $declared->meta->with(['exchangeRate' => null])]);
+
+    $changed = $withoutRate->with(['lines' => [$withoutRate->lines[0]->withNetPrice('50.00')]]);
+
+    expect(amount(calc($withoutRate)->totals?->vatTotalInTaxCurrency))->toBe('171.00')
+        ->and(calc($changed)->totals?->vatTotalInTaxCurrency)->toBeNull();
+});
+
+it('states a VAT total of zero in tax currency without exchange rate', function () {
+    $invoice = calc(Invoices::base()->currency('USD')->taxCurrency('EUR')
+        ->line(fn ($l) => $l->name('Export')->quantity(1)->netPrice('100.00')->vat(VatCategory::Export, '0', 'Export outside the EU'))
+        ->build());
+
+    expect(amount($invoice->totals?->vatTotalInTaxCurrency))->toBe('0.00')
+        ->and($invoice->totals?->vatTotalInTaxCurrency?->getCurrency()->getCurrencyCode())->toBe('EUR');
+});

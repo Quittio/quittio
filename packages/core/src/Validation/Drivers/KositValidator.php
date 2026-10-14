@@ -6,6 +6,7 @@ namespace Quittio\Core\Validation\Drivers;
 
 use Closure;
 use InvalidArgumentException;
+use Quittio\Core\Support\Process;
 use Quittio\Core\Validation\Severity;
 use Quittio\Core\Validation\ValidationDriver;
 use Quittio\Core\Validation\ValidationLevel;
@@ -143,10 +144,7 @@ final class KositValidator implements ValidationDriver
         array_push($command, '-o', $directory, $input);
 
         try {
-            $process = proc_open($command, [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
-            if (! is_resource($process)) {
-                throw new RuntimeException('Unable to start Java.');
-            }
+            $process = Process::open($command, [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
             $start = time();
             stream_set_blocking($pipes[1], false);
             stream_set_blocking($pipes[2], false);

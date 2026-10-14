@@ -14,7 +14,8 @@ use ReflectionClass;
 
 /**
  * Configuration of the core without Laravel (specification 14.6). The Laravel package
- * builds it from config/quittio.php.
+ * translates config/quittio.php into it (Quittio\Laravel\Support\ConfigMapper), whose layout
+ * differs from the keys of fromArray().
  */
 final readonly class Config
 {
@@ -27,6 +28,7 @@ final readonly class Config
     /**
      * @param  string|null  $format  default output format, null = automatic choice
      * @param  list<string>  $templatePaths  directories for plain PHP templates
+     * @param  string|null  $profile  default profile for every format that allows it; null = the profile of the format or of the automatic choice (EN 16931 for ZUGFeRD/Factur-X)
      * @param  string  $validation  error (throw on errors), warn (attach result only) or off
      * @param  list<ValidationLevel>  $validationLevels  levels run while rendering
      * @param  array{mode?: string, url?: string, jar?: string|null, configurations?: list<array{scenarios: string, repository: string}>, java?: string, timeout?: int, fail_on_unavailable?: bool}|null  $kosit  null = disabled
@@ -38,7 +40,7 @@ final readonly class Config
      */
     public function __construct(
         public ?string $format = null,
-        public string $profile = 'en16931',
+        public ?string $profile = null,
         public ?string $locale = null,
         public ?string $country = null,
         public string $template = 'default',
@@ -72,7 +74,26 @@ final readonly class Config
     }
 
     /**
-     * @param  array<string, mixed>  $config  keys as in config/quittio.php
+     * Builds the configuration from an array with the core's own, flat layout (not the layout
+     * of the Laravel config/quittio.php). Keys, all optional:
+     *
+     * - format ("auto" or null = automatic choice), profile, locale, country, due_days
+     * - template, template_paths (directories with {name}.php), filename
+     * - pdf.pdfa, pdf.b2c_embed_xml, pdf.girocode_amount (due, discounted)
+     * - auto_upgrade_profile
+     * - validation.mode (error, warn, off), validation.levels (enum names L1 … L7, e.g. ['L1', 'L4']),
+     *   validation.block_on_warnings
+     * - validation.kosit, validation.verapdf: ['enabled' => true, …] switches the driver on; the other keys
+     *   are those of the $kosit and $veraPdf parameters (KoSIT scenario sets only in "configurations")
+     * - mandatory_fields (exception, log, off), temp_dir, options (e.g. paper, markdown, fold_marks, watermark)
+     * - presentation (a Presentation object)
+     * - reader.max_xml_bytes, reader.max_pdf_bytes, reader.max_decompressed_bytes
+     * - corrections.cancellation_strategy
+     *
+     * The Laravel names differ, e.g. defaults.format, format_resolver.b2c_embed_xml,
+     * validation.levels php/xsd/kosit/verapdf, validation.mandatory_field_guard and pdf.cache_path.
+     *
+     * @param  array<string, mixed>  $config
      */
     public static function fromArray(array $config): self
     {

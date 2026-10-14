@@ -16,8 +16,8 @@
             <tr class="group"><td colspan="{{ $columns }}">{{ $group->title }}</td></tr>
         @endif
         @foreach ($group->lines as $line)
-            <tr>
-                <td>{{ $line->position }}</td>
+            <tr @if ($line->highlight) class="highlight" @endif>
+                <td class="position">{{ $line->position }}</td>
                 <td>
                     @if ($line->optional)<span class="muted">[{{ $labels->optional_line }}]</span> @endif
                     @if ($line->alternativeTo)<span class="muted">[{{ $invoice->label('alternative_line', ['position' => (string) $line->alternativeTo]) }}]</span> @endif
@@ -26,14 +26,14 @@
                     @if ($line->description->html)<div class="description">{!! $line->description->html !!}</div>@endif
                     @if ($line->period)<div class="description">{{ $labels->service_period }}: {{ $line->period }}</div>@endif
                     @foreach ($line->attributes as $attribute)<div class="description">{{ $attribute->name }}: {{ $attribute->value }}</div>@endforeach
-                    @foreach ($line->allowances as $allowance)<div class="description">{{ $labels->allowance }} {{ $allowance->reason }} {{ $allowance->percent }}: −{{ $allowance->amount }}</div>@endforeach
-                    @foreach ($line->charges as $charge)<div class="description">{{ $labels->charge }} {{ $charge->reason }} {{ $charge->percent }}: {{ $charge->amount }}</div>@endforeach
+                    @foreach ($line->allowances as $allowance)<div class="description">{{ $allowance->label }}: −{{ $allowance->amount }}</div>@endforeach
+                    @foreach ($line->charges as $charge)<div class="description">{{ $charge->label }}: {{ $charge->amount }}</div>@endforeach
                     @if ($line->note)<div class="description">{{ $line->note }}</div>@endif
                     @if (count($line->serialNumbers) > 0)<div class="description">{{ $labels->serial_numbers }}: {{ implode(', ', $line->serialNumbers->toArray()) }}</div>@endif
                 </td>
                 <td class="num">{{ $line->quantity }} {{ $line->unit->label }}</td>
                 @if ($prices)
-                    <td class="num">{{ $line->showGrossPrice ? $line->grossUnitPrice : $line->unitPrice }}</td>
+                    <td class="num">{{ $line->unitPrice }}@if ($line->unitPriceBase) / {{ $line->unitPriceBase }}@endif @if ($line->showGrossPrice)<div class="description">{{ $labels->unit_price_gross }} {{ $line->grossUnitPrice }}</div>@endif</td>
                     <td class="num">{{ $line->vatRate }}</td>
                     <td class="num">{{ $line->total }}</td>
                 @endif
@@ -44,7 +44,7 @@
                     <td>{{ $sub->name }}</td>
                     <td class="num">{{ $sub->quantity }} {{ $sub->unit->label }}</td>
                     @if ($prices)
-                        <td class="num">{{ $sub->unitPrice }}</td>
+                        <td class="num">{{ $sub->unitPrice }}@if ($sub->unitPriceBase) / {{ $sub->unitPriceBase }}@endif</td>
                         <td class="num">{{ $sub->vatRate }}</td>
                         <td class="num">{{ $sub->total }}</td>
                     @endif

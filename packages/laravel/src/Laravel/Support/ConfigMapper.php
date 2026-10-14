@@ -7,17 +7,22 @@ namespace Quittio\Laravel\Support;
 use Quittio\Core\Config;
 use Quittio\Core\Data\Presentation\Colors;
 use Quittio\Core\Data\Presentation\Presentation;
+use Quittio\Core\Exceptions\ConfigurationException;
 use Quittio\Core\Validation\ValidationLevel;
 use Quittio\Core\View\MandatoryFieldGuard;
+use Quittio\Core\View\ViewModelFactory;
 
 /**
  * Translates config/quittio.php into the core configuration.
  */
 final class ConfigMapper
 {
-    public static function toCore(Settings $settings, bool $production): Config
+    /**
+     * @param  list<string>|null  $levels  validation levels instead of validation.levels (e.g. quittio:validate --kosit)
+     */
+    public static function toCore(Settings $settings, bool $production, ?array $levels = null): Config
     {
-        $levelNames = $settings->strings('validation.levels');
+        $levelNames = $levels ?? $settings->strings('validation.levels');
         $levels = [];
         if (in_array('php', $levelNames, true)) {
             array_push($levels, ValidationLevel::L1, ValidationLevel::L2, ValidationLevel::L3, ValidationLevel::L7);
@@ -28,10 +33,12 @@ final class ConfigMapper
 
         $kosit = $settings->section('validation.drivers.kosit');
         $veraPdf = $settings->section('validation.drivers.verapdf');
+        // "auto" = automatic choice, as in Config::fromArray().
+        $format = $settings->nullableString('defaults.format');
 
         return new Config(
-            format: $settings->nullableString('defaults.format'),
-            profile: $settings->nullableString('defaults.profile') ?? 'en16931',
+            format: $format === 'auto' ? null : $format,
+            profile: $settings->nullableString('defaults.profile'),
             locale: $settings->nullableString('defaults.locale'),
             country: $settings->nullableString('defaults.country'),
             template: 'default',
@@ -46,6 +53,7 @@ final class ConfigMapper
                 'mode' => $veraPdf->string('mode', 'cli'),
                 'binary' => $veraPdf->string('binary', 'verapdf'),
                 'image' => $veraPdf->string('image', 'verapdf/cli'),
+                'docker' => $veraPdf->string('docker', 'docker'),
                 'timeout' => $veraPdf->int('timeout', 120),
                 'fail_on_unavailable' => $veraPdf->bool('fail_on_unavailable', true),
             ] : null,
@@ -53,13 +61,19 @@ final class ConfigMapper
                 ?? ($production ? MandatoryFieldGuard::MODE_LOG : MandatoryFieldGuard::MODE_EXCEPTION),
             girocodeAmount: $settings->string('pdf.payment_qr.girocode_amount', 'due'),
             tempDir: $settings->nullableString('pdf.cache_path'),
-            options: ['fold_marks' => $settings->bool('pdf.fold_marks', false)],
+            options: [
+                'fold_marks' => $settings->bool('pdf.fold_marks', false),
+                // Descriptions and notes as Markdown instead of plain text (they are also in the XML).
+                'markdown' => $settings->bool('pdf.markdown', false),
+                // An explicit paper size wins over the country pack default, also "A4".
+                'paper' => $settings->nullableString('pdf.paper'),
+            ],
             presentation: self::presentation($settings),
             blockOnWarnings: $settings->bool('validation.block_on_warnings', false),
             maxXmlBytes: $settings->int('reader.max_xml_bytes', 10 * 1024 * 1024),
             maxPdfBytes: $settings->int('reader.max_pdf_bytes', 25 * 1024 * 1024),
             maxDecompressedBytes: $settings->int('reader.max_decompressed_bytes', 50 * 1024 * 1024),
-            dueDays: is_int($settings->get('defaults.due_days')) ? $settings->int('defaults.due_days', 14) : null,
+            dueDays: self::dueDays($settings->get('defaults.due_days')),
             cancellationStrategy: $settings->nullableString('corrections.cancellation_strategy'),
         );
     }
@@ -75,6 +89,11 @@ final class ConfigMapper
             if (is_array($column)) {
                 $footer[] = array_values(array_filter($column, is_string(...)));
             }
+        }
+
+        $paymentQr = $settings->string('pdf.payment_qr.type', Presentation::PAYMENT_QR_AUTO);
+        if (! in_array($paymentQr, ViewModelFactory::PAYMENT_QR_MODES, true)) {
+            throw new ConfigurationException(sprintf('quittio.pdf.payment_qr.type: unknown type "%s". Known types: %s.', $paymentQr, implode(', ', ViewModelFactory::PAYMENT_QR_MODES)));
         }
 
         return new Presentation(
@@ -93,9 +112,27 @@ final class ConfigMapper
             closingText: $settings->nullableString('pdf.texts.closing'),
             footerColumns: $footer,
             showItemNumbers: $settings->bool('pdf.show_item_numbers', false),
-            paymentQr: $settings->string('pdf.payment_qr.type', Presentation::PAYMENT_QR_AUTO),
-            paper: $settings->string('pdf.paper', 'A4'),
+            paymentQr: $paymentQr,
+            paper: $settings->nullableString('pdf.paper') ?? 'A4',
         );
+    }
+
+    /**
+     * Days until the due date: an integer or a numeric string (e.g. from env()); null = none.
+     */
+    private static function dueDays(mixed $value): ?int
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+        if (is_int($value)) {
+            return $value;
+        }
+        if (is_string($value) && preg_match('/^\s*\d+\s*$/', $value) === 1) {
+            return (int) trim($value);
+        }
+
+        throw new ConfigurationException(sprintf('quittio.defaults.due_days must be a number of days, "%s" given.', is_string($value) ? $value : get_debug_type($value)));
     }
 
     /**

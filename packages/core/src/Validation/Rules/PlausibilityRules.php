@@ -4,16 +4,21 @@ declare(strict_types=1);
 
 namespace Quittio\Core\Validation\Rules;
 
+use Quittio\Core\Countries\VatTerritory;
 use Quittio\Core\Data\InvoiceData;
+use Quittio\Core\Data\Party\Address;
 use Quittio\Core\Enums\ElectronicAddressScheme;
+use Quittio\Core\Enums\VatCategory;
 use Quittio\Core\Validation\Plausibility\Iban;
 use Quittio\Core\Validation\Plausibility\VatIdFormat;
+use Quittio\Core\Validation\Plausibility\VatIdVerification;
 use Quittio\Core\Validation\Plausibility\VatIdVerifier;
 use Quittio\Core\Validation\Rule;
 
 /**
  * Plausibility checks (level L7): IBAN check digits, BIC and VAT identifier formats,
- * e-mail addresses and date logic. The VIES check is added only if a verifier is given.
+ * e-mail addresses, date logic and the VAT category against the destination country.
+ * The VIES check is added only if a verifier is given.
  */
 final class PlausibilityRules
 {
@@ -79,20 +84,38 @@ final class PlausibilityRules
             }),
         ];
 
+        $rules = [...$rules, ...self::destinationRules()];
+
         if ($verifier !== null) {
-            $rules[] = $r('QUITTIO-VIES', 'The VAT identifier ":value" is not valid according to VIES.', function (InvoiceData $i, RuleReporter $report) use ($verifier): void {
+            // Both VIES rules look at the same identifiers: ask the verifier once per identifier
+            // and validation run, also when it answers without a result (which it does not cache).
+            $results = [];
+            $verify = static function (string $vatId) use ($verifier, &$results): VatIdVerification {
+                $entry = $results[$vatId] ?? null;
+                if ($entry === null || $entry[0] < time() - 60) {
+                    $entry = $results[$vatId] = [time(), $verifier->verify($vatId)];
+                }
+
+                return $entry[1];
+            };
+
+            $rules[] = $r('QUITTIO-VIES', 'The VAT identifier ":value" is not valid according to VIES.', function (InvoiceData $i, RuleReporter $report) use ($verify): void {
                 foreach (['seller.vatId' => ['BT-31', $i->seller->vatId], 'buyer.vatId' => ['BT-48', $i->buyer->vatId]] as $path => [$bt, $vatId]) {
                     if ($vatId === null || VatIdFormat::isValid($vatId) !== true) {
                         continue;
                     }
-                    if ($verifier->verify($vatId)->valid === false) {
+                    if ($verify($vatId)->valid === false) {
                         $report->error($bt, $path, ['value' => $vatId]);
                     }
                 }
             });
-            $rules[] = $r('QUITTIO-VIES-UNAVAILABLE', 'The VAT identifier ":value" could not be checked because VIES is not reachable.', function (InvoiceData $i, RuleReporter $report) use ($verifier): void {
+            $rules[] = $r('QUITTIO-VIES-UNAVAILABLE', 'The VAT identifier ":value" could not be checked because VIES is not reachable.', function (InvoiceData $i, RuleReporter $report) use ($verify): void {
                 foreach (['seller.vatId' => ['BT-31', $i->seller->vatId], 'buyer.vatId' => ['BT-48', $i->buyer->vatId]] as $path => [$bt, $vatId]) {
-                    if ($vatId !== null && VatIdFormat::isValid($vatId) === true && $verifier->verify($vatId)->valid === null) {
+                    if ($vatId === null || VatIdFormat::isValid($vatId) !== true) {
+                        continue;
+                    }
+                    $result = $verify($vatId);
+                    if ($result->valid === null && $result->supported) {
                         $report->info($bt, $path, ['value' => $vatId]);
                     }
                 }
@@ -100,5 +123,89 @@ final class PlausibilityRules
         }
 
         return $rules;
+    }
+
+    /**
+     * VAT category against the destination of the supply: deliver to country (BT-80),
+     * otherwise the buyer's address (BT-55).
+     *
+     * @return list<Rule>
+     */
+    private static function destinationRules(): array
+    {
+        $r = CallbackRule::l7(...);
+
+        return [
+            $r('QUITTIO-VAT-K-DOMESTIC', 'VAT category "K" (intra-community supply) is used, but the destination :value lies in the seller\'s member state :expected. An intra-community supply requires a destination in another EU member state.', function (InvoiceData $i, RuleReporter $report): void {
+                $destination = self::destination($i);
+                $origin = self::originMemberState($i);
+                if ($destination === null || $origin === null || ! Inspect::uses($i, VatCategory::IntraCommunitySupply)) {
+                    return;
+                }
+                if (VatTerritory::memberState($destination->countryCode, $destination->postcode) === $origin) {
+                    $report->warning('BT-80', self::destinationPath($i), ['value' => self::label($destination), 'expected' => $origin]);
+                }
+            }),
+            $r('QUITTIO-VAT-K-OUTSIDE-EU', 'VAT category "K" (intra-community supply) is used, but the destination :value lies outside the EU VAT territory. Supplies to third countries are exports (category "G") or not taxable in the EU (category "O").', function (InvoiceData $i, RuleReporter $report): void {
+                $destination = self::destination($i);
+                if ($destination === null || ! Inspect::uses($i, VatCategory::IntraCommunitySupply)) {
+                    return;
+                }
+                if (! VatTerritory::isEuVatTerritory($destination->countryCode, $destination->postcode)) {
+                    $report->warning('BT-80', self::destinationPath($i), ['value' => self::label($destination)]);
+                }
+            }),
+            $r('QUITTIO-VAT-G-INSIDE-EU', 'VAT category "G" (export) is used, but the destination :value lies in the EU VAT territory. Supplies within the EU are intra-community supplies (category "K") or taxable in the member state.', function (InvoiceData $i, RuleReporter $report): void {
+                $destination = self::destination($i);
+                if ($destination === null || ! Inspect::uses($i, VatCategory::Export)) {
+                    return;
+                }
+                if (VatTerritory::isEuVatTerritory($destination->countryCode, $destination->postcode)) {
+                    $report->warning('BT-80', self::destinationPath($i), ['value' => self::label($destination)]);
+                }
+            }),
+        ];
+    }
+
+    private static function destination(InvoiceData $invoice): ?Address
+    {
+        $delivery = $invoice->delivery?->address;
+        if ($delivery !== null && Inspect::filled($delivery->countryCode)) {
+            return $delivery;
+        }
+
+        return Inspect::filled($invoice->buyer->address->countryCode) ? $invoice->buyer->address : null;
+    }
+
+    private static function destinationPath(InvoiceData $invoice): string
+    {
+        return $invoice->delivery?->address !== null && Inspect::filled($invoice->delivery->address->countryCode)
+            ? 'delivery.address.countryCode'
+            : 'buyer.address.countryCode';
+    }
+
+    /**
+     * Member state the seller supplies from: the prefix of its VAT identifier (BT-31) or of its
+     * tax representative (BT-63), otherwise its address (BT-40).
+     */
+    private static function originMemberState(InvoiceData $invoice): ?string
+    {
+        foreach ([$invoice->seller->vatId, $invoice->sellerTaxRepresentative?->vatId] as $vatId) {
+            if (Inspect::filled($vatId) && ($state = VatTerritory::memberStateOfVatId((string) $vatId)) !== null) {
+                return $state;
+            }
+        }
+
+        $address = $invoice->seller->address;
+
+        return VatTerritory::memberState($address->countryCode, $address->postcode);
+    }
+
+    private static function label(Address $address): string
+    {
+        $country = strtoupper($address->countryCode);
+        $territory = VatTerritory::excludedTerritory($country, $address->postcode);
+
+        return $territory === null ? $country : sprintf('%s (%s)', $country, $territory);
     }
 }

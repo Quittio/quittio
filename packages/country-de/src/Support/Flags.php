@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Quittio\Country\DE\Support;
 
+use Quittio\Core\Data\Meta;
+
 /**
  * Meta flags (InvoiceData::$meta->flags) understood by the German country pack.
  */
@@ -17,6 +19,9 @@ final class Flags
 
     /** Intra-community supply of a new vehicle (section 14a (4) UStG). */
     public const string NEW_VEHICLE = 'de.new_vehicle';
+
+    /** The seller is a small business (section 19 UStG), e.g. from config quittio.seller.small_business. */
+    public const string SMALL_BUSINESS = Meta::FLAG_SMALL_BUSINESS;
 
     /** Gross limit of a small amount invoice in EUR. */
     public const string SMALL_AMOUNT_LIMIT = '250.00';

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Quittio\Core\View;
 
 use ArrayAccess;
-use ArrayIterator;
 use Countable;
 use IteratorAggregate;
 use JsonSerializable;
@@ -15,9 +14,12 @@ use Traversable;
 /**
  * Read-only node of the invoice view model with recorded property access.
  *
- * Templates use object syntax ($invoice->seller->name). Every read is recorded
- * in the access log, so that the mandatory field guard can tell which values a
- * custom template actually printed.
+ * Templates use object syntax ($invoice->seller->name). Every read of a leaf value that is
+ * not null (scalar or formatted value) is recorded in the access log, so that the mandatory
+ * field guard can tell which values a custom template printed. A value counts as printed
+ * when it is read as a leaf: also in a condition such as `if ($invoice->buyer->vatId)` and
+ * while a loop reads the items of a list. Counting a list (count(), isEmpty(), isset()) and
+ * reading null values are not recorded: count($invoice->legalNotes) prints no note.
  *
  * @implements ArrayAccess<string|int, mixed>
  * @implements IteratorAggregate<string|int, mixed>
@@ -65,8 +67,6 @@ class ViewNode implements ArrayAccess, Countable, IteratorAggregate, JsonSeriali
 
     public function count(): int
     {
-        $this->log->record($this->path);
-
         return count($this->data);
     }
 
@@ -75,22 +75,25 @@ class ViewNode implements ArrayAccess, Countable, IteratorAggregate, JsonSeriali
         return $this->count() === 0;
     }
 
+    /**
+     * Items are read (and recorded) one by one while the template loops over them.
+     */
     public function getIterator(): Traversable
     {
-        $this->log->record($this->path);
-        $items = [];
         foreach (array_keys($this->data) as $key) {
-            $items[$key] = $this->read($key);
+            yield $key => $this->read($key);
         }
-
-        return new ArrayIterator($items);
     }
 
     /**
+     * Plain values, e.g. for implode(); counts as reading every value below this node.
+     *
      * @return array<string|int, mixed>
      */
     public function toArray(): array
     {
+        $this->recordLeaves($this->data, $this->path);
+
         return self::plain($this->data);
     }
 
@@ -101,12 +104,36 @@ class ViewNode implements ArrayAccess, Countable, IteratorAggregate, JsonSeriali
 
     protected function read(string|int $key): mixed
     {
-        $path = $this->path === '' ? (string) $key : (is_int($key) ? $this->path.'['.$key.']' : $this->path.'.'.$key);
-        $this->log->record($path);
-
+        $path = $this->childPath($this->path, $key);
         $value = $this->data[$key] ?? null;
+        if (is_array($value)) {
+            return new self($value, $this->log, $path);
+        }
+        if ($value !== null) {
+            $this->log->record($path);
+        }
 
-        return is_array($value) ? new self($value, $this->log, $path) : $value;
+        return $value;
+    }
+
+    private function childPath(string $path, string|int $key): string
+    {
+        return $path === '' ? (string) $key : (is_int($key) ? $path.'['.$key.']' : $path.'.'.$key);
+    }
+
+    /**
+     * @param  array<string|int, mixed>  $data
+     */
+    private function recordLeaves(array $data, string $path): void
+    {
+        foreach ($data as $key => $value) {
+            $child = $this->childPath($path, $key);
+            if (is_array($value)) {
+                $this->recordLeaves($value, $child);
+            } elseif ($value !== null) {
+                $this->log->record($child);
+            }
+        }
     }
 
     /**

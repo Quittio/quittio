@@ -14,10 +14,13 @@ final class InvoiceViewModel extends ViewNode
 {
     /**
      * @param  array<string, mixed>  $data
+     * @param  array<string, string>  $aliases  view model nodes that stand for others, e.g. issuer => seller
      */
-    public function __construct(array $data, ?AccessLog $log = null)
+    public function __construct(array $data, ?AccessLog $log = null, array $aliases = [])
     {
-        parent::__construct($data, $log ?? new AccessLog);
+        $log ??= new AccessLog;
+        $log->bind($data, $aliases);
+        parent::__construct($data, $log);
     }
 
     /**

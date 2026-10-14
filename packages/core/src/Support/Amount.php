@@ -36,7 +36,7 @@ final class Amount
     /**
      * Creates an amount. Values with more than two decimals are rejected unless $round is true.
      *
-     * @param  Money|BigNumber|int|string  $value
+     * @param  Money|BigNumber|int|float|string  $value  floats are rejected (Decimal::rejectFloat())
      */
     public static function of(mixed $value, string $currency, bool $round = false): Money
     {
@@ -83,7 +83,7 @@ final class Amount
         return self::$currencies[$code] = $currency;
     }
 
-    public static function ofNullable(Money|BigNumber|int|string|null $value, string $currency): ?Money
+    public static function ofNullable(Money|BigNumber|int|float|string|null $value, string $currency): ?Money
     {
         return $value === null || $value === '' ? null : self::of($value, $currency);
     }

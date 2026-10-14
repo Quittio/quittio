@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Quittio\Core\Xml\Ubl;
 
 use Brick\Math\BigDecimal;
+use Brick\Money\Money;
 use DOMDocument;
 use DOMElement;
 use InvalidArgumentException;
@@ -58,12 +59,11 @@ use Quittio\Core\Enums\UnitCode;
 use Quittio\Core\Enums\VatCategory;
 use Quittio\Core\Enums\VatExemptionReasonCode;
 use Quittio\Core\Profiles\Syntax;
+use Quittio\Core\Reading\DeclaredExemptionReasons;
 use Quittio\Core\Reading\FormatReader;
 use Quittio\Core\Reading\ReadResult;
 use Quittio\Core\Reading\XPathReader;
 use Quittio\Core\Standards\StandardVersion;
-use Quittio\Core\Support\Amount;
-use Quittio\Core\Support\Date;
 use Quittio\Core\Validation\Severity;
 use Quittio\Core\Xml\PaymentTermsText;
 
@@ -72,8 +72,6 @@ use Quittio\Core\Xml\PaymentTermsText;
  */
 final class UblReader extends XPathReader implements FormatReader
 {
-    private string $currency = 'EUR';
-
     private bool $creditNote = false;
 
     public function canRead(DOMDocument $document): bool
@@ -94,12 +92,16 @@ final class UblReader extends XPathReader implements FormatReader
             'cbc' => UblWriter::NS_CBC,
         ]);
 
-        $this->currency = $this->value($root, 'cbc:DocumentCurrencyCode') ?? 'EUR';
         $taxCurrency = $this->value($root, 'cbc:TaxCurrencyCode');
+        $this->currency = $this->invoiceCurrency(
+            $this->value($root, 'cbc:DocumentCurrencyCode'),
+            $this->attribute($root, 'cac:LegalMonetaryTotal/cbc:PayableAmount', 'currencyID'),
+        );
+        $this->checkAmountCurrencies($document, $this->currency, $taxCurrency, $this->nodes($root, 'cac:TaxTotal/cbc:TaxAmount'));
         $specificationId = $this->value($root, 'cbc:CustomizationID');
-        $totals = $this->totals($root, $taxCurrency);
-        $breakdown = $this->vatBreakdown($root);
         $lineElement = $this->creditNote ? 'cac:CreditNoteLine' : 'cac:InvoiceLine';
+        $totals = $this->totals($root, $taxCurrency, $this->nodes($root, $lineElement) !== []);
+        $breakdown = $this->vatBreakdown($root);
         $project = $this->value($root, 'cac:ProjectReference/cbc:ID')
             ?? $this->value($root, 'cac:AdditionalDocumentReference[cbc:DocumentTypeCode="50"]/cbc:ID');
         $dueDate = $this->value($root, 'cbc:DueDate') ?? $this->value($root, 'cac:PaymentMeans/cbc:PaymentDueDate');
@@ -107,15 +109,15 @@ final class UblReader extends XPathReader implements FormatReader
 
         $data = new InvoiceData(
             number: $this->value($root, 'cbc:ID') ?? '',
-            issueDate: $this->date($this->value($root, 'cbc:IssueDate'), 'BT-2') ?? Date::today(),
+            issueDate: $this->issueDate($this->date($this->value($root, 'cbc:IssueDate'), 'BT-2')),
             typeCode: $this->code($this->value($root, $this->creditNote ? 'cbc:CreditNoteTypeCode' : 'cbc:InvoiceTypeCode'), InvoiceTypeCode::class, 'BT-3') ?? new RawCode(''),
             currency: $this->currency,
             seller: $this->seller($root),
             buyer: $this->buyer($root),
-            lines: array_map(fn (DOMElement $n): InvoiceLine => $this->line($n), $this->nodes($root, $lineElement)),
+            lines: array_map(fn (DOMElement $n): InvoiceLine => $this->line($n, false), $this->nodes($root, $lineElement)),
             taxCurrency: $taxCurrency,
             taxPointDate: $this->date($this->value($root, 'cbc:TaxPointDate'), 'BT-7'),
-            taxPointDateCode: $periodCode === null ? null : TaxPointDateCode::fromUbl($periodCode),
+            taxPointDateCode: $this->taxPointDateCode($periodCode),
             dueDate: $this->date($dueDate, 'BT-9'),
             buyerReference: $this->value($root, 'cbc:BuyerReference'),
             projectReference: $project === null ? null : new ProjectReference($project),
@@ -148,6 +150,7 @@ final class UblReader extends XPathReader implements FormatReader
                 ? StandardVersion::En16931_2026
                 : StandardVersion::En16931_2017,
         );
+        $data = DeclaredExemptionReasons::apply($data);
 
         return new ReadResult(
             data: $data,
@@ -344,14 +347,13 @@ final class UblReader extends XPathReader implements FormatReader
             if ($binary !== null) {
                 $decoded = base64_decode(trim($binary->textContent), true);
                 $mimeType = MimeType::tryFrom($binary->getAttribute('mimeCode'));
-                $filename = $binary->getAttribute('filename');
-                if ($decoded === false || $mimeType === null || $filename === '') {
-                    $this->finding('QUITTIO-READER-ATTACHMENT', 'An attached document (BT-125) could not be read and was skipped.', 'BT-125');
+                $filename = $this->attachmentFilename($binary->getAttribute('filename'));
+                if ($decoded === false || $mimeType === null || $filename === null) {
+                    $this->finding('QUITTIO-READER-ATTACHMENT', sprintf('The attached document "%s" (BT-125) is not valid Base64, has an unsupported MIME code or no usable file name and was skipped.', self::excerpt($binary->getAttribute('filename'))), 'BT-125');
                     $mimeType = null;
                     $filename = null;
                 } else {
                     $content = $decoded;
-                    $filename = basename($filename);
                 }
             }
 
@@ -402,7 +404,7 @@ final class UblReader extends XPathReader implements FormatReader
         $terms = new PaymentTerms(
             text: $parsed['text'],
             discounts: array_map(
-                fn (array $d): CashDiscount => new CashDiscount($d['days'], BigDecimal::of($d['percent']), $d['base'] === null ? null : Amount::of($d['base'], $this->currency, round: true)),
+                fn (array $d): CashDiscount => new CashDiscount($d['days'], BigDecimal::of($d['percent']), $this->money($d['base'], $this->currency, 'BT-20')),
                 $parsed['discounts'],
             ),
         );
@@ -490,31 +492,57 @@ final class UblReader extends XPathReader implements FormatReader
         return $result;
     }
 
-    private function totals(DOMElement $root, ?string $taxCurrency): ?Totals
+    private function totals(DOMElement $root, ?string $taxCurrency, bool $hasLines): ?Totals
     {
         $node = $this->node($root, 'cac:LegalMonetaryTotal');
         if ($node === null) {
+            $this->missingTotals($hasLines);
+
             return null;
         }
 
         $c = $this->currency;
-        $vat = $this->value($root, 'cac:TaxTotal[cbc:TaxAmount/@currencyID="'.$c.'"]/cbc:TaxAmount') ?? $this->value($root, 'cac:TaxTotal[cac:TaxSubtotal]/cbc:TaxAmount');
+        // BT-110 is the TaxAmount in the invoice currency only; BT-111 the one in the VAT accounting currency.
+        $vat = $this->amountIn($root, 'cac:TaxTotal/cbc:TaxAmount', $c);
         $vatInTaxCurrency = $taxCurrency !== null && $taxCurrency !== $c
-            ? $this->money($this->value($root, 'cac:TaxTotal[cbc:TaxAmount/@currencyID="'.$taxCurrency.'"]/cbc:TaxAmount'), $taxCurrency, 'BT-111')
+            ? $this->money($this->amountIn($root, 'cac:TaxTotal/cbc:TaxAmount', $taxCurrency), $taxCurrency, 'BT-111')
             : null;
 
+        $allowanceSum = $this->money($this->value($node, 'cbc:AllowanceTotalAmount'), $c, 'BT-107');
+        $chargeSum = $this->money($this->value($node, 'cbc:ChargeTotalAmount'), $c, 'BT-108');
+        $netTotal = $this->requiredTotal($node, 'cbc:TaxExclusiveAmount', 'BT-109', 'BR-13', 'Invoice total amount without VAT');
+
         return new Totals(
-            lineNetSum: $this->money($this->value($node, 'cbc:LineExtensionAmount'), $c, 'BT-106') ?? Amount::zero($c),
-            netTotal: $this->money($this->value($node, 'cbc:TaxExclusiveAmount'), $c, 'BT-109') ?? Amount::zero($c),
-            grossTotal: $this->money($this->value($node, 'cbc:TaxInclusiveAmount'), $c, 'BT-112') ?? Amount::zero($c),
-            amountDue: $this->money($this->value($node, 'cbc:PayableAmount'), $c, 'BT-115') ?? Amount::zero($c),
-            allowanceSum: $this->money($this->value($node, 'cbc:AllowanceTotalAmount'), $c, 'BT-107'),
-            chargeSum: $this->money($this->value($node, 'cbc:ChargeTotalAmount'), $c, 'BT-108'),
+            lineNetSum: $this->lineNetSum($this->money($this->value($node, 'cbc:LineExtensionAmount'), $c, 'BT-106'), $hasLines, $netTotal, $allowanceSum, $chargeSum),
+            netTotal: $netTotal,
+            grossTotal: $this->requiredTotal($node, 'cbc:TaxInclusiveAmount', 'BT-112', 'BR-14', 'Invoice total amount with VAT'),
+            amountDue: $this->requiredTotal($node, 'cbc:PayableAmount', 'BT-115', 'BR-15', 'Amount due for payment'),
+            allowanceSum: $allowanceSum,
+            chargeSum: $chargeSum,
             vatTotal: $this->money($vat, $c, 'BT-110'),
             vatTotalInTaxCurrency: $vatInTaxCurrency,
             prepaidAmount: $this->money($this->value($node, 'cbc:PrepaidAmount'), $c, 'BT-113'),
             roundingAmount: $this->money($this->value($node, 'cbc:PayableRoundingAmount'), $c, 'BT-114'),
         );
+    }
+
+    private function requiredTotal(DOMElement $node, string $path, string $bt, string $rule, string $label): Money
+    {
+        return $this->money($this->value($node, $path), $this->currency, $bt) ?? $this->missingAmount($bt, $rule, $label);
+    }
+
+    private function taxPointDateCode(?string $value): TaxPointDateCode|RawCode|null
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $code = TaxPointDateCode::fromUbl($value);
+        if ($code instanceof RawCode) {
+            $this->finding('QUITTIO-READER-UNKNOWN-CODE', sprintf('The VAT point date code "%s" (BT-8) is not part of UNTDID 2005 (3, 35, 432) and was kept as raw value.', self::excerpt($value)), 'BT-8', Severity::Warning);
+        }
+
+        return $code;
     }
 
     /**
@@ -525,8 +553,8 @@ final class UblReader extends XPathReader implements FormatReader
         $result = [];
         foreach ($this->nodes($root, 'cac:TaxTotal/cac:TaxSubtotal') as $node) {
             $result[] = new VatBreakdown(
-                taxableAmount: $this->money($this->value($node, 'cbc:TaxableAmount'), $this->currency, 'BT-116') ?? Amount::zero($this->currency),
-                taxAmount: $this->money($this->value($node, 'cbc:TaxAmount'), $this->currency, 'BT-117') ?? Amount::zero($this->currency),
+                taxableAmount: $this->money($this->value($node, 'cbc:TaxableAmount'), $this->currency, 'BT-116') ?? $this->missingAmount('BT-116', 'BR-45', 'VAT category taxable amount'),
+                taxAmount: $this->money($this->value($node, 'cbc:TaxAmount'), $this->currency, 'BT-117') ?? $this->missingAmount('BT-117', 'BR-46', 'VAT category tax amount'),
                 category: $this->category($this->value($node, 'cac:TaxCategory/cbc:ID'), 'BT-118'),
                 rate: $this->decimal($this->value($node, 'cac:TaxCategory/cbc:Percent'), 'BT-119'),
                 exemptionReason: $this->value($node, 'cac:TaxCategory/cbc:TaxExemptionReason'),
@@ -537,10 +565,21 @@ final class UblReader extends XPathReader implements FormatReader
         return $result;
     }
 
-    private function line(DOMElement $node): InvoiceLine
+    private function line(DOMElement $node, bool $subLine): InvoiceLine
     {
         $c = $this->currency;
         $quantityElement = $this->creditNote ? 'cbc:CreditedQuantity' : 'cbc:InvoicedQuantity';
+        $lineId = $this->value($node, 'cbc:ID') ?? '';
+        $unitCode = $this->attribute($node, $quantityElement, 'unitCode');
+        if ($this->node($node, $quantityElement) === null) {
+            $subLine
+                ? $this->finding('QUITTIO-READER-SUBLINE-QUANTITY', sprintf('Sub line %s has no quantity (BT-129); 0 is used.', $lineId), 'BT-129', Severity::Info)
+                : $this->finding('BR-22', sprintf('Line %s has no invoiced quantity (BT-129); 0 is used.', $lineId), 'BT-129', Severity::Error);
+        } elseif ($unitCode === null) {
+            $subLine
+                ? $this->finding('QUITTIO-READER-SUBLINE-UNIT', sprintf('Sub line %s has no unit of measure for its quantity (BT-130).', $lineId), 'BT-130', Severity::Info)
+                : $this->finding('BR-23', sprintf('Line %s has no unit of measure for the invoiced quantity (BT-130).', $lineId), 'BT-130', Severity::Error);
+        }
         $item = $this->node($node, 'cac:Item') ?? $node;
         $price = $this->node($node, 'cac:Price') ?? $node;
 
@@ -578,9 +617,9 @@ final class UblReader extends XPathReader implements FormatReader
         $subElement = $this->creditNote ? 'cac:SubCreditNoteLine' : 'cac:SubInvoiceLine';
 
         return new InvoiceLine(
-            id: $this->value($node, 'cbc:ID') ?? '',
+            id: $lineId,
             quantity: $this->decimal($this->value($node, $quantityElement), 'BT-129') ?? BigDecimal::zero(),
-            unit: $this->code($this->attribute($node, $quantityElement, 'unitCode') ?? '', UnitCode::class, 'BT-130') ?? new RawCode(''),
+            unit: $unitCode === null ? new RawCode('') : ($this->code($unitCode, UnitCode::class, 'BT-130') ?? new RawCode('')),
             price: new Price(
                 netPrice: $this->decimal($this->value($price, 'cbc:PriceAmount'), 'BT-146'),
                 discount: $this->decimal($this->value($price, 'cac:AllowanceCharge/cbc:Amount'), 'BT-147'),
@@ -610,7 +649,7 @@ final class UblReader extends XPathReader implements FormatReader
             period: $this->period($node, 'cac:InvoicePeriod'),
             allowances: $allowances,
             charges: $charges,
-            subLines: array_map(fn (DOMElement $sub): InvoiceLine => $this->line($sub), $this->nodes($node, $subElement)),
+            subLines: array_map(fn (DOMElement $sub): InvoiceLine => $this->line($sub, true), $this->nodes($node, $subElement)),
         );
     }
 

@@ -13,6 +13,7 @@
     },
     "exclude": [
         "packages/core/resources",
-        "packages/laravel/resources/views"
+        "packages/laravel/resources/views",
+        "packages/core/tests/Fixtures/coercive"
     ]
 }

@@ -14,6 +14,7 @@ use Quittio\Core\Countries\MandatoryFieldList;
 use Quittio\Core\Countries\NumberingRules;
 use Quittio\Core\Countries\RetentionRule;
 use Quittio\Core\Data\InvoiceData;
+use Quittio\Core\Data\Note;
 use Quittio\Core\Enums\InvoiceTypeCode;
 use Quittio\Core\Enums\VatCategory;
 use Quittio\Core\I18n\Translations;
@@ -21,6 +22,8 @@ use Quittio\Core\Tax\TaxPresetCollection;
 use Quittio\Core\Validation\Rules\Inspect;
 use Quittio\Core\Validation\ValidationMessage;
 use Quittio\Core\Validation\ValidationResult;
+use Quittio\Core\View\MandatoryFieldGuard;
+use Quittio\Core\View\ViewModelFactory;
 use Quittio\Country\DE\Builder\GermanInvoiceMacros;
 use Quittio\Country\DE\Formats\GermanFormatRule;
 use Quittio\Country\DE\Layouts\Din5008;
@@ -42,6 +45,9 @@ class CountryDE extends AbstractCountryPack
     public const string TRANSLATION_NAMESPACE = 'quittio-de';
 
     private static ?int $translationsRegisteredFor = null;
+
+    /** @var list<string>|null */
+    private static ?array $locales = null;
 
     public function __construct()
     {
@@ -90,31 +96,58 @@ class CountryDE extends AbstractCountryPack
     }
 
     /**
-     * Values the PDF must show in addition to the base fields (specification 11.8).
+     * Values the PDF must show in addition to the base fields (specification 11.8). Paths
+     * with "[*]" apply to every index; paths without a value in the view model are skipped.
      */
     public function mandatoryOutput(InvoiceData $invoice): MandatoryFieldList
     {
         $fields = [];
-        $small = $invoice->meta->hasFlag(Flags::SMALL_AMOUNT);
+        $small = UstgRules::isSmallAmountInvoice($invoice);
 
-        if (! $small && (Inspect::filled($invoice->seller->vatId) || Inspect::filled($invoice->seller->taxNumber))) {
-            $fields[] = new MandatoryField('seller.vatId|seller.taxNumber', 'Tax number or VAT identifier of the seller', '§ 14 Abs. 4 Nr. 2 UStG');
+        $representative = Inspect::filled($invoice->sellerTaxRepresentative?->vatId);
+        if (! $small && (Inspect::filled($invoice->seller->vatId) || Inspect::filled($invoice->seller->taxNumber) || $representative)) {
+            $fields[] = new MandatoryField('seller.vatId|seller.taxNumber|taxRepresentative.vatId', 'Tax number or VAT identifier of the seller', '§ 14 Abs. 4 Nr. 2 UStG');
         }
-        if (! $small && ! UstgRules::isSmallBusinessInvoice($invoice) && UstgRules::hasServiceDate($invoice)) {
-            $fields[] = new MandatoryField('servicePeriod|lineGroups', 'Date of the supply or service', '§ 14 Abs. 4 Nr. 6 UStG');
+        if (! $small && ! UstgRules::isSmallBusinessInvoice($invoice)) {
+            // BT-72 or BG-14 are printed as servicePeriod (BT-72 also as deliveryDate or delivery.date);
+            // otherwise the period of every line that has one (servicePeriod then only summarises them).
+            $fields[] = $invoice->invoicingPeriod !== null || $invoice->delivery?->actualDeliveryDate !== null
+                ? new MandatoryField('servicePeriod|deliveryDate|delivery.date', 'Date of the supply or service', '§ 14 Abs. 4 Nr. 6 UStG')
+                : new MandatoryField('servicePeriod|lineGroups[*].lines[*].period|lines[*].period', 'Date of the supply or service', '§ 14 Abs. 4 Nr. 6 UStG');
         }
-        if ($invoice->typeCode === InvoiceTypeCode::SelfBilledInvoice) {
+        if ($invoice->typeCode instanceof InvoiceTypeCode && $invoice->typeCode->isSelfBilled()) {
+            // The title "Gutschrift" is the required label; a "Gutschrift" note must be printed too.
             $fields[] = new MandatoryField('title', 'Label "Gutschrift"', '§ 14 Abs. 4 Nr. 10 UStG');
-            $fields[] = new MandatoryField('notes', 'Note "Gutschrift"', '§ 14 Abs. 4 Nr. 10 UStG');
+            $note = MandatoryFieldGuard::notePath($invoice, static fn (Note $n): bool => stripos($n->content, 'gutschrift') !== false);
+            if ($note !== null) {
+                $fields[] = new MandatoryField($note, 'Note "Gutschrift"', '§ 14 Abs. 4 Nr. 10 UStG');
+            }
         }
         if ($invoice->meta->hasFlag(Flags::PROPERTY_RELATED_SERVICE)) {
-            $fields[] = new MandatoryField('notes', 'Retention notice for property related services', '§ 14 Abs. 4 Nr. 9 UStG');
-        }
-        foreach ([VatCategory::ReverseCharge, VatCategory::IntraCommunitySupply] as $category) {
-            if (Inspect::uses($invoice, $category)) {
-                $fields[] = new MandatoryField('buyer.vatId', 'VAT identifier of the buyer', '§ 14a Abs. 1 und 3 UStG');
-                $fields[] = new MandatoryField('legalNotes', 'Reverse charge or exemption note', '§ 14a UStG');
+            $texts = array_filter([LegalTexts::catalog()->get(LegalTexts::PROPERTY_RETENTION, 'de'), LegalTexts::catalog()->get(LegalTexts::PROPERTY_RETENTION, 'en')], static fn (?string $text): bool => $text !== null);
+            $note = MandatoryFieldGuard::notePath($invoice, static fn (Note $n): bool => in_array(trim($n->content), $texts, true) || str_contains($n->content, '14b'));
+            if ($note !== null) {
+                $fields[] = new MandatoryField($note, 'Retention notice for property related services', '§ 14 Abs. 4 Nr. 9 UStG');
             }
+        }
+
+        $legalNotes = ViewModelFactory::legalNoteTexts($invoice);
+        foreach ($invoice->vatBreakdown as $index => $row) {
+            if (! in_array($row->category, [VatCategory::ReverseCharge, VatCategory::IntraCommunitySupply], true)) {
+                continue;
+            }
+            // The exemption text (BT-120), or the VAT row that names reverse charge or the exemption.
+            $note = $row->exemptionReason === null ? false : array_search($row->exemptionReason, $legalNotes, true);
+            $fields[] = new MandatoryField('vatRows['.$index.'].label'.($note === false ? '' : '|legalNotes['.$note.']'), 'Reverse charge or exemption note', '§ 14a UStG');
+        }
+        $reverseCharge = Inspect::uses($invoice, VatCategory::ReverseCharge);
+        $intraCommunity = Inspect::uses($invoice, VatCategory::IntraCommunitySupply);
+        if ($reverseCharge || $intraCommunity) {
+            $fields[] = new MandatoryField('buyer.vatId', 'VAT identifier of the buyer', '§ 14a Abs. 1 und 3 UStG');
+        }
+        if ($intraCommunity || ($reverseCharge && $invoice->buyer->address->countryCode !== $invoice->seller->address->countryCode)) {
+            // Cross-border reverse charge and intra-community supplies need the USt-IdNr., not the tax number.
+            $fields[] = new MandatoryField('seller.vatId|taxRepresentative.vatId', 'VAT identifier of the seller', '§ 14a Abs. 1 und 3 UStG');
         }
 
         return new MandatoryFieldList($fields);
@@ -166,6 +199,8 @@ class CountryDE extends AbstractCountryPack
             correctionStrategy: CorrectionPolicy::CORRECTION_CANCEL_AND_REISSUE,
             titles: [
                 'cancellation' => ['de' => 'Stornorechnung', 'en' => 'Cancellation invoice'],
+                // A cancellation of a self-billed invoice is issued by the buyer as well (section 14 (4) no. 10 UStG).
+                'cancellation_self_billed' => ['de' => 'Storno-Gutschrift', 'en' => 'Cancellation of the self-billed invoice (Storno-Gutschrift)'],
                 'correction' => ['de' => 'Rechnungskorrektur', 'en' => 'Corrected invoice'],
                 'self_billed' => ['de' => 'Gutschrift', 'en' => 'Self-billed invoice (Gutschrift)'],
             ],
@@ -204,6 +239,21 @@ class CountryDE extends AbstractCountryPack
     public function translationPath(): string
     {
         return dirname(__DIR__).'/resources/lang';
+    }
+
+    /**
+     * Locales the pack ships translations for (the directories of translationPath()), e.g. ["de", "en"].
+     *
+     * @return list<string>
+     */
+    public static function locales(): array
+    {
+        if (self::$locales === null) {
+            $directories = glob(dirname(__DIR__).'/resources/lang/*', GLOB_ONLYDIR);
+            self::$locales = array_map(basename(...), $directories === false ? [] : $directories);
+        }
+
+        return self::$locales;
     }
 
     /**

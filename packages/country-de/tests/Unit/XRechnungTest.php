@@ -61,6 +61,17 @@ it('detects violations of the XRechnung rules', function (Closure $build, string
     'BR-DE-TMP-32 no service date' => [fn () => Scenarios::simple()->build()->with(['delivery' => null, 'lines' => array_map(fn ($l) => $l->with(['period' => null]), Scenarios::simple()->build()->lines)]), 'BR-DE-TMP-32'],
 ]);
 
+it('reports BR-DE-TMP-32 as info, as flagged in the official Schematron', function () {
+    $invoice = Scenarios::simple()->build();
+    $result = xrechnung($invoice->with(['delivery' => null, 'lines' => array_map(fn ($l) => $l->with(['period' => null]), $invoice->lines)]));
+    $finding = array_values(array_filter($result->messages, fn ($m) => $m->code === 'BR-DE-TMP-32'))[0];
+
+    expect($finding->severity->value)->toBe('info');
+    foreach (glob(dirname(__DIR__, 4).'/tools/validators/xrechnung/resources/xrechnung/*/xsl/XRechnung-*-validation.xsl') ?: [] as $schematron) {
+        expect((string) file_get_contents($schematron))->toMatch('/flag="information" id="BR-DE-TMP-32"/');
+    }
+});
+
 it('rejects sub lines in XRechnung CII', function () {
     $result = (new PhpRulesDriver)->validate(new ValidationSubject(
         (new En16931Calculator)->calculate(Scenarios::subLines()->buyerReference('04011000-12345-03')->build()->with(['extended' => null])),
@@ -121,3 +132,39 @@ it('passes the official XRechnung validation', function (string $scenario, strin
         yield "{$name} (UBL)" => [$name, 'ubl'];
     }
 })->skip(fn () => ! Official::available(), 'KoSIT validator or Java not available (run tools/schemas/download.sh).')->group('official');
+
+it('rejects credit notes of the XRechnung extension in UBL', function () {
+    $quittio = Quittio\Core\Quittio::create(['validation' => ['mode' => 'warn']], [new CountryDE]);
+    $original = $quittio->prepare(Scenarios::make('simple')->buyerReference('04011000-12345-03')->build())->data;
+    $codes = static fn (string $strategy): array => array_map(
+        static fn ($m): string => $m->code,
+        $quittio->make($quittio->cancellation($original, 'ST-1', 'Test', $strategy))->format('xrechnung-ubl')->profile('xrechnung-extension')->check()->errors(),
+    );
+
+    expect($codes('credit_note'))->toContain('DE-XRECHNUNG-EXT-01')
+        ->and($codes('negative_invoice'))->not->toContain('DE-XRECHNUNG-EXT-01');
+});
+
+it('writes the tender reference of UBL credit notes after the additional documents', function () {
+    $invoice = (new En16931Calculator)->calculate(Scenarios::make('cancellation')
+        ->buyerReference('04011000-12345-03')
+        ->tenderReference('LOS-2026-7')
+        ->projectReference('PRJ-11')
+        ->build());
+    $xml = (new UblWriter)->serialize($invoice, new XRechnung30);
+
+    $dom = new DOMDocument;
+    $dom->loadXML($xml);
+    $names = array_values(array_map(fn (DOMNode $n) => $n->localName, array_filter(iterator_to_array($dom->documentElement->childNodes), fn (DOMNode $n) => $n instanceof DOMElement)));
+    $read = (new Quittio\Core\Reading\InvoiceReader)->read($xml)->data;
+
+    expect($dom->documentElement->localName)->toBe('CreditNote')
+        ->and(array_search('OriginatorDocumentReference', $names, true))->toBeGreaterThan(array_search('AdditionalDocumentReference', $names, true))
+        ->and($read->tenderReference)->toBe('LOS-2026-7')
+        ->and($read->projectReference?->id)->toBe('PRJ-11');
+
+    if (Official::available()) {
+        $errors = array_filter(Official::kosit()->validateXml($xml), fn ($m) => $m->isError());
+        expect(array_map(fn ($m) => $m->code.': '.$m->message, $errors))->toBe([]);
+    }
+});

@@ -177,10 +177,10 @@ return [
     ],
     'BR-S-10' => [
         'message' => 'Eine Steueraufschlüsselung mit der Kategorie „:category“ darf keinen Befreiungsgrund (BT-120, BT-121) enthalten.',
-        'hint' => 'Verwenden Sie ein Steuer-Preset des Länderpakets, das den Befreiungsgrund setzt, oder übergeben Sie ihn mit ->vat(Kategorie, Satz, Befreiungsgrund).',
+        'hint' => 'Entfernen Sie den Befreiungsgrund; er ist nur bei den Kategorien E, AE, K, G und O zulässig. Rechtliche Hinweise zum Nullsteuersatz gehören in einen Hinweis (BT-22).',
     ],
     'BR-Z-01' => [
-        'message' => 'Eine Rechnung mit der Umsatzsteuerkategorie „:category“ muss mindestens eine Steueraufschlüsselung (BG-23) mit dieser Kategorie enthalten.',
+        'message' => 'Eine Rechnung mit der Umsatzsteuerkategorie „:category“ muss genau eine Steueraufschlüsselung (BG-23) mit dieser Kategorie enthalten.',
     ],
     'BR-Z-02' => [
         'message' => 'Eine Rechnung mit der Kategorie „Z“ muss die USt-IdNr. des Verkäufers (BT-31), seine Steuernummer (BT-32) oder die USt-IdNr. des Steuervertreters (BT-63) enthalten.',
@@ -197,10 +197,10 @@ return [
     ],
     'BR-Z-10' => [
         'message' => 'Eine Steueraufschlüsselung mit der Kategorie „:category“ darf keinen Befreiungsgrund (BT-120, BT-121) enthalten.',
-        'hint' => 'Verwenden Sie ein Steuer-Preset des Länderpakets, das den Befreiungsgrund setzt, oder übergeben Sie ihn mit ->vat(Kategorie, Satz, Befreiungsgrund).',
+        'hint' => 'Entfernen Sie den Befreiungsgrund; er ist nur bei den Kategorien E, AE, K, G und O zulässig. Rechtliche Hinweise zum Nullsteuersatz gehören in einen Hinweis (BT-22).',
     ],
     'BR-E-01' => [
-        'message' => 'Eine Rechnung mit der Umsatzsteuerkategorie „:category“ muss mindestens eine Steueraufschlüsselung (BG-23) mit dieser Kategorie enthalten.',
+        'message' => 'Eine Rechnung mit der Umsatzsteuerkategorie „:category“ muss genau eine Steueraufschlüsselung (BG-23) mit dieser Kategorie enthalten.',
     ],
     'BR-E-02' => [
         'message' => 'Eine Rechnung mit der Kategorie „E“ muss die USt-IdNr. des Verkäufers (BT-31), seine Steuernummer (BT-32) oder die USt-IdNr. des Steuervertreters (BT-63) enthalten.',
@@ -369,11 +369,34 @@ return [
     'QUITTIO-SUBLINES' => [
         'message' => 'Der Nettobetrag der Position :line muss der Summe ihrer Unterpositionen entsprechen (:expected).',
     ],
+    'QUITTIO-LINE-ID-DUPLICATE' => [
+        'message' => 'Die Positionsnummer :line (BT-126) kommt mehrfach vor. Positionen lassen sich so nicht eindeutig ansprechen, z. B. bei Teilstornierungen.',
+        'hint' => 'Lassen Sie ->id() weg, damit der Builder die Positionen nummeriert, oder geben Sie jeder Position eine eigene Nummer.',
+    ],
+    'QUITTIO-SUBLINE-VAT' => [
+        'message' => 'Die Unterposition :line verwendet Steuerkategorie und -satz :value, ihre übergeordnete Position :expected. Unterpositionen müssen Kategorie und Satz der übergeordneten Position haben, weil die Steueraufschlüsselung aus den übergeordneten Positionen berechnet wird.',
+        'hint' => 'Teilen Sie Bündel mit unterschiedlichen Steuersätzen in getrennte Positionen auf.',
+    ],
+    'QUITTIO-PRECEDING-INVOICES-CII' => [
+        'message' => 'Die Rechnung verweist auf :value vorausgegangene Rechnungen (BG-3). CII (ZUGFeRD/Factur-X, XRechnung CII) überträgt nur den ersten Verweis, UBL überträgt alle.',
+    ],
     'QUITTIO-EXEMPTION-CONFLICT' => [
-        'message' => 'Positionen mit Kategorie :category und gleichem Satz verwenden unterschiedliche Befreiungsgründe. Je Steueraufschlüsselung kann nur ein Grund übermittelt werden.',
+        'message' => 'Positionen mit Kategorie :category und gleichem Satz verwenden unterschiedliche Befreiungscodes (:value). Eine Steueraufschlüsselung trägt nur einen Code (BT-121): Er entfällt, die Befreiungsgründe werden in BT-120 zusammengefasst. Stellen Sie getrennte Rechnungen aus, wenn der Empfänger die Codes benötigt.',
+    ],
+    'QUITTIO-DECLARED-AMOUNTS' => [
+        'message' => 'Die angegebenen Nettobeträge der Positionen (BT-131) oder Steuerbeträge je Kategorie (BT-117) des Originalbelegs weichen stärker als toleriert von der Neuberechnung ab (BT-131: 0,02, PEPPOL-EN16931-R120; BT-117: weniger als eine Währungseinheit, BR-CO-17) und wurden neu berechnet. Der Beleg kehrt das Original möglicherweise nicht exakt um; vergleichen Sie die Summen mit dem Original.',
+    ],
+    'QUITTIO-THIRD-PARTY-PAYMENTS' => [
+        'message' => 'Zahlungen an Dritte (BG-DEX-09) können nur in einer XRechnung-UBL-Rechnung (XRechnung-Extension) übermittelt werden. In CII, in Gutschriften (Credit Notes) und in anderen Profilen widerspräche der Zahlbetrag (BT-115) BR-CO-16. Verwenden Sie XRechnung UBL mit einem Rechnungstyp (Stornos: Strategie negative_invoice) oder rechnen Sie die Beträge als Positionen ab.',
     ],
     'QUITTIO-VAT-ROUNDING' => [
         'message' => 'Der Steuerbetrag der Kategorie :category (:rate %) weicht um :value von Bemessungsgrundlage × Steuersatz ab. Die offiziellen Regeln tolerieren das, kaufmännisch gerundet ist der Betrag aber nicht.',
+    ],
+    'QUITTIO-CANCELLATION-VAT-ALIGNED' => [
+        'message' => 'Der Steuerbetrag der Kategorie :category (:rate %) weicht um :value von Bemessungsgrundlage × Steuersatz ab: Er ist auf die früheren Teilstornierungen des Originals abgestimmt, damit alle Stornierungen zusammen genau dessen Umsatzsteuer umkehren (kumulative Rundung, höchstens 0,01, innerhalb der Toleranz von BR-CO-17).',
+    ],
+    'QUITTIO-LINE-ROUNDING' => [
+        'message' => 'Der Nettobetrag der Position :line weicht um :value von Menge × Preis ± Nachlässe und Zuschläge ab, z. B. von einem anderen System gerundet und aus dem Originalbeleg übernommen. EN 16931 prüft das nicht (Peppol toleriert 0,02), kaufmännisch gerundet ist der Betrag aber nicht.',
     ],
     'QUITTIO-ATTACHMENT-FILENAME' => [
         'message' => 'Der Dateiname „:value“ einer Anlage (BT-125-2) wird mehrfach verwendet.',
@@ -424,6 +447,10 @@ return [
         'message' => 'Eine Käuferreferenz (BT-10) oder eine Bestellnummer (BT-13) muss angegeben werden.',
         'hint' => 'Setzen Sie ->buyerReference() oder ->purchaseOrderReference().',
     ],
+    'PEPPOL-EN16931-R005' => [
+        'message' => 'Die Währung der Umsatzsteuer (BT-6) muss sich von der Rechnungswährung (BT-5) unterscheiden. BT-6 wird deshalb nicht geschrieben.',
+        'hint' => 'Setzen Sie ->taxCurrency() nur bei Rechnungen in Fremdwährung.',
+    ],
     'PEPPOL-EN16931-R010' => [
         'message' => 'Die elektronische Adresse des Käufers (BT-49) muss angegeben werden.',
         'hint' => 'Setzen Sie die Peppol-Teilnehmerkennung des Käufers mit ->electronicAddress(Wert, Schema).',
@@ -445,7 +472,7 @@ return [
         'message' => 'Bei Lastschrift muss die Mandatsreferenz (BT-89) angegeben werden.',
     ],
     'PEPPOL-EN16931-R120' => [
-        'message' => 'Der Nettobetrag der Position :line muss Menge × (Nettopreis / Basismenge) + Zuschläge − Nachlässe entsprechen.',
+        'message' => 'Der Nettobetrag der Position :line muss Menge × (Nettopreis / Basismenge) + Zuschläge − Nachlässe entsprechen (Toleranz 0,02).',
     ],
     'PEPPOL-EN16931-R121' => [
         'message' => 'Die Basismenge (BT-149) der Position :line muss größer als null sein.',
@@ -472,5 +499,23 @@ return [
     'QUITTIO-PROFILE-SUBLINES' => [
         'message' => 'Unterpositionen werden nur in den Profilen EXTENDED und XRechnung-Extension unterstützt, nicht in :profile.',
         'hint' => 'Verwenden Sie das Profil EXTENDED oder die XRechnung-Extension oder lösen Sie die Unterpositionen auf.',
+    ],
+    'BR-CL-06' => [
+        'message' => 'Der Code des Steuerzeitpunkts (BT-8) „:value“ ist nicht Teil von UNTDID 2005 (3 Rechnungsdatum, 35 Lieferdatum, 432 Zahlungsdatum).',
+    ],
+    'QUITTIO-PROFORMA' => [
+        'message' => 'Der Rechnungsartcode 325 (Proforma-Rechnung) bezeichnet keine Rechnung. Erstellen Sie Proforma-Dokumente mit DocumentBuilder::proforma(); E-Rechnungsformate dürfen keine Proforma-Rechnung enthalten.',
+        'hint' => 'Eine Proforma-Rechnung ist keine Rechnung im steuerlichen Sinne. Als E-Rechnungs-XML mit Umsatzsteuer würde sie beim Empfänger als Rechnung gebucht (Risiko nach § 14c UStG).',
+    ],
+    'QUITTIO-VAT-K-DOMESTIC' => [
+        'message' => 'Die Steuerkategorie „K“ (innergemeinschaftliche Lieferung) wird verwendet, aber der Bestimmungsort :value liegt im Mitgliedstaat des Verkäufers (:expected). Eine innergemeinschaftliche Lieferung setzt einen Bestimmungsort in einem anderen EU-Mitgliedstaat voraus.',
+        'hint' => 'Prüfen Sie Lieferland (BT-80) und Steuerkategorie; im Inland ist die Lieferung steuerpflichtig (§ 6a UStG).',
+    ],
+    'QUITTIO-VAT-K-OUTSIDE-EU' => [
+        'message' => 'Die Steuerkategorie „K“ (innergemeinschaftliche Lieferung) wird verwendet, aber der Bestimmungsort :value liegt außerhalb des Mehrwertsteuergebiets der EU. Lieferungen in Drittländer sind Ausfuhrlieferungen (Kategorie „G“) oder in der EU nicht steuerbar (Kategorie „O“).',
+    ],
+    'QUITTIO-VAT-G-INSIDE-EU' => [
+        'message' => 'Die Steuerkategorie „G“ (Ausfuhr) wird verwendet, aber der Bestimmungsort :value liegt im Mehrwertsteuergebiet der EU. Lieferungen innerhalb der EU sind innergemeinschaftliche Lieferungen (Kategorie „K“) oder im Mitgliedstaat steuerpflichtig.',
+        'hint' => 'Eine Ausfuhrlieferung (§ 6 UStG) setzt voraus, dass der Gegenstand in das Drittlandsgebiet gelangt (z. B. Schweiz, Büsingen, Helgoland).',
     ],
 ];

@@ -177,10 +177,10 @@ return [
     ],
     'BR-S-10' => [
         'message' => 'A VAT breakdown with category ":category" shall not have a VAT exemption reason code (BT-121) or text (BT-120).',
-        'hint' => 'Use a tax preset of the country pack, which sets the exemption reason, or pass it with ->vat(category, rate, exemptionReason).',
+        'hint' => 'Remove the exemption reason; it is allowed only for the categories E, AE, K, G and O. Legal references for the zero rate belong into a note (BT-22).',
     ],
     'BR-Z-01' => [
-        'message' => 'An invoice that contains VAT category ":category" shall contain at least one VAT breakdown (BG-23) with this category.',
+        'message' => 'An invoice that contains VAT category ":category" shall contain exactly one VAT breakdown (BG-23) with this category.',
     ],
     'BR-Z-02' => [
         'message' => 'An invoice with VAT category "Z" shall contain the seller VAT identifier (BT-31), the seller tax registration identifier (BT-32) or the seller tax representative VAT identifier (BT-63).',
@@ -197,10 +197,10 @@ return [
     ],
     'BR-Z-10' => [
         'message' => 'A VAT breakdown with category ":category" shall not have a VAT exemption reason code (BT-121) or text (BT-120).',
-        'hint' => 'Use a tax preset of the country pack, which sets the exemption reason, or pass it with ->vat(category, rate, exemptionReason).',
+        'hint' => 'Remove the exemption reason; it is allowed only for the categories E, AE, K, G and O. Legal references for the zero rate belong into a note (BT-22).',
     ],
     'BR-E-01' => [
-        'message' => 'An invoice that contains VAT category ":category" shall contain at least one VAT breakdown (BG-23) with this category.',
+        'message' => 'An invoice that contains VAT category ":category" shall contain exactly one VAT breakdown (BG-23) with this category.',
     ],
     'BR-E-02' => [
         'message' => 'An invoice with VAT category "E" shall contain the seller VAT identifier (BT-31), the seller tax registration identifier (BT-32) or the seller tax representative VAT identifier (BT-63).',
@@ -369,11 +369,34 @@ return [
     'QUITTIO-SUBLINES' => [
         'message' => 'The net amount of line :line must equal the sum of its sub lines (:expected).',
     ],
+    'QUITTIO-LINE-ID-DUPLICATE' => [
+        'message' => 'The line identifier :line (BT-126) is used more than once. Lines cannot be referred to unambiguously, e.g. in partial cancellations.',
+        'hint' => 'Leave out ->id() to let the builder number the lines, or give every line its own identifier.',
+    ],
+    'QUITTIO-SUBLINE-VAT' => [
+        'message' => 'Sub line :line uses VAT category and rate :value, its parent line uses :expected. Sub lines must have the VAT category and rate of their parent line, because the VAT breakdown is calculated from the parent lines.',
+        'hint' => 'Split bundles with different VAT rates into separate lines.',
+    ],
+    'QUITTIO-PRECEDING-INVOICES-CII' => [
+        'message' => 'The invoice refers to :value preceding invoices (BG-3). CII (ZUGFeRD/Factur-X, XRechnung CII) transmits only the first reference; UBL transmits all of them.',
+    ],
     'QUITTIO-EXEMPTION-CONFLICT' => [
-        'message' => 'Lines with VAT category :category and the same rate use different exemption reasons. Only one reason per VAT breakdown can be transmitted.',
+        'message' => 'Lines with VAT category :category and the same rate use different exemption reason codes (:value). A VAT breakdown carries only one code (BT-121): it is omitted and the reason texts are joined in BT-120. Issue separate invoices if the recipient needs the codes.',
+    ],
+    'QUITTIO-DECLARED-AMOUNTS' => [
+        'message' => 'The declared line net amounts (BT-131) or VAT category tax amounts (BT-117) of the original document differ from the recalculation by more than tolerated (BT-131: 0.02, PEPPOL-EN16931-R120; BT-117: less than one currency unit, BR-CO-17) and were recalculated. The document may not reverse the original exactly; compare its totals with the original.',
+    ],
+    'QUITTIO-THIRD-PARTY-PAYMENTS' => [
+        'message' => 'Third party payments (BG-DEX-09) can only be transmitted in an XRechnung UBL invoice (XRechnung extension). In CII, in credit notes and in other profiles the amount due (BT-115) would contradict BR-CO-16. Use XRechnung UBL with an invoice type code (cancellations: strategy negative_invoice) or invoice the amounts as lines.',
     ],
     'QUITTIO-VAT-ROUNDING' => [
         'message' => 'The VAT amount of category :category (:rate %) differs from taxable amount × rate by :value. The official rules tolerate this, but the amount is not rounded commercially.',
+    ],
+    'QUITTIO-CANCELLATION-VAT-ALIGNED' => [
+        'message' => 'The VAT amount of category :category (:rate %) differs from taxable amount × rate by :value: it is aligned with the earlier partial cancellations of the original, so that all cancellations together reverse exactly its VAT (cumulative rounding, at most 0.01, within the tolerance of BR-CO-17).',
+    ],
+    'QUITTIO-LINE-ROUNDING' => [
+        'message' => 'The net amount of line :line differs from quantity × price ± allowances and charges by :value, e.g. rounded by another system and kept from the original document. EN 16931 does not check this (Peppol tolerates 0.02), but the amount is not rounded commercially.',
     ],
     'QUITTIO-ATTACHMENT-FILENAME' => [
         'message' => 'The file name ":value" of an attached document (BT-125-2) is used more than once.',
@@ -424,6 +447,10 @@ return [
         'message' => 'A buyer reference (BT-10) or a purchase order reference (BT-13) must be provided.',
         'hint' => 'Set ->buyerReference() or ->purchaseOrderReference().',
     ],
+    'PEPPOL-EN16931-R005' => [
+        'message' => 'The VAT accounting currency code (BT-6) must be different from the invoice currency code (BT-5) when provided. BT-6 is therefore not written.',
+        'hint' => 'Set ->taxCurrency() only for invoices in a foreign currency.',
+    ],
     'PEPPOL-EN16931-R010' => [
         'message' => 'The buyer electronic address (BT-49) must be provided.',
         'hint' => 'Set the buyer\'s Peppol participant identifier with ->electronicAddress(value, scheme).',
@@ -445,7 +472,7 @@ return [
         'message' => 'The mandate reference (BT-89) must be provided for direct debit.',
     ],
     'PEPPOL-EN16931-R120' => [
-        'message' => 'The invoice line net amount of line :line must equal quantity × (net price / base quantity) + charges − allowances.',
+        'message' => 'The invoice line net amount of line :line must equal quantity × (net price / base quantity) + charges − allowances (tolerance 0.02).',
     ],
     'PEPPOL-EN16931-R121' => [
         'message' => 'The base quantity (BT-149) of line :line must be a positive number above zero.',
@@ -472,5 +499,21 @@ return [
     'QUITTIO-PROFILE-SUBLINES' => [
         'message' => 'Sub lines are supported only in the profiles EXTENDED and XRechnung extension, not in :profile.',
         'hint' => 'Use the profile EXTENDED or the XRechnung extension, or flatten the sub lines.',
+    ],
+    'BR-CL-06' => [
+        'message' => 'The VAT point date code (BT-8) ":value" is not part of UNTDID 2005 (3 issue date, 35 delivery date, 432 payment date).',
+    ],
+    'QUITTIO-PROFORMA' => [
+        'message' => 'Type code 325 (proforma invoice) is not an invoice. Use DocumentBuilder::proforma() for proforma documents; e-invoice formats must not carry a proforma.',
+        'hint' => 'A proforma invoice is not an invoice for tax purposes. As e-invoice XML with VAT amounts the recipient would book it as an invoice.',
+    ],
+    'QUITTIO-VAT-K-DOMESTIC' => [
+        'message' => 'VAT category "K" (intra-community supply) is used, but the destination :value lies in the seller\'s member state :expected. An intra-community supply requires a destination in another EU member state.',
+    ],
+    'QUITTIO-VAT-K-OUTSIDE-EU' => [
+        'message' => 'VAT category "K" (intra-community supply) is used, but the destination :value lies outside the EU VAT territory. Supplies to third countries are exports (category "G") or not taxable in the EU (category "O").',
+    ],
+    'QUITTIO-VAT-G-INSIDE-EU' => [
+        'message' => 'VAT category "G" (export) is used, but the destination :value lies in the EU VAT territory. Supplies within the EU are intra-community supplies (category "K") or taxable in the member state.',
     ],
 ];

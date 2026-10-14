@@ -46,8 +46,16 @@ final readonly class BaseRateTable
         return new self([...$this->rates, $key => $rate]);
     }
 
+    /**
+     * The base rate changes on 1 January and 1 July (section 247 (1) sentence 2 BGB). Dates from the
+     * next scheduled change after the last known rate on are unknown and rejected.
+     */
     public function rateOn(Date $date): BigDecimal
     {
+        if (! $date->isBefore($this->validUntil())) {
+            throw new InvalidArgumentException(sprintf('No base rate is known for %s: the table ends before %s. Add the published rate with withRate().', $date->toIsoString(), $this->validUntil()->toIsoString()));
+        }
+
         $rate = null;
         foreach ($this->rates as $from => $value) {
             if ($from <= $date->toIsoString()) {
@@ -59,12 +67,17 @@ final readonly class BaseRateTable
     }
 
     /**
-     * Periods with a constant rate between two dates (inclusive start, exclusive end).
+     * Periods with a constant rate between two dates (inclusive start, exclusive end). A table
+     * entry that keeps the rate (e.g. 2026-01-01) does not start a new period.
      *
      * @return list<array{from: Date, until: Date, rate: BigDecimal}>
      */
     public function periods(Date $from, Date $until): array
     {
+        if ($until->isAfter($this->validUntil())) {
+            throw new InvalidArgumentException(sprintf('No base rate is known after %s. Add the published rate with withRate().', $this->validUntil()->addDays(-1)->toIsoString()));
+        }
+
         $boundaries = [$from->toIsoString()];
         foreach (array_keys($this->rates) as $change) {
             if ($change > $from->toIsoString() && $change < $until->toIsoString()) {
@@ -74,9 +87,23 @@ final readonly class BaseRateTable
         $boundaries[] = $until->toIsoString();
 
         $periods = [];
+        $current = null;
         for ($i = 0; $i < count($boundaries) - 1; $i++) {
             $start = Date::parse($boundaries[$i]);
-            $periods[] = ['from' => $start, 'until' => Date::parse($boundaries[$i + 1]), 'rate' => $this->rateOn($start)];
+            $end = Date::parse($boundaries[$i + 1]);
+            $rate = $this->rateOn($start);
+            if ($current !== null && $current['rate']->isEqualTo($rate)) {
+                $current = ['from' => $current['from'], 'until' => $end, 'rate' => $rate];
+
+                continue;
+            }
+            if ($current !== null) {
+                $periods[] = $current;
+            }
+            $current = ['from' => $start, 'until' => $end, 'rate' => $rate];
+        }
+        if ($current !== null) {
+            $periods[] = $current;
         }
 
         return $periods;
@@ -88,5 +115,16 @@ final readonly class BaseRateTable
     public function lastChange(): Date
     {
         return Date::parse((string) array_key_last($this->rates));
+    }
+
+    /**
+     * First day for which the table has no rate: the next 1 January or 1 July after the last change.
+     */
+    public function validUntil(): Date
+    {
+        $last = $this->lastChange();
+        $year = (int) $last->format('Y');
+
+        return (int) $last->format('n') < 7 ? Date::of($year, 7, 1) : Date::of($year + 1, 1, 1);
     }
 }

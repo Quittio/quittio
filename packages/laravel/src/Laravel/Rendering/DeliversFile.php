@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace Quittio\Laravel\Rendering;
 
 use Illuminate\Container\Container;
+use Illuminate\Contracts\Config\Repository;
 use Illuminate\Contracts\Filesystem\Factory as FilesystemFactory;
 use Illuminate\Http\Request;
 use Illuminate\Mail\Attachment;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -47,7 +49,7 @@ trait DeliversFile
     }
 
     /**
-     * Stores the main output on a filesystem disk.
+     * Stores the main output on a filesystem disk (default: quittio.storage.disk).
      *
      * @return string the stored path
      */
@@ -58,7 +60,10 @@ trait DeliversFile
             $path .= $this->filename();
         }
 
-        $filesystem = Container::getInstance()->make(FilesystemFactory::class)->disk($disk);
+        $container = Container::getInstance();
+        $configured = $container->make(Repository::class)->get('quittio.storage.disk');
+        $disk ??= is_string($configured) && $configured !== '' ? $configured : null;
+        $filesystem = $container->make(FilesystemFactory::class)->disk($disk);
         $filesystem->put($path, $this->contents());
 
         return $path;
@@ -67,12 +72,31 @@ trait DeliversFile
     private function response(string $disposition, ?string $filename): Response
     {
         $filename ??= $this->filename();
-        $fallback = (string) preg_replace('/[^A-Za-z0-9._-]/', '_', $filename);
 
         return new Response($this->contents(), 200, [
             'Content-Type' => $this->mimeType(),
-            'Content-Disposition' => sprintf('%s; filename="%s"; filename*=UTF-8\'\'%s', $disposition, $fallback, rawurlencode($filename)),
+            'Content-Disposition' => sprintf('%s; filename="%s"; filename*=UTF-8\'\'%s', $disposition, self::asciiFilename($filename), rawurlencode($filename)),
             'Cache-Control' => 'private, no-store',
         ]);
+    }
+
+    /**
+     * ASCII fallback for the "filename" parameter: characters are transliterated ("Ü" → "U",
+     * "ß" → "ss"); every character that has no transliteration or is no letter, digit, ".",
+     * "_" or "-" becomes one "_" (not one per byte).
+     */
+    private static function asciiFilename(string $filename): string
+    {
+        if (! mb_check_encoding($filename, 'UTF-8')) {
+            return (string) preg_replace('/[^A-Za-z0-9._-]/', '_', $filename);
+        }
+
+        $ascii = '';
+        foreach (mb_str_split($filename) as $character) {
+            $transliterated = strlen($character) === 1 ? $character : Str::ascii($character);
+            $ascii .= $transliterated === '' ? '_' : (string) preg_replace('/[^A-Za-z0-9._-]/', '_', $transliterated);
+        }
+
+        return $ascii;
     }
 }

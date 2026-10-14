@@ -49,7 +49,7 @@ class DocumentBuilder
     /** @var list<Package> */
     private array $packages = [];
 
-    private int $dunningLevel = 1;
+    private int $dunningLevel = 0;
 
     private ?Date $deadline = null;
 
@@ -59,7 +59,7 @@ class DocumentBuilder
     /** @var list<array{description: string, amount: string}> */
     private array $fees = [];
 
-    /** @var list<array{base: string, rate: BigDecimal, from: Date, until: Date, description: ?string}> */
+    /** @var list<array{base: string, rate: BigDecimal, from: Date, until: Date, description: ?string, dayCount: ?int}> */
     private array $interest = [];
 
     private ?Period $statementPeriod = null;
@@ -97,7 +97,10 @@ class DocumentBuilder
         return new static(DocumentType::Proforma);
     }
 
-    public static function paymentReminder(int $level = 1): static
+    /**
+     * @param  int  $level  0 = payment reminder (Zahlungserinnerung), 1 = first formal reminder (1. Mahnung), 2 = second …
+     */
+    public static function paymentReminder(int $level = 0): static
     {
         $builder = new static(DocumentType::PaymentReminder);
         $builder->dunningLevel = $level;
@@ -342,12 +345,19 @@ class DocumentBuilder
         return $this;
     }
 
+    /**
+     * Default interest from $from (first day with interest) until $until (exclusive: the
+     * last day with interest is the day before). $dayCount null counts actual/actual
+     * (365 or 366 days per calendar year); 365 or 360 use a fixed basis, e.g. from
+     * the dayCount of the country pack's DunningLaw.
+     */
     public function interest(
         string $base,
         BigDecimal|string $ratePercent,
         Date|DateTimeInterface|string $from,
         Date|DateTimeInterface|string $until,
         ?string $description = null,
+        ?int $dayCount = InterestCharge::ACTUAL_ACTUAL,
     ): static {
         $this->interest[] = [
             'base' => $base,
@@ -355,6 +365,7 @@ class DocumentBuilder
             'from' => Date::parse($from),
             'until' => Date::parse($until),
             'description' => $description,
+            'dayCount' => $dayCount,
         ];
 
         return $this;
@@ -486,6 +497,7 @@ class DocumentBuilder
                 from: $entry['from'],
                 until: $entry['until'],
                 description: $entry['description'],
+                dayCount: $entry['dayCount'],
             ), $this->interest),
         );
     }

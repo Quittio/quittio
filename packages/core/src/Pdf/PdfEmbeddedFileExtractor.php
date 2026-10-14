@@ -4,56 +4,78 @@ declare(strict_types=1);
 
 namespace Quittio\Core\Pdf;
 
-use Quittio\Core\Reading\EmbeddedXmlExtractor;
-use setasign\Fpdi\PdfParser\PdfParser;
-use setasign\Fpdi\PdfParser\StreamReader;
-use setasign\Fpdi\PdfParser\Type\PdfArray;
-use setasign\Fpdi\PdfParser\Type\PdfDictionary;
-use setasign\Fpdi\PdfParser\Type\PdfHexString;
-use setasign\Fpdi\PdfParser\Type\PdfName;
-use setasign\Fpdi\PdfParser\Type\PdfStream;
-use setasign\Fpdi\PdfParser\Type\PdfString;
-use setasign\Fpdi\PdfParser\Type\PdfType;
+use Quittio\Core\Pdf\Parsing\ArrayValue;
+use Quittio\Core\Pdf\Parsing\ByteString;
+use Quittio\Core\Pdf\Parsing\Dictionary;
+use Quittio\Core\Pdf\Parsing\Document;
+use Quittio\Core\Pdf\Parsing\Name;
+use Quittio\Core\Pdf\Parsing\PdfValue;
+use Quittio\Core\Pdf\Parsing\Reference;
+use Quittio\Core\Pdf\Parsing\Stream;
+use Quittio\Core\Reading\DiagnosingXmlExtractor;
+use Quittio\Core\Reading\ExtractedXml;
+use Quittio\Core\Validation\Severity;
+use Quittio\Core\Validation\ValidationLevel;
+use Quittio\Core\Validation\ValidationMessage;
 use Throwable;
 
 /**
- * Extracts the embedded invoice XML from PDF files (ZUGFeRD 1.0 to 2.x, Factur-X, XRechnung).
+ * Extracts the embedded invoice XML from PDF files (ZUGFeRD 2.x, Factur-X, XRechnung in PDF).
  *
- * Embedded files are searched in the name tree (/Names /EmbeddedFiles) and in /AF.
- * Streams are decompressed with a size limit as protection against zip bombs, and
+ * Embedded files are searched in the associated files of the document (/AF, PDF/A-3) and in
+ * the name tree (/Names /EmbeddedFiles). Classic cross-reference tables, cross-reference
+ * streams and object streams are supported. All structures are limited (tree size, number
+ * of file specifications, decompressed size) as protection against malicious files, and
  * file names are never used as paths.
  */
-final class PdfEmbeddedFileExtractor implements EmbeddedXmlExtractor
+final class PdfEmbeddedFileExtractor implements DiagnosingXmlExtractor
 {
-    /** Known file names in order of preference; ZUGFeRD 1.0 is read only. */
+    /** Known file names in order of preference (ZUGFeRD-invoice.xml is the ZUGFeRD 1.0 name). */
     public const array KNOWN_FILENAMES = ['factur-x.xml', 'xrechnung.xml', 'zugferd-invoice.xml', 'ZUGFeRD-invoice.xml'];
 
     private const int MAX_TREE_DEPTH = 10;
+
+    private const int MAX_TREE_NODES = 1000;
+
+    private const int MAX_FILE_SPECS = 1000;
+
+    /** Further candidates whose content is compared with the chosen file. */
+    private const int MAX_COMPARED_CANDIDATES = 3;
 
     public function __construct(
         private readonly int $maxPdfBytes = 25 * 1024 * 1024,
         private readonly int $maxDecompressedBytes = 50 * 1024 * 1024,
     ) {}
 
+    public function maxPdfBytes(): int
+    {
+        return $this->maxPdfBytes;
+    }
+
     public function extract(string $pdf): ?array
     {
-        $files = $this->embeddedFiles($pdf);
+        $file = $this->extractFile($pdf);
 
-        foreach (self::KNOWN_FILENAMES as $known) {
-            foreach ($files as $name => $content) {
-                if (strcasecmp($name, $known) === 0) {
-                    return [$name, $content()];
-                }
-            }
+        return $file === null ? null : [$file->filename, $file->xml];
+    }
+
+    public function extractFile(string $pdf): ?ExtractedXml
+    {
+        [$document, $candidates] = $this->candidates($pdf);
+
+        $chosen = $this->choose($candidates);
+        if ($chosen === null) {
+            return null;
         }
 
-        foreach ($files as $name => $content) {
-            if (str_ends_with(strtolower($name), '.xml')) {
-                return [$name, $content()];
-            }
-        }
+        $xml = $this->content($document, $chosen['spec']);
 
-        return null;
+        return new ExtractedXml(
+            filename: $chosen['name'],
+            xml: $xml,
+            relationship: $chosen['relationship'],
+            findings: $this->findings($document, $candidates, $chosen, $xml),
+        );
     }
 
     /**
@@ -63,175 +85,306 @@ final class PdfEmbeddedFileExtractor implements EmbeddedXmlExtractor
      */
     public function names(string $pdf): array
     {
-        return array_map(strval(...), array_keys($this->embeddedFiles($pdf)));
+        [, $candidates] = $this->candidates($pdf);
+
+        return array_values(array_unique(array_map(static fn (array $candidate): string => $candidate['name'], $candidates)));
     }
 
     /**
-     * @return array<string, callable(): string> file name => lazy content loader
+     * @return array{0: Document, 1: list<array{key: string, name: string, spec: Dictionary, af: bool, relationship: ?string, order: int}>}
      */
-    private function embeddedFiles(string $pdf): array
+    private function candidates(string $pdf): array
     {
         if (strlen($pdf) > $this->maxPdfBytes) {
             throw new PdfException(sprintf('The PDF exceeds the size limit of %d bytes.', $this->maxPdfBytes));
         }
 
         try {
-            $parser = new PdfParser(StreamReader::createByString($pdf));
-            $catalog = $parser->getCatalog();
+            $document = Document::parse($pdf, $this->maxDecompressedBytes);
+            $catalog = $document->catalog();
+        } catch (PdfException $e) {
+            throw $e;
         } catch (Throwable $e) {
             throw new PdfException('The PDF could not be parsed: '.$e->getMessage(), 0, $e);
         }
 
+        /** @var array<string, array{spec: Dictionary, af: bool}> $specs */
         $specs = [];
         try {
-            $names = $this->resolve(PdfDictionary::get($catalog, 'Names'), $parser);
-            if ($names instanceof PdfDictionary) {
-                $tree = $this->resolve(PdfDictionary::get($names, 'EmbeddedFiles'), $parser);
-                $this->walkNameTree($tree, $parser, $specs, 0);
-            }
-
-            $af = $this->resolve(PdfDictionary::get($catalog, 'AF'), $parser);
-            if ($af instanceof PdfArray) {
-                foreach ($af->value as $entry) {
-                    $spec = $entry instanceof PdfType ? $this->resolve($entry, $parser) : null;
-                    if ($spec instanceof PdfDictionary) {
-                        $specs[] = $spec;
-                    }
+            $af = $document->get($catalog, 'AF');
+            if ($af instanceof ArrayValue) {
+                foreach ($af->items as $entry) {
+                    $this->addSpec($document, $entry, true, $specs);
                 }
             }
+
+            $names = $document->get($catalog, 'Names');
+            if ($names instanceof Dictionary) {
+                $visited = [];
+                $nodes = 0;
+                $this->walkNameTree($document, $names->get('EmbeddedFiles'), $specs, $visited, $nodes, 0);
+            }
+        } catch (PdfException $e) {
+            throw $e;
         } catch (Throwable $e) {
             throw new PdfException('The embedded files of the PDF could not be read: '.$e->getMessage(), 0, $e);
         }
 
-        $files = [];
-        foreach ($specs as $spec) {
-            $name = $this->filename($spec, $parser);
-            if ($name === null || isset($files[$name])) {
+        $candidates = [];
+        $order = 0;
+        foreach ($specs as $key => $spec) {
+            try {
+                $name = $this->filename($document, $spec['spec']);
+                $relationship = $document->get($spec['spec'], 'AFRelationship');
+            } catch (PdfException $e) {
+                throw $e;
+            } catch (Throwable $e) {
+                throw new PdfException('The embedded files of the PDF could not be read: '.$e->getMessage(), 0, $e);
+            }
+            if ($name === null) {
                 continue;
             }
-            $files[$name] = fn (): string => $this->content($spec, $parser);
+            $candidates[] = [
+                'key' => $key,
+                'name' => $name,
+                'spec' => $spec['spec'],
+                'af' => $spec['af'],
+                'relationship' => $relationship instanceof Name ? $relationship->value : null,
+                'order' => $order++,
+            ];
         }
 
-        return $files;
+        return [$document, $candidates];
     }
 
     /**
-     * @param  list<PdfDictionary>  $specs
+     * Collects a file specification once, however often it is referenced.
+     *
+     * @param  array<string, array{spec: Dictionary, af: bool}>  $specs
      */
-    private function walkNameTree(PdfType $node, PdfParser $parser, array &$specs, int $depth): void
+    private function addSpec(Document $document, ?PdfValue $entry, bool $af, array &$specs): void
     {
-        if (! $node instanceof PdfDictionary || $depth > self::MAX_TREE_DEPTH) {
+        $key = $entry instanceof Reference ? 'r'.$entry->number : null;
+        $spec = $document->resolve($entry);
+        if (! $spec instanceof Dictionary) {
             return;
         }
+        $key ??= 'd'.spl_object_id($spec);
 
-        $names = $this->resolve(PdfDictionary::get($node, 'Names'), $parser);
-        if ($names instanceof PdfArray) {
-            foreach (array_chunk($names->value, 2) as $pair) {
-                $spec = ($pair[1] ?? null) instanceof PdfType ? $this->resolve($pair[1], $parser) : null;
-                if ($spec instanceof PdfDictionary) {
-                    $specs[] = $spec;
-                }
+        if (isset($specs[$key])) {
+            $specs[$key]['af'] = $specs[$key]['af'] || $af;
+
+            return;
+        }
+        if (count($specs) >= self::MAX_FILE_SPECS) {
+            throw new PdfException(sprintf('The PDF contains more than %d embedded file specifications.', self::MAX_FILE_SPECS));
+        }
+        $specs[$key] = ['spec' => $spec, 'af' => $af];
+    }
+
+    /**
+     * Walks the embedded files name tree; every node is visited once.
+     *
+     * @param  array<string, array{spec: Dictionary, af: bool}>  $specs
+     * @param  array<int, true>  $visited  object numbers of visited nodes
+     */
+    private function walkNameTree(Document $document, ?PdfValue $value, array &$specs, array &$visited, int &$nodes, int $depth): void
+    {
+        if ($depth > self::MAX_TREE_DEPTH) {
+            return;
+        }
+        if ($value instanceof Reference) {
+            if (isset($visited[$value->number])) {
+                return;
+            }
+            $visited[$value->number] = true;
+        }
+
+        $node = $document->resolve($value);
+        if (! $node instanceof Dictionary) {
+            return;
+        }
+        if (++$nodes > self::MAX_TREE_NODES) {
+            throw new PdfException(sprintf('The embedded files name tree of the PDF has more than %d nodes.', self::MAX_TREE_NODES));
+        }
+
+        $names = $document->get($node, 'Names');
+        if ($names instanceof ArrayValue) {
+            foreach (array_chunk($names->items, 2) as $pair) {
+                $this->addSpec($document, $pair[1] ?? null, false, $specs);
             }
         }
 
-        $kids = $this->resolve(PdfDictionary::get($node, 'Kids'), $parser);
-        if ($kids instanceof PdfArray) {
-            foreach ($kids->value as $kid) {
-                if ($kid instanceof PdfType) {
-                    $this->walkNameTree($this->resolve($kid, $parser), $parser, $specs, $depth + 1);
-                }
+        $kids = $document->get($node, 'Kids');
+        if ($kids instanceof ArrayValue) {
+            foreach ($kids->items as $kid) {
+                $this->walkNameTree($document, $kid, $specs, $visited, $nodes, $depth + 1);
             }
         }
     }
 
-    private function filename(PdfDictionary $spec, PdfParser $parser): ?string
+    /**
+     * Known file names first, then any XML file; associated files (/AF) before name tree entries.
+     *
+     * @param  list<array{key: string, name: string, spec: Dictionary, af: bool, relationship: ?string, order: int}>  $candidates
+     * @return array{key: string, name: string, spec: Dictionary, af: bool, relationship: ?string, order: int}|null
+     */
+    private function choose(array $candidates): ?array
+    {
+        $ranked = [];
+        foreach ($candidates as $candidate) {
+            $rank = $this->rank($candidate['name']);
+            if ($rank !== null) {
+                $ranked[] = [[$rank >= count(self::KNOWN_FILENAMES) ? 1 : 0, $candidate['af'] ? 0 : 1, $rank, $candidate['order']], $candidate];
+            }
+        }
+        if ($ranked === []) {
+            return null;
+        }
+
+        usort($ranked, static fn (array $a, array $b): int => $a[0] <=> $b[0]);
+
+        return $ranked[0][1];
+    }
+
+    /**
+     * Position in the known file names, the number of known names for other XML files, null otherwise.
+     */
+    private function rank(string $name): ?int
+    {
+        foreach (self::KNOWN_FILENAMES as $index => $known) {
+            if (strcasecmp($name, $known) === 0) {
+                return $index;
+            }
+        }
+
+        return str_ends_with(strtolower($name), '.xml') ? count(self::KNOWN_FILENAMES) : null;
+    }
+
+    /**
+     * @param  list<array{key: string, name: string, spec: Dictionary, af: bool, relationship: ?string, order: int}>  $candidates
+     * @param  array{key: string, name: string, spec: Dictionary, af: bool, relationship: ?string, order: int}  $chosen
+     * @return list<ValidationMessage>
+     */
+    private function findings(Document $document, array $candidates, array $chosen, string $xml): array
+    {
+        $findings = [];
+        $known = array_values(array_filter($candidates, fn (array $c): bool => ($this->rank($c['name']) ?? PHP_INT_MAX) < count(self::KNOWN_FILENAMES)));
+        $others = array_values(array_filter($candidates, fn (array $c): bool => $this->rank($c['name']) === count(self::KNOWN_FILENAMES)));
+
+        if (count($known) > 1) {
+            $different = [];
+            $compared = 0;
+            $chosenStream = $this->streamKey($document, $chosen['spec']);
+            foreach ($known as $candidate) {
+                if ($candidate['key'] === $chosen['key'] || $compared >= self::MAX_COMPARED_CANDIDATES) {
+                    continue;
+                }
+                $compared++;
+                $stream = $this->streamKey($document, $candidate['spec']);
+                if ($stream !== null && $stream === $chosenStream) {
+                    continue;
+                }
+                try {
+                    $same = $this->content($document, $candidate['spec']) === $xml;
+                } catch (PdfException) {
+                    $same = false;
+                }
+                if (! $same) {
+                    $different[] = $candidate['name'];
+                }
+            }
+            if ($different !== []) {
+                $findings[] = $this->warning('QUITTIO-READER-PDF-CANDIDATES', sprintf(
+                    'The PDF contains %d embedded invoice files with different content (%s); "%s" was read.',
+                    count($different) + 1,
+                    implode(', ', array_unique([$chosen['name'], ...$different])),
+                    $chosen['name'],
+                ));
+            }
+        } elseif ($known === [] && count($others) > 1) {
+            $findings[] = $this->warning('QUITTIO-READER-PDF-CANDIDATES', sprintf(
+                'The PDF contains several XML files (%s) and none has a known e-invoice file name; "%s" was read.',
+                implode(', ', array_map(static fn (array $c): string => $c['name'], $others)),
+                $chosen['name'],
+            ));
+        }
+
+        if (! $chosen['af']) {
+            $findings[] = $this->warning('QUITTIO-READER-PDF-AF', sprintf(
+                'The embedded file "%s" is not an associated file (/AF) of the document, as PDF/A-3 requires for ZUGFeRD and Factur-X.',
+                $chosen['name'],
+            ));
+        }
+
+        return $findings;
+    }
+
+    private function warning(string $code, string $message): ValidationMessage
+    {
+        return new ValidationMessage(Severity::Warning, $code, $message, ValidationLevel::L1);
+    }
+
+    private function filename(Document $document, Dictionary $spec): ?string
     {
         foreach (['UF', 'F'] as $key) {
-            $value = $this->resolve(PdfDictionary::get($spec, $key), $parser);
-            $string = match (true) {
-                $value instanceof PdfString && is_string($value->value) => PdfString::unescape($value->value),
-                $value instanceof PdfHexString && is_string($value->value) => (string) hex2bin($value->value),
-                default => null,
-            };
-            if ($string === null || $string === '') {
+            $value = $document->get($spec, $key);
+            if (! $value instanceof ByteString) {
                 continue;
             }
-            if (str_starts_with($string, "\xFE\xFF")) {
-                $string = (string) mb_convert_encoding(substr($string, 2), 'UTF-8', 'UTF-16BE');
+            $name = $value->text();
+            if ($name === '') {
+                continue;
             }
 
             // Never use names from the file as paths.
-            return basename(str_replace('\\', '/', $string));
+            $name = basename(str_replace('\\', '/', $name));
+
+            return $name === '' ? null : $name;
         }
 
         return null;
     }
 
-    private function content(PdfDictionary $spec, PdfParser $parser): string
-    {
-        $ef = $this->resolve(PdfDictionary::get($spec, 'EF'), $parser);
-        if (! $ef instanceof PdfDictionary) {
-            throw new PdfException('An embedded file has no stream.');
-        }
-
-        $stream = $this->resolve(PdfDictionary::get($ef, 'UF'), $parser);
-        if (! $stream instanceof PdfStream) {
-            $stream = $this->resolve(PdfDictionary::get($ef, 'F'), $parser);
-        }
-        if (! $stream instanceof PdfStream) {
-            throw new PdfException('An embedded file has no stream.');
-        }
-
-        $data = $stream->getStream();
-        if (! is_string($data)) {
-            throw new PdfException('An embedded file stream could not be read.');
-        }
-        foreach ($stream->getFilters() as $filter) {
-            if (! $filter instanceof PdfName || $filter->value !== 'FlateDecode') {
-                throw new PdfException('Unsupported filter for embedded files.');
-            }
-            $data = $this->inflate($data);
-        }
-
-        if (strlen($data) > $this->maxDecompressedBytes) {
-            throw new PdfException('An embedded file exceeds the size limit.');
-        }
-
-        return $data;
-    }
-
     /**
-     * Decompresses a FlateDecode stream chunk by chunk and stops at the size limit.
+     * Identity of the embedded file stream of a file specification, if it is an indirect object.
      */
-    private function inflate(string $data): string
+    private function streamKey(Document $document, Dictionary $spec): ?int
     {
-        $context = inflate_init(ZLIB_ENCODING_DEFLATE);
-        if ($context === false) {
-            throw new PdfException('Unable to initialise decompression.');
+        try {
+            $ef = $document->get($spec, 'EF');
+        } catch (PdfException) {
+            return null;
         }
-
-        $output = '';
-        foreach (str_split($data, 8192) as $chunk) {
-            $part = @inflate_add($context, $chunk, ZLIB_SYNC_FLUSH);
-            if ($part === false) {
-                throw new PdfException('An embedded file could not be decompressed.');
-            }
-            $output .= $part;
-            if (strlen($output) > $this->maxDecompressedBytes) {
-                throw new PdfException(sprintf('An embedded file exceeds the decompression limit of %d bytes.', $this->maxDecompressedBytes));
-            }
+        if (! $ef instanceof Dictionary) {
+            return null;
         }
+        $stream = $ef->get('UF') ?? $ef->get('F');
 
-        $rest = @inflate_add($context, '', ZLIB_FINISH);
-        if ($rest !== false) {
-            $output .= $rest;
-        }
-
-        return $output;
+        return $stream instanceof Reference ? $stream->number : null;
     }
 
-    private function resolve(PdfType $value, PdfParser $parser): PdfType
+    private function content(Document $document, Dictionary $spec): string
     {
-        return PdfType::resolve($value, $parser);
+        try {
+            $ef = $document->get($spec, 'EF');
+            if (! $ef instanceof Dictionary) {
+                throw new PdfException('An embedded file has no stream.');
+            }
+
+            $stream = $document->get($ef, 'UF');
+            if (! $stream instanceof Stream) {
+                $stream = $document->get($ef, 'F');
+            }
+            if (! $stream instanceof Stream) {
+                throw new PdfException('An embedded file has no stream.');
+            }
+
+            return $document->streamData($stream, $this->maxDecompressedBytes);
+        } catch (PdfException $e) {
+            throw $e;
+        } catch (Throwable $e) {
+            throw new PdfException('An embedded file could not be read: '.$e->getMessage(), 0, $e);
+        }
     }
 }

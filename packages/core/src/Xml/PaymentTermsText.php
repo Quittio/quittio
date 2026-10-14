@@ -10,6 +10,8 @@ use Quittio\Core\I18n\Translations;
 use Quittio\Core\Profiles\Capabilities\StructuredCashDiscountText;
 use Quittio\Core\Profiles\Profile;
 use Quittio\Core\Support\Amount;
+use Quittio\Core\Support\Decimal;
+use Quittio\Core\View\IntlFormatter;
 
 /**
  * Builds the payment terms text (BT-20) from structured payment terms.
@@ -30,8 +32,15 @@ final class PaymentTermsText
         if ($terms->text !== null && trim($terms->text) !== '') {
             $lines[] = trim($terms->text);
         }
+        if ($terms->text === null && $terms->dueDays !== null) {
+            $lines[] = Translations::translator()->get('quittio::terms.due_in_days', ['days' => $terms->dueDays], $locale);
+        }
 
         if ($profile instanceof StructuredCashDiscountText) {
+            // Free text first, then one line per cash discount, each closed by a line break (BR-DE-18).
+            if ($terms->lateFeeTerms?->text !== null && trim($terms->lateFeeTerms->text) !== '') {
+                $lines[] = trim($terms->lateFeeTerms->text);
+            }
             $text = $lines === [] ? '' : implode("\n", $lines)."\n";
             foreach ($terms->discounts as $discount) {
                 $text .= self::structured($discount)."\n";
@@ -40,14 +49,16 @@ final class PaymentTermsText
             return $text === '' ? null : $text;
         }
 
-        if ($terms->text === null && $terms->dueDays !== null) {
-            $lines[] = Translations::translator()->get('quittio::terms.due_in_days', ['days' => $terms->dueDays], $locale);
-        }
+        // German texts use German number and date formats; other texts keep the neutral
+        // notation (2.00, 2026-10-17). The #SKONTO# lines above keep their fixed syntax.
+        $german = str_starts_with(strtolower($locale), 'de') && Translations::translator()->has('quittio::terms.cash_discount', $locale);
+        $formatter = new IntlFormatter;
         foreach ($terms->discounts as $discount) {
+            $until = $invoice->issueDate->addDays($discount->days);
             $lines[] = Translations::translator()->get('quittio::terms.cash_discount', [
-                'percent' => Format::percent($discount->percent),
+                'percent' => $german ? $formatter->quantity($discount->percent, $locale) : Format::percent($discount->percent),
                 'days' => $discount->days,
-                'until' => $invoice->issueDate->addDays($discount->days)->toIsoString(),
+                'until' => $german ? $formatter->date($until, $locale) : $until->toIsoString(),
             ], $locale);
         }
         if ($terms->lateFeeTerms?->text !== null) {
@@ -59,10 +70,11 @@ final class PaymentTermsText
 
     /**
      * XRechnung notation: #SKONTO#TAGE=14#PROZENT=2.00# with optional #BASISBETRAG=…#.
+     * The percentage has exactly two decimals (BR-DE-18).
      */
     public static function structured(CashDiscount $discount): string
     {
-        $line = sprintf('#SKONTO#TAGE=%d#PROZENT=%s#', $discount->days, Format::percent($discount->percent));
+        $line = sprintf('#SKONTO#TAGE=%d#PROZENT=%s#', $discount->days, Decimal::round($discount->percent, 2)->toString());
         if ($discount->baseAmount !== null) {
             $line .= 'BASISBETRAG='.Amount::format($discount->baseAmount).'#';
         }

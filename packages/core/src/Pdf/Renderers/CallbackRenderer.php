@@ -25,9 +25,12 @@ final class CallbackRenderer implements PdfRenderer
         private readonly PdfPostProcessor $postProcessor = new MpdfPostProcessor,
     ) {}
 
+    /**
+     * PDF/A and the embedded XML are added by the post processor of this renderer.
+     */
     public function supportsEmbedding(): bool
     {
-        return false;
+        return true;
     }
 
     public function render(RenderRequest $request): string

@@ -7,15 +7,17 @@ namespace Quittio\Laravel\Support;
 use Quittio\Core\Exceptions\ConfigurationException;
 
 /**
- * Typed read access to the "quittio" configuration array with dot notation.
+ * Typed read access to a configuration array ("quittio" by default) with dot notation.
  */
 final readonly class Settings
 {
     /**
      * @param  array<array-key, mixed>  $values
+     * @param  string  $path  configuration key of $values, used in error messages
      */
     public function __construct(
         private array $values,
+        private string $path = 'quittio',
     ) {}
 
     public function get(string $key, mixed $default = null): mixed
@@ -43,7 +45,7 @@ final readonly class Settings
             return null;
         }
         if (! is_string($value)) {
-            throw new ConfigurationException(sprintf('quittio.%s must be a string.', $key));
+            throw new ConfigurationException(sprintf('%s.%s must be a string.', $this->path, $key));
         }
 
         return $value;
@@ -56,7 +58,7 @@ final readonly class Settings
             return $default;
         }
         if (! is_bool($value)) {
-            throw new ConfigurationException(sprintf('quittio.%s must be a boolean.', $key));
+            throw new ConfigurationException(sprintf('%s.%s must be a boolean.', $this->path, $key));
         }
 
         return $value;
@@ -69,7 +71,7 @@ final readonly class Settings
             return $default;
         }
         if (! is_int($value)) {
-            throw new ConfigurationException(sprintf('quittio.%s must be an integer.', $key));
+            throw new ConfigurationException(sprintf('%s.%s must be an integer.', $this->path, $key));
         }
 
         return $value;
@@ -82,7 +84,7 @@ final readonly class Settings
     {
         $value = $this->get($key, []);
         if (! is_array($value)) {
-            throw new ConfigurationException(sprintf('quittio.%s must be an array.', $key));
+            throw new ConfigurationException(sprintf('%s.%s must be an array.', $this->path, $key));
         }
 
         $result = [];
@@ -103,6 +105,6 @@ final readonly class Settings
 
     public function section(string $key): self
     {
-        return new self($this->array($key));
+        return new self($this->array($key), $this->path.'.'.$key);
     }
 }

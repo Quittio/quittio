@@ -7,8 +7,12 @@ namespace Quittio\Core\View;
 use League\CommonMark\CommonMarkConverter;
 
 /**
- * Safe Markdown subset for descriptions and texts: paragraphs, lists, bold and italic.
- * Raw HTML in the input is removed, everything else is escaped.
+ * Safe Markdown subset for texts: paragraphs, lists, bold and italic. HTML in the input is
+ * shown as text, links keep only their text.
+ *
+ * Descriptions and notes are also part of the e-invoice XML and are printed as plain text
+ * by default ({@see self::plain()}); Markdown for them is opt-in (option "markdown"), because
+ * formatting changes the displayed text compared with the XML (e.g. "*" for emphasis).
  */
 final class Markdown
 {
@@ -23,7 +27,7 @@ final class Markdown
         }
 
         self::$converter ??= new CommonMarkConverter([
-            'html_input' => 'strip',
+            'html_input' => 'escape',
             'allow_unsafe_links' => false,
             'max_nesting_level' => 5,
         ]);
@@ -31,5 +35,17 @@ final class Markdown
         $html = (string) self::$converter->convert($text);
 
         return trim(strip_tags($html, self::ALLOWED_TAGS));
+    }
+
+    /**
+     * Plain text as HTML: escaped, line breaks kept, nothing interpreted.
+     */
+    public static function plain(?string $text): string
+    {
+        if ($text === null || trim($text) === '') {
+            return '';
+        }
+
+        return nl2br(htmlspecialchars(trim($text), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'), false);
     }
 }

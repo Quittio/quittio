@@ -20,8 +20,9 @@ use Quittio\Country\DE\CountryDE;
 /**
  * Business rules of the CIUS XRechnung 3.0 (BR-DE-…), checked on the data model.
  *
- * Severity follows the official Schematron: "muss" rules are errors, "soll" rules warnings.
- * The official validation (KoSIT validator) remains authoritative.
+ * Severity follows the flags of the official Schematron: "muss" rules (fatal) are errors,
+ * "soll" rules (warning) warnings and BR-DE-TMP-32 (information) an info. The official
+ * validation (KoSIT validator) remains authoritative.
  */
 final class XRechnungRules
 {
@@ -211,6 +212,14 @@ final class XRechnungRules
                 $syntax = $report->context()->option('syntax');
                 if ($syntax === Syntax::Cii && array_filter($i->lines, static fn ($line): bool => $line->subLines !== []) !== []) {
                     $report->error(null, 'lines');
+                }
+            }),
+            // The official validator configuration has no scenario for credit notes of the extension in UBL,
+            // so recipients would reject the document.
+            $r('DE-XRECHNUNG-EXT-01', 'The XRechnung extension has no credit note in UBL. Cancel with the strategy negative_invoice (type code 380 with negative amounts).', function (InvoiceData $i, RuleReporter $report): void {
+                $context = $report->context();
+                if ($context->profileIs('xrechnung-extension') && $context->option('syntax') === Syntax::Ubl && $i->isCreditNote()) {
+                    $report->error('BT-3', 'typeCode');
                 }
             }),
         ];
