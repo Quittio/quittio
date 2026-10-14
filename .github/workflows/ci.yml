@@ -9,7 +9,7 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: shivammathur/setup-php@v2
         with:
           php: '8.4'
@@ -21,7 +21,7 @@ jobs:
   analyse:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: shivammathur/setup-php@v2
         with:
           php: '8.4'
@@ -39,14 +39,14 @@ jobs:
         dependencies: ['highest', 'lowest']
     name: test (PHP ${{ matrix.php }}, Laravel 13, ${{ matrix.dependencies }})
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: shivammathur/setup-php@v2
         with:
           php: ${{ matrix.php }}
           extensions: dom, libxml, mbstring, xmlwriter, zlib, intl, gd, bcmath
           coverage: none
       - run: sudo apt-get update && sudo apt-get install -y poppler-utils
-      - uses: ramsey/composer-install@v3
+      - uses: ramsey/composer-install@4.0.0
         with:
           dependency-versions: ${{ matrix.dependencies }}
       - run: vendor/bin/pest --exclude-group=official,visual
@@ -86,7 +86,7 @@ jobs:
       QUITTIO_DB: ${{ matrix.db }}
       QUITTIO_DB_TRIGGERS: ${{ matrix.triggers }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: shivammathur/setup-php@v2
         with:
           php: '8.4'
@@ -102,7 +102,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: test
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: shivammathur/setup-php@v2
         with:
           php: '8.4'
@@ -111,7 +111,7 @@ jobs:
       - run: sudo apt-get update && sudo apt-get install -y poppler-utils
       - run: composer install --no-interaction --no-progress
       - run: vendor/bin/pest --group=visual
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: visual-diff
@@ -121,13 +121,13 @@ jobs:
     runs-on: ubuntu-latest
     needs: test
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: shivammathur/setup-php@v2
         with:
           php: '8.4'
           extensions: dom, libxml, mbstring, xmlwriter, zlib, intl, gd, bcmath
           coverage: none
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '21'
