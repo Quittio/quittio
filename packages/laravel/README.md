@@ -11,7 +11,7 @@ Most applications install everything at once with `composer require quittio/quit
 - Documentation: https://quittio.github.io/quittio/
 - Source, issues and pull requests: https://github.com/Quittio/quittio
 
-> This repository is a read-only split of `packages/laravel` in [Quittio/quittio](https://github.com/Quittio/quittio). Please open issues and pull requests there.
+> Developed in [`packages/laravel`](https://github.com/Quittio/quittio/tree/master/packages/laravel) of the monorepo [Quittio/quittio](https://github.com/Quittio/quittio) and published as the read-only repository [Quittio/laravel](https://github.com/Quittio/laravel). Please open issues and pull requests in the monorepo.
 
 ## Licence
 

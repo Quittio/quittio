@@ -8,13 +8,15 @@ E-invoicing for Laravel. Quittio creates, validates, reads and renders electroni
 
 ## Packages
 
-| Package | Purpose |
-|---|---|
-| `quittio/core` | Country-neutral core: EN 16931 data model, calculation, profiles, CII and UBL writers/readers, ZUGFeRD/Factur-X PDF/A-3, validation. Usable without Laravel. |
-| `quittio/laravel` | Laravel integration: facade, configuration, Blade templates, commands, testing helpers. |
-| `quittio/country-de` | Country pack for Germany: UStG mandatory fields, tax presets, XRechnung profiles and BR-DE rules, DIN 5008 letter layouts. |
-| `quittio/quittio` | Everything in one package: core, Laravel integration and the country pack Germany. This repository; the other three are read-only splits of `packages/*`. |
-| `quittio/managed` | Managed layer (commercial licence, separate repository): issuer profiles, drafts, gapless numbering, archive with hashes, cancellations and corrections, mail delivery, audit log, retention. |
+All open source packages are developed in this repository under [`packages/`](packages/). Each one is also published as a read-only repository for Composer, which a GitHub Action updates on every push and tag.
+
+| Package | Code | Purpose |
+|---|---|---|
+| `quittio/core` | [`packages/core`](packages/core) → [Quittio/core](https://github.com/Quittio/core) | Country-neutral core: EN 16931 data model, calculation, profiles, CII and UBL writers/readers, ZUGFeRD/Factur-X PDF/A-3, validation. Usable without Laravel. |
+| `quittio/laravel` | [`packages/laravel`](packages/laravel) → [Quittio/laravel](https://github.com/Quittio/laravel) | Laravel integration: facade, configuration, Blade templates, commands, testing helpers. |
+| `quittio/country-de` | [`packages/country-de`](packages/country-de) → [Quittio/country-de](https://github.com/Quittio/country-de) | Country pack for Germany: UStG mandatory fields, tax presets, XRechnung profiles and BR-DE rules, DIN 5008 letter layouts. |
+| `quittio/quittio` | this repository | Everything in one package: core, Laravel integration and the country pack Germany. |
+| `quittio/managed` | separate repository (commercial) | Managed layer (commercial licence): issuer profiles, drafts, gapless numbering, archive with hashes, cancellations and corrections, mail delivery, audit log, retention. |
 
 ## Requirements
 
