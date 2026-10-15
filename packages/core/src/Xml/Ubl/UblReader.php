@@ -9,8 +9,6 @@ use Brick\Money\Money;
 use DOMDocument;
 use DOMElement;
 use Quittio\Core\Codes\RawCode;
-use Quittio\Core\Data\AllowanceCharge\DocumentAllowance;
-use Quittio\Core\Data\AllowanceCharge\DocumentCharge;
 use Quittio\Core\Data\AllowanceCharge\LineAllowance;
 use Quittio\Core\Data\AllowanceCharge\LineCharge;
 use Quittio\Core\Data\Attachments\Attachment;
@@ -55,7 +53,6 @@ use Quittio\Core\Enums\NoteSubjectCode;
 use Quittio\Core\Enums\PaymentMeansCode;
 use Quittio\Core\Enums\TaxPointDateCode;
 use Quittio\Core\Enums\UnitCode;
-use Quittio\Core\Enums\VatCategory;
 use Quittio\Core\Enums\VatExemptionReasonCode;
 use Quittio\Core\Exceptions\InvalidArgumentException;
 use Quittio\Core\Profiles\Syntax;
@@ -72,6 +69,19 @@ use Quittio\Core\Xml\PaymentTermsText;
  */
 final class UblReader extends XPathReader implements FormatReader
 {
+    /** Element paths of a document level allowance or charge (BG-20, BG-21), see XPathReader::documentAllowances(). */
+    private const array ALLOWANCE_CHARGE = [
+        'node' => 'cac:AllowanceCharge',
+        'indicator' => 'cbc:ChargeIndicator',
+        'amount' => 'cbc:Amount',
+        'category' => 'cac:TaxCategory/cbc:ID',
+        'rate' => 'cac:TaxCategory/cbc:Percent',
+        'base' => 'cbc:BaseAmount',
+        'percent' => 'cbc:MultiplierFactorNumeric',
+        'reason' => 'cbc:AllowanceChargeReason',
+        'reasonCode' => 'cbc:AllowanceChargeReasonCode',
+    ];
+
     private bool $creditNote = false;
 
     public function canRead(DOMDocument $document): bool
@@ -138,8 +148,8 @@ final class UblReader extends XPathReader implements FormatReader
             delivery: $this->delivery($root),
             invoicingPeriod: $this->period($root, 'cac:InvoicePeriod'),
             paymentInstructions: $this->paymentInstructions($root),
-            allowances: $this->documentAllowances($root),
-            charges: $this->documentCharges($root),
+            allowances: $this->documentAllowances($root, self::ALLOWANCE_CHARGE),
+            charges: $this->documentCharges($root, self::ALLOWANCE_CHARGE),
             totals: $totals,
             vatBreakdown: $breakdown,
             attachments: $this->attachments($root),
@@ -450,59 +460,6 @@ final class UblReader extends XPathReader implements FormatReader
         );
     }
 
-    /**
-     * @return list<DocumentAllowance>
-     */
-    private function documentAllowances(DOMElement $root): array
-    {
-        $result = [];
-        foreach ($this->nodes($root, 'cac:AllowanceCharge') as $node) {
-            if ($this->chargeIndicator($node, 'cbc:ChargeIndicator') !== false) {
-                continue;
-            }
-            $result[] = new DocumentAllowance(
-                amount: $this->money($this->value($node, 'cbc:Amount'), $this->currency, 'BT-92'),
-                vatCategory: $this->category($this->value($node, 'cac:TaxCategory/cbc:ID'), 'BT-95'),
-                vatRate: $this->decimal($this->value($node, 'cac:TaxCategory/cbc:Percent'), 'BT-96'),
-                baseAmount: $this->money($this->value($node, 'cbc:BaseAmount'), $this->currency, 'BT-93'),
-                percent: $this->decimal($this->value($node, 'cbc:MultiplierFactorNumeric'), 'BT-94'),
-                reason: $this->value($node, 'cbc:AllowanceChargeReason'),
-                reasonCode: $this->code($this->value($node, 'cbc:AllowanceChargeReasonCode'), AllowanceReasonCode::class, 'BT-98'),
-            );
-        }
-
-        return $result;
-    }
-
-    /**
-     * @return list<DocumentCharge>
-     */
-    private function documentCharges(DOMElement $root): array
-    {
-        $result = [];
-        foreach ($this->nodes($root, 'cac:AllowanceCharge') as $node) {
-            $isCharge = $this->chargeIndicator($node, 'cbc:ChargeIndicator');
-            if ($isCharge === null) {
-                // Reported here only, documentAllowances() skips these entries as well.
-                $this->invalidChargeIndicator($node, 'cbc:ChargeIndicator', 'BG-20');
-            }
-            if ($isCharge !== true) {
-                continue;
-            }
-            $result[] = new DocumentCharge(
-                amount: $this->money($this->value($node, 'cbc:Amount'), $this->currency, 'BT-99'),
-                vatCategory: $this->category($this->value($node, 'cac:TaxCategory/cbc:ID'), 'BT-102'),
-                vatRate: $this->decimal($this->value($node, 'cac:TaxCategory/cbc:Percent'), 'BT-103'),
-                baseAmount: $this->money($this->value($node, 'cbc:BaseAmount'), $this->currency, 'BT-100'),
-                percent: $this->decimal($this->value($node, 'cbc:MultiplierFactorNumeric'), 'BT-101'),
-                reason: $this->value($node, 'cbc:AllowanceChargeReason'),
-                reasonCode: $this->code($this->value($node, 'cbc:AllowanceChargeReasonCode'), ChargeReasonCode::class, 'BT-105'),
-            );
-        }
-
-        return $result;
-    }
-
     private function totals(DOMElement $root, ?string $taxCurrency, bool $hasLines): ?Totals
     {
         $node = $this->node($root, 'cac:LegalMonetaryTotal');
@@ -680,17 +637,5 @@ final class UblReader extends XPathReader implements FormatReader
         }
 
         return $payments === [] ? null : new XRechnungExtensionData($payments);
-    }
-
-    private function category(?string $value, string $bt): VatCategory
-    {
-        $category = $value === null ? null : VatCategory::tryFrom($value);
-        if ($category === null) {
-            $this->finding('QUITTIO-READER-VAT-CATEGORY', sprintf('The VAT category code "%s" (%s) is unknown; "S" is assumed.', $value ?? '', $bt), $bt, Severity::Error);
-
-            return VatCategory::StandardRate;
-        }
-
-        return $category;
     }
 }

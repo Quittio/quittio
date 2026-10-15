@@ -10,8 +10,6 @@ use Brick\Money\Money;
 use DOMDocument;
 use DOMElement;
 use Quittio\Core\Codes\RawCode;
-use Quittio\Core\Data\AllowanceCharge\DocumentAllowance;
-use Quittio\Core\Data\AllowanceCharge\DocumentCharge;
 use Quittio\Core\Data\AllowanceCharge\LineAllowance;
 use Quittio\Core\Data\AllowanceCharge\LineCharge;
 use Quittio\Core\Data\Attachments\Attachment;
@@ -61,7 +59,6 @@ use Quittio\Core\Enums\NoteSubjectCode;
 use Quittio\Core\Enums\PaymentMeansCode;
 use Quittio\Core\Enums\TaxPointDateCode;
 use Quittio\Core\Enums\UnitCode;
-use Quittio\Core\Enums\VatCategory;
 use Quittio\Core\Enums\VatExemptionReasonCode;
 use Quittio\Core\Exceptions\InvalidArgumentException;
 use Quittio\Core\Profiles\Syntax;
@@ -81,6 +78,19 @@ use Quittio\Core\Xml\PaymentTermsText;
  */
 final class CiiReader extends XPathReader implements FormatReader
 {
+    /** Element paths of a document level allowance or charge (BG-20, BG-21), see XPathReader::documentAllowances(). */
+    private const array ALLOWANCE_CHARGE = [
+        'node' => 'ram:SpecifiedTradeAllowanceCharge',
+        'indicator' => 'ram:ChargeIndicator/udt:Indicator',
+        'amount' => 'ram:ActualAmount',
+        'category' => 'ram:CategoryTradeTax/ram:CategoryCode',
+        'rate' => 'ram:CategoryTradeTax/ram:RateApplicablePercent',
+        'base' => 'ram:BasisAmount',
+        'percent' => 'ram:CalculationPercent',
+        'reason' => 'ram:Reason',
+        'reasonCode' => 'ram:ReasonCode',
+    ];
+
     /** Deepest accepted sub line hierarchy (ParentLineID chains). */
     public const int MAX_SUBLINE_DEPTH = 32;
 
@@ -153,8 +163,8 @@ final class CiiReader extends XPathReader implements FormatReader
             delivery: $this->delivery($deliveryNode),
             invoicingPeriod: $this->period($settlement, 'ram:BillingSpecifiedPeriod'),
             paymentInstructions: $this->paymentInstructions($settlement),
-            allowances: $this->documentAllowances($settlement),
-            charges: $this->documentCharges($settlement),
+            allowances: $this->documentAllowances($settlement, self::ALLOWANCE_CHARGE),
+            charges: $this->documentCharges($settlement, self::ALLOWANCE_CHARGE),
             totals: $declaredTotals,
             vatBreakdown: $declaredBreakdown,
             attachments: $this->attachments($agreement),
@@ -606,59 +616,6 @@ final class CiiReader extends XPathReader implements FormatReader
         return $references;
     }
 
-    /**
-     * @return list<DocumentAllowance>
-     */
-    private function documentAllowances(DOMElement $settlement): array
-    {
-        $result = [];
-        foreach ($this->nodes($settlement, 'ram:SpecifiedTradeAllowanceCharge') as $node) {
-            if ($this->chargeIndicator($node, 'ram:ChargeIndicator/udt:Indicator') !== false) {
-                continue;
-            }
-            $result[] = new DocumentAllowance(
-                amount: $this->money($this->value($node, 'ram:ActualAmount'), $this->currency, 'BT-92'),
-                vatCategory: $this->category($this->value($node, 'ram:CategoryTradeTax/ram:CategoryCode'), 'BT-95'),
-                vatRate: $this->decimal($this->value($node, 'ram:CategoryTradeTax/ram:RateApplicablePercent'), 'BT-96'),
-                baseAmount: $this->money($this->value($node, 'ram:BasisAmount'), $this->currency, 'BT-93'),
-                percent: $this->decimal($this->value($node, 'ram:CalculationPercent'), 'BT-94'),
-                reason: $this->value($node, 'ram:Reason'),
-                reasonCode: $this->code($this->value($node, 'ram:ReasonCode'), AllowanceReasonCode::class, 'BT-98'),
-            );
-        }
-
-        return $result;
-    }
-
-    /**
-     * @return list<DocumentCharge>
-     */
-    private function documentCharges(DOMElement $settlement): array
-    {
-        $result = [];
-        foreach ($this->nodes($settlement, 'ram:SpecifiedTradeAllowanceCharge') as $node) {
-            $isCharge = $this->chargeIndicator($node, 'ram:ChargeIndicator/udt:Indicator');
-            if ($isCharge === null) {
-                // Reported here only, documentAllowances() skips these entries as well.
-                $this->invalidChargeIndicator($node, 'ram:ChargeIndicator/udt:Indicator', 'BG-20');
-            }
-            if ($isCharge !== true) {
-                continue;
-            }
-            $result[] = new DocumentCharge(
-                amount: $this->money($this->value($node, 'ram:ActualAmount'), $this->currency, 'BT-99'),
-                vatCategory: $this->category($this->value($node, 'ram:CategoryTradeTax/ram:CategoryCode'), 'BT-102'),
-                vatRate: $this->decimal($this->value($node, 'ram:CategoryTradeTax/ram:RateApplicablePercent'), 'BT-103'),
-                baseAmount: $this->money($this->value($node, 'ram:BasisAmount'), $this->currency, 'BT-100'),
-                percent: $this->decimal($this->value($node, 'ram:CalculationPercent'), 'BT-101'),
-                reason: $this->value($node, 'ram:Reason'),
-                reasonCode: $this->code($this->value($node, 'ram:ReasonCode'), ChargeReasonCode::class, 'BT-105'),
-            );
-        }
-
-        return $result;
-    }
-
     private function totals(DOMElement $settlement, ?string $taxCurrency, bool $hasLines): ?Totals
     {
         $node = $this->node($settlement, 'ram:SpecifiedTradeSettlementHeaderMonetarySummation');
@@ -1026,17 +983,5 @@ final class CiiReader extends XPathReader implements FormatReader
     private static function nonEmpty(?string $value): ?string
     {
         return $value === null || $value === '' ? null : $value;
-    }
-
-    private function category(?string $value, string $bt): VatCategory
-    {
-        $category = $value === null ? null : VatCategory::tryFrom($value);
-        if ($category === null) {
-            $this->finding('QUITTIO-READER-VAT-CATEGORY', sprintf('The VAT category code "%s" (%s) is unknown; "S" is assumed.', $value ?? '', $bt), $bt, Severity::Error);
-
-            return VatCategory::StandardRate;
-        }
-
-        return $category;
     }
 }
