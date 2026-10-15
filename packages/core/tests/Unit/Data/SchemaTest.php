@@ -49,3 +49,8 @@ it('documents business terms in the field reference', function () {
         ->and($markdown)->toContain('`lines[].item.name`')
         ->and($markdown)->toContain('PDF only');
 });
+
+it('reports JSON that cannot be parsed as a finding of the schema check', function () {
+    expect((new JsonSchemaValidator)->validate('{"number":'))->toHaveCount(1)
+        ->and((new JsonSchemaValidator)->validate('{"number":')[0])->toStartWith('/: invalid JSON:');
+})->skip(! JsonSchemaValidator::available(), 'opis/json-schema is not installed');

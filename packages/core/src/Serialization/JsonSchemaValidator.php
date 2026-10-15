@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Quittio\Core\Serialization;
 
+use JsonException;
 use Opis\JsonSchema\Errors\ErrorFormatter;
 use Opis\JsonSchema\Validator;
 use Quittio\Core\Exceptions\RuntimeException;
@@ -28,7 +29,11 @@ final class JsonSchemaValidator
             throw new RuntimeException('Install opis/json-schema to validate JSON input against the schema.');
         }
 
-        $data = json_decode($json, false, 512, JSON_THROW_ON_ERROR);
+        try {
+            $data = json_decode($json, false, 512, JSON_THROW_ON_ERROR);
+        } catch (JsonException $e) {
+            return ['/: invalid JSON: '.$e->getMessage()];
+        }
         $schema = (string) file_get_contents(JsonSchemaGenerator::defaultPath());
 
         $validator = new Validator;

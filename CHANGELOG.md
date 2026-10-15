@@ -6,6 +6,7 @@ All notable changes to this project are documented in this file. The format foll
 
 ### Added
 
+- Tests: generated round trips through CII and UBL, fuzzing of the XML, PDF and array input, and tests for formats, mapping, serialisation, the PDF parser, mail attachments, a second boot and the escaping of the Blade templates.
 - Documentation: [Versioning and compatibility](docs/compatibility.md) with the backwards compatibility promise; `ARCHITECTURE.md`, decision records in `docs/adr/`, `RELEASING.md`, a reworked `CONTRIBUTING.md`, an FAQ page; issue and pull request templates, `CODEOWNERS` and response times in `SECURITY.md`. Classes outside the public API (`XPathReader`, `XmlBuilder`, `Pdf\Parsing`, `CarryOver`, `ConfigMapper`, the command and preview classes, …) are marked `@internal`.
 - Documents (quotes, reminders, …) dispatch `DocumentRendering` and `DocumentRendered` in Laravel; `PendingDocument` has `option()` (core and Laravel), `data()`, `options()` and is `Macroable` (Laravel).
 - `Quittio::setPostProcessor()` replaces the PDF/A and XML embedding for renderers that cannot embed. Profiles describe their embedded XML with the capability `DescribesEmbeddedXml` (XMP description and `fx:Version`) instead of the file name deciding it.
@@ -18,6 +19,7 @@ All notable changes to this project are documented in this file. The format foll
 
 - README and documentation mark the Managed layer `quittio/managed` as not released yet; its documentation page is a preview and is left out of `llms.txt`, `llms-full.txt` and the MCP index.
 - The documentation is built and link-checked on pull requests.
+- Visual baselines are written only with `QUITTIO_UPDATE_BASELINES=1`; a missing baseline fails the test. The default Blade partials that print pre-escaped HTML carry a warning comment.
 - Queued `RenderInvoice` jobs store the render options as versioned JSON (`RenderOptions::toArray()`/`fromArray()`) instead of a PHP-serialised object, so an update of Quittio no longer breaks jobs in the queue; jobs queued by 0.1.0 still run. Errors that another attempt cannot fix (validation, invalid data, configuration) fail the job at once instead of three times; other errors are retried after 10 and 60 seconds. Inside a database transaction the job is dispatched after the commit (`quittio.queue.after_commit`).
 - Every exception that Quittio throws implements `QuittioException`: invalid arguments and runtime errors are now `Quittio\Core\Exceptions\InvalidArgumentException`, `RuntimeException` or `LogicException`, which extend the PHP classes of the same name, so existing `catch` blocks keep working.
 - Country pack discovery keeps its result in `bootstrap/cache/quittio-countries.php` (and per process) until Composer changes the installed packages, instead of reading `vendor/composer/installed.json` whenever the core is built.
@@ -37,6 +39,7 @@ All notable changes to this project are documented in this file. The format foll
 
 ### Fixed
 
+- `InvoiceData::fromJson()` threw PHP's `JsonException` for JSON that cannot be parsed (empty, too deep, invalid UTF-8); it now throws a `HydrationException`. `JsonSchemaValidator::validate()` reports such input as a finding.
 - `DE-USTG-08` names the limit of `Flags::SMALL_AMOUNT_LIMIT` (250.00 EUR) instead of a second, hard-coded value. The English fallback messages of four UStG rules matched their translations no longer; a test now compares every rule's fallback with `lang/en/rules.php` and requires a German message.
 - The field reference documents the UBL credit note path of BT-129 and BT-130 (`cbc:CreditedQuantity`) and no longer shows pseudo-XPath for BT-110 and BT-111. A test now evaluates every documented CII and UBL path against the XML of the sample invoices and of the official XRechnung test suite.
 - A custom `TotalsCalculator` was bypassed by the VAT alignment of partial cancellations; `Cancellation::of()` and `DeclaredAmounts::needed()` accept the calculator, and `Quittio::cancellation()` passes its own.

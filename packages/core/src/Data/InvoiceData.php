@@ -6,6 +6,7 @@ namespace Quittio\Core\Data;
 
 use Brick\Math\RoundingMode;
 use Brick\Money\Money;
+use JsonException;
 use Quittio\Core\Codes\RawCode;
 use Quittio\Core\Data\AllowanceCharge\DocumentAllowance;
 use Quittio\Core\Data\AllowanceCharge\DocumentCharge;
@@ -29,6 +30,7 @@ use Quittio\Core\Data\Totals\Totals;
 use Quittio\Core\Data\Totals\VatBreakdown;
 use Quittio\Core\Enums\InvoiceTypeCode;
 use Quittio\Core\Enums\TaxPointDateCode;
+use Quittio\Core\Exceptions\HydrationException;
 use Quittio\Core\Exceptions\InvalidArgumentException;
 use Quittio\Core\Mapping\Attributes as Q;
 use Quittio\Core\Profiles\ProfileLevel;
@@ -257,7 +259,11 @@ final readonly class InvoiceData
 
     public static function fromJson(string $json): self
     {
-        $data = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
+        try {
+            $data = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
+        } catch (JsonException $e) {
+            throw HydrationException::at('', 'Invalid JSON: '.$e->getMessage(), $e);
+        }
         if (! is_array($data)) {
             throw new InvalidArgumentException('Invoice JSON must decode to an object.');
         }

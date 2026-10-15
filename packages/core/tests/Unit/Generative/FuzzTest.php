@@ -178,4 +178,4 @@ it('refuses JSON that is not valid with a QuittioException', function (string $j
     expect(fuzzProblem(fn () => InvoiceData::fromJson($json)))->toBeNull();
 })->with([
     'empty' => [''], 'too deep' => [str_repeat('[', 5000).str_repeat(']', 5000)], 'invalid UTF-8' => ["{\"number\": \"\xC3\x28\"}"],
-])->skip('bug: InvoiceData::fromJson() lets the JsonException of json_decode() through (packages/core/src/Data/InvoiceData.php, fromJson), which is no QuittioException');
+]);
