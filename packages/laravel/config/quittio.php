@@ -155,8 +155,9 @@ return [
         // ZUGFeRD is always PDF/A; PDFs with watermark (previews) never.
         'pdfa' => true,
 
-        // Font family. Inter is bundled; register further fonts below.
-        'font' => 'inter',
+        // Font family. Geist (default; Latin and Cyrillic) and Inter (also Greek) are bundled;
+        // register further fonts below.
+        'font' => 'geist',
 
         // Additional TrueType fonts: lower-case family => ['R' => 'Regular.ttf',
         // 'B' => 'Bold.ttf', 'I' => 'Italic.ttf', 'BI' => 'BoldItalic.ttf'].
@@ -171,7 +172,7 @@ return [
 
         // Colours as hex values: primary = headings and lines, text, muted = secondary text,
         // secondary = accents (null = the primary colour).
-        'colors' => ['primary' => '#1e40af', 'text' => '#111827', 'muted' => '#6b7280', 'secondary' => null],
+        'colors' => ['primary' => '#2741d9', 'text' => '#15171c', 'muted' => '#5f6470', 'secondary' => null],
 
         // Small sender line above the address field. null = generated from the seller.
         'sender_line' => null,
@@ -191,8 +192,8 @@ return [
         // texts are in the e-invoice XML, where "*" or "_" stay visible characters.
         'markdown' => false,
 
-        // Print fold and punch marks for window envelopes.
-        'fold_marks' => false,
+        // Print fold and punch marks for window envelopes (at the left edge of the first page).
+        'fold_marks' => true,
 
         // Payment QR code in the PDF.
         // type: 'auto' (Germany: GiroCode, the EPC QR code for banking apps), 'girocode',

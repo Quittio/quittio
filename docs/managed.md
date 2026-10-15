@@ -306,7 +306,7 @@ $issuer->forceFill([
     'bank_accounts' => [['iban' => 'DE02120300000000202051', 'bic' => 'BYLADEM1001', 'name' => 'Muster GmbH']],
     'defaults' => ['locale' => 'de', 'due_days' => 14, 'currency' => 'EUR', 'format' => 'zugferd'],
     'tax_settings' => ['small_business' => false],
-    'branding' => ['logo' => storage_path('app/logo.png'), 'colors' => ['primary' => '#1e40af']],
+    'branding' => ['logo' => storage_path('app/logo.png'), 'colors' => ['primary' => '#0f766e']],
     'texts' => ['de' => ['intro' => 'Vielen Dank für Ihren Auftrag.', 'payment_terms' => 'Zahlbar innerhalb von 14 Tagen.']],
     'numbering' => ['pattern' => 'RE-{Y}-{seq:5}'],
     'is_default' => true,
@@ -355,7 +355,7 @@ columns accept arrays only.
 | `texts.{locale}.footer_columns` | Footer columns, a list of lists of strings |
 | `branding.template` | PDF template (see [Branding check](#branding-check)) |
 | `branding.logo` | Logo: local file, data URI or public http(s) URL |
-| `branding.colors` | `primary` (default `#1e40af`), `text` (`#111827`), `muted` (`#6b7280`), `secondary` |
+| `branding.colors` | `primary` (default `#2741d9`), `text` (`#15171c`), `muted` (`#5f6470`), `secondary` |
 | `branding.font`, `sender_line`, `letter_layout` | Font, sender line above the address, letter layout (e.g. DIN 5008) |
 | `branding.payment_qr` | `auto` (default), `girocode`, `swiss-qr-bill` or `none` |
 

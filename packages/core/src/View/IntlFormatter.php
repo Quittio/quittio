@@ -83,7 +83,8 @@ final class IntlFormatter implements Formatter
         [$integer, $fraction] = array_pad(explode('.', $plain, 2), 2, '');
 
         [$group, $separator] = $this->separators($locale);
-        $integer = strrev(implode($group, str_split(strrev($integer), 3)));
+        // Groups of three digits from the right; the separator may be multibyte (not reversed).
+        $integer = implode($group, array_reverse(array_map(strrev(...), str_split(strrev($integer), 3))));
 
         return ($negative ? '-' : '').$integer.($fraction === '' ? '' : $separator.$fraction);
     }
@@ -98,7 +99,8 @@ final class IntlFormatter implements Formatter
             $group = $formatter->getSymbol(NumberFormatter::GROUPING_SEPARATOR_SYMBOL);
             $decimal = $formatter->getSymbol(NumberFormatter::DECIMAL_SEPARATOR_SYMBOL);
             if ($group !== false && $decimal !== false && $decimal !== '') {
-                return [$group, $decimal];
+                // ICU groups French numbers with a narrow no-break space, which not every font has.
+                return [str_replace("\u{202F}", "\u{00A0}", $group), $decimal];
             }
         }
 

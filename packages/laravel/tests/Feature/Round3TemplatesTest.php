@@ -72,7 +72,7 @@ it('shows the refund of a negative invoice as a positive amount in the Blade tem
 
     $html = (string) Quittio::make($cancellation)->format('html')->validate(false)->render()->html();
 
-    expect(preg_match('#<tr class="due"><td>([^<]*)</td><td class="right">([^<]*)</td>#u', $html, $due))->toBe(1)
+    expect(preg_match('#<tr class="grand"><td class="label">([^<]*)</td><td class="right amount">([^<]*)</td>#u', $html, $due))->toBe(1)
         ->and($due[1])->toBe('Erstattungsbetrag')
         ->and($due[2])->toContain('2.747,71')->not->toContain('-')->not->toContain('−');
 });

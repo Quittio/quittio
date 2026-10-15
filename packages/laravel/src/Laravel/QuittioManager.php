@@ -435,7 +435,7 @@ class QuittioManager
             tempDir: $settings->nullableString('pdf.cache_path'),
             fonts: $fonts,
             fontDirectories: $this->fontDirectories($settings),
-            defaultFont: $settings->string('pdf.font', 'inter'),
+            defaultFont: $settings->string('pdf.font', 'geist'),
             pdfaAuto: $options->bool('pdfa_auto', false),
             simpleTables: $options->bool('simple_tables', false),
         );

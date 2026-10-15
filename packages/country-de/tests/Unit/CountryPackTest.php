@@ -106,10 +106,13 @@ it('places the address field and marks according to DIN 5008', function () {
     $formB = $quittio->make(Scenarios::make('simple'))->format('html')->render()->html();
     $formA = $quittio->make(Scenarios::make('simple')->presentation(fn ($p) => $p->with(['letterLayout' => 'din5008a'])))->format('html')->render()->html();
 
-    expect($formB)->toContain('.letterhead td { height: 25mm; }')
+    // The letterhead starts at the top margin of 15 mm and ends at the address field.
+    expect($formB)->toContain('.letterhead td { height: 30mm; }')
+        ->and($formB)->toContain('.address { position: absolute; top: 45mm; left: 20mm; width: 85mm;')
         ->and($formB)->toContain('top: 105mm;')
         ->and($formB)->toContain('top: 148.5mm;')
-        ->and($formA)->toContain('.letterhead td { height: 7mm; }')
+        ->and($formA)->toContain('.letterhead td { height: 12mm; }')
+        ->and($formA)->toContain('.address { position: absolute; top: 27mm;')
         ->and($formA)->toContain('top: 87mm;');
 });
 

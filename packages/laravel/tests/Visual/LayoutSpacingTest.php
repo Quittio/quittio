@@ -39,17 +39,21 @@ function popplerAvailable(): bool
     return $code === 0;
 }
 
-it('separates the payment blocks', function () {
+it('puts payment terms and bank details side by side below their headings', function () {
     $pdf = Quittio::make(Scenarios::make('simple')->build())->format('pdf')->validate(false)->render()->pdf();
-    // "Skonto" ends the payment terms, "Bankverbindung" starts the bank details (normal line pitch is about 4 mm).
-    $gap = wordTop($pdf, 'Bankverbindung') - wordTop($pdf, 'Skonto');
+    // "Zahlung" heads the payment terms, "Bankverbindung" the bank details next to them; the
+    // heading is followed by more than its line height (cell padding, not block margins).
+    $heading = wordTop($pdf, 'Zahlung');
 
-    expect($gap)->toBeGreaterThan(7.0);
+    expect(abs(wordTop($pdf, 'Bankverbindung') - $heading))->toBeLessThan(0.5)
+        ->and(abs(wordTop($pdf, 'DE02') - wordTop($pdf, 'Bitte')))->toBeLessThan(0.5)
+        ->and(wordTop($pdf, 'Bitte') - $heading)->toBeGreaterThan(5.2)
+        ->and(wordTop($pdf, 'Skonto') - wordTop($pdf, 'Bitte'))->toBeGreaterThan(4.5);
 })->group('visual')->skip(fn () => ! popplerAvailable(), 'pdftotext is not available.');
 
 it('keeps the address below the sender line', function () {
     $pdf = Quittio::make(Scenarios::make('simple')->build())->format('pdf')->validate(false)->render()->pdf();
-    // The sender line (6.5 pt) is followed by 1 mm padding, the border and 2 mm space.
+    // The sender line (9 pt) is followed by 1.2 mm padding, the rule and 2.2 mm space.
     $gap = wordTop($pdf, 'Kunde') - wordTop($pdf, 'Musterstadt');
 
     expect($gap)->toBeGreaterThan(4.5);
@@ -62,12 +66,14 @@ it('keeps the address field at the letter layout position, whatever the logo hei
     $presentation = new Presentation(letterLayout: $layout, logo: $logo);
 
     $pdf = Quittio::make(Scenarios::make('simple')->build())->format('pdf')->presentation($presentation)->validate(false)->render()->pdf();
-    // DIN 5008: the sender line closes the 17.7 mm "Zusatz- und Vermerkzone", the recipient
-    // starts in the "Anschriftzone" below it.
+    // The sender line at the top of the address field, the recipient right below it.
+    $sender = wordTop($pdf, 'Musterstadt');
     $recipient = wordTop($pdf, 'Kunde');
 
-    expect($recipient)->toBeGreaterThan($top + 17.5)
-        ->and($recipient)->toBeLessThan($top + 20.0);
+    expect($sender)->toBeGreaterThan($top - 0.5)
+        ->and($sender)->toBeLessThan($top + 1.5)
+        ->and($recipient)->toBeGreaterThan($top + 6.5)
+        ->and($recipient)->toBeLessThan($top + 9.0);
 })->with([
     'DIN 5008 form A' => ['din5008a', 27.0],
     'DIN 5008 form B' => ['din5008b', 45.0],

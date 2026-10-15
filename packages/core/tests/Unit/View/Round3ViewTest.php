@@ -185,7 +185,7 @@ it('shows the refund of a negative invoice as a positive amount and keeps the XM
     $html = (string) $quittio->make($cancellation)->format('html')->render()->html();
     $xml = $quittio->make($quittio->cancellation($original, 'CN-1', 'Duplicate', 'negative_invoice'))->format('cii')->render()->xml();
 
-    expect(preg_match('#<tr class="due"><td>([^<]*)</td><td class="right">([^<]*)</td>#u', $html, $due))->toBe(1)
+    expect(preg_match('#<tr class="grand"><td class="label">([^<]*)</td><td class="right amount">([^<]*)</td>#u', $html, $due))->toBe(1)
         ->and($due[1])->toBe('Amount to be refunded')
         ->and($due[2])->not->toContain('-')->not->toContain('−')->toContain('1,190.00')
         ->and($xml)->toContain('<ram:DuePayableAmount>-1190.00</ram:DuePayableAmount>');

@@ -24,14 +24,14 @@ final class MpdfRenderer implements PdfRenderer
 {
     /**
      * @param  array<string, array<string, string>>  $fonts  additional fonts: family => [R => file, B => file, I => file, BI => file]
-     * @param  list<string>  $fontDirectories  searched first, before the bundled Inter and the fonts of mPDF,
-     *         so that files with the same name (e.g. a published and edited Inter) replace them
+     * @param  list<string>  $fontDirectories  searched first, before the bundled Geist and Inter and the fonts
+     *         of mPDF, so that files with the same name (e.g. a published and edited Inter) replace them
      */
     public function __construct(
         private readonly ?string $tempDir = null,
         private readonly array $fonts = [],
         private readonly array $fontDirectories = [],
-        private readonly string $defaultFont = 'inter',
+        private readonly string $defaultFont = 'geist',
         private readonly bool $pdfaAuto = false,
         // simpleTables drops the borders of table cells (row lines, totals line) and is not faster.
         private readonly bool $simpleTables = false,
@@ -45,29 +45,18 @@ final class MpdfRenderer implements PdfRenderer
     public function render(RenderRequest $request): string
     {
         try {
-            $mpdf = $this->create($request);
-
-            $mpdf->SetTitle($request->title);
-            if ($request->author !== null) {
-                $mpdf->SetAuthor($request->author);
+            // A line table across pages gets a carry-over at each page break: laid out again with
+            // the carry rows reserved, then split at the resulting page breaks (see CarryOver).
+            $carryOver = CarryOver::parse($request->html);
+            $mpdf = $this->write($request, $carryOver?->anchored() ?? $request->html);
+            if ($carryOver !== null && $carryOver->breaks(CarryOver::pages($mpdf->internallink)) !== []) {
+                $first = $carryOver->breaks($this->layout($request, $carryOver->firstPage()));
+                $break = array_key_first($first);
+                if ($break !== null) {
+                    $following = $carryOver->breaks($this->layout($request, $carryOver->followingPages($break, $first[$break])), $break + 1);
+                    $mpdf = $this->write($request, $carryOver->paginated([$break => $first[$break]] + $following));
+                }
             }
-            if ($request->subject !== null) {
-                $mpdf->SetSubject($request->subject);
-            }
-            $mpdf->SetCreator('Quittio');
-
-            if ($request->embedded !== null) {
-                $mpdf->SetAssociatedFiles([[
-                    'name' => $request->embedded->filename,
-                    'mime' => 'text/xml',
-                    'description' => $request->embedded->description,
-                    'AFRelationship' => $request->embedded->relationship,
-                    'content' => $request->embedded->content,
-                ]]);
-                $mpdf->SetAdditionalXmpRdf(FacturXXmp::forEmbedded($request->embedded));
-            }
-
-            $mpdf->WriteHTML($request->html);
 
             $output = $mpdf->Output('', Destination::STRING_RETURN);
             if (! is_string($output)) {
@@ -78,6 +67,51 @@ final class MpdfRenderer implements PdfRenderer
         } catch (MpdfException $e) {
             throw new PdfException('PDF rendering failed: '.$e->getMessage(), 0, $e);
         }
+    }
+
+    /**
+     * A configured mPDF instance with the HTML written, ready for output.
+     */
+    private function write(RenderRequest $request, string $html): Mpdf
+    {
+        $mpdf = $this->create($request);
+
+        $mpdf->SetTitle($request->title);
+        if ($request->author !== null) {
+            $mpdf->SetAuthor($request->author);
+        }
+        if ($request->subject !== null) {
+            $mpdf->SetSubject($request->subject);
+        }
+        $mpdf->SetCreator('Quittio');
+
+        if ($request->embedded !== null) {
+            $mpdf->SetAssociatedFiles([[
+                'name' => $request->embedded->filename,
+                'mime' => 'text/xml',
+                'description' => $request->embedded->description,
+                'AFRelationship' => $request->embedded->relationship,
+                'content' => $request->embedded->content,
+            ]]);
+            $mpdf->SetAdditionalXmpRdf(FacturXXmp::forEmbedded($request->embedded));
+        }
+
+        $mpdf->WriteHTML($html);
+
+        return $mpdf;
+    }
+
+    /**
+     * Page of each table row (see CarryOver) when the HTML is laid out.
+     *
+     * @return array<int, int>
+     */
+    private function layout(RenderRequest $request, string $html): array
+    {
+        $mpdf = $this->create($request);
+        $mpdf->WriteHTML($html);
+
+        return CarryOver::pages($mpdf->internallink);
     }
 
     private function create(RenderRequest $request): Mpdf
@@ -93,6 +127,9 @@ final class MpdfRenderer implements PdfRenderer
         }
 
         $fontData = [
+            'geist' => ['R' => 'Geist-Regular.ttf', 'B' => 'Geist-Bold.ttf', 'I' => 'Geist-Italic.ttf', 'BI' => 'Geist-BoldItalic.ttf'],
+            // mPDF knows only normal and bold: the medium weights of Geist as a family of their own.
+            'geistmedium' => ['R' => 'Geist-Medium.ttf', 'B' => 'Geist-SemiBold.ttf'],
             'inter' => ['R' => 'Inter-Regular.ttf', 'B' => 'Inter-Bold.ttf', 'I' => 'Inter-Italic.ttf', 'BI' => 'Inter-BoldItalic.ttf'],
             ...$this->fonts,
         ];
@@ -102,7 +139,7 @@ final class MpdfRenderer implements PdfRenderer
             'format' => $request->paper,
             'tempDir' => $tempDir,
             // The first directory with the file wins: configured directories before the bundled ones.
-            'fontDir' => [...$this->fontDirectories, dirname(__DIR__, 3).'/resources/fonts/inter', ...$defaultFontDirs],
+            'fontDir' => [...$this->fontDirectories, dirname(__DIR__, 3).'/resources/fonts/geist', dirname(__DIR__, 3).'/resources/fonts/inter', ...$defaultFontDirs],
             'fontdata' => [...$defaultFontData, ...$fontData],
             'default_font' => $request->font ?? $this->defaultFont,
             'margin_left' => 20,

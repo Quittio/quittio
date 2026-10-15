@@ -193,7 +193,7 @@ Used by Managed numbering (see [Managed: numbering](managed.md#numbering)).
 | `foldMarks` | `[]` | distances of the fold marks from the top edge |
 | `punchMark` | null | distance of the punch mark |
 
-`letterheadHeight(float $pageMarginTop)` returns the space above the address field (`addressTop` minus the top page margin of 20 mm in the default templates). See [templates: letter layouts](templates.md#letter-layouts) for how the default templates use them.
+`letterheadHeight(float $pageMarginTop)` returns the space above the address field (`addressTop` minus the top page margin of 15 mm of the first page in the default templates). See [templates: letter layouts](templates.md#letter-layouts) for how the default templates use them.
 
 ### VatTerritory
 
@@ -871,9 +871,9 @@ $classes = (new CountryDE)->errorClassification($result);   // ['format' => [...
 | Anschriftzone (recipient, six lines) | 27.3, from 44.7 | 27.3, from 62.7 |
 | Fold marks | 87 and 192 | 105 and 210 |
 | Punch mark | 148.5 | 148.5 |
-| Letterhead height in the default templates (top margin 20) | 7 | 25 |
+| Letterhead height in the default templates (top margin 15) | 12 | 30 |
 
-The address field keeps its position with a logo. Select a layout per invoice with `->presentation(['letterLayout' => 'din5008a'])` or for all invoices with `quittio.pdf.layout`; fold and punch marks are printed with `quittio.pdf.fold_marks = true` (core option `fold_marks`). See [templates](templates.md#letter-layouts).
+The address field keeps its position with a logo. The default templates print the sender line at the top of the address field and the recipient directly below it, inside the envelope window; the zones above are for own templates. Select a layout per invoice with `->presentation(['letterLayout' => 'din5008a'])` or for all invoices with `quittio.pdf.layout`; fold and punch marks are printed unless `quittio.pdf.fold_marks` (core option `fold_marks`) is `false`. See [templates](templates.md#letter-layouts).
 
 ### Translations
 

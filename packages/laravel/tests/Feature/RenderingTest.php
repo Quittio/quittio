@@ -56,7 +56,7 @@ it('renders ZUGFeRD with the Blade template', function () {
         ->and($result->filename())->toBe('Rechnung_RE-2026-0042.pdf')
         ->and($result->as('html')->html())->toContain('<h1>Rechnung</h1>')
         ->and($result->as('html')->html())->toContain('Webentwicklung')
-        ->and($result->as('html')->html())->toContain('Zahlbetrag');
+        ->and($result->as('html')->html())->toContain('Gesamtbetrag');
 });
 
 it('shows the same content as the plain PHP template', function (string $scenario) {
@@ -416,9 +416,9 @@ it('reads and validates files', function () {
 });
 
 it('uses label overrides from the application', function () {
-    app('translator')->addLines(['labels.amount_due' => 'Bitte überweisen'], 'de', 'quittio');
+    app('translator')->addLines(['labels.gross_total' => 'Rechnungsbetrag'], 'de', 'quittio');
 
-    expect(Quittio::make(invoice())->format('html')->render()->html())->toContain('Bitte überweisen');
+    expect(Quittio::make(invoice())->format('html')->render()->html())->toContain('Rechnungsbetrag');
 });
 
 it('applies design settings from the configuration', function () {

@@ -1,51 +1,58 @@
 {{-- Credit notes and negative invoices are refunds: no bank details for a transfer by the buyer. --}}
-@php($accounts = $invoice->payment && ! $invoice->payment->isRefund)
+@php($accounts = $invoice->payment && ! $invoice->payment->isRefund && count($invoice->payment->accounts) > 0)
 {{-- A direct debit collects from the buyer: not on refunds and not on payouts (self-billed). --}}
 @php($debit = $invoice->payment && $invoice->payment->directDebit && ! $invoice->payment->isRefund && ! $invoice->payment->isPayout)
-@if ($invoice->paymentTerms || $accounts || $debit)
-@php($gap = '')
+@php($terms = $invoice->paymentTerms || $debit)
+@php($qr = $invoice->payment ? $invoice->payment->qrCode : null)
+@if ($terms || $accounts)
 <div class="section">
+    {{-- Headings in a row of their own: mPDF ignores the padding of blocks inside table cells. --}}
     <table><tr>
         <td>
-            {{-- Cell padding instead of block margins, which mPDF ignores inside table cells. --}}
-            <table class="stack">
-            @if ($invoice->paymentTerms)
-                <tr><td class="{{ $gap }}">
-                    <div class="section-title">{{ $labels->payment_terms }}</div>
-                    @foreach ($invoice->paymentTerms->lines as $termLine)
-                        <div>{{ $termLine }}</div>
-                    @endforeach
-                </td></tr>
-                @php($gap = 'gap')
-            @endif
-            @if ($accounts)
-                @foreach ($invoice->payment->accounts as $account)
-                    <tr><td class="{{ $gap }}">
-                        <div class="section-title">{{ $invoice->payment->isPayout ? $labels->payout_account : $labels->bank_details }}</div>
-                        @if ($invoice->payee){{ $labels->payee }}: {{ $invoice->payee->name }}<br>@endif
-                        @if ($account->name){{ $labels->account_holder }}: {{ $account->name }}<br>@endif
-                        {{ $labels->iban }}: {{ $account->iban }}<br>
-                        @if ($account->bic){{ $labels->bic }}: {{ $account->bic }}<br>@endif
-                        {{ $labels->remittance }}: {{ $invoice->payment->remittance }}
-                    </td></tr>
-                    @php($gap = 'gap')
-                @endforeach
-            @endif
-            @if ($debit)
-                <tr><td class="{{ $gap }}">{{ $labels->direct_debit }}
-                    @if ($invoice->payment->directDebit->mandate){{ $labels->mandate }}: {{ $invoice->payment->directDebit->mandate }}@endif
-                    @if ($invoice->payment->directDebit->creditorId) · {{ $labels->creditor_id }}: {{ $invoice->payment->directDebit->creditorId }}@endif
-                </td></tr>
-            @endif
+            <table class="payment">
+                <tr>
+                    @if ($terms)<td class="terms section-title">{{ $labels->payment }}</td>@endif
+                    <td class="section-title">@if ($accounts){{ $invoice->payment->isPayout ? $labels->payout_account : $labels->bank_details }}@endif</td>
+                </tr>
+                <tr>
+                    @if ($terms)
+                        <td class="terms">
+                            @if ($invoice->paymentTerms)
+                                @foreach ($invoice->paymentTerms->lines as $termLine)
+                                    <div class="{{ $loop->first ? '' : 'muted' }}">{{ $termLine }}</div>
+                                @endforeach
+                            @endif
+                            @if ($qr && $qr->note)
+                                <div class="muted">{{ $qr->note }}</div>
+                            @endif
+                            @if ($debit)
+                                <div>{{ $labels->direct_debit }}</div>
+                                @if ($invoice->payment->directDebit->mandate || $invoice->payment->directDebit->creditorId)
+                                    <div class="muted">@if ($invoice->payment->directDebit->mandate){{ $labels->mandate }}: {{ $invoice->payment->directDebit->mandate }}@endif @if ($invoice->payment->directDebit->creditorId) · {{ $labels->creditor_id }}: {{ $invoice->payment->directDebit->creditorId }}@endif</div>
+                                @endif
+                            @endif
+                        </td>
+                    @endif
+                    <td>
+                        @if ($accounts)
+                            @foreach ($invoice->payment->accounts as $account)
+                                @if (! $loop->first)<div>&nbsp;</div>@endif
+                                @if ($invoice->payee)<div>{{ $labels->payee }}: {{ $invoice->payee->name }}</div>@endif
+                                {{-- The account holder only if it is not the issuer named above. --}}
+                                @if ($account->name && $account->name !== $invoice->issuer->name && $account->name !== $invoice->issuer->displayName)<div>{{ $account->name }}</div>@endif
+                                <div>{{ $account->iban }}</div>
+                                <div class="muted">@if ($account->bic){{ $account->bic }} · @endif{{ $labels->remittance_short }}: {{ $invoice->payment->remittance }}</div>
+                            @endforeach
+                        @endif
+                    </td>
+                </tr>
             </table>
         </td>
-        @if ($invoice->payment && $invoice->payment->qrCode)
-            <td style="width: 32mm;" class="right">
-                <img src="{{ $invoice->payment->qrCode->dataUri }}" style="width: 28mm; height: 28mm;"><br>
-                <span class="small muted">{{ $labels->girocode }}</span>
-                @if ($invoice->payment->qrCode->note)
-                    <br><span class="small muted">{{ $invoice->payment->qrCode->note }}</span>
-                @endif
+        @if ($qr)
+            {{-- The note on a discounted amount is printed with the payment terms. --}}
+            <td class="qr">
+                <img src="{{ $qr->dataUri }}" style="width: 17mm; height: 17mm;">
+                <div class="qr-caption">{{ $labels->girocode }}</div>
             </td>
         @endif
     </tr></table>

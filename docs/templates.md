@@ -20,27 +20,57 @@ Both print the same document. Partials of the Blade template:
 
 | Partial | Content |
 |---|---|
-| `styles` | CSS: page margins, font, colours, address field position, watermark for browsers |
-| `footer` | `<htmlpagefooter>` with the footer columns and "Page {PAGENO} of {nbpg}" |
-| `marks` | Fold and punch marks (option `fold_marks`) |
-| `sender-line` | Sender line above the address |
+| `styles` | CSS: page margins (first and following pages), font, colours, address field position, watermark for browsers |
+| `header` | `<htmlpageheader>` of the following pages: logo or issuer name, title with number, recipient with customer number, invoice date |
+| `footer` | `<htmlpagefooter>` with up to four footer columns and "Page {PAGENO} of {nbpg}" |
+| `marks` | Fold and punch marks at the left edge of the first page (option `fold_marks`, on by default) |
+| `sender-line` | Sender line at the top of the address field |
 | `recipient` | Address lines of the recipient |
-| `letterhead` | Logo, name of the issuer, the issuer's address when the footer does not start with it |
-| `meta` | Number, date, valid until, reference document, delivery date, service period, customer number, references, VAT identifier and tax number of the seller, tax representative, VAT identifier of the buyer, deliver-to address |
+| `letterhead` | Logo or name of the issuer at the top left, the issuer's address when the footer does not start with it |
+| `meta` | Number, date, valid until, reference document, delivery date, service period, customer number, references, VAT identifier and tax number of the issuer (only when the footer does not show them), VAT identifier of the recipient ("Your VAT ID"), tax representative, deliver-to address |
 | `title` | Title (`<h1>`) |
 | `references` | Preceding invoices ("Reference: invoice … of …") |
 | `intro` | Salutation and intro text |
-| `lines` | Line table: groups with subtotals, optional and alternative markers, item numbers, descriptions, line periods, attributes, line allowances and charges, line notes, serial numbers, sub lines, price base quantity, gross unit price |
+| `lines` | Line table: groups with subtotals, optional and alternative markers, item numbers, descriptions, line periods, attributes, line allowances and charges, line notes, serial numbers, sub lines, price base quantity, gross unit price; a VAT column only with several VAT rates; the rows for the [carry-over](#carry-over-across-pages) |
 | `allowances` | Sum of lines, document allowances and charges (inside `totals`) |
-| `totals` | Net total, VAT rows, gross total, paid amount, rounding, third party payments, amount due, VAT in accounting currency |
+| `totals` | Net total, VAT rows, gross total, paid amount, rounding, third party payments, amount due, VAT in accounting currency; when the amount due is the gross total, it is printed once as gross total |
 | `documents` | Packages, open items, fees, interest, totals and balance of [documents](documents.md) |
 | `tax-notes` | Exemption reasons and regulatory notes (`legalNotes`) |
-| `payment` | Payment terms, bank details or payout account, direct debit notice, payment QR code |
+| `payment` | Payment terms and direct debit notice, next to them the bank details (IBAN; BIC and reference; the account holder only when it is not the issuer) or the payout account, and the payment QR code |
 | `notes` | Other notes |
 | `attachments` | Attached documents (identifier and description) |
 | `closing` | Closing text, acceptance field of quotes |
 
 `php artisan vendor:publish --tag=quittio-views` copies the views to `resources/views/vendor/quittio/templates`; Laravel then uses your copy of a partial instead of the shipped one. The layout takes the partial prefix from `$partials` (default `quittio::templates.default.partials`).
+
+### Page layout
+
+The default templates print A4 pages with 20 mm left and 19 mm right margin in Geist:
+
+- **First page:** logo (at most 14 mm high) or the issuer's name in the primary colour at the top left, 15 mm from the top. The address field of the [letter layout](#letter-layouts) holds the sender line at its top and the recipient directly below; the invoice details are on the right at the same height. Then the title, the line table, the totals with the gross total (or the amount due) in the primary colour, and the payment block.
+- **Following pages:** a header with the logo or name on the left and title with number, recipient with customer number and invoice date on the right; the line table continues below it with its column heads.
+- **Every page:** the footer with up to four columns (address; phone and e-mail; register and legal information; VAT identifier and tax number) and the page number.
+
+### Carry-over across pages
+
+When the line table continues on the next page, the page ends with "Continued on page 2 · Carried forward" and the sum of the line amounts so far (German "Fortsetzung auf Seite 2 · Übertrag"), and the next page starts with "Brought forward from page 1" and the same amount. The mPDF renderer does this: it lays the document out, and only if the line rows land on more than one page, it lays it out again with the carry rows reserved to find the page breaks, splits the table there and inserts the rows. Single-page documents are rendered once.
+
+Own templates get the carry-over with these markers (other renderers and browsers ignore them):
+
+```html
+<table class="lines">
+    <thead>…</thead>
+    <tbody>
+    <!--quittio:rows-->
+    <tr data-carry-over="{{ $line->carryOver }}">…</tr>   {{-- every line row; sub lines and group rows without --}}
+    <!--/quittio:rows-->
+    </tbody>
+</table>
+<!--quittio:carry-out <tr class="carry-out"><td>Continued on page {page}</td><td>{amount}</td></tr> -->
+<!--quittio:carry-in <tr class="carry-in"><td>Brought forward from page {page}</td><td>{amount}</td></tr> -->
+```
+
+`{page}` is the next page in the carry-out row and the previous page in the carry-in row, `{amount}` the `carryOver` of the last line row before the break. The table needs a `<thead>`, and fixed column widths, because each page gets a table of its own.
 
 ## Selecting a template
 
@@ -162,6 +192,7 @@ Values that need formatting are `FormattedValue` objects: `{{ $invoice->totals->
 | `unitPriceBase` | Base quantity with unit, e.g. "100 pcs", for printing with the unit price; `null` for 1 |
 | `showGrossPrice` | Print `grossUnitPrice`: the line's `showGrossPrice` (`LineBuilder::showGrossPrice()`), otherwise the presentation's `showGrossPrices`, and only if a price including VAT exists |
 | `total` | Line net amount (BT-131) |
+| `carryOver` | Sum of the line net amounts up to this line in display order, only in `lineGroups[].lines`: the [carry-over](#carry-over-across-pages) when a page ends after the line |
 | `vatRate` | Rate (BT-152); `null` without rate and for margin schemes and travel agents |
 | `vatCategory` | Category code (BT-151) |
 | `period` | Line period (BG-26) |
@@ -182,7 +213,7 @@ Values that need formatting are `FormattedValue` objects: `{{ $invoice->totals->
 
 | Key | Content |
 |---|---|
-| `label` | Ready text: "19 % VAT on 1.000,00 €", "VAT exempt (…) on …", "No VAT (reverse charge) on …", "0% VAT (zero rate) on …", "Not subject to VAT: …", "Special scheme, no separate VAT statement: …" |
+| `label` | Ready text: "VAT 19%" when it is the only VAT row (its base is the net total printed above), otherwise "19% VAT on 1,000.00 €"; "VAT exempt (…) on …", "No VAT (reverse charge) on …", "0% VAT (zero rate) on …", "Not subject to VAT: …", "Special scheme, no separate VAT statement: …" |
 | `category`, `categoryLabel` | Category code and name |
 | `rate` | Rate (BT-119) |
 | `base` | Taxable amount (BT-116) |
@@ -192,7 +223,7 @@ Values that need formatting are `FormattedValue` objects: `{{ $invoice->totals->
 
 ### Totals
 
-`lineNetSum`, `allowanceSum`, `chargeSum`, `netTotal`, `vatTotal`, `vatTotalInTaxCurrency` (BT-111), `taxCurrencyNote` ("VAT in USD: … (rate … of …)" when an exchange rate is set), `grossTotal`, `prepaid`, `rounding`, `thirdPartyPayments` (list of `description`, `amount`, XRechnung extension), `amountDue` and `amountDueLabel`.
+`lineNetSum`, `allowanceSum`, `chargeSum`, `netTotal`, `vatTotal`, `vatTotalInTaxCurrency` (BT-111), `taxCurrencyNote` ("VAT in USD: … (rate … of …)" when an exchange rate is set), `grossTotal`, `prepaid`, `rounding`, `thirdPartyPayments` (list of `description`, `amount`, XRechnung extension), `amountDue`, `amountDueLabel` and `dueEqualsGross` (nothing prepaid, rounded or paid by third parties, no refund and no payout: the amount due is the gross total, and the default templates print it once, labelled "Gross total").
 
 `amountDueLabel` is "Amount due", "Amount to be refunded" on credit notes and negative invoices, "Amount paid out" on self-billed invoices. On a negative invoice (e.g. a cancellation with the strategy `negative_invoice`) `amountDue` is printed as a positive refund amount; `amountDue->raw` and the XML keep the negative BT-115.
 
@@ -211,28 +242,32 @@ Values that need formatting are `FormattedValue` objects: `{{ $invoice->totals->
 
 ### Payment terms
 
-`null` without payment terms (BT-20) and due date, otherwise `lines` (ready texts: the terms text, "Please pay the amount by …" or on self-billed invoices "We will transfer the amount to your account by …", one text per cash discount, late fee terms), `discounts` (list of `days`, `percent`, `until`, `amount`, `text`) and `dueDate`. On credit notes, offers and invoices without a positive amount due, discounts are shown as agreement ("For payment within 7 days …") without date or amount, and no due date text is added.
+`null` without payment terms (BT-20) and due date, otherwise `lines` (ready texts: the terms text, "Please transfer the amount by …" when the buyer pays by credit transfer, otherwise "Please pay the amount by …", on self-billed invoices "We will transfer the amount to your account by …", one text per cash discount such as "2% discount until 10/10/2026: 2,692.76 €", late fee terms), `discounts` (list of `days`, `percent`, `until`, `amount`, `text`) and `dueDate`. On credit notes, offers and invoices without a positive amount due, discounts are shown as agreement ("For payment within 7 days …") without date or amount, and no due date text is added.
 
 ### Design
 
 | Key | Content |
 |---|---|
-| `primaryColor`, `secondaryColor`, `textColor`, `mutedColor` | Hex colours (`secondaryColor` falls back to the primary colour). The default templates print company name, title and the header of the lines in the primary colour, section titles, the line above the amount due and the mark of highlighted lines in the secondary colour |
+| `primaryColor`, `secondaryColor`, `textColor`, `mutedColor` | Hex colours (`secondaryColor` falls back to the primary colour). The default templates print the issuer's name, the title, the header of the following pages and the gross total or amount due in the primary colour, section titles, the line above the gross total or amount due and the mark of highlighted lines in the secondary colour |
 | `font` | Font family |
+| `fontMedium` | Family for the medium and semibold weights (item names, column heads, title, headings): `geistmedium` for Geist (normal = medium, bold = semibold); `null` for other fonts, the templates use bold |
 | `logo` | Prepared logo ([Logos](#logos)) or `null` |
 | `letterLayout` | Name of the letter layout |
 | `addressTop`, `addressLeft`, `addressWidth`, `addressHeight` | Address field in mm from the top left page corner |
-| `pageMarginTop` | Top page margin of the default templates (20 mm) |
+| `pageMarginTop` | Top page margin of the first page in the default templates (15 mm): the letterhead starts here |
+| `continuationMarginTop` | Top page margin of the following pages (40 mm), below their header |
 | `letterheadHeight` | Space above the address field: `addressTop` − `pageMarginTop` |
-| `addressZoneTop` | Start of the recipient within the address field (DIN 5008 "Anschriftzone", 17.7 mm) |
+| `logoMaxHeight` | Height of the logo: 14 mm, less when the letterhead is lower (2 mm above the address field) |
+| `addressZoneTop` | Start of the DIN 5008 "Anschriftzone" within the address field (17.7 mm), for own templates; the default templates print the recipient directly below the sender line |
 | `senderLineHeight` | Height of the sender line (5 mm) |
-| `noticeZoneHeight` | `addressZoneTop` − `senderLineHeight`: "Zusatz- und Vermerkzone" above the sender line |
-| `foldMarks`, `punchMark` | Mark positions in mm from the top; empty unless the option `fold_marks` is set |
+| `noticeZoneHeight` | `addressZoneTop` − `senderLineHeight`: DIN 5008 "Zusatz- und Vermerkzone" above the sender line, for own templates |
+| `foldMarks`, `punchMark` | Mark positions in mm from the top; empty when the option `fold_marks` is `false` (default `true`) |
 | `paper` | Paper of the presentation |
 | `watermark`, `watermarkCss` | Watermark text, and the same as escaped CSS string for the HTML overlay |
 | `senderLine` | Configured sender line, otherwise "Name · Street · Postcode City" of the issuer |
-| `footerColumns` | Configured columns, otherwise generated: the issuer's address lines; phone, e-mail, VAT identifier, tax number; account holder, IBAN, BIC of the first credit transfer (not on refunds and self-billed invoices); legal registration and additional legal information |
+| `footerColumns` | Configured columns, otherwise generated: the issuer's address lines; phone and e-mail; legal registration and the parts of the additional legal information (split at " · " and line breaks); "VAT ID …" and "Tax no. …" of the issuer. The bank details are in the payment block |
 | `footerHasAddress` | The generated footer starts with the issuer's address |
+| `footerHasTaxIds` | The generated footer shows the issuer's VAT identifier or tax number (they count as printed for the [mandatory field guard](#mandatory-field-guard)); otherwise the default templates print them with the invoice details |
 | `showItemNumbers`, `showGrossPrices` | Presentation switches |
 
 ### documentInfo
@@ -261,8 +296,8 @@ Open items (`dunning.openItems[]`, `statement.items[]`) have `invoiceNumber`, `i
 |---|---|---|---|
 | `template` | `null` | Template of this invoice ([Selecting a template](#selecting-a-template)) | `pdf.template` |
 | `logo` | `null` | Logo ([Logos](#logos)) | `pdf.logo` |
-| `colors` | `null` | `Colors(primary: '#1e40af', text: '#111827', muted: '#6b7280', secondary: null)` | `pdf.colors.primary`, `text`, `muted`, `secondary` |
-| `font` | `null` (`inter`) | Font family ([Fonts](#fonts)) | `pdf.font` |
+| `colors` | `null` | `Colors(primary: '#2741d9', text: '#15171c', muted: '#5f6470', secondary: null)` | `pdf.colors.primary`, `text`, `muted`, `secondary` |
+| `font` | `null` (`geist`) | Font family ([Fonts](#fonts)) | `pdf.font` |
 | `senderLine` | `null` (generated) | Sender line above the address | `pdf.sender_line` |
 | `letterLayout` | `null` (country default) | [Letter layout](#letter-layouts) | `pdf.layout` |
 | `salutation` | `null` | Plain text before the intro | `pdf.texts.salutation` |
@@ -300,9 +335,9 @@ Quittio::make($invoice)
 
 The design of a run is the invoice presentation over the presentation of the call (`->presentation(...)`) over the configured design, property by property: a value that equals the default of an empty `Presentation` (`false`, `[]`, `'auto'`, `'A4'`, `null`) counts as not set and keeps the value below; objects such as `colors` replace the value below as a whole; labels are merged key by key. To reset a configured value for one invoice, name the property in `explicit`: `new Presentation(showGrossPrices: false, paper: 'A4', footerColumns: [], explicit: ['showGrossPrices', 'paper', 'footerColumns'])` switches gross prices off, prints on A4 although `pdf.paper` is Letter and prints no footer columns.
 
-Values are checked when rendering, otherwise a `ConfigurationException` is thrown: colours must be hex values (`#1e40af` or `#fff`), fonts plain family names (letters, digits, space, `_` and `-`, at most 64 characters), letter layouts and payment QR code types must be known. An unknown `pdf.payment_qr.type` already fails when the Laravel configuration is mapped (first use of the facade).
+Values are checked when rendering, otherwise a `ConfigurationException` is thrown: colours must be hex values (`#2741d9` or `#fff`), fonts plain family names (letters, digits, space, `_` and `-`, at most 64 characters), letter layouts and payment QR code types must be known. An unknown `pdf.payment_qr.type` already fails when the Laravel configuration is mapped (first use of the facade).
 
-Render options that affect the design (per call with `->option()`, without Laravel also in `options`): `fold_marks` (bool), `markdown` (bool), `paper` (string), `watermark` (string), `girocode_amount` (`due`, `discounted`) and `logo_cache` (directory).
+Render options that affect the design (per call with `->option()`, without Laravel also in `options`): `fold_marks` (bool, default `true`), `markdown` (bool), `paper` (string), `watermark` (string), `girocode_amount` (`due`, `discounted`) and `logo_cache` (directory).
 
 ## Letter layouts
 
@@ -310,7 +345,7 @@ A letter layout (`Quittio\Core\View\LetterLayout`) fixes the address field on th
 
 The layout is `Presentation::$letterLayout` (`pdf.layout`), otherwise the country pack default, otherwise `free`. Country packs provide layouts with `letterLayouts()`; an unknown name fails with a `ConfigurationException` listing the known layouts.
 
-The German pack provides `din5008a` (address field 27 mm from the top, fold marks at 87 and 192 mm), `din5008b` (45 mm, fold marks at 105 and 210 mm, default) and `free`; the punch mark is at 148.5 mm. The sender line closes the "Zusatz- und Vermerkzone", the recipient starts in the "Anschriftzone" 17.7 mm below the top of the field. Fold and punch marks are printed with `pdf.fold_marks = true` (option `fold_marks`). See [Country packs](country-packs.md).
+The German pack provides `din5008a` (address field 27 mm from the top, fold marks at 87 and 192 mm), `din5008b` (45 mm, fold marks at 105 and 210 mm, default) and `free`; the punch mark is at 148.5 mm. The default templates print the sender line at the top of the address field and the recipient directly below it, both inside the window of a window envelope; own templates can use the DIN 5008 zones (`design.addressZoneTop`, `design.noticeZoneHeight`). Fold and punch marks are printed at the left edge unless `pdf.fold_marks` (option `fold_marks`) is `false`. See [Country packs](country-packs.md).
 
 ## Logos
 
@@ -326,7 +361,14 @@ The German pack provides `din5008a` (address field 27 mm from the top, fold mark
 
 ## Fonts
 
-Inter (Regular, Bold, Italic, Bold Italic) is bundled and the default (`pdf.font = 'inter'`). The font name is used as CSS `font-family` in the templates and as default font of mPDF. Register more fonts in Laravel:
+Two fonts are bundled (SIL Open Font License):
+
+| Family | Files | Script |
+|---|---|---|
+| `geist` (default, `pdf.font = 'geist'`) | Regular, Bold, Italic, Bold Italic; `geistmedium` with Medium and SemiBold | Latin and Cyrillic |
+| `inter` | Regular, Bold, Italic, Bold Italic | Latin, Cyrillic and Greek |
+
+Set `pdf.font = 'inter'` for Greek names or texts: mPDF prints no characters the font does not have. The font name is used as CSS `font-family` in the templates and as default font of mPDF. Register more fonts in Laravel:
 
 ```php
 'font' => 'corporate',
@@ -334,7 +376,7 @@ Inter (Regular, Bold, Italic, Bold Italic) is bundled and the default (`pdf.font
 'font_directories' => [resource_path('fonts')],
 ```
 
-Use lower case family names, as mPDF looks fonts up in lower case. Fonts must be embeddable TrueType fonts (PDF/A embeds all fonts). `php artisan vendor:publish --tag=quittio-fonts` copies Inter to `resources/fonts/quittio/inter`. The Laravel renderer searches `pdf.font_directories`, then `resources/fonts/quittio` and its subdirectories automatically, so fonts placed there only need an entry in `pdf.fonts`. Font files are taken from the first directory that has them: the configured directories come before the bundled Inter and the fonts of mPDF, so a published and edited Inter replaces the bundled one. Without Laravel pass the fonts to the renderer: `new MpdfRenderer(tempDir: …, fonts: [...], fontDirectories: [...], defaultFont: 'corporate')`.
+Use lower case family names, as mPDF looks fonts up in lower case. Fonts must be embeddable TrueType fonts (PDF/A embeds all fonts). `php artisan vendor:publish --tag=quittio-fonts` copies Geist and Inter to `resources/fonts/quittio/geist` and `resources/fonts/quittio/inter`. The Laravel renderer searches `pdf.font_directories`, then `resources/fonts/quittio` and its subdirectories automatically, so fonts placed there only need an entry in `pdf.fonts`. Font files are taken from the first directory that has them: the configured directories come before the bundled fonts and those of mPDF, so a published and edited font replaces the bundled one. Without Laravel pass the fonts to the renderer: `new MpdfRenderer(tempDir: …, fonts: [...], fontDirectories: [...], defaultFont: 'corporate')`.
 
 ## Paper size
 

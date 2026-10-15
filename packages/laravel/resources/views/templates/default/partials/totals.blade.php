@@ -1,27 +1,33 @@
 @if ($invoice->totals && $doc->showTotals)
+@php($totals = $invoice->totals)
 <table class="totals">
-    @if ($invoice->totals->allowanceSum || $invoice->totals->chargeSum)
+    @if ($totals->allowanceSum || $totals->chargeSum)
         @include($partials.'.allowances')
     @endif
-    <tr><td>{{ $labels->net_total }}</td><td class="right">{{ $invoice->totals->netTotal }}</td></tr>
+    <tr><td class="label">{{ $labels->net_total }}</td><td class="right">{{ $totals->netTotal }}</td></tr>
     @foreach ($invoice->vatRows as $row)
-        <tr><td>{{ $row->label }}</td><td class="right">{{ $row->amount }}</td></tr>
+        <tr><td class="label">{{ $row->label }}</td><td class="right">{{ $row->amount }}</td></tr>
     @endforeach
-    <tr><td><strong>{{ $labels->gross_total }}</strong></td><td class="right"><strong>{{ $invoice->totals->grossTotal }}</strong></td></tr>
-    @if ($invoice->totals->prepaid)
-        <tr><td>{{ $labels->prepaid }}</td><td class="right">−{{ $invoice->totals->prepaid }}</td></tr>
-    @endif
-    @if ($invoice->totals->rounding)
-        <tr><td>{{ $labels->rounding }}</td><td class="right">{{ $invoice->totals->rounding }}</td></tr>
-    @endif
-    @foreach ($invoice->totals->thirdPartyPayments as $payment)
-        <tr><td>{{ $payment->description }}</td><td class="right">{{ $payment->amount }}</td></tr>
-    @endforeach
-    @if ($invoice->totals->amountDue)
-        <tr class="due"><td>{{ $invoice->totals->amountDueLabel }}</td><td class="right">{{ $invoice->totals->amountDue }}</td></tr>
+    @if ($totals->amountDue && ! $totals->dueEqualsGross)
+        <tr class="gross"><td class="label">{{ $labels->gross_total }}</td><td class="right">{{ $totals->grossTotal }}</td></tr>
+        @if ($totals->prepaid)
+            <tr><td class="label">{{ $labels->prepaid }}</td><td class="right">−{{ $totals->prepaid }}</td></tr>
+        @endif
+        @if ($totals->rounding)
+            <tr><td class="label">{{ $labels->rounding }}</td><td class="right">{{ $totals->rounding }}</td></tr>
+        @endif
+        @foreach ($totals->thirdPartyPayments as $payment)
+            <tr><td class="label">{{ $payment->description }}</td><td class="right">{{ $payment->amount }}</td></tr>
+        @endforeach
+        <tr class="gap"><td></td><td></td></tr>
+        <tr class="grand"><td class="label">{{ $totals->amountDueLabel }}</td><td class="right amount">{{ $totals->amountDue }}</td></tr>
+    @else
+        {{-- Nothing prepaid or rounded: the amount due is the gross total, printed once. --}}
+        <tr class="gap"><td></td><td></td></tr>
+        <tr class="grand"><td class="label">{{ $labels->gross_total }}</td><td class="right amount">{{ $totals->amountDue ?? $totals->grossTotal }}</td></tr>
     @endif
 </table>
-@if ($invoice->totals->taxCurrencyNote)
-    <p class="small muted right">{{ $invoice->totals->taxCurrencyNote }}</p>
+@if ($totals->taxCurrencyNote)
+    <p class="small muted right">{{ $totals->taxCurrencyNote }}</p>
 @endif
 @endif

@@ -43,7 +43,7 @@
             @foreach ($info->dunning->interest as $interest)
                 <tr><td>{{ $interest->description }}</td><td class="right">{{ $interest->amount }}</td></tr>
             @endforeach
-            <tr class="due"><td>{{ $labels->dunning_total }}</td><td class="right">{{ $info->dunning->total }}</td></tr>
+            <tr class="grand"><td>{{ $labels->dunning_total }}</td><td class="right amount">{{ $info->dunning->total }}</td></tr>
         </table>
         @if ($info->dunning->deadlineText)
             <p>{{ $info->dunning->deadlineText }}</p>
@@ -56,7 +56,7 @@
             @if ($info->statement->openingBalance)
                 <tr><td>{{ $labels->opening_balance }}</td><td class="right">{{ $info->statement->openingBalance }}</td></tr>
             @endif
-            <tr class="due"><td>{{ $labels->balance }}</td><td class="right">{{ $info->statement->balance }}</td></tr>
+            <tr class="grand"><td>{{ $labels->balance }}</td><td class="right amount">{{ $info->statement->balance }}</td></tr>
         </table>
     @endif
 @endif

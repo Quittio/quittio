@@ -46,8 +46,11 @@ final class ViewModelFactory
 
     private Presentation $presentation;
 
-    /** Top page margin of the default templates in millimetres. */
-    public const float PAGE_MARGIN_TOP = 20.0;
+    /** Top page margin of the first page of the default templates in millimetres (the letterhead starts here). */
+    public const float PAGE_MARGIN_TOP = 15.0;
+
+    /** Top page margin of the following pages, below their header (logo, title, number and buyer). */
+    public const float CONTINUATION_MARGIN_TOP = 40.0;
 
     public const array PAYMENT_QR_MODES = [Presentation::PAYMENT_QR_AUTO, Presentation::PAYMENT_QR_GIROCODE, Presentation::PAYMENT_QR_SWISS, Presentation::PAYMENT_QR_NONE];
 
@@ -64,6 +67,9 @@ final class ViewModelFactory
 
     /** Self-billed invoice (section 14 (2) sentence 5 UStG): the buyer issues the document. */
     private bool $selfBilled = false;
+
+    /** @var array<string, string> footer entries that print issuer fields (see {@see self::footerColumns()}) */
+    private array $footerAliases = [];
 
     public function build(InvoiceData $invoice, ViewContext $context = new ViewContext): InvoiceViewModel
     {
@@ -165,10 +171,8 @@ final class ViewModelFactory
         $issuer = $this->selfBilled ? $buyer : $seller;
         $design = $this->design($issuer);
         $this->aliases = $this->selfBilled ? ['issuer' => 'buyer', 'recipient' => 'seller'] : ['issuer' => 'seller', 'recipient' => 'buyer'];
-        if ($design['footerHasAddress'] === true) {
-            // The generated footer starts with the issuer's address lines.
-            $this->aliases['design.footerColumns[0]'] = 'issuer.address.lines';
-        }
+        // The generated footer prints the issuer's address lines and tax identifiers.
+        $this->aliases = [...$this->aliases, ...$this->footerAliases];
 
         return [
             'number' => $invoice->number,
@@ -671,6 +675,7 @@ final class ViewModelFactory
             $id = $line->presentation?->groupId;
             $view = $this->line($line);
             $amount = $line->netAmount?->getAmount() ?? BigDecimal::zero();
+            $view['amount'] = $amount;
             if ($id !== null && isset($groups[$id])) {
                 $groups[$id]['lines'][] = $view;
                 $groups[$id]['sum'] = $groups[$id]['sum']->plus($amount);
@@ -681,9 +686,18 @@ final class ViewModelFactory
         }
 
         $result = [];
+        $running = BigDecimal::zero();
         foreach ([...array_values($groups), $ungrouped] as $group) {
             if ($group['lines'] === []) {
                 continue;
+            }
+            // Sum of the line amounts up to each line in display order: the carry-over ("Übertrag")
+            // when a page ends after the line.
+            foreach ($group['lines'] as $i => $view) {
+                $running = $running->plus($view['amount']);
+                unset($view['amount']);
+                $view['carryOver'] = $this->money(Amount::fromDecimal($running, $this->invoice->currency));
+                $group['lines'][$i] = $view;
             }
             $result[] = [
                 'id' => $group['id'],
@@ -751,6 +765,10 @@ final class ViewModelFactory
                 $row->category === VatCategory::NotSubjectToVat => $labels['vat_row_not_subject'],
                 default => $row->category->isZeroTax() ? $labels['vat_row_exempt'] : $labels['vat_row'],
             };
+            // One VAT rate: its base is the net total printed above, "USt. 19 %" suffices.
+            if ($template === $labels['vat_row'] && count($this->invoice->vatBreakdown) === 1 && isset($labels['vat_row_single'])) {
+                $template = $labels['vat_row_single'];
+            }
             $label = str_replace([':category', ':rate', ':base'], [$row->category->label($locale), (string) $rate, (string) $base], $template);
 
             return [
@@ -803,6 +821,9 @@ final class ViewModelFactory
             'vatTotalInTaxCurrency' => $this->money($t->vatTotalInTaxCurrency),
             'taxCurrencyNote' => $taxCurrencyNote,
             'grossTotal' => $this->money($t->grossTotal),
+            // Nothing prepaid, rounded or paid by third parties: the amount due is the gross total,
+            // templates may print it once, as gross total.
+            'dueEqualsGross' => ! $this->isRefund() && ! $this->selfBilled && $t->amountDue->isEqualTo($t->grossTotal),
             'prepaid' => $this->money($t->prepaidAmount),
             'rounding' => $this->money($t->roundingAmount),
             'thirdPartyPayments' => $thirdParty,
@@ -979,7 +1000,14 @@ final class ViewModelFactory
         $payable = $due !== null && $due->isPositive() && ! $this->invoice->isCreditNote() && ! $offer;
         if ($this->invoice->dueDate !== null && $payable) {
             // Self-billed: the issuer (buyer) pays the amount out, the recipient is not asked to pay.
-            $lines[] = str_replace(':date', (string) $this->date($this->invoice->dueDate), $labels[$this->selfBilled ? 'payout_until' : 'payable_until']);
+            // "Bitte bis zum … überweisen." only for a credit transfer without direct debit.
+            $instructions = $this->invoice->paymentInstructions;
+            $transfer = $instructions !== null && $instructions->creditTransfers !== [] && $instructions->directDebit === null && isset($labels['transfer_until']);
+            $lines[] = str_replace(':date', (string) $this->date($this->invoice->dueDate), $labels[match (true) {
+                $this->selfBilled => 'payout_until',
+                $transfer => 'transfer_until',
+                default => 'payable_until',
+            }]);
         }
 
         $discounts = [];
@@ -1081,14 +1109,15 @@ final class ViewModelFactory
             $layoutName,
             implode(', ', array_unique(['free', ...array_keys($layouts)])),
         )));
-        $marks = ($this->context->options['fold_marks'] ?? false) === true;
+        $marks = ($this->context->options['fold_marks'] ?? true) === true;
         $watermark = $p->watermark ?? (is_string($this->context->options['watermark'] ?? null) ? $this->context->options['watermark'] : null);
         // Always prepared: mPDF never fetches a logo itself (remote URLs are downloaded from public hosts only).
         $cache = is_string($this->context->options['logo_cache'] ?? null) ? $this->context->options['logo_cache'] : sys_get_temp_dir().'/quittio-mpdf/logos';
         $logo = (new LogoCache($cache, pdfa: ($this->context->options['pdfa'] ?? false) === true))->resolve($p->logo);
         // Own footer columns, also none at all when set explicitly to [].
         $customFooter = $p->footerColumns !== [] || $p->isExplicit('footerColumns');
-        $footer = $customFooter ? $p->footerColumns : $this->footerColumns($issuer);
+        [$footer, $this->footerAliases] = $customFooter ? [$p->footerColumns, []] : $this->footerColumns($issuer);
+        $font = self::font($p->font ?? 'geist');
 
         return [
             // Values printed into <style>: only hex colours and plain font names (no CSS injection).
@@ -1096,14 +1125,20 @@ final class ViewModelFactory
             'secondaryColor' => self::color($colors->secondary ?? $colors->primary),
             'textColor' => self::color($colors->text),
             'mutedColor' => self::color($colors->muted),
-            'font' => self::font($p->font ?? 'inter'),
+            'font' => $font,
+            // Medium weight (line names, table head) and semibold (title, headings): Geist has
+            // them as the family "geistmedium" (normal and bold); for other fonts null, bold is used.
+            'fontMedium' => strtolower($font) === 'geist' ? 'geistmedium' : null,
             'logo' => $logo,
             'letterLayout' => $layout->name,
             // Address field position on the first page, independent of the letterhead height.
             'addressTop' => $layout->addressTop,
             'addressLeft' => $layout->addressLeft,
             'pageMarginTop' => self::PAGE_MARGIN_TOP,
+            'continuationMarginTop' => self::CONTINUATION_MARGIN_TOP,
             'letterheadHeight' => $layout->letterheadHeight(self::PAGE_MARGIN_TOP),
+            // The logo ends 2 mm above the address field (DIN 5008 form A leaves less room than form B).
+            'logoMaxHeight' => round(min(14.0, max(6.0, $layout->letterheadHeight(self::PAGE_MARGIN_TOP) - 2.0)), 2),
             'addressHeight' => $layout->addressHeight,
             'addressWidth' => $layout->addressWidth,
             // DIN 5008: the sender line is the last line of the "Zusatz- und Vermerkzone",
@@ -1120,7 +1155,10 @@ final class ViewModelFactory
             'senderLine' => $p->senderLine ?? $this->senderLine($issuer),
             'footerColumns' => $footer,
             // The generated footer starts with the issuer's address; a custom footer may not.
-            'footerHasAddress' => ! $customFooter && $footer !== [],
+            'footerHasAddress' => ! $customFooter && isset($this->footerAliases['design.footerColumns[0]']),
+            // The generated footer shows the issuer's VAT identifier and tax number; otherwise the
+            // template prints them with the invoice details.
+            'footerHasTaxIds' => ! $customFooter && array_intersect(['issuer.vatId', 'issuer.taxNumber'], $this->footerAliases) !== [],
             'showItemNumbers' => $p->showItemNumbers,
             'showGrossPrices' => $p->showGrossPrices,
         ];
@@ -1142,10 +1180,12 @@ final class ViewModelFactory
     }
 
     /**
-     * Default footer: address, contact, bank details, registration of the issuer.
+     * Default footer: address, contact, registration and tax identifiers of the issuer. The bank
+     * details are printed with the payment information.
      *
      * @param  array<string, mixed>  $issuer
-     * @return list<list<string>>
+     * @return array{0: list<list<string>>, 1: array<string, string>} the columns, and the entries
+     *         that print issuer fields (aliases for the mandatory field check)
      */
     private function footerColumns(array $issuer): array
     {
@@ -1156,43 +1196,40 @@ final class ViewModelFactory
         $contact = is_array($issuer['contact'] ?? null) ? $issuer['contact'] : [];
 
         $columns = [];
+        $aliases = [];
         // Exactly the issuer's address lines (the guard maps this column onto them).
         $lines = is_array($address['lines'] ?? null) ? array_values(array_filter($address['lines'], is_string(...))) : [];
         if ($lines !== []) {
+            $aliases['design.footerColumns[0]'] = 'issuer.address.lines';
             $columns[] = $lines;
         }
 
-        $phone = $string($contact['phone'] ?? null);
-        $email = $string($contact['email'] ?? null);
-        $vatId = $string($issuer['vatId'] ?? null);
-        $taxNumber = $string($issuer['taxNumber'] ?? null);
-        $details = self::filled([
-            $phone === null ? null : $label('phone').': '.$phone,
-            $email === null ? null : $label('email').': '.$email,
-            $vatId === null ? null : $label('vat_id').': '.$vatId,
-            $taxNumber === null ? null : $label('tax_number').': '.$taxNumber,
-        ]);
-        if ($details !== []) {
-            $columns[] = $details;
+        $reach = self::filled([$string($contact['phone'] ?? null), $string($contact['email'] ?? null)]);
+        if ($reach !== []) {
+            $columns[] = $reach;
         }
 
-        // Bank details only as the seller's request to pay: not on refunds and not when the
-        // buyer issues the document (self-billed), the account then belongs to the recipient.
-        $transfer = $this->invoice->paymentInstructions?->primaryCreditTransfer();
-        if ($transfer !== null && ! $this->isRefund() && ! $this->selfBilled) {
-            $columns[] = self::filled([
-                $transfer->accountName,
-                $label('iban').': '.($transfer->isIban() ? trim(chunk_split(Iban::normalize($transfer->accountId), 4, ' ')) : $transfer->accountId),
-                $transfer->serviceProviderId === null ? null : $label('bic').': '.$transfer->serviceProviderId,
-            ]);
-        }
-
-        $legal = self::filled([$string($issuer['legalRegistration'] ?? null), $string($issuer['additionalLegalInfo'] ?? null)]);
+        // Register entry and further legal information (BT-33), e.g. "Amtsgericht Musterstadt · Geschäftsführer: …", one part per line.
+        $additional = $string($issuer['additionalLegalInfo'] ?? null);
+        $parts = $additional === null ? false : preg_split('/\s+·\s+|\R/u', $additional);
+        $legal = self::filled([$string($issuer['legalRegistration'] ?? null), ...array_map(trim(...), $parts === false ? [] : $parts)]);
         if ($legal !== []) {
             $columns[] = $legal;
         }
 
-        return $columns;
+        $tax = [];
+        foreach (['vatId' => 'vat_id', 'taxNumber' => 'tax_number_short'] as $field => $key) {
+            $value = $string($issuer[$field] ?? null);
+            if ($value !== null) {
+                $aliases[sprintf('design.footerColumns[%d][%d]', count($columns), count($tax))] = 'issuer.'.$field;
+                $tax[] = $label($key).' '.$value;
+            }
+        }
+        if ($tax !== []) {
+            $columns[] = $tax;
+        }
+
+        return [$columns, $aliases];
     }
 
     /**
@@ -1225,7 +1262,7 @@ final class ViewModelFactory
     private static function font(string $value): string
     {
         if (preg_match('/^[A-Za-z0-9][A-Za-z0-9 _-]{0,63}$/', $value) !== 1) {
-            throw new ConfigurationException(sprintf('Invalid font name "%s": use the name of a registered font family such as "inter".', $value));
+            throw new ConfigurationException(sprintf('Invalid font name "%s": use the name of a registered font family such as "geist".', $value));
         }
 
         return $value;
@@ -1272,10 +1309,15 @@ final class ViewModelFactory
     {
         $start = $period->start === null ? null : $this->context->formatter->date($period->start, $this->locale());
         $end = $period->end === null ? null : $this->context->formatter->date($period->end, $this->locale());
+        // Within one year the German short form "01.10.–31.10.2026": the start without its year.
+        $year = $period->start?->format('Y');
+        $short = $start !== null && $end !== null && $year === $period->end?->format('Y') && str_ends_with($start, '.'.$year)
+            ? substr($start, 0, -strlen($year))
+            : $start;
 
         return new FormattedValue(match (true) {
             $start !== null && $end !== null && $start === $end => $start,
-            $start !== null && $end !== null => $start."\u{2009}–\u{2009}".$end,
+            $start !== null && $end !== null => $short.'–'.$end,
             default => (string) ($start ?? $end),
         }, $period);
     }

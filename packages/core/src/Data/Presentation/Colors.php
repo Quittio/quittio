@@ -14,9 +14,9 @@ final readonly class Colors
     use Immutable;
 
     public function __construct(
-        public string $primary = '#1e40af',
-        public string $text = '#111827',
-        public string $muted = '#6b7280',
+        public string $primary = '#2741d9',
+        public string $text = '#15171c',
+        public string $muted = '#5f6470',
         public ?string $secondary = null,
     ) {}
 }

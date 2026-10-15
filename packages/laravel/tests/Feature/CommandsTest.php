@@ -141,7 +141,7 @@ it('creates a template from the default', function () {
         ->and($target.'/partials/totals.blade.php')->toBeFile();
 
     $html = Quittio::make(Scenarios::make('simple')->build())->format('html')->template('invoices.acme.layout')->render()->html();
-    expect($html)->toContain('Zahlbetrag');
+    expect($html)->toContain('Gesamtbetrag');
 
     $this->artisan('make:quittio-template', ['name' => 'acme'])->assertFailed();
     $this->artisan('make:quittio-template', ['name' => 'Bad Name'])->assertFailed();
@@ -149,7 +149,7 @@ it('creates a template from the default', function () {
     // The preview accepts the same views as rendering (quittio.pdf.templates).
     $preview = tempDirectory().'/acme.html';
     $this->artisan('quittio:preview', ['--template' => 'invoices.acme.layout', '--format' => 'html', '--output' => $preview])->assertSuccessful();
-    expect(file_get_contents($preview))->toContain('Zahlbetrag');
+    expect(file_get_contents($preview))->toContain('Gesamtbetrag');
     $this->artisan('quittio:preview', ['--template' => 'invoices.acme.partials.totals', '--format' => 'html'])->assertFailed();
     $this->artisan('quittio:preview', ['--template' => 'invoices.missing.layout', '--format' => 'html'])->assertFailed();
 
@@ -174,19 +174,19 @@ it('publishes the fonts so that the renderer finds them', function () {
     expect($directories())->not->toContain($published);
 
     File::copyDirectory((string) array_key_first($mapping), $published);
-    // Fonts that exist only in the published directories (Inter is published to quittio/inter).
+    // Fonts that exist only in the published directories (Inter is published to quittio/inter, Geist to quittio/geist).
     copy($published.'/inter/Inter-Regular.ttf', $published.'/inter/PublishedTest-Regular.ttf');
     copy($published.'/inter/Inter-Bold.ttf', $published.'/PublishedTest-Bold.ttf');
     config()->set('quittio.pdf.font_directories', ['/configured/fonts']);
     config()->set('quittio.pdf.fonts', ['publishedtest' => ['R' => 'PublishedTest-Regular.ttf', 'B' => 'PublishedTest-Bold.ttf']]);
     config()->set('quittio.pdf.font', 'publishedtest');
 
-    expect($directories())->toBe(['/configured/fonts', $published, $published.'/inter'])
+    expect($directories())->toBe(['/configured/fonts', $published, $published.'/geist', $published.'/inter'])
         ->and(Quittio::make(Scenarios::make('simple')->build())->format('pdf')->render()->pdf())->toStartWith('%PDF-');
 
     // Configured explicitly, a directory is not added twice and keeps its position.
     config()->set('quittio.pdf.font_directories', [$published.'/inter/', '/configured/fonts']);
-    expect($directories())->toBe([$published.'/inter/', '/configured/fonts', $published]);
+    expect($directories())->toBe([$published.'/inter/', '/configured/fonts', $published, $published.'/geist']);
     File::deleteDirectory($base);
 });
 

@@ -40,7 +40,7 @@ php artisan quittio:install {--views} {--fonts} {--managed} {--force}
 | Option | Effect |
 |---|---|
 | `--views` | Also publish the Blade templates (`quittio-views`) |
-| `--fonts` | Also publish the fonts (`quittio-fonts`, to `resources/fonts/quittio/inter`); the renderer searches `resources/fonts/quittio` and its subdirectories automatically |
+| `--fonts` | Also publish the fonts (`quittio-fonts`, to `resources/fonts/quittio/geist` and `resources/fonts/quittio/inter`); the renderer searches `resources/fonts/quittio` and its subdirectories automatically |
 | `--managed` | Also install the Managed layer (needs `quittio/managed`) |
 | `--force` | Overwrite existing files |
 
@@ -420,7 +420,7 @@ php artisan vendor:publish --tag=quittio-config
 | `quittio-config` | laravel | `config/quittio.php` |
 | `quittio-views` | laravel | `resources/views/vendor/quittio/templates` (default template and partials; override the package views) |
 | `quittio-lang` | laravel | `lang/vendor/quittio` (labels, rule messages, codes, terms) |
-| `quittio-fonts` | laravel | `resources/fonts/quittio/inter` (Inter). `resources/fonts/quittio` and its subdirectories are added to the font directories automatically, so further font files placed there only need an entry in `pdf.fonts` |
+| `quittio-fonts` | laravel | `resources/fonts/quittio/geist` (Geist) and `resources/fonts/quittio/inter` (Inter). `resources/fonts/quittio` and its subdirectories are added to the font directories automatically, so further font files placed there only need an entry in `pdf.fonts` |
 | `quittio-managed-config` | managed | `config/quittio-managed.php` |
 | `quittio-managed-migrations` | managed | `database/migrations` (tables of the Managed layer, with new timestamps) |
 | `quittio-managed-triggers` | managed | `database/migrations` (immutability triggers, recommended for production) |

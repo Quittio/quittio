@@ -2,13 +2,16 @@
 
 declare(strict_types=1);
 
+use Brick\Money\Money;
 use Quittio\Core\Calculation\En16931Calculator;
 use Quittio\Core\Countries\MandatoryField;
 use Quittio\Core\Countries\MandatoryFieldList;
 use Quittio\Core\Data\Presentation\Colors;
 use Quittio\Core\Data\Presentation\Presentation;
+use Quittio\Core\Enums\PaymentMeansCode;
 use Quittio\Core\Enums\VatCategory;
 use Quittio\Core\Templates\PhpTemplateEngine;
+use Quittio\Core\Testing\Scenarios;
 use Quittio\Core\Tests\Support\Invoices;
 use Quittio\Core\View\FormattedValue;
 use Quittio\Core\View\IntlFormatter;
@@ -205,7 +208,7 @@ it('states the amount after each cash discount tier', function () {
     expect(spaces((string) $discounts[0]->amount))->toBe('1.154,30 €')
         ->and(spaces((string) $discounts[1]->amount))->toBe('1.166,20 €')
         ->and((string) $discounts[1]->until)->toBe('17.10.2026')
-        ->and(spaces($discounts[1]->text))->toBe('Bei Zahlung bis 17.10.2026 gewähren wir 2 % Skonto (Zahlbetrag 1.166,20 €).');
+        ->and(spaces($discounts[1]->text))->toBe('2 % Skonto bis 17.10.2026: 1.166,20 €');
 });
 
 it('titles every type code by its family', function (string $code, string $title) {
@@ -240,7 +243,7 @@ it('shows the price base quantity and gross prices next to the net price', funct
 
     expect((string) $view->lines[0]->unitPriceBase)->toBe('100 Stk.')
         ->and($view->lines[1]->unitPriceBase)->toBeNull()
-        ->and(spaces((new PhpTemplateEngine)->render('default', $view)))->toContain('12,3456 € / 100 Stk.')
+        ->and(spaces((new PhpTemplateEngine)->render('default', $view)))->toContain('12,3456 €<div class="description">/ 100 Stk.</div>')
         ->and($grossHtml)->toContain('8,393 €<div class="description">Einzelpreis brutto 9,99 €</div>');
 });
 
@@ -362,11 +365,101 @@ it('highlights lines and uses the secondary colour in the default template', fun
     $render = static fn (?Presentation $presentation): string => (new PhpTemplateEngine)->render('default', (new ViewModelFactory)->build($invoice, new ViewContext(locale: 'en', defaults: $presentation)));
     $html = $render(new Presentation(colors: new Colors(primary: '#1e40af', secondary: '#0f766e')));
 
-    expect(substr_count($html, '<tr class="highlight">'))->toBe(1)
-        ->and($html)->toMatch('#<tr class="highlight">\s*<td class="position">2</td>#')
-        ->and($html)->toContain('.lines .highlight td.position { border-left: 0.8mm solid #0f766e; }')
-        ->and($html)->toContain('.section-title { font-weight: bold; color: #0f766e;')
-        ->and($html)->toContain('.lines th { background-color: #1e40af;')
+    expect(substr_count($html, '<tr class="line highlight"'))->toBe(1)
+        ->and($html)->toMatch('#<tr class="line highlight"[^>]*>\s*<td class="position">2</td>#')
+        ->and($html)->toContain('.lines .highlight td.position { border-left: 0.8mm solid #0f766e;')
+        ->and($html)->toContain('.section-title { font-size: 9pt; color: #0f766e;')
+        ->and($html)->toContain('h1 { font-size: 13.5pt; color: #1e40af;')
         // Without a secondary colour the primary colour is used.
-        ->and($render(null))->toContain('.section-title { font-weight: bold; color: #1e40af;');
+        ->and($render(null))->toContain('.section-title { font-size: 9pt; color: #2741d9;');
 });
+
+it('prints the issuer tax identifiers in the footer and counts them as printed', function () {
+    $invoice = (new En16931Calculator)->calculate(Scenarios::make('simple')->build());
+    $view = (new ViewModelFactory)->build($invoice, new ViewContext(locale: 'de'));
+    $html = (new PhpTemplateEngine)->render('default', $view);
+    $custom = (new ViewModelFactory)->build($invoice, new ViewContext(locale: 'de', defaults: new Presentation(footerColumns: [['Muster GmbH']])));
+    $customHtml = (new PhpTemplateEngine)->render('default', $custom);
+
+    expect($view->design->footerColumns->toArray())->toBe([
+        ['Muster GmbH', 'Hauptstraße 1', '12345 Musterstadt'],
+        ['+49 123 456789', 'rechnung@muster.de'],
+        ['HRB 12345', 'Amtsgericht Musterstadt', 'Geschäftsführer: Max Muster'],
+        ['USt-IdNr. DE123456789', 'St.-Nr. 12/345/67890'],
+    ])
+        ->and($view->design->footerHasTaxIds)->toBeTrue()
+        ->and($view->accessLog()->accessed('seller.vatId'))->toBeTrue()
+        ->and($view->accessLog()->accessed('seller.taxNumber'))->toBeTrue()
+        // Not twice: the invoice details show the buyer's identifier only.
+        ->and($html)->not->toContain('<td class="label">USt-IdNr.</td>')
+        ->and($html)->toContain('<td class="label">Ihre USt-IdNr.</td><td class="value">DE987654321</td>')
+        // A footer of its own: the seller's identifiers move to the invoice details.
+        ->and($custom->design->footerHasTaxIds)->toBeFalse()
+        ->and($customHtml)->toContain('<td class="label">USt-IdNr.</td><td class="value">DE123456789</td>')
+        ->and($customHtml)->toContain('<td class="label">Steuernummer</td><td class="value">12/345/67890</td>');
+});
+
+it('names a single VAT rate without its base, several with it', function () {
+    $view = static fn (string $scenario) => (new ViewModelFactory)->build((new En16931Calculator)->calculate(Scenarios::make($scenario)->build()), new ViewContext(locale: 'de'));
+
+    expect(spaces($view('simple')->vatRows[0]->label))->toBe('USt. 19 %')
+        ->and(spaces($view('mixed-vat')->vatRows[0]->label))->toContain(' auf ');
+});
+
+it('prints the amount due once when it is the gross total', function () {
+    $simple = (new ViewModelFactory)->build((new En16931Calculator)->calculate(Scenarios::make('simple')->build()), new ViewContext(locale: 'de'));
+    $rounded = (new ViewModelFactory)->build((new En16931Calculator)->calculate(Scenarios::make('b2c-gross')->build()), new ViewContext(locale: 'de'));
+    $html = (new PhpTemplateEngine)->render('default', $simple);
+
+    expect($simple->totals->dueEqualsGross)->toBeTrue()
+        ->and($rounded->totals->dueEqualsGross)->toBeFalse()
+        ->and(spaces($html))->toContain('<tr class="grand"><td class="label">Gesamtbetrag</td><td class="right amount">2.747,71 €</td></tr>')
+        ->and($html)->not->toContain('Zahlbetrag')
+        ->and($simple->accessLog()->accessed('totals.amountDue'))->toBeTrue();
+});
+
+it('shortens a service period within one year', function () {
+    $period = static function (string $start, string $end, string $locale): string {
+        $invoice = (new En16931Calculator)->calculate(Invoices::base()->line(fn ($l) => $l->name('Hosting')->quantity(1, 'MON')->netPrice('29.00')->vat(VatCategory::StandardRate, '19')->period($start, $end))->build());
+
+        return (string) (new ViewModelFactory)->build($invoice, new ViewContext(locale: $locale))->lines[0]->period;
+    };
+
+    expect($period('2026-10-01', '2026-10-31', 'de'))->toBe('01.10.–31.10.2026')
+        ->and($period('2026-12-15', '2027-01-15', 'de'))->toBe('15.12.2026–15.01.2027')
+        ->and($period('2026-10-01', '2026-10-31', 'en'))->toBe('01/10/2026–31/10/2026')
+        ->and($period('2026-10-01', '2026-10-01', 'de'))->toBe('01.10.2026');
+});
+
+it('asks for a transfer only when the buyer pays by transfer', function () {
+    $terms = static fn ($builder) => (new ViewModelFactory)->build((new En16931Calculator)->calculate($builder->build()), new ViewContext(locale: 'de'))->paymentTerms->lines[0];
+
+    expect($terms(Scenarios::make('simple')))->toBe('Bitte bis zum 17.10.2026 überweisen.')
+        ->and($terms(Scenarios::make('simple')->payment(PaymentMeansCode::SepaDirectDebit)->directDebit('M-1', 'DE98ZZZ09999999999', 'DE02120300000000202051')))->toBe('Bitte zahlen Sie den Betrag bis zum 17.10.2026.');
+});
+
+it('sums the line amounts up to each line in display order for the carry-over', function () {
+    $invoice = (new En16931Calculator)->calculate(Invoices::base()
+        ->group('g1', 'Group 1')
+        ->line(fn ($l) => $l->name('A')->quantity(1, 'C62')->netPrice('10.00')->vat(VatCategory::StandardRate, '19'))
+        ->line(fn ($l) => $l->name('B')->quantity(2, 'C62')->netPrice('20.00')->vat(VatCategory::StandardRate, '19')->group('g1'))
+        ->line(fn ($l) => $l->name('C')->quantity(1, 'C62')->netPrice('5.50')->vat(VatCategory::StandardRate, '19'))
+        ->build());
+    $view = (new ViewModelFactory)->build($invoice, new ViewContext(locale: 'de'));
+    $carries = [];
+    foreach ($view->lineGroups as $group) {
+        foreach ($group->lines as $line) {
+            $carries[$line->name] = spaces((string) $line->carryOver);
+        }
+    }
+
+    // The group comes first: B, then the ungrouped lines A and C.
+    expect($carries)->toBe(['B' => '40,00 €', 'A' => '50,00 €', 'C' => '55,50 €']);
+});
+
+it('groups French amounts with a no-break space every font has', function () {
+    $amount = (new IntlFormatter)->money(Money::of('1234.50', 'EUR'), 'fr');
+
+    expect($amount)->not->toContain("\u{202F}")
+        ->and(spaces($amount))->toBe('1 234,50 €');
+})->skip(fn () => ! extension_loaded('intl'), 'intl is not available.');

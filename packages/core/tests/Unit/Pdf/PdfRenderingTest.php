@@ -128,11 +128,11 @@ it('fails when a render callback returns no PDF', function () {
 it('takes font files from the configured directories before the bundled ones', function () {
     $fonts = sys_get_temp_dir().'/quittio-fonts-'.bin2hex(random_bytes(4));
     mkdir($fonts);
-    // A file named like the bundled Inter, with another font inside.
-    copy(dirname(__DIR__, 5).'/vendor/mpdf/mpdf/ttfonts/DejaVuSans.ttf', $fonts.'/Inter-Regular.ttf');
+    // A file named like the bundled Geist (the default font), with another font inside.
+    copy(dirname(__DIR__, 5).'/vendor/mpdf/mpdf/ttfonts/DejaVuSans.ttf', $fonts.'/Geist-Regular.ttf');
     $render = static fn (array $directories): string => (new MpdfRenderer(tempDir: sys_get_temp_dir().'/quittio-mpdf-'.bin2hex(random_bytes(4)), fontDirectories: $directories))
         ->render(new RenderRequest(html: '<p>Font</p>', title: 'Font', pdfa: false));
 
     expect($render([$fonts]))->toMatch('#/BaseFont\s*/[A-Z]{6}\+DejaVuSans#')
-        ->and($render([]))->toMatch('#/BaseFont\s*/[A-Z]{6}\+Inter#');
+        ->and($render([]))->toMatch('#/BaseFont\s*/[A-Z]{6}\+Geist#');
 });

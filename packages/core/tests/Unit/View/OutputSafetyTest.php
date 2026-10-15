@@ -135,13 +135,15 @@ it('states margin schemes without a separate VAT amount', function () {
         ->and((new MandatoryFieldGuard)->check(MandatoryFieldGuard::baseFields($invoice), $view->accessLog()))->toBe([]);
 });
 
-it('puts the recipient into the address zone below the notice zone (DIN 5008)', function () {
+it('puts the sender line at the top of the address field and the recipient below it', function () {
     $view = (new ViewModelFactory)->build((new En16931Calculator)->calculate(Invoices::simple()->build()));
     $html = (new PhpTemplateEngine)->render('default', $view);
 
+    // The zones of DIN 5008 stay available to own templates.
     expect($view->design->addressZoneTop)->toBe(17.7)
         ->and($view->design->noticeZoneHeight)->toBe(12.7)
-        ->and($html)->toContain('.notice-zone { height: 12.7mm; }');
+        ->and($html)->toContain('.address { position: absolute; top: 45mm; left: 20mm; width: 85mm; height: 45mm;')
+        ->and($html)->toMatch('#<div class="address">\s*<div class="sender-line">[^<]+</div>\s*<div class="address-lines">#');
 });
 
 it('requires every printed line, VAT row, note and the cash discount', function (string $template, string $missing) {

@@ -62,7 +62,7 @@ final class ConfigMapper
             girocodeAmount: $settings->string('pdf.payment_qr.girocode_amount', 'due'),
             tempDir: $settings->nullableString('pdf.cache_path'),
             options: [
-                'fold_marks' => $settings->bool('pdf.fold_marks', false),
+                'fold_marks' => $settings->bool('pdf.fold_marks', true),
                 // Descriptions and notes as Markdown instead of plain text (they are also in the XML).
                 'markdown' => $settings->bool('pdf.markdown', false),
                 // An explicit paper size wins over the country pack default, also "A4".
@@ -101,9 +101,9 @@ final class ConfigMapper
         return new Presentation(
             logo: $settings->nullableString('pdf.logo'),
             colors: new Colors(
-                primary: $colors->string('primary', '#1e40af'),
-                text: $colors->string('text', '#111827'),
-                muted: $colors->string('muted', '#6b7280'),
+                primary: $colors->string('primary', '#2741d9'),
+                text: $colors->string('text', '#15171c'),
+                muted: $colors->string('muted', '#5f6470'),
                 secondary: $colors->nullableString('secondary'),
             ),
             font: $settings->nullableString('pdf.font'),

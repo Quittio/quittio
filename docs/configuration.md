@@ -144,13 +144,13 @@ issuer profiles replace it.
 | `pdf.layout` | string\|null | `null` | Letter layout; `null` = country pack default (Germany: `din5008b`, also `din5008a`). An unknown layout fails with a `ConfigurationException`. |
 | `pdf.paper` | string\|null | `null` | Paper size, e.g. `A4`, `Letter`. `null` = country pack default (Germany: A4); a size set here wins over the country default, also `A4`. The invoice presentation and `->presentation()` win over it. |
 | `pdf.pdfa` | bool | `true` | Render plain PDFs (format `pdf`, documents) as PDF/A-3b. PDFs with embedded XML (ZUGFeRD/Factur-X) are always PDF/A-3b; watermarked PDFs (drafts, previews) never. |
-| `pdf.font` | string | `'inter'` | Default font family (plain family name). Inter is bundled. |
+| `pdf.font` | string | `'geist'` | Default font family (plain family name). Geist (Latin, Cyrillic) and Inter (also Greek) are bundled, see [Fonts](templates.md#fonts). |
 | `pdf.fonts` | array | `[]` | Additional fonts for mPDF: lower-case family => `['R' => file, 'B' => file, 'I' => file, 'BI' => file]`, files relative to `pdf.font_directories`. |
-| `pdf.font_directories` | list | `[]` | Directories mPDF searches for the font files of `pdf.fonts`, after its own and the bundled Inter. `resources/fonts/quittio` and its subdirectories (where `--tag=quittio-fonts` publishes Inter, to `resources/fonts/quittio/inter`) are added after the configured directories when they exist, so fonts placed there need no entry here. mPDF takes a file from the first directory that has it; the bundled Inter comes before all of these. |
+| `pdf.font_directories` | list | `[]` | Directories mPDF searches for the font files of `pdf.fonts`. `resources/fonts/quittio` and its subdirectories (where `--tag=quittio-fonts` publishes Geist and Inter, to `resources/fonts/quittio/geist` and `…/inter`) are added after the configured directories when they exist, so fonts placed there need no entry here. mPDF takes a file from the first directory that has it: these directories come before the bundled fonts and those of mPDF. |
 | `pdf.logo` | string\|null | `null` | Logo: absolute path, `http(s)` URL or data URI of a PNG, JPEG or SVG; at most 10 MB and 25 megapixels, URLs only from public hosts. For PDF/A logos are flattened to an RGB PNG; SVG needs the `imagick` extension. Details in [Templates and design](templates.md#logos). |
-| `pdf.colors.primary` | string | `'#1e40af'` | Primary colour (hex) |
-| `pdf.colors.text` | string | `'#111827'` | Text colour (hex) |
-| `pdf.colors.muted` | string | `'#6b7280'` | Colour of secondary text (hex) |
+| `pdf.colors.primary` | string | `'#2741d9'` | Primary colour (hex): issuer name, title, gross total or amount due |
+| `pdf.colors.text` | string | `'#15171c'` | Text colour (hex) |
+| `pdf.colors.muted` | string | `'#5f6470'` | Colour of secondary text (hex): labels, descriptions, sender line, footer |
 | `pdf.colors.secondary` | string\|null | not in the file (`null`) | Secondary colour (`design.secondaryColor`); `null` = the primary colour |
 | `pdf.sender_line` | string\|null | `null` | Sender line above the address field; `null` = generated from the seller |
 | `pdf.footer_columns` | list | `[]` | Footer columns, each a list of lines: `[['Muster GmbH', 'Hauptstraße 1'], ['IBAN DE02 …']]`. `[]` = footer generated from the seller data. |
@@ -159,7 +159,7 @@ issuer profiles replace it.
 | `pdf.texts.closing` | string\|null | `null` | Text below the totals (Markdown, PDF only) |
 | `pdf.show_item_numbers` | bool | `false` | Print the seller's item number (BT-155) next to the item name |
 | `pdf.markdown` | bool | `false` | Render line descriptions and notes as Markdown instead of plain text. They are also in the e-invoice XML, and formatting can change the displayed text (e.g. `*` for emphasis), so it is off by default. |
-| `pdf.fold_marks` | bool | `false` | Print fold and punch marks |
+| `pdf.fold_marks` | bool | `true` | Print fold and punch marks at the left edge of the first page |
 | `pdf.payment_qr.type` | string | `'auto'` | Payment QR code: `auto` (the generator below, otherwise the code of the country pack, Germany: GiroCode), `girocode` (EPC QR code), `swiss-qr-bill` (needs `pdf.payment_qr.generator`; Quittio ships no Swiss QR bill generator, without one rendering fails with a `ConfigurationException`) or `none`. Unknown values fail with a `ConfigurationException`. Refunds and self-billed invoices never get a code. |
 | `pdf.payment_qr.generator` | class-string\|null | `null` | Class implementing `Quittio\Core\Pdf\Qr\PaymentQrGenerator`, resolved from the container: used for `auto` before the country pack's generator and required for `swiss-qr-bill`. Another class fails with a `ConfigurationException`. |
 | `pdf.payment_qr.girocode_amount` | string | `'due'` | Amount in the GiroCode: `due` (amount due) or `discounted` (amount after the first cash discount; the PDF then notes until when it is valid). |
