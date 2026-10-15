@@ -29,7 +29,7 @@ const DOCS_EXAMPLES = 'Quittio\Tests\DocsExamples';
  */
 function docsExamples(): array
 {
-    $file = dirname(__DIR__, 4).'/docs/examples.md';
+    $file = dirname(__DIR__, 2).'/docs/examples.md';
     if (! is_file($file)) {
         return [];
     }
@@ -91,7 +91,7 @@ function runDocsExample(string $code, array $variables = []): array
 function applyDocsConfiguration(string $code): void
 {
     $values = eval('return ['.$code.'];');
-    $defaults = require dirname(__DIR__, 2).'/config/quittio.php';
+    $defaults = require dirname(__DIR__, 2).'/packages/laravel/config/quittio.php';
     foreach ($values as $key => $value) {
         config()->set('quittio.'.$key, is_array($value) && is_array($defaults[$key] ?? null) ? array_replace($defaults[$key], $value) : $value);
     }

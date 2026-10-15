@@ -26,3 +26,8 @@ packages/laravel/tests/Visual/__snapshots__/*.actual.png
 /docs/_config.ci.yml
 /docs/_worker/docs.generated.json
 /docs/.wrangler/
+
+# Stand-alone runs of a package (as in its split repository)
+/packages/*/vendor/
+/packages/*/composer.lock
+/packages/*/.phpunit.cache/

@@ -16,6 +16,9 @@
         <testsuite name="laravel">
             <directory>packages/laravel/tests</directory>
         </testsuite>
+        <testsuite name="monorepo">
+            <directory>tests/Monorepo</directory>
+        </testsuite>
     </testsuites>
     <source>
         <include>

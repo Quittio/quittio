@@ -28,6 +28,11 @@
         "psr/log": "^3.0",
         "quittio/core": "self.version"
     },
+    "require-dev": {
+        "orchestra/testbench": "^11.0",
+        "pestphp/pest": "^4.7 || ^5.0",
+        "quittio/country-de": "self.version"
+    },
     "suggest": {
         "ext-zip": "Unpack the validator configuration in quittio:schemas:download",
         "quittio/country-de": "Country pack for Germany (UStG, XRechnung, DIN 5008)"
@@ -55,5 +60,14 @@
             "dev-master": "0.1.x-dev"
         }
     },
-    "minimum-stability": "stable"
+    "minimum-stability": "stable",
+    "scripts": {
+        "test": "pest"
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    }
 }

@@ -17,7 +17,7 @@ const DOCS_APPLICATION_CLASSES = [
  */
 function docsCodeBlocks(): array
 {
-    $root = dirname(__DIR__, 4);
+    $root = dirname(__DIR__, 2);
     $blocks = [];
     foreach ([...glob($root.'/docs/*.md') ?: [], $root.'/README.md'] as $file) {
         $content = (string) file_get_contents($file);
@@ -31,10 +31,6 @@ function docsCodeBlocks(): array
 }
 
 it('imports every class a documentation example uses', function () {
-    if (! is_dir(dirname(__DIR__, 4).'/docs')) {
-        $this->markTestSkipped('The documentation exists only in the monorepo.');
-    }
-
     $missing = [];
     foreach (docsCodeBlocks() as $block) {
         preg_match_all('/^use ([\w\\\\]+)(?: as (\w+))?;$/m', $block['code'], $uses, PREG_SET_ORDER);

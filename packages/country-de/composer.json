@@ -29,6 +29,9 @@
         "brick/money": "^0.15.2",
         "quittio/core": "self.version"
     },
+    "require-dev": {
+        "pestphp/pest": "^4.7 || ^5.0"
+    },
     "autoload": {
         "psr-4": {
             "Quittio\\Country\\DE\\": "src/"
@@ -60,5 +63,14 @@
     "minimum-stability": "stable",
     "suggest": {
         "laravel/framework": "Base rate configuration and php artisan quittio:base-rate:update"
+    },
+    "scripts": {
+        "test": "pest"
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
     }
 }

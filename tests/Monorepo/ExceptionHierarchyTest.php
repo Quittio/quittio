@@ -13,7 +13,7 @@ use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 const FOREIGN_EXCEPTIONS = [BadMethodCallException::class, NumberFormatException::class];
 
 it('throws only exceptions that implement QuittioException', function () {
-    $root = dirname(__DIR__, 3);
+    $root = dirname(__DIR__, 2).'/packages';
     $foreign = [];
     foreach (['core/src', 'laravel/src', 'country-de/src'] as $directory) {
         $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root.'/'.$directory, FilesystemIterator::SKIP_DOTS));
