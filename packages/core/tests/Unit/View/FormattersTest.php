@@ -15,8 +15,9 @@ use Quittio\Core\View\Markdown;
 it('formats amounts, prices, quantities, percentages and dates per locale', function (string $locale, array $expected) {
     $f = new IntlFormatter;
 
-    // "~" stands for the no-break space before currency and percent signs.
-    expect(str_replace("\u{a0}", '~', [
+    // "~" stands for the no-break space before currency and percent signs; ICU versions differ in
+    // the Swiss grouping separator (' or ’).
+    expect(str_replace(["\u{a0}", "\u{2019}"], ['~', "'"], [
         $f->money(Money::of('1234567.5', 'EUR'), $locale),
         $f->price(BigDecimal::of('0.12345'), 'EUR', $locale),
         $f->quantity(BigDecimal::of('1.500'), $locale),
