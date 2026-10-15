@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Quittio\Country\DE\Laravel;
 
+use Brick\Math\BigDecimal;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Config\Repository;
 use Quittio\Country\DE\Dunning\BaseRates;
@@ -48,7 +49,7 @@ final class UpdateBaseRateCommand extends Command
         $new = array_diff_key($fetched, BaseRateTable::PUBLISHED);
         $differing = array_filter(
             array_intersect_key($fetched, BaseRateTable::PUBLISHED),
-            static fn (string $rate, string $date): bool => (float) $rate !== (float) BaseRateTable::PUBLISHED[$date],
+            static fn (string $rate, string $date): bool => ! BigDecimal::of($rate)->isEqualTo(BaseRateTable::PUBLISHED[$date]),
             ARRAY_FILTER_USE_BOTH,
         );
         foreach ($differing as $date => $rate) {
@@ -90,7 +91,11 @@ final class UpdateBaseRateCommand extends Command
 
             return self::FAILURE;
         }
-        file_put_contents($file, json_encode($rates, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR)."\n", LOCK_EX);
+        if (@file_put_contents($file, json_encode($rates, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR)."\n", LOCK_EX) === false) {
+            $this->components->error(sprintf('%s could not be written.', $file));
+
+            return self::FAILURE;
+        }
         BaseRates::register($rates);
         $this->components->info(sprintf('Stored %d rate(s) in %s.', count($rates), $file));
 

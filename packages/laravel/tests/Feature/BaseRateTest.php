@@ -70,3 +70,16 @@ it('reports differences to the shipped table and fetch errors', function () {
     app()->instance(BundesbankBaseRates::class, new BundesbankBaseRates(fn (): string => throw new RuntimeException('The Bundesbank statistics API could not be reached or returned an error.')));
     $this->artisan('quittio:base-rate:update')->expectsOutputToContain('could not be reached')->assertFailed();
 });
+
+it('fails when the rate file cannot be written', function () {
+    $directory = sys_get_temp_dir().'/quittio-base-rates-'.bin2hex(random_bytes(4));
+    mkdir($directory);
+    config()->set('quittio-de.base_rate_file', $directory);
+    fakeBundesbank(['2027-01' => '1,77']);
+
+    try {
+        $this->artisan('quittio:base-rate:update')->expectsOutputToContain('could not be written')->assertFailed();
+    } finally {
+        rmdir($directory);
+    }
+});
