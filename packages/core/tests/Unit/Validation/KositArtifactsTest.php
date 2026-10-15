@@ -23,3 +23,16 @@ it('compiles the Peppol Schematron with the Saxon of the validator', function ()
 it('requires the validator before compiling', function () {
     (new KositArtifacts(fn (): string => ''))->compilePeppol(sys_get_temp_dir().'/quittio-missing-'.bin2hex(random_bytes(4)));
 })->throws(RuntimeException::class, 'validator JAR');
+
+it('pins a checksum for every default download', function () {
+    expect(array_keys(KositArtifacts::SHA256))->toEqualCanonicalizing([
+        KositArtifacts::validatorUrl(),
+        KositArtifacts::configurationUrl(),
+        KositArtifacts::peppolUrl(),
+        KositArtifacts::schxsltUrl(),
+    ]);
+});
+
+it('refuses downloads without a pinned checksum', function () {
+    (new ReflectionMethod(KositArtifacts::class, 'httpGet'))->invoke(null, KositArtifacts::validatorUrl('9.9.9'));
+})->throws(RuntimeException::class, 'No checksum is known');

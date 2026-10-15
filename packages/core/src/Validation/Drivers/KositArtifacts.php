@@ -26,6 +26,19 @@ final class KositArtifacts
 
     public const string SCHXSLT_VERSION = '1.10.1';
 
+    /**
+     * SHA-256 of the pinned downloads. The default download checks them, because the validator JAR
+     * is run with java and release tags can be moved; update them together with the versions.
+     *
+     * @var array<string, string>
+     */
+    public const array SHA256 = [
+        'https://repo1.maven.org/maven2/org/kosit/validator/1.6.3/validator-1.6.3-standalone.jar' => '799e64befca97d4080e03608c80b85dd5a5ecc5f4ae4f35d1116ec2855b9a7c9',
+        'https://github.com/itplr-kosit/validator-configuration-xrechnung/releases/download/v2026-08-31/xrechnung-3.0.2-validator-configuration-2026-08-31.zip' => '2530cd107c414511c5d0462ec10f886910395abfca820db82e83d70bf01221a8',
+        'https://raw.githubusercontent.com/OpenPEPPOL/peppol-bis-invoice-3/v3.0.20/rules/sch/PEPPOL-EN16931-UBL.sch' => '5ddf3a2f6633147b20b7805df9902d825af1a984f10014fcee186d4170364b1d',
+        'https://repo1.maven.org/maven2/name/dmaus/schxslt/schxslt/1.10.1/schxslt-1.10.1.jar' => '4f4f21edab7b37f96ad59ae12a344d3510f1092ac46b6d81a4efa0120b73cb58',
+    ];
+
     /** @var Closure(list<string>, string, int): array{exitCode: int, stdout: string, stderr: string} */
     private Closure $run;
 
@@ -33,7 +46,7 @@ final class KositArtifacts
     private Closure $fetch;
 
     /**
-     * @param  (Closure(string): string)|null  $fetch  returns the body of a URL
+     * @param  (Closure(string): string)|null  $fetch  returns the body of a URL; the default checks it against SHA256
      * @param  (Closure(list<string>, string, int): array{exitCode: int, stdout: string, stderr: string})|null  $run  runs a process
      */
     public function __construct(?Closure $fetch = null, ?Closure $run = null)
@@ -159,10 +172,15 @@ final class KositArtifacts
 
     private static function httpGet(string $url): string
     {
+        $expected = self::SHA256[$url] ?? throw new RuntimeException(sprintf('No checksum is known for %s; downloads are only accepted with a pinned SHA-256.', $url));
+
         $context = stream_context_create(['http' => ['timeout' => 120, 'follow_location' => 1, 'user_agent' => 'quittio']]);
         $body = @file_get_contents($url, false, $context);
         if ($body === false || $body === '') {
             throw new RuntimeException(sprintf('Download failed: %s', $url));
+        }
+        if (! hash_equals($expected, hash('sha256', $body))) {
+            throw new RuntimeException(sprintf('The download of %s does not match its pinned SHA-256 checksum; it was discarded.', $url));
         }
 
         return $body;

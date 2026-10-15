@@ -107,7 +107,7 @@ It downloads into the target directory:
 | `xrechnung/` | XRechnung validator configuration (release `v2026-08-31`, XRechnung 3.0.2), with `scenarios.xml` |
 | `peppol/PEPPOL-EN16931-UBL.xsl` | Peppol BIS Billing 3.0 rules (Schematron, a rule language for XML, `v3.0.20`), compiled with SchXslt 1.10.1 and the Saxon of the validator JAR |
 
-Existing files are kept unless `--force` is given. The command needs the PHP `zip` extension. Compiling the Peppol rules and running the validator need Java 11 or newer.
+Every download is checked against the SHA-256 checksum pinned in `KositArtifacts::SHA256`; a file that does not match is discarded and the command fails. Existing files are kept unless `--force` is given. The command needs the PHP `zip` extension. Compiling the Peppol rules and running the validator need Java 11 or newer.
 
 Afterwards it prints:
 
