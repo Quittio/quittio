@@ -47,6 +47,8 @@ singleton.
 | Method | Returns | Description |
 |---|---|---|
 | `make(InvoiceData\|ProvidesInvoiceData\|InvoiceBuilder $data)` | `PendingInvoice` | Starts a render call. A builder is built, a `ProvidesInvoiceData` model converted with `toInvoiceData()`. |
+| `invoice()` | `RenderableInvoiceBuilder` | A new invoice with the seller of the configuration (or of the current issuer of the Managed layer); ends with `build()` or `render()` (see [Starting invoices](#starting-invoices)). |
+| `quote()`, `orderConfirmation()`, `deliveryNote()`, `proforma()`, `paymentReminder(int $level = 0)`, `accountStatement()` | `RenderableDocumentBuilder` | A new document with the seller of the configuration; ends with `build()` or `render()`. |
 | `document(DocumentData\|DocumentBuilder $document)` | `PendingDocument` | Starts a render call for a quote, order confirmation, delivery note, proforma invoice, payment reminder or account statement (see [Documents](#documents)). |
 | `cancellation(InvoiceData $original, string $number, ?string $reason = null, ?string $strategy = null, ?Date $issueDate = null, ?array $lines = null, ?CancellationHistory $history = null)` | `InvoiceBuilder` | Builder for the cancellation of an issued invoice; render it with `make()`. See [Cancellations](#cancellations). |
 | `check(InvoiceData $invoice, RenderOptions $options)` | `ValidationResult` | Validates like a render run; the fluent form is `Quittio::make($invoice)->check()`. |
@@ -82,6 +84,53 @@ PendingInvoice::macro('forPublicBuyer', function () {
 });
 
 Quittio::make($invoice)->forPublicBuyer()->render();
+```
+
+## Starting invoices
+
+`Quittio::invoice()` starts an invoice: an `InvoiceBuilder` ([Building invoices](building-invoices.md)) with the seller, its first bank account and the small business setting of `config/quittio.php` ([Seller](configuration.md#seller)). It ends with `->build()` (the `InvoiceData`) or with `->render()`:
+
+```php
+use Quittio\Core\Builder\Line;
+use Quittio\Laravel\Facades\Quittio;
+
+$result = Quittio::invoice()
+    ->number('RE-2026-0042')
+    ->deliveryDate('2026-09-30')
+    ->buyer($customer)                                       // implements ProvidesParty
+    ->line(Line::make('Web development')->quantity(24, 'HUR')->netPrice('95.00'))
+    ->render();                                              // automatic choice
+
+->render('xrechnung-cii')                                    // one format
+->render(['zugferd', 'xrechnung-cii'])                       // several formats, the first is the main result
+```
+
+`render(string|array|null $format = null)` is `Quittio::make($builder)->format($format)->render()`; for profile, locale, template or the queue, pass the builder to `Quittio::make()` ([Rendering invoices](#rendering-invoices)). The builder is a `Quittio\Laravel\Builder\RenderableInvoiceBuilder`, a subclass of `InvoiceBuilder`, so all builder methods and macros work.
+
+Documents start the same way, with the seller and bank account of the configuration, and end with `->build()` or `->render()` (PDF):
+
+| Method | Document |
+|---|---|
+| `Quittio::quote()` | Quote |
+| `Quittio::orderConfirmation()` | Order confirmation |
+| `Quittio::deliveryNote()` | Delivery note |
+| `Quittio::proforma()` | Proforma invoice |
+| `Quittio::paymentReminder(int $level = 0)` | Payment reminder (level 0) or reminder (level 1, 2 …) |
+| `Quittio::accountStatement()` | Account statement |
+
+The seller comes from the binding of `Quittio\Laravel\Contracts\InvoiceDefaults` (`apply(InvoiceBuilder $builder): void`, for documents applied to their invoice builder). The default `ConfigInvoiceDefaults` calls `Seller::apply()` ([Seller from the configuration](#seller-from-the-configuration)); the Managed layer binds the current issuer. Bind your own class to take the seller from elsewhere, e.g. from the current tenant:
+
+```php
+use Quittio\Core\Builder\InvoiceBuilder;
+use Quittio\Laravel\Contracts\InvoiceDefaults;
+
+$this->app->bind(InvoiceDefaults::class, fn () => new class implements InvoiceDefaults
+{
+    public function apply(InvoiceBuilder $builder): void
+    {
+        $builder->seller(tenant()->billingParty());           // a SellerParty, PartyBuilder or ProvidesParty
+    }
+});
 ```
 
 ## Rendering invoices
@@ -349,11 +398,8 @@ then `defaults.locale`, then the country pack. Details:
 ```php
 use Quittio\Core\Builder\Line;
 use Quittio\Core\Builder\Party;
-use Quittio\Core\Documents\DocumentBuilder;
-use Quittio\Laravel\Seller;
 
-$quote = DocumentBuilder::quote()->number('AN-2026-0007')->issueDate('2026-10-01')
-    ->seller(Seller::fromConfig())
+$quote = Quittio::quote()->number('AN-2026-0007')->issueDate('2026-10-01')
     ->buyer(Party::make('Kunde AG')->address('Weg 1', '54321', 'Beispielstadt', 'DE'))
     ->line(Line::make('Beratung')->quantity(2, 'HUR')->netPrice('100.00'));
 
@@ -421,11 +467,10 @@ The Managed layer dispatches further events for the lifecycle of stored invoices
 | `Seller::fromConfig(): SellerParty` | Builds the seller: name, VAT identifier, tax number, address, legal registration, identifiers, additional legal information, contact (when one of its values is set) and electronic address (when set) |
 | `Seller::apply(InvoiceBuilder $builder): InvoiceBuilder` | Sets the seller on the builder, adds a credit transfer with the first bank account that has an IBAN and, with `seller.small_business`, flags the invoice as small business invoice (`Meta::FLAG_SMALL_BUSINESS`). Returns the same builder. |
 
+`Quittio::invoice()` and the document methods use them through `ConfigInvoiceDefaults` ([Starting invoices](#starting-invoices)). Use them directly for builders you create yourself:
+
 ```php
-$invoice = Seller::apply(InvoiceBuilder::make())
-    ->number('RE-2026-0042')
-    // ...
-    ->build();
+$invoice = Seller::apply(InvoiceBuilder::make())->number('RE-2026-0042')/* ... */->build();
 
 $quote = DocumentBuilder::quote()->seller(Seller::fromConfig());
 ```

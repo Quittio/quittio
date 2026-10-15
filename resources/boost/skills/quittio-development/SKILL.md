@@ -17,7 +17,7 @@ Use this skill when code creates, renders, sends, validates, cancels or reads in
 
 ## Building invoices
 
-- `InvoiceBuilder::make()` with fluent setters; `build()` returns the immutable `InvoiceData`. `Seller::apply($builder)` sets the seller and bank account from `config/quittio.php`.
+- `Quittio::invoice()` starts an `InvoiceBuilder` with the seller and bank account from `config/quittio.php` (with quittio/managed: the current issuer); end with `->render()` (optionally a format or a list of formats) or `->build()` for the immutable `InvoiceData`. Without Laravel: `InvoiceBuilder::make()->seller(Party::make(…))`. `Seller::apply($builder)` sets the seller and bank account from `config/quittio.php`.
 - Parties: `->buyer(Party::make('Kunde AG')->vatId()->address($street, $postcode, $city, $country)->electronicAddress($email, 'EM'))` (`Quittio\Core\Builder\Party`). Models can implement `Quittio\Core\Contracts\ProvidesParty` (`fillParty()`), `ProvidesInvoiceLine` (`fillLine()`) or `ProvidesInvoiceData` (`toInvoiceData()`); pass them directly: `->buyer($user)`, `->lines($order->items)`, `Quittio::make($order)`. A callable (`->seller(fn ($s) => $s->contact(…))`) changes the party set before.
 - Lines: `->line(Line::make('Name')->quantity('2', UnitCode::Piece)->netPrice('19.90'))` (`Quittio\Core\Builder\Line`) or arrays whose keys are the `LineBuilder` methods: `->lines([['name' => 'Hosting', 'quantity' => [1, UnitCode::Month], 'netPrice' => '49.00']])`. The quantity defaults to 1. Without `->vat()` a line gets the default VAT (`->defaultVat()` of the invoice, otherwise `quittio.defaults.vat`, otherwise the standard rate of the seller's country).
 - Amounts, prices and quantities are strings or `Brick\Math` values; floats throw an `InvalidArgumentException`. Do not set totals: the calculator computes line amounts, the VAT breakdown and totals (EN 16931 rounding).
@@ -37,7 +37,7 @@ Use this skill when code creates, renders, sends, validates, cancels or reads in
 - Explicit: `->format('zugferd'|'factur-x'|'xrechnung-cii'|'xrechnung-ubl'|'cii'|'ubl'|'peppol'|'pdf'|'html'|'json')`, `->profile('en16931')`, `->locale('de')`; several at once with `->formats([...])` and `$result->as('xrechnung-cii')`.
 - The result: `pdf()`, `xml()`, `filename()`, `data()` (the calculated invoice), `validation()`, `save($disk, $path)`, `download()`, `stream()`; it is `Attachable` for mails. Queue with `Quittio::make($invoice)->queue()->save('invoices', '2026/')`.
 - Validate without rendering: `Quittio::make($invoice)->format('xrechnung-cii')->check()` returns a `ValidationResult`. Rendering throws `Quittio\Core\Validation\ValidationException` on errors.
-- Quotes, delivery notes and reminders: `Quittio\Core\Documents\DocumentBuilder` (e.g. `DocumentBuilder::quote()`), rendered with `Quittio::document()`.
+- Quotes, delivery notes and reminders: `Quittio::quote()`, `Quittio::deliveryNote()`, `Quittio::paymentReminder($level)` … (a `DocumentBuilder` with the seller from the configuration), ending with `->render()`.
 
 ## Cancellations and corrections
 

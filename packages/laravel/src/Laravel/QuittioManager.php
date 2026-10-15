@@ -46,6 +46,9 @@ use Quittio\Core\Validation\ValidationDriver;
 use Quittio\Core\Validation\ValidationException;
 use Quittio\Core\Validation\ValidationResult;
 use Quittio\Core\Xml\XmlSerializer;
+use Quittio\Laravel\Builder\RenderableDocumentBuilder;
+use Quittio\Laravel\Builder\RenderableInvoiceBuilder;
+use Quittio\Laravel\Contracts\InvoiceDefaults;
 use Quittio\Laravel\Events\InvoiceRendered;
 use Quittio\Laravel\Events\InvoiceRendering;
 use Quittio\Laravel\Events\InvoiceValidated;
@@ -106,6 +109,51 @@ class QuittioManager
     public function cancellation(InvoiceData $original, string $number, ?string $reason = null, ?string $strategy = null, ?Date $issueDate = null, ?array $lines = null, ?CancellationHistory $history = null, ?string $title = null): InvoiceBuilder
     {
         return $this->core()->cancellation($original, $number, $reason, $strategy, $issueDate, $lines, $history, $title);
+    }
+
+    /**
+     * A new invoice with the seller and its defaults (config/quittio.php, or the current issuer
+     * of quittio/managed); ends with ->render() or ->build().
+     */
+    public function invoice(): RenderableInvoiceBuilder
+    {
+        $builder = RenderableInvoiceBuilder::make();
+        $this->app->make(InvoiceDefaults::class)->apply($builder);
+
+        return $builder;
+    }
+
+    public function quote(): RenderableDocumentBuilder
+    {
+        return $this->withDefaults(RenderableDocumentBuilder::quote());
+    }
+
+    public function orderConfirmation(): RenderableDocumentBuilder
+    {
+        return $this->withDefaults(RenderableDocumentBuilder::orderConfirmation());
+    }
+
+    public function deliveryNote(): RenderableDocumentBuilder
+    {
+        return $this->withDefaults(RenderableDocumentBuilder::deliveryNote());
+    }
+
+    public function proforma(): RenderableDocumentBuilder
+    {
+        return $this->withDefaults(RenderableDocumentBuilder::proforma());
+    }
+
+    /**
+     * @param  int  $level  0 = payment reminder, 1 = first reminder, 2 = second reminder …
+     */
+    public function paymentReminder(int $level = 0): RenderableDocumentBuilder
+    {
+        return $this->withDefaults(RenderableDocumentBuilder::paymentReminder($level));
+    }
+
+    public function accountStatement(): RenderableDocumentBuilder
+    {
+        return $this->withDefaults(RenderableDocumentBuilder::accountStatement());
     }
 
     public function document(DocumentData|DocumentBuilder $document): PendingDocument
@@ -229,6 +277,17 @@ class QuittioManager
         $values = $this->app->make(Repository::class)->get('quittio', []);
 
         return new Settings(is_array($values) ? $values : []);
+    }
+
+    /**
+     * A document builder with the seller and its defaults, applied to its invoice builder.
+     */
+    private function withDefaults(RenderableDocumentBuilder $builder): RenderableDocumentBuilder
+    {
+        $defaults = $this->app->make(InvoiceDefaults::class);
+        $builder->tap(static fn (InvoiceBuilder $invoice) => $defaults->apply($invoice));
+
+        return $builder;
     }
 
     /**

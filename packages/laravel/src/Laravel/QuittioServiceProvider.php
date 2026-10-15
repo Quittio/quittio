@@ -18,6 +18,7 @@ use Quittio\Core\Profiles\Profile;
 use Quittio\Core\Serialization\Snapshots\SnapshotUpcaster;
 use Quittio\Core\Serialization\Snapshots\SnapshotUpcasterChain;
 use Quittio\Core\Tax\TaxPreset;
+use Quittio\Laravel\Builder\ConfigInvoiceDefaults;
 use Quittio\Laravel\Commands\BenchmarkCommand;
 use Quittio\Laravel\Commands\CodeListsUpdateCommand;
 use Quittio\Laravel\Commands\CountriesCommand;
@@ -28,6 +29,7 @@ use Quittio\Laravel\Commands\ReadCommand;
 use Quittio\Laravel\Commands\RenderCommand;
 use Quittio\Laravel\Commands\SchemasDownloadCommand;
 use Quittio\Laravel\Commands\ValidateCommand;
+use Quittio\Laravel\Contracts\InvoiceDefaults;
 use Quittio\Laravel\Support\LaravelTranslator;
 use Quittio\Laravel\Support\Preview;
 use ReflectionClass;
@@ -43,6 +45,8 @@ final class QuittioServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(self::packagePath('config/quittio.php'), 'quittio');
 
         $this->app->singleton(QuittioManager::class, static fn (Application $app): QuittioManager => new QuittioManager($app));
+        // quittio/managed binds the current issuer instead.
+        $this->app->bindIf(InvoiceDefaults::class, ConfigInvoiceDefaults::class);
         $this->app->alias(QuittioManager::class, 'quittio');
         $this->app->singleton(Preview::class);
         $this->app->singleton(SnapshotUpcasterChain::class, function (Application $app): SnapshotUpcasterChain {

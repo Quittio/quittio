@@ -1,6 +1,6 @@
 # Building invoices
 
-`Quittio\Core\Builder\InvoiceBuilder` creates the immutable `InvoiceData`, the semantic invoice model of EN 16931. It is part of `quittio/core` and works with and without Laravel. This page is the reference for everything that creates or changes invoice data: every builder method, VAT, the calculation, cancellations in the core and the data model. The tutorial is [Getting started](getting-started.md); rendering the data is described in [Formats and profiles](formats.md) and [Laravel integration](laravel.md).
+`Quittio\Core\Builder\InvoiceBuilder` creates the immutable `InvoiceData`, the semantic invoice model of EN 16931. It is part of `quittio/core` and works with and without Laravel. This page is the reference for everything that creates or changes invoice data: every builder method, VAT, the calculation, cancellations in the core and the data model. In Laravel, start with `Quittio::invoice()`: the same builder with the seller of the configuration, which renders itself with `->render()` ([Starting invoices](laravel.md#starting-invoices)). The tutorial is [Getting started](getting-started.md); rendering the data is described in [Formats and profiles](formats.md) and [Laravel integration](laravel.md).
 
 ```php
 use Quittio\Core\Builder\InvoiceBuilder;
@@ -207,12 +207,12 @@ Cancellations take over the notes with subject `REG` and `TXD` of the original.
 | `Party::make('Kunde AG')->vatId(…)->address(…)` | A `PartyBuilder` (`Quittio\Core\Builder\Party`); it replaces the party set before. The builder is copied, so it can serve as template. |
 | An application model implementing `ProvidesParty`, e.g. `->buyer($customer)` | The model fills a new `PartyBuilder` ([Application models](#application-models)); it replaces the party set before. |
 | `SellerParty`, `BuyerParty` | A finished party, e.g. `Seller::fromConfig()` in Laravel; it replaces the party set before. |
-| A callable that receives a `PartyBuilder` | Continues the party set before, also a `SellerParty` or `BuyerParty` (e.g. from `Seller::apply()` in Laravel or from `InvoiceBuilder::from()`), so single values can be changed. |
+| A callable that receives a `PartyBuilder` | Continues the party set before, also a `SellerParty` or `BuyerParty` (e.g. from `Quittio::invoice()` in Laravel or from `InvoiceBuilder::from()`), so single values can be changed. |
 
 ```php
 use Quittio\Core\Builder\Party;
 
-Seller::apply(InvoiceBuilder::make())                              // seller from config/quittio.php
+Quittio::invoice()                                                 // seller from config/quittio.php
     ->seller(fn (PartyBuilder $s) => $s->contact('Erika Muster', '+49 123 4567', 'erika@muster.de'))
     ->buyer($customer);                                            // ProvidesParty
 
@@ -518,14 +518,14 @@ use Quittio\Core\Enums\ChargeReasonCode;
 | `paymentCard(string $lastDigits, ?string $holderName = null)` | BG-18 (BT-87, BT-88) | Card data: only the last 4 to 6 digits (more throw an `InvalidArgumentException`). Without payment instructions it starts them with `BankCard` (48). |
 | `directDebit(?string $mandateReference, ?string $creditorId = null, ?string $debitedIban = null)` | BG-19 (BT-89, BT-90, BT-91) | SEPA direct debit: mandate reference, creditor identifier, debited account. Without payment instructions it starts them with `SepaDirectDebit` (59). |
 
-A second call of `payment()` replaces the payment instructions: an account given there replaces all accounts; without one, existing accounts are kept for the credit transfer codes 30, 42 and 58 (e.g. the seller's default account set by `Seller::apply()`), card data for 48, 54 and 55, direct debit data for 49 and 59, everything else is dropped. The remittance information is kept unless a new one is given. `creditTransfer()`, `paymentCard()` and `directDebit()` add to existing instructions without changing the means code, so call `payment()` with the means first.
+A second call of `payment()` replaces the payment instructions: an account given there replaces all accounts; without one, existing accounts are kept for the credit transfer codes 30, 42 and 58 (e.g. the seller's default account set by `Quittio::invoice()`), card data for 48, 54 and 55, direct debit data for 49 and 59, everything else is dropped. The remittance information is kept unless a new one is given. `creditTransfer()`, `paymentCard()` and `directDebit()` add to existing instructions without changing the means code, so call `payment()` with the means first.
 
 ```php
 // SEPA credit transfer with two accounts
 ->payment(PaymentMeansCode::SepaCreditTransfer, iban: 'DE02 1203 0000 0000 2020 51', bic: 'BYLADEM1001', accountName: 'Muster GmbH', remittanceInformation: 'RE-2026-0042')
 ->creditTransfer('AT61 1904 3002 3457 3201', 'BKAUATWW')
 
-// SEPA direct debit (replaces the seller's default account set by Seller::apply())
+// SEPA direct debit (replaces the seller's default account set by Quittio::invoice())
 ->payment(PaymentMeansCode::SepaDirectDebit, remittanceInformation: 'RE-2026-0042')
 ->directDebit('MANDATE-2026-17', creditorId: 'DE98ZZZ09999999999', debitedIban: 'DE02120300000000202051')
 
@@ -698,7 +698,7 @@ class Order extends Model implements ProvidesInvoiceData
 {
     public function toInvoiceData(): InvoiceData
     {
-        return Seller::apply(InvoiceBuilder::make())
+        return Quittio::invoice()
             ->number($this->invoice_number)
             ->buyer($this->customer)                            // ProvidesParty
             ->lines($this->items)

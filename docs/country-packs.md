@@ -634,16 +634,15 @@ With an advance invoice RE-2026-0040 of 1,000.00 EUR net plus 19 % VAT, the fina
 ### Small businesses
 
 - Use `VatPreset::SmallBusiness` on every line. Lines without `->vat()` get it automatically when the invoice is flagged as small business invoice (see below) and the default VAT comes from the country pack (`CountryDefaultVat`, in Laravel always; [Default VAT](building-invoices.md#default-vat)). An invoice whose lines all use it is a small business invoice under section 34a UStDV: no service date is required (`DE-USTG-03`) or checked in the PDF; the tax number or VAT identifier is still required (`DE-USTG-02`), and the preset's text (BT-120) appears in the PDF.
-- Mark the seller as a small business so that VAT is rejected (`DE-USTG-09`): `quittio.seller.small_business = true` (applied by `Seller::apply($builder)`), the Managed issuer setting `tax_settings.small_business`, or `->flag(Meta::FLAG_SMALL_BUSINESS)`. `Flags::SMALL_BUSINESS` is the same flag (`small_business`). The flag does not set presets or texts.
+- Mark the seller as a small business so that VAT is rejected (`DE-USTG-09`): `quittio.seller.small_business = true` (applied by `Quittio::invoice()`), the Managed issuer setting `tax_settings.small_business`, or `->flag(Meta::FLAG_SMALL_BUSINESS)`. `Flags::SMALL_BUSINESS` is the same flag (`small_business`). The flag does not set presets or texts.
 - A small business cannot use the exemption for intra-community supplies (category `K`, `DE-USTG-14`, section 19 (1) sentence 2 UStG); only the intra-community supply of a new vehicle (`->newVehicle()`) is excepted (section 19 (6) sentence 1 UStG).
 - Without a VAT identifier, EN 16931 needs a seller identifier (BT-29) or legal registration (BT-30) (BR-CO-26); in Laravel set `quittio.seller.identifiers` or `legal_registration` (see [configuration](configuration.md)).
 
 ```php
-use Quittio\Core\Builder\InvoiceBuilder;
-use Quittio\Laravel\Seller;
+use Quittio\Laravel\Facades\Quittio;
 
-$builder = Seller::apply(InvoiceBuilder::make())   // quittio.seller.small_business = true
-    ->line(Line::make('Beratung')->quantity(1, UnitCode::Hour)->netPrice('80.00')->vat(VatPreset::SmallBusiness));
+$builder = Quittio::invoice()                      // quittio.seller.small_business = true
+    ->line(Line::make('Beratung')->quantity(1, UnitCode::Hour)->netPrice('80.00'));   // VatPreset::SmallBusiness by default
 ```
 
 ### Reverse charge, intra-community supplies and VAT identifiers
@@ -818,15 +817,13 @@ Rates after the last entry are unknown until they are published: interest for da
 
 ```php
 use Brick\Money\Money;
-use Quittio\Core\Documents\DocumentBuilder;
 use Quittio\Core\Support\Amount;
 use Quittio\Core\Support\Date;
 use Quittio\Country\DE\Dunning\DefaultInterest;
 
 $interest = new DefaultInterest;
-$reminder = DocumentBuilder::paymentReminder(1)
+$reminder = Quittio::paymentReminder(1)                          // seller and bank account from the config
     ->number('M-2026-0003')
-    ->seller(Seller::fromConfig())
     ->buyer($buyer)
     ->openItem('RE-2026-0042', '2026-06-01', '1190.00', dueDate: '2026-06-15');
 

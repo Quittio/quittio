@@ -24,14 +24,13 @@ php artisan quittio:preview --scenario=simple
 `InvoiceBuilder` creates the immutable `InvoiceData` (EN 16931 model). Totals and the VAT breakdown are calculated when rendering; never pass them in.
 
 ```php
-use Quittio\Core\Builder\InvoiceBuilder;
 use Quittio\Core\Builder\Line;
 use Quittio\Core\Builder\Party;
 use Quittio\Core\Enums\UnitCode;
 use Quittio\Country\DE\Tax\VatPreset;
-use Quittio\Laravel\Seller;
+use Quittio\Laravel\Facades\Quittio;
 
-$invoice = Seller::apply(InvoiceBuilder::make())       // seller and bank account from the config
+$invoice = Quittio::invoice()                          // seller and bank account from the config
     ->number('RE-2026-0042')
     ->issueDate('2026-10-03')
     ->deliveryDate('2026-09-30')                         // service date, mandatory in Germany
@@ -50,7 +49,7 @@ $invoice = Seller::apply(InvoiceBuilder::make())       // seller and bank accoun
     ->build();
 ```
 
-Lines are a `Line::make()` builder, an array whose keys are the builder's methods, a model or a callable ([Lines](building-invoices.md#lines)). Without `quantity()` a line has the quantity 1. Without `vat()` it gets the default VAT: `quittio.defaults.vat`, otherwise the standard rate of the seller's country (Germany: 19 %; small businesses: the small business exemption), see [Default VAT](building-invoices.md#default-vat).
+`Quittio::invoice()` starts an `InvoiceBuilder` with the seller, the first bank account and the small business setting of `config/quittio.php`; `build()` returns the data, `render()` instead renders it right away ([Rendering](#rendering)). Lines are a `Line::make()` builder, an array whose keys are the builder's methods, a model or a callable ([Lines](building-invoices.md#lines)). Without `quantity()` a line has the quantity 1. Without `vat()` it gets the default VAT: `quittio.defaults.vat`, otherwise the standard rate of the seller's country (Germany: 19 %; small businesses: the small business exemption), see [Default VAT](building-invoices.md#default-vat).
 
 Amounts and quantities are strings (or `Brick\Math` values) to avoid floating point errors; floats are rejected with an `InvalidArgumentException`. Rounding follows EN 16931 (half up, two decimals for amounts, VAT per VAT group). References, notes, further parties, allowances and charges, payment means such as direct debit, attachments, gross prices and all other options are described in [Building invoices](building-invoices.md); the German tax presets (`VatPreset::Standard19`, `Reduced7`, `ReverseChargeEu` …) in [Tax presets](country-packs.md#tax-presets).
 
@@ -73,7 +72,7 @@ class User extends Authenticatable implements ProvidesParty
     }
 }
 
-$invoice = Seller::apply(InvoiceBuilder::make())
+$invoice = Quittio::invoice()
     ->buyer($user)                                       // ProvidesParty
     ->lines($order->items)                               // items implement ProvidesInvoiceLine
     // ...
@@ -83,6 +82,15 @@ $invoice = Seller::apply(InvoiceBuilder::make())
 The invoice keeps a copy of these values; changing the model later does not change invoices that were already built. More in [Application models](building-invoices.md#application-models); to store invoices and link them to the user (`HasInvoices` trait, `$user->invoices()`), see [Customers and references](managed.md#customers-and-references) in the Managed layer.
 
 ## Rendering
+
+Instead of `build()`, end the chain with `render()`: without argument in the automatically chosen format, otherwise in the given format or formats.
+
+```php
+$result = Quittio::invoice()->buyer($user)->line(Line::make('Consulting')->netPrice('120.00'))->render();
+$result = Quittio::invoice()->buyer($user)->line(Line::make('Consulting')->netPrice('120.00'))->render('xrechnung-cii');
+```
+
+For data you built before, or for more options (profile, locale, template, queue):
 
 ```php
 use Quittio\Laravel\Facades\Quittio;
@@ -157,7 +165,7 @@ InvoiceBuilder::useDefaultVat(new CountryDefaultVat($quittio->countries()));   /
 
 $invoice = InvoiceBuilder::make()
     ->seller(Party::make('Muster GmbH')->vatId('DE123456789')->address('Hauptstraße 1', '12345', 'Musterstadt', 'DE'))
-    // ... as above, without Seller::apply()
+    // ... as above, without Quittio::invoice()
     ->build();
 
 $result = $quittio->make($invoice)->format('zugferd')->render();

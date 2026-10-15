@@ -11,19 +11,18 @@ Documents share parties, lines, calculation, design and templates with invoices 
 | Payment reminder | `PaymentReminder` (`payment_reminder`) | `paymentReminder(int $level = 0)` | not allowed | open items, fees, interest | bank details, QR code over the total |
 | Account statement | `AccountStatement` (`account_statement`) | `accountStatement()` | not allowed | open items, balance | bank details |
 
+In Laravel, `Quittio::quote()`, `Quittio::orderConfirmation()`, `Quittio::deliveryNote()`, `Quittio::proforma()`, `Quittio::paymentReminder(int $level = 0)` and `Quittio::accountStatement()` start the builder with the seller, the first bank account and the small business setting of `config/quittio.php`; `->render()` at the end renders the PDF ([Starting invoices](laravel.md#starting-invoices)). Without Laravel, start with the static methods of `DocumentBuilder` and set the seller yourself.
+
 `DocumentBuilder::make(DocumentType $type)` creates a builder for any type (reminders then have level 0). `DocumentType` has `showsPrices()` (`false` for delivery notes), `hasLineTotals()` (quotes, order confirmations, proformas) and `labelKey()` (`document_{value}`).
 
 ```php
 use Quittio\Core\Builder\Line;
 use Quittio\Core\Builder\Party;
-use Quittio\Core\Documents\DocumentBuilder;
 use Quittio\Laravel\Facades\Quittio;
-use Quittio\Laravel\Seller;
 
-$quote = DocumentBuilder::quote()
+$quote = Quittio::quote()
     ->number('AN-2026-0007')
     ->issueDate('2026-10-06')
-    ->seller(Seller::fromConfig())
     ->buyer(Party::make('Kunde AG')->address('Weg 1', '54321', 'Beispielstadt', 'DE'))
     ->validUntil('2026-10-31')
     ->line(Line::make('Consulting')->quantity(10, 'HUR')->netPrice('120.00'))
@@ -90,9 +89,8 @@ Delivery notes print quantities without prices or totals. Lines given as builder
 use Quittio\Core\Documents\Package;
 use Brick\Math\BigDecimal;
 
-$note = DocumentBuilder::deliveryNote()
+$note = Quittio::deliveryNote()
     ->number('LS-2026-0012')
-    ->seller(Seller::fromConfig())
     ->buyer($buyer)
     ->reference('AB-2026-0003')
     ->deliveryDate('2026-10-02')
@@ -111,15 +109,13 @@ A proforma is not an invoice for tax purposes. Build it with `DocumentBuilder::p
 ## Payment reminders
 
 ```php
-$reminder = DocumentBuilder::paymentReminder(1)          // 0 = payment reminder (Zahlungserinnerung), 1 = 1. Mahnung, 2 = 2. Mahnung …
+$reminder = Quittio::paymentReminder(1)                  // 0 = payment reminder (Zahlungserinnerung), 1 = 1. Mahnung, 2 = 2. Mahnung …
     ->number('M-2026-0003')
-    ->seller(Seller::fromConfig())
     ->buyer($buyer)
     ->openItem('RE-2026-0042', '2026-08-01', '1190.00', dueDate: '2026-08-15', paid: '190.00')
     ->fee('Reminder costs', '2.50')
     ->interest('1000.00', '10.27', from: '2026-08-16', until: '2026-10-04')   // until is exclusive: last day 03.10.
     ->deadline('2026-10-18')
-    ->creditTransfer('DE02120300000000202051', 'BYLADEM1001')
     ->build();
 
 $reminder->dunning->total('EUR');            // open items + fees + interest, no VAT
@@ -159,9 +155,8 @@ Base rate table, flat rate and the conditions of default are described in [Count
 ## Account statements
 
 ```php
-$statement = DocumentBuilder::accountStatement()
+$statement = Quittio::accountStatement()
     ->number('KA-2026-09')
-    ->seller(Seller::fromConfig())
     ->buyer($buyer)
     ->statementPeriod('2026-09-01', '2026-09-30')
     ->openingBalance('100.00')

@@ -376,6 +376,8 @@ $draft = Invoice::draft($issuer->builder()
     ->line(Line::make('Beratung')->quantity(8, UnitCode::Hour)->netPrice('120.00')->vat(VatPreset::Standard19)));
 ```
 
+`Quittio::invoice()` and the document methods (`Quittio::quote()`, `Quittio::paymentReminder()` …) start with the current issuer in the same way (the Managed layer binds `InvoiceDefaults` to `Issuer::current()->applyTo($builder)`, see [Starting invoices](laravel.md#starting-invoices)), so `Invoice::draft(Quittio::invoice()->buyer($customer)->line(…))` is the same as starting from `Issuer::current()->builder()`.
+
 The builder copies these values into the draft. Later changes of the issuer do not change
 existing drafts, except the seller, which is taken from the profile again when the draft is
 issued. Further methods of `Issuer`:
@@ -384,6 +386,7 @@ issued. Further methods of `Issuer`:
 |---|---|
 | `Issuer::current()` | The issuer of the configured resolver |
 | `builder()` | `InvoiceBuilder` with the issuer's data (see above) |
+| `applyTo(InvoiceBuilder $builder)` | Sets the issuer's data (see above) on an existing builder and returns it; `builder()` is `applyTo(InvoiceBuilder::make())` |
 | `sellerParty()` / `setSellerParty(SellerParty $seller)` | The seller; the setter also sets `country` |
 | `presentation(?string $locale = null)` | `Presentation` from branding and texts, `null` if the issuer defines none |
 | `locale()` | `defaults.locale` or `null` |

@@ -44,14 +44,12 @@ All open source packages are developed in this repository under [`packages/`](pa
 ## Quick example
 
 ```php
-use Quittio\Core\Builder\InvoiceBuilder;
 use Quittio\Core\Builder\Line;
 use Quittio\Core\Builder\Party;
 use Quittio\Core\Enums\UnitCode;
 use Quittio\Laravel\Facades\Quittio;
-use Quittio\Laravel\Seller;
 
-$invoice = Seller::apply(InvoiceBuilder::make())                  // seller and bank account from config/quittio.php
+$result = Quittio::invoice()                                     // seller and bank account from config/quittio.php
     ->number('RE-2026-0042')
     ->deliveryDate('2026-09-30')
     ->buyer(Party::make('Kunde AG')                               // or a model: ->buyer($customer)
@@ -60,9 +58,7 @@ $invoice = Seller::apply(InvoiceBuilder::make())                  // seller and 
     ->line(Line::make('Web development')->quantity(24, UnitCode::Hour)->netPrice('95.00'))
     ->line(['name' => 'Hosting', 'netPrice' => '49.00'])          // quantity 1, VAT 19 % by default
     ->paymentTerms(fn ($t) => $t->dueInDays(14))
-    ->build();
-
-$result = Quittio::make($invoice)->render();                     // ZUGFeRD: PDF/A-3 with embedded XML
+    ->render();                                                   // ZUGFeRD: PDF/A-3 with embedded XML
 
 $result->pdf();
 $result->save('invoices', '2026/');

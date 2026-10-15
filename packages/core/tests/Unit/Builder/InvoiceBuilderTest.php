@@ -220,3 +220,16 @@ it('builds drafts without lines that can be calculated', function () {
         ->and($draft->isCalculated())->toBeTrue()
         ->and((string) $draft->totals?->amountDue->getAmount())->toBe('0.00');
 });
+
+it('gives macros access to the builder state on subclasses', function () {
+    $subclass = new class extends InvoiceBuilder {};
+    InvoiceBuilder::macro('currencyForTest', function (): string {
+        return $this->currency;
+    });
+
+    try {
+        expect($subclass::make()->currency('USD')->currencyForTest())->toBe('USD');
+    } finally {
+        InvoiceBuilder::flushMacros();
+    }
+});

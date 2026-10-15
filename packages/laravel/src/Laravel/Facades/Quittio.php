@@ -11,6 +11,13 @@ use Quittio\Laravel\Testing\QuittioFake;
 
 /**
  * @method static \Quittio\Laravel\Rendering\PendingInvoice make(\Quittio\Core\Data\InvoiceData|\Quittio\Core\Contracts\ProvidesInvoiceData|\Quittio\Core\Builder\InvoiceBuilder $data)
+ * @method static \Quittio\Laravel\Builder\RenderableInvoiceBuilder invoice() a new invoice with the seller of config/quittio.php (or the current issuer of quittio/managed)
+ * @method static \Quittio\Laravel\Builder\RenderableDocumentBuilder quote()
+ * @method static \Quittio\Laravel\Builder\RenderableDocumentBuilder orderConfirmation()
+ * @method static \Quittio\Laravel\Builder\RenderableDocumentBuilder deliveryNote()
+ * @method static \Quittio\Laravel\Builder\RenderableDocumentBuilder proforma()
+ * @method static \Quittio\Laravel\Builder\RenderableDocumentBuilder paymentReminder(int $level = 0)
+ * @method static \Quittio\Laravel\Builder\RenderableDocumentBuilder accountStatement()
  * @method static \Quittio\Laravel\Rendering\PendingDocument document(\Quittio\Core\Documents\DocumentData|\Quittio\Core\Documents\DocumentBuilder $document)
  * @method static \Quittio\Core\Builder\InvoiceBuilder cancellation(\Quittio\Core\Data\InvoiceData $original, string $number, ?string $reason = null, ?string $strategy = null, ?\Quittio\Core\Support\Date $issueDate = null, ?list<array{line: string, quantity?: \Brick\Math\BigDecimal|int|string, amount?: string}> $lines = null, ?\Quittio\Core\Corrections\CancellationHistory $history = null, ?string $title = null)
  * @method static \Quittio\Laravel\Rendering\RenderedInvoice renderInvoice(\Quittio\Core\Data\InvoiceData $invoice, \Quittio\Core\Rendering\RenderOptions $options) the render run behind PendingInvoice::render(), with events

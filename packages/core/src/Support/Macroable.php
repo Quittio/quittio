@@ -45,7 +45,9 @@ trait Macroable
 
         $macro = static::$macros[$method];
         if ($macro instanceof Closure) {
-            $macro = $macro->bindTo($this, static::class) ?? $macro;
+            // Scope of the class that uses the trait, so that macros reach its private
+            // properties also on subclasses (e.g. the RenderableInvoiceBuilder of Laravel).
+            $macro = $macro->bindTo($this, self::class) ?? $macro;
         }
 
         return $macro(...$parameters);

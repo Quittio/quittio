@@ -108,7 +108,7 @@ See [Country packs: base rate table](country-packs.md#base-rate-table).
 
 ## Seller
 
-Used by `Seller::fromConfig()` and `Seller::apply()` (see
+Used by `Quittio::invoice()`, the document methods (`Quittio::quote()` …), `Seller::fromConfig()` and `Seller::apply()` (see
 [Laravel integration](laravel.md#seller-from-the-configuration)). With `quittio/managed`,
 issuer profiles replace it.
 
@@ -128,8 +128,8 @@ issuer profiles replace it.
 | `seller.contact.name` / `.phone` / `.email` | string\|null | `null` | Seller contact (BG-6); added only when at least one value is set |
 | `seller.electronic_address.value` | string\|null | `null` | Electronic address (BT-34); added only when set |
 | `seller.electronic_address.scheme` | string | `'EM'` | Scheme of the electronic address (EAS code, `EM` = e-mail) |
-| `seller.bank_accounts` | list | `[['iban' => null, 'bic' => null, 'name' => null]]` | `Seller::apply()` adds a credit transfer with the first entry whose `iban` is not empty (`bic` and `name` optional); the other entries are ignored. |
-| `seller.small_business` | bool | `false` | `Seller::apply()` marks the invoice as an invoice of a small business (Germany: § 19 UStG, `Meta::FLAG_SMALL_BUSINESS`); country packs then reject VAT on it (Germany also the intra-community supply exemption, except for new vehicles). Use `VatPreset::SmallBusiness` for the lines. |
+| `seller.bank_accounts` | list | `[['iban' => null, 'bic' => null, 'name' => null]]` | `Quittio::invoice()` (`Seller::apply()`) adds a credit transfer with the first entry whose `iban` is not empty (`bic` and `name` optional); the other entries are ignored. |
+| `seller.small_business` | bool | `false` | `Quittio::invoice()` (`Seller::apply()`) marks the invoice as an invoice of a small business (Germany: § 19 UStG, `Meta::FLAG_SMALL_BUSINESS`); country packs then reject VAT on it (Germany also the intra-community supply exemption, except for new vehicles). Use `VatPreset::SmallBusiness` for the lines. |
 
 ## PDF and design
 

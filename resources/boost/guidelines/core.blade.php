@@ -4,7 +4,7 @@ Quittio creates, validates, reads and renders electronic invoices according to E
 
 ### Rules
 
-- Build invoices with `Quittio\Core\Builder\InvoiceBuilder`; `build()` returns the immutable `InvoiceData`. Never set totals or the VAT breakdown: Quittio calculates them when rendering.
+- Start invoices with `Quittio::invoice()` (seller and bank account from `config/quittio.php`) and end the chain with `->render()`, or `->build()` for the immutable `InvoiceData`. Documents start with `Quittio::quote()`, `Quittio::paymentReminder($level)` etc. Never set totals or the VAT breakdown: Quittio calculates them when rendering.
 - Pass amounts, prices and quantities as strings (`'95.00'`), never as floats; floats are rejected.
 - Add lines with `Line::make('Name')->quantity(…)->netPrice(…)` or as arrays (`['name' => …, 'netPrice' => …]`); the quantity defaults to 1. Lines without `->vat()` get the default VAT: `quittio.defaults.vat`, otherwise the standard rate of the seller's country (Germany 19 %, small businesses the small business exemption). For other rates use the presets of the country pack (`Quittio\Country\DE\Tax\VatPreset::Reduced7`, `ReverseChargeEu`, `IntraCommunitySupply`, `VatPreset::exempt('§ 4 Nr. 14 UStG')`) instead of a category and rate, so that the mandatory notes are added.
 - Pass customer models implementing `Quittio\Core\Contracts\ProvidesParty` directly: `->buyer($customer)`; otherwise `->buyer(Party::make('Kunde AG')->vatId(…)->address(…))`.
@@ -15,14 +15,12 @@ Quittio creates, validates, reads and renders electronic invoices according to E
 
 @verbatim
 <code-snippet name="Build and render a German invoice" lang="php">
-use Quittio\Core\Builder\InvoiceBuilder;
 use Quittio\Core\Builder\Line;
 use Quittio\Core\Enums\UnitCode;
 use Quittio\Country\DE\Tax\VatPreset;
 use Quittio\Laravel\Facades\Quittio;
-use Quittio\Laravel\Seller;
 
-$invoice = Seller::apply(InvoiceBuilder::make())     // seller from config/quittio.php
+$result = Quittio::invoice()                         // seller from config/quittio.php
     ->number('RE-2026-0042')
     ->issueDate('2026-10-03')
     ->deliveryDate('2026-09-30')
@@ -30,9 +28,8 @@ $invoice = Seller::apply(InvoiceBuilder::make())     // seller from config/quitt
     ->line(Line::make('Web development')->quantity(24, UnitCode::Hour)->netPrice('95.00'))   // 19 % by default
     ->line(Line::make('Handbook')->netPrice('39.00')->vat(VatPreset::Reduced7))
     ->paymentTerms(fn ($t) => $t->dueInDays(14))
-    ->build();
+    ->render();                                      // ZUGFeRD for German businesses
 
-$result = Quittio::make($invoice)->render();         // ZUGFeRD for German businesses
 $result->save('invoices', '2026/');
 </code-snippet>
 @endverbatim

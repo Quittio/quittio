@@ -26,7 +26,7 @@ it('renders the Boost guidelines with Blade', function () {
 
     expect($html)->toStartWith('## Quittio')
         ->and($html)->toContain('<code-snippet name="Build and render a German invoice" lang="php">')
-        ->and($html)->toContain('Seller::apply(InvoiceBuilder::make())')
+        ->and($html)->toContain('Quittio::invoice()')
         ->and($html)->not->toContain('@verbatim');
 });
 
