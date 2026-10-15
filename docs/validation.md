@@ -438,6 +438,7 @@ All EN 16931, code list, VAT category and Peppol rules report errors unless note
 | `QUITTIO-LINE-ROUNDING` | warning | Declared line net amount differs from quantity × price ± allowances and charges |
 | `QUITTIO-ATTACHMENT-FILENAME` | error | File name of an attached document used twice |
 | `QUITTIO-ATTACHMENT-SIZE` | error | Attachments larger than `attachment_max_bytes` or `attachments_max_total_bytes` |
+| `QUITTIO-INVALID-CHARACTERS` | error | A text contains control characters (e.g. a vertical tab from a spreadsheet cell) or invalid UTF-8, which XML cannot represent; XML writers refuse such data |
 | `QUITTIO-GENERIC-COUNTRY` | warning | No country pack for the seller's country: only EN 16931 is checked |
 | `QUITTIO-PROFILE-NOT-EINVOICE` | warning | Profile that is no EN 16931 e-invoice (MINIMUM, BASIC WL) |
 | `QUITTIO-STANDARD-VERSION` | error | The profile does not support the EN 16931 version of the invoice |

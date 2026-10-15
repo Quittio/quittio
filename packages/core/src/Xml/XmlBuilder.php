@@ -7,6 +7,7 @@ namespace Quittio\Core\Xml;
 use DOMDocument;
 use DOMElement;
 use InvalidArgumentException;
+use Quittio\Core\Exceptions\InvalidInvoiceData;
 use RuntimeException;
 
 /**
@@ -18,6 +19,12 @@ use RuntimeException;
  */
 final class XmlBuilder
 {
+    /**
+     * Matches a character outside the Char production of XML 1.0 (e.g. the vertical tab of spreadsheet
+     * cells); preg_match() fails on invalid UTF-8.
+     */
+    private const string NON_XML_CHARACTER = '/[^\x{9}\x{A}\x{D}\x{20}-\x{D7FF}\x{E000}-\x{FFFD}\x{10000}-\x{10FFFF}]/u';
+
     private DOMDocument $document;
 
     /** @var list<DOMElement> */
@@ -54,9 +61,19 @@ final class XmlBuilder
     }
 
     /**
+     * Whether a string is valid UTF-8 and contains only characters allowed in XML 1.0.
+     */
+    public static function isXmlText(string $value): bool
+    {
+        return preg_match(self::NON_XML_CHARACTER, $value) === 0;
+    }
+
+    /**
      * Writes an element with text content. Null or empty values are skipped.
      *
      * @param  array<string, string|null>  $attributes
+     *
+     * @throws InvalidInvoiceData when a value contains characters that XML 1.0 cannot represent
      */
     public function element(string $name, ?string $value, array $attributes = []): self
     {
@@ -64,10 +81,17 @@ final class XmlBuilder
             return $this;
         }
 
+        // DOMDocument would write them unchanged and produce a document that is not well-formed.
+        if (! self::isXmlText($value)) {
+            throw InvalidInvoiceData::invalidXmlCharacters($name);
+        }
         $element = $this->create($name);
         $element->appendChild($this->document->createTextNode($value));
         foreach ($attributes as $attribute => $attributeValue) {
             if ($attributeValue !== null && $attributeValue !== '') {
+                if (! self::isXmlText($attributeValue)) {
+                    throw InvalidInvoiceData::invalidXmlCharacters($name.'/@'.$attribute);
+                }
                 $element->setAttribute($attribute, $attributeValue);
             }
         }

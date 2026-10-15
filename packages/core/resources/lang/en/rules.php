@@ -404,6 +404,10 @@ return [
     'QUITTIO-ATTACHMENT-SIZE' => [
         'message' => 'Attached documents exceed the size limit (:value bytes). Receiving portals reject large invoices.',
     ],
+    'QUITTIO-INVALID-CHARACTERS' => [
+        'message' => 'The text in :value contains control characters or invalid UTF-8, which XML cannot represent.',
+        'hint' => 'Remove control characters such as vertical tabs from text copied out of spreadsheets, and pass text in UTF-8.',
+    ],
     'QUITTIO-GENERIC-COUNTRY' => [
         'message' => 'No country pack is installed for the seller country :value. Only EN 16931 rules are checked; national mandatory information is not validated.',
         'hint' => 'Install the country pack for the seller country, e.g. composer require quittio/country-de.',

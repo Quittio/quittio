@@ -404,6 +404,10 @@ return [
     'QUITTIO-ATTACHMENT-SIZE' => [
         'message' => 'Die Anlagen überschreiten die Größengrenze (:value Bytes). Empfangsportale lehnen zu große Rechnungen ab.',
     ],
+    'QUITTIO-INVALID-CHARACTERS' => [
+        'message' => 'Der Text in :value enthält Steuerzeichen oder ungültiges UTF-8, die XML nicht darstellen kann.',
+        'hint' => 'Entfernen Sie Steuerzeichen wie vertikale Tabulatoren aus Text, der aus Tabellenkalkulationen kopiert wurde, und übergeben Sie Text in UTF-8.',
+    ],
     'QUITTIO-GENERIC-COUNTRY' => [
         'message' => 'Für das Land des Verkäufers :value ist kein Länderpaket installiert. Geprüft werden nur die Regeln der EN 16931, nationale Pflichtangaben nicht.',
         'hint' => 'Installieren Sie das Länderpaket für das Land des Verkäufers, z. B. composer require quittio/country-de.',
