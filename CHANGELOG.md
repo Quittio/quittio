@@ -18,6 +18,7 @@ All notable changes to this project are documented in this file. The format foll
 - A UBL credit note without payment instructions (BG-16) left out its due date (BT-9) silently: the UBL binding transmits it only in `cac:PaymentMeans`. The new warning `QUITTIO-CREDIT-NOTE-DUE-DATE` points this out; the field reference names the credit note path.
 - A percentage document allowance or charge without base amount whose VAT category and rate matched no invoice line became 0.00 silently (data from JSON, readers or `with()`); the calculator now throws a `CalculationException`. Drafts without any lines still calculate with a zero base.
 - Reading an invoice and the check for declared amounts no longer turn errors such as a `TypeError` of a custom `TotalsCalculator` into the warning `QUITTIO-READER-RECALCULATION`; only exceptions are reported.
+- The post-processing of PDFs from renderers that cannot embed (PDF/A and XML) uses the configured `temp_dir` instead of the system temporary directory.
 - The CII and UBL readers accept every `xs:boolean` spelling of `ChargeIndicator` (`1`/`0`, surrounding white space). Before, such document allowances and charges were dropped and line charges were read as allowances; a missing or invalid indicator is now reported as `QUITTIO-READER-CHARGE-INDICATOR`. The documented CII and UBL paths of BG-20 and BG-21 are valid XPath.
 
 ## [0.1.0] - 2026-10-15

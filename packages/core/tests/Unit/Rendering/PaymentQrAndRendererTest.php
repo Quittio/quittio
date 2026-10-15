@@ -68,3 +68,22 @@ it('adds PDF/A and the XML for renderers that cannot embed', function () {
     expect((new PdfEmbeddedFileExtractor)->extract((string) $pdf))->not->toBeNull()
         ->and((string) $pdf)->toContain('pdfaid:part');
 });
+
+it('post-processes in the configured temporary directory', function () {
+    $dir = sys_get_temp_dir().'/quittio-test-'.bin2hex(random_bytes(4));
+
+    try {
+        Quittio::create(['temp_dir' => $dir], renderer: new PlainPdfRenderer)->make(Invoices::simple()->build())->format('zugferd')->render();
+
+        expect(glob($dir.'/*'))->not->toBe([]);
+    } finally {
+        if (! is_dir($dir)) {
+            return;
+        }
+        $entries = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir, FilesystemIterator::SKIP_DOTS), RecursiveIteratorIterator::CHILD_FIRST);
+        foreach ($entries as $entry) {
+            $entry->isDir() ? rmdir($entry->getPathname()) : unlink($entry->getPathname());
+        }
+        rmdir($dir);
+    }
+});

@@ -707,7 +707,7 @@ final class Quittio
             throw new PdfException(sprintf('The PDF renderer %s did not return a PDF.', $this->renderer::class));
         }
 
-        return (new MpdfPostProcessor)->process($pdf, $request->embedded, $request->title, $request->author);
+        return (new MpdfPostProcessor($this->config->tempDir))->process($pdf, $request->embedded, $request->title, $request->author);
     }
 
     /**
