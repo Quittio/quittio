@@ -1,0 +1,610 @@
+{
+    "data": {
+        "number": "RE-2026-0042",
+        "numberLabel": "Rechnungsnummer",
+        "dateLabel": "Rechnungsdatum",
+        "title": "Rechnung",
+        "issueDate": {
+            "formatted": "03.10.2026",
+            "raw": "2026-10-03"
+        },
+        "dueDate": {
+            "formatted": "17.10.2026",
+            "raw": "2026-10-17"
+        },
+        "servicePeriod": {
+            "formatted": "30.09.2026",
+            "raw": "2026-09-30"
+        },
+        "servicePeriodLabel": "Leistungsdatum",
+        "deliveryDate": null,
+        "currency": "EUR",
+        "document": {
+            "typeCode": "380",
+            "type": "Rechnung",
+            "isCreditNote": false,
+            "isSelfBilled": false,
+            "profile": null,
+            "profileKey": null,
+            "kind": "invoice",
+            "isInvoice": true,
+            "showPrices": true,
+            "showTotals": true
+        },
+        "documentInfo": null,
+        "seller": {
+            "name": "Muster GmbH",
+            "tradingName": null,
+            "displayName": "Muster GmbH",
+            "address": {
+                "lines": [
+                    "Muster GmbH",
+                    "Hauptstraße 1",
+                    "12345 Musterstadt"
+                ],
+                "street": "Hauptstraße 1",
+                "additional": null,
+                "line3": null,
+                "postcode": "12345",
+                "city": "Musterstadt",
+                "subdivision": null,
+                "countryCode": "DE",
+                "country": "Deutschland"
+            },
+            "vatId": "DE123456789",
+            "taxNumber": "12/345/67890",
+            "legalRegistration": "HRB 12345",
+            "additionalLegalInfo": "Amtsgericht Musterstadt · Geschäftsführer: Max Muster",
+            "contact": {
+                "name": "Max Muster",
+                "phone": "+49 123 456789",
+                "email": "rechnung@muster.de"
+            },
+            "electronicAddress": "rechnung@muster.de",
+            "identifiers": []
+        },
+        "buyer": {
+            "name": "Cliente S.r.l.",
+            "tradingName": null,
+            "displayName": "Cliente S.r.l.",
+            "address": {
+                "lines": [
+                    "Cliente S.r.l.",
+                    "Via Roma 1",
+                    "00184 Roma",
+                    "ITALIEN"
+                ],
+                "street": "Via Roma 1",
+                "additional": null,
+                "line3": null,
+                "postcode": "00184",
+                "city": "Roma",
+                "subdivision": null,
+                "countryCode": "IT",
+                "country": "Italien"
+            },
+            "vatId": "IT12345678901",
+            "customerNumber": "K-10001",
+            "legalRegistration": null,
+            "contact": {
+                "name": "Erika Kunde",
+                "phone": "+49 987 654321",
+                "email": "einkauf@kunde.de"
+            },
+            "isConsumer": false
+        },
+        "issuer": {
+            "name": "Muster GmbH",
+            "tradingName": null,
+            "displayName": "Muster GmbH",
+            "address": {
+                "lines": [
+                    "Muster GmbH",
+                    "Hauptstraße 1",
+                    "12345 Musterstadt"
+                ],
+                "street": "Hauptstraße 1",
+                "additional": null,
+                "line3": null,
+                "postcode": "12345",
+                "city": "Musterstadt",
+                "subdivision": null,
+                "countryCode": "DE",
+                "country": "Deutschland"
+            },
+            "vatId": "DE123456789",
+            "taxNumber": "12/345/67890",
+            "legalRegistration": "HRB 12345",
+            "additionalLegalInfo": "Amtsgericht Musterstadt · Geschäftsführer: Max Muster",
+            "contact": {
+                "name": "Max Muster",
+                "phone": "+49 123 456789",
+                "email": "rechnung@muster.de"
+            },
+            "electronicAddress": "rechnung@muster.de",
+            "identifiers": []
+        },
+        "recipient": {
+            "name": "Cliente S.r.l.",
+            "tradingName": null,
+            "displayName": "Cliente S.r.l.",
+            "address": {
+                "lines": [
+                    "Cliente S.r.l.",
+                    "Via Roma 1",
+                    "00184 Roma",
+                    "ITALIEN"
+                ],
+                "street": "Via Roma 1",
+                "additional": null,
+                "line3": null,
+                "postcode": "00184",
+                "city": "Roma",
+                "subdivision": null,
+                "countryCode": "IT",
+                "country": "Italien"
+            },
+            "vatId": "IT12345678901",
+            "customerNumber": "K-10001",
+            "legalRegistration": null,
+            "contact": {
+                "name": "Erika Kunde",
+                "phone": "+49 987 654321",
+                "email": "einkauf@kunde.de"
+            },
+            "isConsumer": false
+        },
+        "payee": null,
+        "taxRepresentative": null,
+        "delivery": {
+            "recipientName": "Cliente S.r.l.",
+            "date": {
+                "formatted": "30.09.2026",
+                "raw": "2026-09-30"
+            },
+            "address": {
+                "lines": [
+                    "Cliente S.r.l.",
+                    "Via Roma 1",
+                    "00184 Roma",
+                    "ITALIEN"
+                ],
+                "street": "Via Roma 1",
+                "additional": null,
+                "line3": null,
+                "postcode": "00184",
+                "city": "Roma",
+                "subdivision": null,
+                "countryCode": "IT",
+                "country": "Italien"
+            }
+        },
+        "references": [
+            {
+                "key": "buyer_reference",
+                "label": "Ihre Referenz",
+                "value": "PO-4711"
+            }
+        ],
+        "precedingInvoices": [],
+        "lineGroups": [
+            {
+                "id": null,
+                "title": null,
+                "lines": [
+                    {
+                        "position": "1",
+                        "id": "1",
+                        "name": "Industriepumpe",
+                        "description": {
+                            "text": null,
+                            "html": ""
+                        },
+                        "note": null,
+                        "sellerId": null,
+                        "buyerId": null,
+                        "quantity": {
+                            "formatted": "2",
+                            "raw": "2"
+                        },
+                        "unit": {
+                            "code": "H87",
+                            "label": "Stk."
+                        },
+                        "unitPrice": {
+                            "formatted": "1.450,00 €",
+                            "raw": "1450.00"
+                        },
+                        "grossUnitPrice": null,
+                        "listPrice": null,
+                        "baseQuantity": null,
+                        "unitPriceBase": null,
+                        "showGrossPrice": false,
+                        "total": {
+                            "formatted": "2.900,00 €",
+                            "raw": "EUR 2900.00"
+                        },
+                        "vatRate": {
+                            "formatted": "0 %",
+                            "raw": "0"
+                        },
+                        "vatCategory": "K",
+                        "period": null,
+                        "attributes": [],
+                        "allowances": [],
+                        "charges": [],
+                        "subLines": [],
+                        "highlight": false,
+                        "groupId": null,
+                        "optional": false,
+                        "alternativeTo": null,
+                        "serialNumbers": [],
+                        "carryOver": {
+                            "formatted": "2.900,00 €",
+                            "raw": "EUR 2900.00"
+                        }
+                    }
+                ],
+                "subtotal": null
+            }
+        ],
+        "lines": [
+            {
+                "position": "1",
+                "id": "1",
+                "name": "Industriepumpe",
+                "description": {
+                    "text": null,
+                    "html": ""
+                },
+                "note": null,
+                "sellerId": null,
+                "buyerId": null,
+                "quantity": {
+                    "formatted": "2",
+                    "raw": "2"
+                },
+                "unit": {
+                    "code": "H87",
+                    "label": "Stk."
+                },
+                "unitPrice": {
+                    "formatted": "1.450,00 €",
+                    "raw": "1450.00"
+                },
+                "grossUnitPrice": null,
+                "listPrice": null,
+                "baseQuantity": null,
+                "unitPriceBase": null,
+                "showGrossPrice": false,
+                "total": {
+                    "formatted": "2.900,00 €",
+                    "raw": "EUR 2900.00"
+                },
+                "vatRate": {
+                    "formatted": "0 %",
+                    "raw": "0"
+                },
+                "vatCategory": "K",
+                "period": null,
+                "attributes": [],
+                "allowances": [],
+                "charges": [],
+                "subLines": [],
+                "highlight": false,
+                "groupId": null,
+                "optional": false,
+                "alternativeTo": null,
+                "serialNumbers": []
+            }
+        ],
+        "allowances": [],
+        "charges": [],
+        "vatRows": [
+            {
+                "label": "Umsatzsteuerfrei (Innergemeinschaftliche Lieferung) auf 2.900,00 €",
+                "category": "K",
+                "categoryLabel": "Innergemeinschaftliche Lieferung",
+                "rate": {
+                    "formatted": "0 %",
+                    "raw": "0"
+                },
+                "base": {
+                    "formatted": "2.900,00 €",
+                    "raw": "EUR 2900.00"
+                },
+                "amount": {
+                    "formatted": "0,00 €",
+                    "raw": "EUR 0.00"
+                },
+                "isSpecialScheme": false,
+                "exemptionReason": "Steuerfreie innergemeinschaftliche Lieferung",
+                "exemptionReasonCode": "VATEX-EU-IC"
+            }
+        ],
+        "totals": {
+            "lineNetSum": {
+                "formatted": "2.900,00 €",
+                "raw": "EUR 2900.00"
+            },
+            "allowanceSum": null,
+            "chargeSum": null,
+            "netTotal": {
+                "formatted": "2.900,00 €",
+                "raw": "EUR 2900.00"
+            },
+            "vatTotal": {
+                "formatted": "0,00 €",
+                "raw": "EUR 0.00"
+            },
+            "vatTotalInTaxCurrency": null,
+            "taxCurrencyNote": null,
+            "grossTotal": {
+                "formatted": "2.900,00 €",
+                "raw": "EUR 2900.00"
+            },
+            "dueEqualsGross": true,
+            "prepaid": null,
+            "rounding": null,
+            "thirdPartyPayments": [],
+            "amountDue": {
+                "formatted": "2.900,00 €",
+                "raw": "EUR 2900.00"
+            },
+            "amountDueLabel": "Zahlbetrag"
+        },
+        "payment": {
+            "meansCode": "58",
+            "means": "SEPA-Überweisung",
+            "meansText": null,
+            "remittance": "RE-2026-0042",
+            "accounts": [
+                {
+                    "iban": "DE02 1203 0000 0000 2020 51",
+                    "bic": "BYLADEM1001",
+                    "name": "Muster GmbH"
+                }
+            ],
+            "card": null,
+            "directDebit": null,
+            "qrCode": {
+                "type": "girocode",
+                "payload": "BCD\n002\n1\nSCT\nBYLADEM1001\nMuster GmbH\nDE02120300000000202051\nEUR2900.00\n\n\nRE-2026-0042",
+                "dataUri": "data:image/png;base64,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FoBgAQgWsJ9r4EzNxNMUNGsTeLY32jSwYJwne821M+6NxgvkCQvwSgggWACCBQgWgGABCBZwuIn7EjZ6N2ASNXhSsIXi069e2ASw8QboupcWdm/MPnsDR8k8YQEIFiBYAIIFIFiAYAEIFvC97sbvHrglYtTfFxxq426MjcsnbbRy0wH/JlH3pCcswCshgGABCBYgWACCBSBYgGABjHEPPKaBO1MO3Ap04KJrjSOOURco8II+/YrGC7rReK0nLMArIYBgAYIFIFgAggUIFsBQt1PwG1HjOYEbqW60pmD257ziptgWznb2CNiC7LkqC/gBCBYgWACCBSBYgGABCBbA38xh/UrUgMmHz3m6TFLUOM/ChFH2WV04pKhDXZgwyh5KWjhLjWODnrAABAsQLADBAgQLQLAABAv4UhPnsDbaJe2dggGWgV/RuHRX1KEG/oTGRaOyd11s/A/1hAV4JQQQLECwAAQLQLAAwQIYqnMOa+BqO9mHGjjAEjV51HiBCg4paiKp4MLt9RWesAAECxAsAMECECxAsAAEC+AP1wGjGYAnLADBAhAsQLAABAtAsADBAhAsAMECBAtAsAAECxAsAMECECxAsAAEC0CwAMECECxAsJwCQLAABAsQLADBAhAsQLAABAtAsADBAhAsAMECjvY/uiy5XFwlhMgAAAAASUVORK5CYII=",
+                "amount": {
+                    "formatted": "2.900,00 €",
+                    "raw": "EUR 2900.00"
+                },
+                "note": null
+            },
+            "isRefund": false,
+            "isPayout": false
+        },
+        "paymentTerms": {
+            "lines": [
+                "Bitte bis zum 17.10.2026 überweisen."
+            ],
+            "discounts": [],
+            "dueDate": {
+                "formatted": "17.10.2026",
+                "raw": "2026-10-17"
+            }
+        },
+        "legalNotes": [
+            "Steuerfreie innergemeinschaftliche Lieferung"
+        ],
+        "notes": [],
+        "attachments": [],
+        "texts": {
+            "salutation": null,
+            "intro": "",
+            "closing": ""
+        },
+        "labels": {
+            "title_380": "Rechnung",
+            "title_381": "Rechnungskorrektur",
+            "title_384": "Korrigierte Rechnung",
+            "title_389": "Gutschrift",
+            "title_325": "Proforma-Rechnung",
+            "title_326": "Teilrechnung",
+            "title_386": "Anzahlungsrechnung",
+            "title_875": "Abschlagsrechnung",
+            "title_876": "Teilschlussrechnung",
+            "title_877": "Schlussrechnung",
+            "title_default": "Rechnung",
+            "invoice_number": "Rechnungsnummer",
+            "invoice_date": "Rechnungsdatum",
+            "due_date": "Fällig am",
+            "delivery_date": "Leistungsdatum",
+            "service_period": "Leistungszeitraum",
+            "customer_number": "Kundennummer",
+            "buyer_reference": "Ihre Referenz",
+            "purchase_order": "Bestellnummer",
+            "sales_order": "Auftragsnummer",
+            "contract": "Vertrag",
+            "project": "Projekt",
+            "despatch_advice": "Lieferschein",
+            "tender": "Vergabe/Los",
+            "invoiced_object": "Objekt",
+            "accounting_reference": "Kostenstelle",
+            "preceding_invoice": "Bezug auf Rechnung",
+            "preceding_invoice_text": "Bezug: Rechnung :number vom :date",
+            "page": "Seite",
+            "of": "von",
+            "position": "Pos.",
+            "description": "Beschreibung",
+            "item_number": "Art.-Nr.",
+            "quantity": "Menge",
+            "unit": "Einheit",
+            "unit_price": "Einzelpreis",
+            "unit_price_gross": "Einzelpreis brutto",
+            "vat_rate": "USt.",
+            "total": "Betrag",
+            "subtotal": "Zwischensumme",
+            "carry_over": "Übertrag",
+            "carry_over_from": "Übertrag von Seite :page",
+            "continued_on": "Fortsetzung auf Seite :page",
+            "line_net_sum": "Summe Positionen",
+            "allowance": "Nachlass",
+            "charge": "Zuschlag",
+            "net_total": "Nettobetrag",
+            "vat_row": ":rate USt. auf :base",
+            "vat_row_single": "USt. :rate",
+            "vat_row_exempt": "Umsatzsteuerfrei (:category) auf :base",
+            "vat_row_reverse_charge": "Keine USt. (Steuerschuldnerschaft des Leistungsempfängers) auf :base",
+            "vat_row_zero_rated": "0 % USt. (Nullsatz) auf :base",
+            "vat_row_not_subject": "Nicht steuerbar: :base",
+            "vat_row_special_scheme": "Sonderregelung, kein gesonderter Steuerausweis: :base",
+            "allowance_vat_rate": ":rate USt.",
+            "vat_total": "Umsatzsteuer",
+            "gross_total": "Gesamtbetrag",
+            "prepaid": "Bereits gezahlt",
+            "rounding": "Rundung",
+            "third_party_payment": "Fremdleistung",
+            "amount_due": "Zahlbetrag",
+            "refund_amount": "Erstattungsbetrag",
+            "payout_amount": "Auszahlungsbetrag",
+            "tax_currency_note": "Umsatzsteuer in :currency: :amount (Kurs :rate vom :date)",
+            "payment_terms": "Zahlungsbedingungen",
+            "payment": "Zahlung",
+            "payable_until": "Bitte zahlen Sie den Betrag bis zum :date.",
+            "transfer_until": "Bitte bis zum :date überweisen.",
+            "payout_until": "Wir überweisen den Betrag bis zum :date auf Ihr Konto.",
+            "cash_discount": ":percent Skonto bis :date: :amount",
+            "cash_discount_payout": "Bei Auszahlung bis :date ziehen wir :percent Skonto ab (Auszahlungsbetrag :amount).",
+            "cash_discount_terms": "Bei Zahlung innerhalb von :days Tagen gewähren wir :percent Skonto.",
+            "bank_details": "Bankverbindung",
+            "payout_account": "Auszahlung auf Ihr Konto",
+            "account_holder": "Kontoinhaber",
+            "iban": "IBAN",
+            "bic": "BIC",
+            "remittance": "Verwendungszweck",
+            "remittance_short": "Zweck",
+            "girocode": "GiroCode",
+            "girocode_discounted": "QR-Code mit Betrag nach Skonto (:amount), gültig bis :date.",
+            "card": "Kartenzahlung",
+            "direct_debit": "Der Betrag wird per Lastschrift eingezogen.",
+            "mandate": "Mandatsreferenz",
+            "creditor_id": "Gläubiger-ID",
+            "vat_id": "USt-IdNr.",
+            "tax_number": "Steuernummer",
+            "tax_number_short": "St.-Nr.",
+            "your_vat_id": "Ihre USt-IdNr.",
+            "your_tax_number": "Ihre Steuernummer",
+            "tax_representative": "Steuerlicher Vertreter",
+            "register": "Register",
+            "seller": "Verkäufer",
+            "buyer": "Käufer",
+            "supplier": "Lieferant",
+            "payee": "Zahlungsempfänger",
+            "deliver_to": "Lieferanschrift",
+            "contact": "Kontakt",
+            "phone": "Telefon",
+            "email": "E-Mail",
+            "notes": "Hinweise",
+            "attachments": "Anlagen",
+            "draft": "ENTWURF",
+            "preview": "VORSCHAU",
+            "document_quote": "Angebot",
+            "document_order_confirmation": "Auftragsbestätigung",
+            "document_delivery_note": "Lieferschein",
+            "document_proforma": "Proforma-Rechnung",
+            "document_payment_reminder": "Zahlungserinnerung",
+            "document_payment_reminder_level": ":level. Mahnung",
+            "document_account_statement": "Kontoauszug",
+            "document_number": "Nummer",
+            "document_date": "Datum",
+            "valid_until": "Gültig bis",
+            "reference_document": "Bezug",
+            "optional_line": "Optional",
+            "alternative_line": "Alternative zu Pos. :position",
+            "serial_numbers": "Seriennummern",
+            "packages": "Packstücke",
+            "weight": "Gewicht",
+            "tracking_number": "Sendungsnummer",
+            "proforma_notice": "Diese Proforma-Rechnung ist keine Rechnung im steuerlichen Sinne.",
+            "acceptance": "Auftrag erteilt:",
+            "acceptance_signature": "Datum, Unterschrift",
+            "open_items": "Offene Posten",
+            "invoice_amount": "Rechnungsbetrag",
+            "paid": "Bezahlt",
+            "open_amount": "Offen",
+            "fees": "Gebühren",
+            "interest": "Zinsen",
+            "interest_text": "Verzugszinsen :rate p. a. auf :base vom :from bis :until",
+            "dunning_total": "Zu zahlender Gesamtbetrag",
+            "dunning_deadline": "Bitte zahlen Sie den Gesamtbetrag bis zum :date.",
+            "statement_period": "Zeitraum",
+            "opening_balance": "Anfangssaldo",
+            "balance": "Saldo",
+            "cancellation_note": "Stornierung der Rechnung :number vom :date.",
+            "cancellation_note_self_billed": "Stornierung der Gutschrift :number vom :date.",
+            "cancellation_reason": "Grund: :reason",
+            "cancellation_vat_aligned": "Die Umsatzsteuer ist auf die bereits stornierten Teilbeträge abgestimmt.",
+            "cancellation_terms": "Der Betrag wird mit offenen Forderungen verrechnet oder erstattet."
+        },
+        "design": {
+            "primaryColor": "#2741d9",
+            "secondaryColor": "#2741d9",
+            "textColor": "#15171c",
+            "mutedColor": "#5f6470",
+            "font": "geist",
+            "fontMedium": "geistmedium",
+            "logo": null,
+            "letterLayout": "free",
+            "addressTop": 45,
+            "addressLeft": 20,
+            "pageMarginTop": 15,
+            "continuationMarginTop": 40,
+            "letterheadHeight": 30,
+            "logoMaxHeight": 14,
+            "addressHeight": 45,
+            "addressWidth": 85,
+            "addressZoneTop": 17.7,
+            "senderLineHeight": 5,
+            "noticeZoneHeight": 12.7,
+            "foldMarks": [],
+            "punchMark": null,
+            "paper": "A4",
+            "watermark": null,
+            "watermarkCss": null,
+            "senderLine": "Muster GmbH · Hauptstraße 1 · 12345 Musterstadt",
+            "footerColumns": [
+                [
+                    "Muster GmbH",
+                    "Hauptstraße 1",
+                    "12345 Musterstadt"
+                ],
+                [
+                    "+49 123 456789",
+                    "rechnung@muster.de"
+                ],
+                [
+                    "HRB 12345",
+                    "Amtsgericht Musterstadt",
+                    "Geschäftsführer: Max Muster"
+                ],
+                [
+                    "USt-IdNr. DE123456789",
+                    "St.-Nr. 12/345/67890"
+                ]
+            ],
+            "footerHasAddress": true,
+            "footerHasTaxIds": true,
+            "showItemNumbers": false,
+            "showGrossPrices": false
+        },
+        "meta": {
+            "locale": "de",
+            "custom": [],
+            "source": null
+        }
+    },
+    "aliases": {
+        "issuer": "seller",
+        "recipient": "buyer",
+        "design.footerColumns[0]": "issuer.address.lines",
+        "design.footerColumns[3][0]": "issuer.vatId",
+        "design.footerColumns[3][1]": "issuer.taxNumber"
+    }
+}

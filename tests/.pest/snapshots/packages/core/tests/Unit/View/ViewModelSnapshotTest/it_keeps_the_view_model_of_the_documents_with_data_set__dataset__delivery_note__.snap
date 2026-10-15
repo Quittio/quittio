@@ -1,0 +1,551 @@
+{
+    "data": {
+        "number": "DOC-1",
+        "numberLabel": "Number",
+        "dateLabel": "Date",
+        "title": "Delivery note",
+        "issueDate": {
+            "formatted": "01/10/2026",
+            "raw": "2026-10-01"
+        },
+        "dueDate": null,
+        "servicePeriod": null,
+        "servicePeriodLabel": "Delivery date",
+        "deliveryDate": null,
+        "currency": "EUR",
+        "document": {
+            "typeCode": null,
+            "type": "Delivery note",
+            "isCreditNote": false,
+            "isSelfBilled": false,
+            "profile": null,
+            "profileKey": null,
+            "kind": "delivery_note",
+            "isInvoice": false,
+            "showPrices": false,
+            "showTotals": false
+        },
+        "documentInfo": {
+            "type": "delivery_note",
+            "validUntil": null,
+            "reference": "ORDER-7",
+            "referenceDate": {
+                "formatted": "28/09/2026",
+                "raw": "2026-09-28"
+            },
+            "deliveryDate": {
+                "formatted": "01/10/2026",
+                "raw": "2026-10-01"
+            },
+            "packages": [
+                {
+                    "id": "1",
+                    "type": "Box",
+                    "weight": {
+                        "formatted": "4.2 kg",
+                        "raw": "4.2"
+                    },
+                    "dimensions": null,
+                    "trackingNumber": null
+                }
+            ],
+            "lines": {
+                "1": {
+                    "optional": false,
+                    "alternativeTo": null,
+                    "serialNumbers": [
+                        "SN-1",
+                        "SN-2"
+                    ]
+                }
+            },
+            "dunning": null,
+            "statement": null,
+            "showAcceptance": false
+        },
+        "seller": {
+            "name": "Seller Ltd",
+            "tradingName": null,
+            "displayName": "Seller Ltd",
+            "address": {
+                "lines": [
+                    "Seller Ltd",
+                    "Main Street 1",
+                    "12345 Sample City"
+                ],
+                "street": "Main Street 1",
+                "additional": null,
+                "line3": null,
+                "postcode": "12345",
+                "city": "Sample City",
+                "subdivision": null,
+                "countryCode": "DE",
+                "country": "Germany"
+            },
+            "vatId": "DE123456789",
+            "taxNumber": null,
+            "legalRegistration": null,
+            "additionalLegalInfo": null,
+            "contact": null,
+            "electronicAddress": null,
+            "identifiers": []
+        },
+        "buyer": {
+            "name": "Buyer Inc",
+            "tradingName": null,
+            "displayName": "Buyer Inc",
+            "address": {
+                "lines": [
+                    "Buyer Inc",
+                    "Station Road 5",
+                    "54321 Example Town"
+                ],
+                "street": "Station Road 5",
+                "additional": null,
+                "line3": null,
+                "postcode": "54321",
+                "city": "Example Town",
+                "subdivision": null,
+                "countryCode": "DE",
+                "country": "Germany"
+            },
+            "vatId": null,
+            "customerNumber": null,
+            "legalRegistration": null,
+            "contact": null,
+            "isConsumer": false
+        },
+        "issuer": {
+            "name": "Seller Ltd",
+            "tradingName": null,
+            "displayName": "Seller Ltd",
+            "address": {
+                "lines": [
+                    "Seller Ltd",
+                    "Main Street 1",
+                    "12345 Sample City"
+                ],
+                "street": "Main Street 1",
+                "additional": null,
+                "line3": null,
+                "postcode": "12345",
+                "city": "Sample City",
+                "subdivision": null,
+                "countryCode": "DE",
+                "country": "Germany"
+            },
+            "vatId": "DE123456789",
+            "taxNumber": null,
+            "legalRegistration": null,
+            "additionalLegalInfo": null,
+            "contact": null,
+            "electronicAddress": null,
+            "identifiers": []
+        },
+        "recipient": {
+            "name": "Buyer Inc",
+            "tradingName": null,
+            "displayName": "Buyer Inc",
+            "address": {
+                "lines": [
+                    "Buyer Inc",
+                    "Station Road 5",
+                    "54321 Example Town"
+                ],
+                "street": "Station Road 5",
+                "additional": null,
+                "line3": null,
+                "postcode": "54321",
+                "city": "Example Town",
+                "subdivision": null,
+                "countryCode": "DE",
+                "country": "Germany"
+            },
+            "vatId": null,
+            "customerNumber": null,
+            "legalRegistration": null,
+            "contact": null,
+            "isConsumer": false
+        },
+        "payee": null,
+        "taxRepresentative": null,
+        "delivery": {
+            "recipientName": null,
+            "date": {
+                "formatted": "01/10/2026",
+                "raw": "2026-10-01"
+            },
+            "address": null
+        },
+        "references": [],
+        "precedingInvoices": [],
+        "lineGroups": [
+            {
+                "id": null,
+                "title": null,
+                "lines": [
+                    {
+                        "position": "1",
+                        "id": "1",
+                        "name": "Laptop",
+                        "description": {
+                            "text": null,
+                            "html": ""
+                        },
+                        "note": null,
+                        "sellerId": null,
+                        "buyerId": null,
+                        "quantity": {
+                            "formatted": "2",
+                            "raw": "2"
+                        },
+                        "unit": {
+                            "code": "H87",
+                            "label": "piece"
+                        },
+                        "unitPrice": {
+                            "formatted": "0.00 €",
+                            "raw": "0"
+                        },
+                        "grossUnitPrice": null,
+                        "listPrice": null,
+                        "baseQuantity": null,
+                        "unitPriceBase": null,
+                        "showGrossPrice": false,
+                        "total": {
+                            "formatted": "0.00 €",
+                            "raw": "EUR 0.00"
+                        },
+                        "vatRate": null,
+                        "vatCategory": "O",
+                        "period": null,
+                        "attributes": [],
+                        "allowances": [],
+                        "charges": [],
+                        "subLines": [],
+                        "highlight": false,
+                        "groupId": null,
+                        "optional": false,
+                        "alternativeTo": null,
+                        "serialNumbers": [
+                            "SN-1",
+                            "SN-2"
+                        ],
+                        "carryOver": {
+                            "formatted": "0.00 €",
+                            "raw": "EUR 0.00"
+                        }
+                    }
+                ],
+                "subtotal": null
+            }
+        ],
+        "lines": [
+            {
+                "position": "1",
+                "id": "1",
+                "name": "Laptop",
+                "description": {
+                    "text": null,
+                    "html": ""
+                },
+                "note": null,
+                "sellerId": null,
+                "buyerId": null,
+                "quantity": {
+                    "formatted": "2",
+                    "raw": "2"
+                },
+                "unit": {
+                    "code": "H87",
+                    "label": "piece"
+                },
+                "unitPrice": {
+                    "formatted": "0.00 €",
+                    "raw": "0"
+                },
+                "grossUnitPrice": null,
+                "listPrice": null,
+                "baseQuantity": null,
+                "unitPriceBase": null,
+                "showGrossPrice": false,
+                "total": {
+                    "formatted": "0.00 €",
+                    "raw": "EUR 0.00"
+                },
+                "vatRate": null,
+                "vatCategory": "O",
+                "period": null,
+                "attributes": [],
+                "allowances": [],
+                "charges": [],
+                "subLines": [],
+                "highlight": false,
+                "groupId": null,
+                "optional": false,
+                "alternativeTo": null,
+                "serialNumbers": [
+                    "SN-1",
+                    "SN-2"
+                ]
+            }
+        ],
+        "allowances": [],
+        "charges": [],
+        "vatRows": [
+            {
+                "label": "Not subject to VAT: 0.00 €",
+                "category": "O",
+                "categoryLabel": "Services outside scope of tax",
+                "rate": null,
+                "base": {
+                    "formatted": "0.00 €",
+                    "raw": "EUR 0.00"
+                },
+                "amount": {
+                    "formatted": "0.00 €",
+                    "raw": "EUR 0.00"
+                },
+                "isSpecialScheme": false,
+                "exemptionReason": null,
+                "exemptionReasonCode": null
+            }
+        ],
+        "totals": {
+            "lineNetSum": {
+                "formatted": "0.00 €",
+                "raw": "EUR 0.00"
+            },
+            "allowanceSum": null,
+            "chargeSum": null,
+            "netTotal": {
+                "formatted": "0.00 €",
+                "raw": "EUR 0.00"
+            },
+            "vatTotal": {
+                "formatted": "0.00 €",
+                "raw": "EUR 0.00"
+            },
+            "vatTotalInTaxCurrency": null,
+            "taxCurrencyNote": null,
+            "grossTotal": {
+                "formatted": "0.00 €",
+                "raw": "EUR 0.00"
+            },
+            "dueEqualsGross": true,
+            "prepaid": null,
+            "rounding": null,
+            "thirdPartyPayments": [],
+            "amountDue": {
+                "formatted": "0.00 €",
+                "raw": "EUR 0.00"
+            },
+            "amountDueLabel": "Amount due"
+        },
+        "payment": null,
+        "paymentTerms": null,
+        "legalNotes": [],
+        "notes": [],
+        "attachments": [],
+        "texts": {
+            "salutation": null,
+            "intro": "",
+            "closing": ""
+        },
+        "labels": {
+            "title_380": "Invoice",
+            "title_381": "Credit note",
+            "title_384": "Corrected invoice",
+            "title_389": "Self-billed invoice",
+            "title_325": "Proforma invoice",
+            "title_326": "Partial invoice",
+            "title_386": "Prepayment invoice",
+            "title_875": "Partial construction invoice",
+            "title_876": "Partial final construction invoice",
+            "title_877": "Final construction invoice",
+            "title_default": "Invoice",
+            "invoice_number": "Invoice number",
+            "invoice_date": "Invoice date",
+            "due_date": "Due date",
+            "delivery_date": "Delivery date",
+            "service_period": "Service period",
+            "customer_number": "Customer number",
+            "buyer_reference": "Your reference",
+            "purchase_order": "Purchase order",
+            "sales_order": "Sales order",
+            "contract": "Contract",
+            "project": "Project",
+            "despatch_advice": "Despatch advice",
+            "tender": "Tender or lot",
+            "invoiced_object": "Invoiced object",
+            "accounting_reference": "Accounting reference",
+            "preceding_invoice": "Preceding invoice",
+            "preceding_invoice_text": "Reference: invoice :number of :date",
+            "page": "Page",
+            "of": "of",
+            "position": "Pos.",
+            "description": "Description",
+            "item_number": "Item no.",
+            "quantity": "Quantity",
+            "unit": "Unit",
+            "unit_price": "Unit price",
+            "unit_price_gross": "Unit price incl. VAT",
+            "vat_rate": "VAT",
+            "total": "Amount",
+            "subtotal": "Subtotal",
+            "carry_over": "Carried forward",
+            "carry_over_from": "Brought forward from page :page",
+            "continued_on": "Continued on page :page",
+            "line_net_sum": "Sum of lines",
+            "allowance": "Allowance",
+            "charge": "Charge",
+            "net_total": "Total excl. VAT",
+            "vat_row": ":rate VAT on :base",
+            "vat_row_single": "VAT :rate",
+            "vat_row_exempt": "VAT exempt (:category) on :base",
+            "vat_row_reverse_charge": "No VAT (reverse charge) on :base",
+            "vat_row_zero_rated": "0% VAT (zero rate) on :base",
+            "vat_row_not_subject": "Not subject to VAT: :base",
+            "vat_row_special_scheme": "Special scheme, no separate VAT statement: :base",
+            "allowance_vat_rate": ":rate VAT",
+            "vat_total": "VAT",
+            "gross_total": "Total incl. VAT",
+            "prepaid": "Paid amount",
+            "rounding": "Rounding",
+            "third_party_payment": "Third party payment",
+            "amount_due": "Amount due",
+            "refund_amount": "Amount to be refunded",
+            "payout_amount": "Amount paid out",
+            "tax_currency_note": "VAT in :currency: :amount (rate :rate of :date)",
+            "payment_terms": "Payment terms",
+            "payment": "Payment",
+            "payable_until": "Please pay the amount by :date.",
+            "transfer_until": "Please transfer the amount by :date.",
+            "payout_until": "We will transfer the amount to your account by :date.",
+            "cash_discount": ":percent discount until :date: :amount",
+            "cash_discount_payout": "For payment by :date we deduct a cash discount of :percent (amount paid out :amount).",
+            "cash_discount_terms": "For payment within :days days we grant a cash discount of :percent.",
+            "bank_details": "Bank details",
+            "payout_account": "Payment to your account",
+            "account_holder": "Account holder",
+            "iban": "IBAN",
+            "bic": "BIC",
+            "remittance": "Payment reference",
+            "remittance_short": "Ref.",
+            "girocode": "Scan to pay",
+            "girocode_discounted": "QR code with the amount after cash discount (:amount), valid until :date.",
+            "card": "Card payment",
+            "direct_debit": "The amount will be collected by direct debit.",
+            "mandate": "Mandate reference",
+            "creditor_id": "Creditor ID",
+            "vat_id": "VAT ID",
+            "tax_number": "Tax number",
+            "tax_number_short": "Tax no.",
+            "your_vat_id": "Your VAT ID",
+            "your_tax_number": "Your tax number",
+            "tax_representative": "Tax representative",
+            "register": "Register",
+            "seller": "Seller",
+            "buyer": "Buyer",
+            "supplier": "Supplier",
+            "payee": "Payee",
+            "deliver_to": "Deliver to",
+            "contact": "Contact",
+            "phone": "Phone",
+            "email": "E-mail",
+            "notes": "Notes",
+            "attachments": "Attachments",
+            "draft": "DRAFT",
+            "preview": "PREVIEW",
+            "document_quote": "Quote",
+            "document_order_confirmation": "Order confirmation",
+            "document_delivery_note": "Delivery note",
+            "document_proforma": "Proforma invoice",
+            "document_payment_reminder": "Payment reminder",
+            "document_payment_reminder_level": "Reminder no. :level",
+            "document_account_statement": "Account statement",
+            "document_number": "Number",
+            "document_date": "Date",
+            "valid_until": "Valid until",
+            "reference_document": "Reference",
+            "optional_line": "Optional",
+            "alternative_line": "Alternative to pos. :position",
+            "serial_numbers": "Serial numbers",
+            "packages": "Packages",
+            "weight": "Weight",
+            "tracking_number": "Tracking number",
+            "proforma_notice": "This proforma invoice is not an invoice for tax purposes.",
+            "acceptance": "Order placed:",
+            "acceptance_signature": "Date, signature",
+            "open_items": "Open items",
+            "invoice_amount": "Invoice amount",
+            "paid": "Paid",
+            "open_amount": "Open",
+            "fees": "Fees",
+            "interest": "Interest",
+            "interest_text": "Default interest :rate p.a. on :base from :from to :until",
+            "dunning_total": "Total to pay",
+            "dunning_deadline": "Please pay the total amount by :date.",
+            "statement_period": "Period",
+            "opening_balance": "Opening balance",
+            "balance": "Balance",
+            "cancellation_note": "Cancellation of invoice :number of :date.",
+            "cancellation_note_self_billed": "Cancellation of the self-billed invoice :number of :date.",
+            "cancellation_reason": "Reason: :reason",
+            "cancellation_vat_aligned": "The VAT is aligned with the amounts already cancelled.",
+            "cancellation_terms": "The amount will be offset against open items or refunded."
+        },
+        "design": {
+            "primaryColor": "#2741d9",
+            "secondaryColor": "#2741d9",
+            "textColor": "#15171c",
+            "mutedColor": "#5f6470",
+            "font": "geist",
+            "fontMedium": "geistmedium",
+            "logo": null,
+            "letterLayout": "free",
+            "addressTop": 45,
+            "addressLeft": 20,
+            "pageMarginTop": 15,
+            "continuationMarginTop": 40,
+            "letterheadHeight": 30,
+            "logoMaxHeight": 14,
+            "addressHeight": 45,
+            "addressWidth": 85,
+            "addressZoneTop": 17.7,
+            "senderLineHeight": 5,
+            "noticeZoneHeight": 12.7,
+            "foldMarks": [],
+            "punchMark": null,
+            "paper": "A4",
+            "watermark": null,
+            "watermarkCss": null,
+            "senderLine": "Seller Ltd · Main Street 1 · 12345 Sample City",
+            "footerColumns": [
+                [
+                    "Seller Ltd",
+                    "Main Street 1",
+                    "12345 Sample City"
+                ],
+                [
+                    "VAT ID DE123456789"
+                ]
+            ],
+            "footerHasAddress": true,
+            "footerHasTaxIds": true,
+            "showItemNumbers": false,
+            "showGrossPrices": false
+        },
+        "meta": {
+            "locale": "en",
+            "custom": [],
+            "source": null
+        }
+    },
+    "aliases": {
+        "issuer": "seller",
+        "recipient": "buyer",
+        "design.footerColumns[0]": "issuer.address.lines",
+        "design.footerColumns[1][0]": "issuer.vatId"
+    }
+}

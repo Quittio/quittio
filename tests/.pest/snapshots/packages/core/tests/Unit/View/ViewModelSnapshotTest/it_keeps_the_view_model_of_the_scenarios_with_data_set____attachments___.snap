@@ -1,0 +1,725 @@
+{
+    "data": {
+        "number": "RE-2026-0042",
+        "numberLabel": "Rechnungsnummer",
+        "dateLabel": "Rechnungsdatum",
+        "title": "Rechnung",
+        "issueDate": {
+            "formatted": "03.10.2026",
+            "raw": "2026-10-03"
+        },
+        "dueDate": {
+            "formatted": "17.10.2026",
+            "raw": "2026-10-17"
+        },
+        "servicePeriod": {
+            "formatted": "30.09.2026",
+            "raw": "2026-09-30"
+        },
+        "servicePeriodLabel": "Leistungsdatum",
+        "deliveryDate": null,
+        "currency": "EUR",
+        "document": {
+            "typeCode": "380",
+            "type": "Rechnung",
+            "isCreditNote": false,
+            "isSelfBilled": false,
+            "profile": null,
+            "profileKey": null,
+            "kind": "invoice",
+            "isInvoice": true,
+            "showPrices": true,
+            "showTotals": true
+        },
+        "documentInfo": null,
+        "seller": {
+            "name": "Muster GmbH",
+            "tradingName": null,
+            "displayName": "Muster GmbH",
+            "address": {
+                "lines": [
+                    "Muster GmbH",
+                    "Hauptstraße 1",
+                    "12345 Musterstadt"
+                ],
+                "street": "Hauptstraße 1",
+                "additional": null,
+                "line3": null,
+                "postcode": "12345",
+                "city": "Musterstadt",
+                "subdivision": null,
+                "countryCode": "DE",
+                "country": "Deutschland"
+            },
+            "vatId": "DE123456789",
+            "taxNumber": "12/345/67890",
+            "legalRegistration": "HRB 12345",
+            "additionalLegalInfo": "Amtsgericht Musterstadt · Geschäftsführer: Max Muster",
+            "contact": {
+                "name": "Max Muster",
+                "phone": "+49 123 456789",
+                "email": "rechnung@muster.de"
+            },
+            "electronicAddress": "rechnung@muster.de",
+            "identifiers": []
+        },
+        "buyer": {
+            "name": "Kunde AG",
+            "tradingName": null,
+            "displayName": "Kunde AG",
+            "address": {
+                "lines": [
+                    "Kunde AG",
+                    "Bahnhofstraße 5",
+                    "54321 Beispielstadt"
+                ],
+                "street": "Bahnhofstraße 5",
+                "additional": null,
+                "line3": null,
+                "postcode": "54321",
+                "city": "Beispielstadt",
+                "subdivision": null,
+                "countryCode": "DE",
+                "country": "Deutschland"
+            },
+            "vatId": "DE987654321",
+            "customerNumber": "K-10001",
+            "legalRegistration": null,
+            "contact": {
+                "name": "Erika Kunde",
+                "phone": "+49 987 654321",
+                "email": "einkauf@kunde.de"
+            },
+            "isConsumer": false
+        },
+        "issuer": {
+            "name": "Muster GmbH",
+            "tradingName": null,
+            "displayName": "Muster GmbH",
+            "address": {
+                "lines": [
+                    "Muster GmbH",
+                    "Hauptstraße 1",
+                    "12345 Musterstadt"
+                ],
+                "street": "Hauptstraße 1",
+                "additional": null,
+                "line3": null,
+                "postcode": "12345",
+                "city": "Musterstadt",
+                "subdivision": null,
+                "countryCode": "DE",
+                "country": "Deutschland"
+            },
+            "vatId": "DE123456789",
+            "taxNumber": "12/345/67890",
+            "legalRegistration": "HRB 12345",
+            "additionalLegalInfo": "Amtsgericht Musterstadt · Geschäftsführer: Max Muster",
+            "contact": {
+                "name": "Max Muster",
+                "phone": "+49 123 456789",
+                "email": "rechnung@muster.de"
+            },
+            "electronicAddress": "rechnung@muster.de",
+            "identifiers": []
+        },
+        "recipient": {
+            "name": "Kunde AG",
+            "tradingName": null,
+            "displayName": "Kunde AG",
+            "address": {
+                "lines": [
+                    "Kunde AG",
+                    "Bahnhofstraße 5",
+                    "54321 Beispielstadt"
+                ],
+                "street": "Bahnhofstraße 5",
+                "additional": null,
+                "line3": null,
+                "postcode": "54321",
+                "city": "Beispielstadt",
+                "subdivision": null,
+                "countryCode": "DE",
+                "country": "Deutschland"
+            },
+            "vatId": "DE987654321",
+            "customerNumber": "K-10001",
+            "legalRegistration": null,
+            "contact": {
+                "name": "Erika Kunde",
+                "phone": "+49 987 654321",
+                "email": "einkauf@kunde.de"
+            },
+            "isConsumer": false
+        },
+        "payee": null,
+        "taxRepresentative": null,
+        "delivery": {
+            "recipientName": null,
+            "date": {
+                "formatted": "30.09.2026",
+                "raw": "2026-09-30"
+            },
+            "address": null
+        },
+        "references": [
+            {
+                "key": "buyer_reference",
+                "label": "Ihre Referenz",
+                "value": "PO-4711"
+            }
+        ],
+        "precedingInvoices": [],
+        "lineGroups": [
+            {
+                "id": null,
+                "title": null,
+                "lines": [
+                    {
+                        "position": "1",
+                        "id": "1",
+                        "name": "Webentwicklung",
+                        "description": {
+                            "text": "Umsetzung Kundenportal, Sprint 3",
+                            "html": "Umsetzung Kundenportal, Sprint 3"
+                        },
+                        "note": null,
+                        "sellerId": null,
+                        "buyerId": null,
+                        "quantity": {
+                            "formatted": "24",
+                            "raw": "24"
+                        },
+                        "unit": {
+                            "code": "HUR",
+                            "label": "Std."
+                        },
+                        "unitPrice": {
+                            "formatted": "95,00 €",
+                            "raw": "95.00"
+                        },
+                        "grossUnitPrice": null,
+                        "listPrice": null,
+                        "baseQuantity": null,
+                        "unitPriceBase": null,
+                        "showGrossPrice": false,
+                        "total": {
+                            "formatted": "2.280,00 €",
+                            "raw": "EUR 2280.00"
+                        },
+                        "vatRate": {
+                            "formatted": "19 %",
+                            "raw": "19"
+                        },
+                        "vatCategory": "S",
+                        "period": null,
+                        "attributes": [],
+                        "allowances": [],
+                        "charges": [],
+                        "subLines": [],
+                        "highlight": false,
+                        "groupId": null,
+                        "optional": false,
+                        "alternativeTo": null,
+                        "serialNumbers": [],
+                        "carryOver": {
+                            "formatted": "2.280,00 €",
+                            "raw": "EUR 2280.00"
+                        }
+                    },
+                    {
+                        "position": "2",
+                        "id": "2",
+                        "name": "Hosting Oktober",
+                        "description": {
+                            "text": null,
+                            "html": ""
+                        },
+                        "note": null,
+                        "sellerId": null,
+                        "buyerId": null,
+                        "quantity": {
+                            "formatted": "1",
+                            "raw": "1"
+                        },
+                        "unit": {
+                            "code": "MON",
+                            "label": "Monat"
+                        },
+                        "unitPrice": {
+                            "formatted": "29,00 €",
+                            "raw": "29.00"
+                        },
+                        "grossUnitPrice": null,
+                        "listPrice": null,
+                        "baseQuantity": null,
+                        "unitPriceBase": null,
+                        "showGrossPrice": false,
+                        "total": {
+                            "formatted": "29,00 €",
+                            "raw": "EUR 29.00"
+                        },
+                        "vatRate": {
+                            "formatted": "19 %",
+                            "raw": "19"
+                        },
+                        "vatCategory": "S",
+                        "period": {
+                            "formatted": "01.10.–31.10.2026",
+                            "raw": "Quittio\\Core\\Data\\Delivery\\Period"
+                        },
+                        "attributes": [],
+                        "allowances": [],
+                        "charges": [],
+                        "subLines": [],
+                        "highlight": false,
+                        "groupId": null,
+                        "optional": false,
+                        "alternativeTo": null,
+                        "serialNumbers": [],
+                        "carryOver": {
+                            "formatted": "2.309,00 €",
+                            "raw": "EUR 2309.00"
+                        }
+                    }
+                ],
+                "subtotal": null
+            }
+        ],
+        "lines": [
+            {
+                "position": "1",
+                "id": "1",
+                "name": "Webentwicklung",
+                "description": {
+                    "text": "Umsetzung Kundenportal, Sprint 3",
+                    "html": "Umsetzung Kundenportal, Sprint 3"
+                },
+                "note": null,
+                "sellerId": null,
+                "buyerId": null,
+                "quantity": {
+                    "formatted": "24",
+                    "raw": "24"
+                },
+                "unit": {
+                    "code": "HUR",
+                    "label": "Std."
+                },
+                "unitPrice": {
+                    "formatted": "95,00 €",
+                    "raw": "95.00"
+                },
+                "grossUnitPrice": null,
+                "listPrice": null,
+                "baseQuantity": null,
+                "unitPriceBase": null,
+                "showGrossPrice": false,
+                "total": {
+                    "formatted": "2.280,00 €",
+                    "raw": "EUR 2280.00"
+                },
+                "vatRate": {
+                    "formatted": "19 %",
+                    "raw": "19"
+                },
+                "vatCategory": "S",
+                "period": null,
+                "attributes": [],
+                "allowances": [],
+                "charges": [],
+                "subLines": [],
+                "highlight": false,
+                "groupId": null,
+                "optional": false,
+                "alternativeTo": null,
+                "serialNumbers": []
+            },
+            {
+                "position": "2",
+                "id": "2",
+                "name": "Hosting Oktober",
+                "description": {
+                    "text": null,
+                    "html": ""
+                },
+                "note": null,
+                "sellerId": null,
+                "buyerId": null,
+                "quantity": {
+                    "formatted": "1",
+                    "raw": "1"
+                },
+                "unit": {
+                    "code": "MON",
+                    "label": "Monat"
+                },
+                "unitPrice": {
+                    "formatted": "29,00 €",
+                    "raw": "29.00"
+                },
+                "grossUnitPrice": null,
+                "listPrice": null,
+                "baseQuantity": null,
+                "unitPriceBase": null,
+                "showGrossPrice": false,
+                "total": {
+                    "formatted": "29,00 €",
+                    "raw": "EUR 29.00"
+                },
+                "vatRate": {
+                    "formatted": "19 %",
+                    "raw": "19"
+                },
+                "vatCategory": "S",
+                "period": {
+                    "formatted": "01.10.–31.10.2026",
+                    "raw": "Quittio\\Core\\Data\\Delivery\\Period"
+                },
+                "attributes": [],
+                "allowances": [],
+                "charges": [],
+                "subLines": [],
+                "highlight": false,
+                "groupId": null,
+                "optional": false,
+                "alternativeTo": null,
+                "serialNumbers": []
+            }
+        ],
+        "allowances": [],
+        "charges": [],
+        "vatRows": [
+            {
+                "label": "USt. 19 %",
+                "category": "S",
+                "categoryLabel": "Normaler Steuersatz",
+                "rate": {
+                    "formatted": "19 %",
+                    "raw": "19"
+                },
+                "base": {
+                    "formatted": "2.309,00 €",
+                    "raw": "EUR 2309.00"
+                },
+                "amount": {
+                    "formatted": "438,71 €",
+                    "raw": "EUR 438.71"
+                },
+                "isSpecialScheme": false,
+                "exemptionReason": null,
+                "exemptionReasonCode": null
+            }
+        ],
+        "totals": {
+            "lineNetSum": {
+                "formatted": "2.309,00 €",
+                "raw": "EUR 2309.00"
+            },
+            "allowanceSum": null,
+            "chargeSum": null,
+            "netTotal": {
+                "formatted": "2.309,00 €",
+                "raw": "EUR 2309.00"
+            },
+            "vatTotal": {
+                "formatted": "438,71 €",
+                "raw": "EUR 438.71"
+            },
+            "vatTotalInTaxCurrency": null,
+            "taxCurrencyNote": null,
+            "grossTotal": {
+                "formatted": "2.747,71 €",
+                "raw": "EUR 2747.71"
+            },
+            "dueEqualsGross": true,
+            "prepaid": null,
+            "rounding": null,
+            "thirdPartyPayments": [],
+            "amountDue": {
+                "formatted": "2.747,71 €",
+                "raw": "EUR 2747.71"
+            },
+            "amountDueLabel": "Zahlbetrag"
+        },
+        "payment": {
+            "meansCode": "58",
+            "means": "SEPA-Überweisung",
+            "meansText": null,
+            "remittance": "RE-2026-0042",
+            "accounts": [
+                {
+                    "iban": "DE02 1203 0000 0000 2020 51",
+                    "bic": "BYLADEM1001",
+                    "name": "Muster GmbH"
+                }
+            ],
+            "card": null,
+            "directDebit": null,
+            "qrCode": {
+                "type": "girocode",
+                "payload": "BCD\n002\n1\nSCT\nBYLADEM1001\nMuster GmbH\nDE02120300000000202051\nEUR2747.71\n\n\nRE-2026-0042",
+                "dataUri": "data:image/png;base64,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",
+                "amount": {
+                    "formatted": "2.747,71 €",
+                    "raw": "EUR 2747.71"
+                },
+                "note": null
+            },
+            "isRefund": false,
+            "isPayout": false
+        },
+        "paymentTerms": {
+            "lines": [
+                "Bitte bis zum 17.10.2026 überweisen.",
+                "2 % Skonto bis 10.10.2026: 2.692,76 €"
+            ],
+            "discounts": [
+                {
+                    "days": 7,
+                    "percent": "2 %",
+                    "until": {
+                        "formatted": "10.10.2026",
+                        "raw": "2026-10-10"
+                    },
+                    "amount": {
+                        "formatted": "2.692,76 €",
+                        "raw": "EUR 2692.76"
+                    },
+                    "text": "2 % Skonto bis 10.10.2026: 2.692,76 €"
+                }
+            ],
+            "dueDate": {
+                "formatted": "17.10.2026",
+                "raw": "2026-10-17"
+            }
+        },
+        "legalNotes": [],
+        "notes": [],
+        "attachments": [
+            {
+                "id": "STD-2026-09",
+                "description": "Stundenzettel September",
+                "filename": "stundenzettel.csv",
+                "uri": null
+            },
+            {
+                "id": "AGB",
+                "description": "Allgemeine Geschäftsbedingungen",
+                "filename": null,
+                "uri": "https://muster.de/agb"
+            }
+        ],
+        "texts": {
+            "salutation": null,
+            "intro": "",
+            "closing": ""
+        },
+        "labels": {
+            "title_380": "Rechnung",
+            "title_381": "Rechnungskorrektur",
+            "title_384": "Korrigierte Rechnung",
+            "title_389": "Gutschrift",
+            "title_325": "Proforma-Rechnung",
+            "title_326": "Teilrechnung",
+            "title_386": "Anzahlungsrechnung",
+            "title_875": "Abschlagsrechnung",
+            "title_876": "Teilschlussrechnung",
+            "title_877": "Schlussrechnung",
+            "title_default": "Rechnung",
+            "invoice_number": "Rechnungsnummer",
+            "invoice_date": "Rechnungsdatum",
+            "due_date": "Fällig am",
+            "delivery_date": "Leistungsdatum",
+            "service_period": "Leistungszeitraum",
+            "customer_number": "Kundennummer",
+            "buyer_reference": "Ihre Referenz",
+            "purchase_order": "Bestellnummer",
+            "sales_order": "Auftragsnummer",
+            "contract": "Vertrag",
+            "project": "Projekt",
+            "despatch_advice": "Lieferschein",
+            "tender": "Vergabe/Los",
+            "invoiced_object": "Objekt",
+            "accounting_reference": "Kostenstelle",
+            "preceding_invoice": "Bezug auf Rechnung",
+            "preceding_invoice_text": "Bezug: Rechnung :number vom :date",
+            "page": "Seite",
+            "of": "von",
+            "position": "Pos.",
+            "description": "Beschreibung",
+            "item_number": "Art.-Nr.",
+            "quantity": "Menge",
+            "unit": "Einheit",
+            "unit_price": "Einzelpreis",
+            "unit_price_gross": "Einzelpreis brutto",
+            "vat_rate": "USt.",
+            "total": "Betrag",
+            "subtotal": "Zwischensumme",
+            "carry_over": "Übertrag",
+            "carry_over_from": "Übertrag von Seite :page",
+            "continued_on": "Fortsetzung auf Seite :page",
+            "line_net_sum": "Summe Positionen",
+            "allowance": "Nachlass",
+            "charge": "Zuschlag",
+            "net_total": "Nettobetrag",
+            "vat_row": ":rate USt. auf :base",
+            "vat_row_single": "USt. :rate",
+            "vat_row_exempt": "Umsatzsteuerfrei (:category) auf :base",
+            "vat_row_reverse_charge": "Keine USt. (Steuerschuldnerschaft des Leistungsempfängers) auf :base",
+            "vat_row_zero_rated": "0 % USt. (Nullsatz) auf :base",
+            "vat_row_not_subject": "Nicht steuerbar: :base",
+            "vat_row_special_scheme": "Sonderregelung, kein gesonderter Steuerausweis: :base",
+            "allowance_vat_rate": ":rate USt.",
+            "vat_total": "Umsatzsteuer",
+            "gross_total": "Gesamtbetrag",
+            "prepaid": "Bereits gezahlt",
+            "rounding": "Rundung",
+            "third_party_payment": "Fremdleistung",
+            "amount_due": "Zahlbetrag",
+            "refund_amount": "Erstattungsbetrag",
+            "payout_amount": "Auszahlungsbetrag",
+            "tax_currency_note": "Umsatzsteuer in :currency: :amount (Kurs :rate vom :date)",
+            "payment_terms": "Zahlungsbedingungen",
+            "payment": "Zahlung",
+            "payable_until": "Bitte zahlen Sie den Betrag bis zum :date.",
+            "transfer_until": "Bitte bis zum :date überweisen.",
+            "payout_until": "Wir überweisen den Betrag bis zum :date auf Ihr Konto.",
+            "cash_discount": ":percent Skonto bis :date: :amount",
+            "cash_discount_payout": "Bei Auszahlung bis :date ziehen wir :percent Skonto ab (Auszahlungsbetrag :amount).",
+            "cash_discount_terms": "Bei Zahlung innerhalb von :days Tagen gewähren wir :percent Skonto.",
+            "bank_details": "Bankverbindung",
+            "payout_account": "Auszahlung auf Ihr Konto",
+            "account_holder": "Kontoinhaber",
+            "iban": "IBAN",
+            "bic": "BIC",
+            "remittance": "Verwendungszweck",
+            "remittance_short": "Zweck",
+            "girocode": "GiroCode",
+            "girocode_discounted": "QR-Code mit Betrag nach Skonto (:amount), gültig bis :date.",
+            "card": "Kartenzahlung",
+            "direct_debit": "Der Betrag wird per Lastschrift eingezogen.",
+            "mandate": "Mandatsreferenz",
+            "creditor_id": "Gläubiger-ID",
+            "vat_id": "USt-IdNr.",
+            "tax_number": "Steuernummer",
+            "tax_number_short": "St.-Nr.",
+            "your_vat_id": "Ihre USt-IdNr.",
+            "your_tax_number": "Ihre Steuernummer",
+            "tax_representative": "Steuerlicher Vertreter",
+            "register": "Register",
+            "seller": "Verkäufer",
+            "buyer": "Käufer",
+            "supplier": "Lieferant",
+            "payee": "Zahlungsempfänger",
+            "deliver_to": "Lieferanschrift",
+            "contact": "Kontakt",
+            "phone": "Telefon",
+            "email": "E-Mail",
+            "notes": "Hinweise",
+            "attachments": "Anlagen",
+            "draft": "ENTWURF",
+            "preview": "VORSCHAU",
+            "document_quote": "Angebot",
+            "document_order_confirmation": "Auftragsbestätigung",
+            "document_delivery_note": "Lieferschein",
+            "document_proforma": "Proforma-Rechnung",
+            "document_payment_reminder": "Zahlungserinnerung",
+            "document_payment_reminder_level": ":level. Mahnung",
+            "document_account_statement": "Kontoauszug",
+            "document_number": "Nummer",
+            "document_date": "Datum",
+            "valid_until": "Gültig bis",
+            "reference_document": "Bezug",
+            "optional_line": "Optional",
+            "alternative_line": "Alternative zu Pos. :position",
+            "serial_numbers": "Seriennummern",
+            "packages": "Packstücke",
+            "weight": "Gewicht",
+            "tracking_number": "Sendungsnummer",
+            "proforma_notice": "Diese Proforma-Rechnung ist keine Rechnung im steuerlichen Sinne.",
+            "acceptance": "Auftrag erteilt:",
+            "acceptance_signature": "Datum, Unterschrift",
+            "open_items": "Offene Posten",
+            "invoice_amount": "Rechnungsbetrag",
+            "paid": "Bezahlt",
+            "open_amount": "Offen",
+            "fees": "Gebühren",
+            "interest": "Zinsen",
+            "interest_text": "Verzugszinsen :rate p. a. auf :base vom :from bis :until",
+            "dunning_total": "Zu zahlender Gesamtbetrag",
+            "dunning_deadline": "Bitte zahlen Sie den Gesamtbetrag bis zum :date.",
+            "statement_period": "Zeitraum",
+            "opening_balance": "Anfangssaldo",
+            "balance": "Saldo",
+            "cancellation_note": "Stornierung der Rechnung :number vom :date.",
+            "cancellation_note_self_billed": "Stornierung der Gutschrift :number vom :date.",
+            "cancellation_reason": "Grund: :reason",
+            "cancellation_vat_aligned": "Die Umsatzsteuer ist auf die bereits stornierten Teilbeträge abgestimmt.",
+            "cancellation_terms": "Der Betrag wird mit offenen Forderungen verrechnet oder erstattet."
+        },
+        "design": {
+            "primaryColor": "#2741d9",
+            "secondaryColor": "#2741d9",
+            "textColor": "#15171c",
+            "mutedColor": "#5f6470",
+            "font": "geist",
+            "fontMedium": "geistmedium",
+            "logo": null,
+            "letterLayout": "free",
+            "addressTop": 45,
+            "addressLeft": 20,
+            "pageMarginTop": 15,
+            "continuationMarginTop": 40,
+            "letterheadHeight": 30,
+            "logoMaxHeight": 14,
+            "addressHeight": 45,
+            "addressWidth": 85,
+            "addressZoneTop": 17.7,
+            "senderLineHeight": 5,
+            "noticeZoneHeight": 12.7,
+            "foldMarks": [],
+            "punchMark": null,
+            "paper": "A4",
+            "watermark": null,
+            "watermarkCss": null,
+            "senderLine": "Muster GmbH · Hauptstraße 1 · 12345 Musterstadt",
+            "footerColumns": [
+                [
+                    "Muster GmbH",
+                    "Hauptstraße 1",
+                    "12345 Musterstadt"
+                ],
+                [
+                    "+49 123 456789",
+                    "rechnung@muster.de"
+                ],
+                [
+                    "HRB 12345",
+                    "Amtsgericht Musterstadt",
+                    "Geschäftsführer: Max Muster"
+                ],
+                [
+                    "USt-IdNr. DE123456789",
+                    "St.-Nr. 12/345/67890"
+                ]
+            ],
+            "footerHasAddress": true,
+            "footerHasTaxIds": true,
+            "showItemNumbers": false,
+            "showGrossPrices": false
+        },
+        "meta": {
+            "locale": "de",
+            "custom": [],
+            "source": null
+        }
+    },
+    "aliases": {
+        "issuer": "seller",
+        "recipient": "buyer",
+        "design.footerColumns[0]": "issuer.address.lines",
+        "design.footerColumns[3][0]": "issuer.vatId",
+        "design.footerColumns[3][1]": "issuer.taxNumber"
+    }
+}

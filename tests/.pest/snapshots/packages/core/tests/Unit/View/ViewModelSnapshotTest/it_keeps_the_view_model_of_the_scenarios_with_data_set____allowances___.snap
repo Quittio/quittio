@@ -1,0 +1,799 @@
+{
+    "data": {
+        "number": "RE-2026-0042",
+        "numberLabel": "Rechnungsnummer",
+        "dateLabel": "Rechnungsdatum",
+        "title": "Rechnung",
+        "issueDate": {
+            "formatted": "03.10.2026",
+            "raw": "2026-10-03"
+        },
+        "dueDate": {
+            "formatted": "17.10.2026",
+            "raw": "2026-10-17"
+        },
+        "servicePeriod": {
+            "formatted": "30.09.2026",
+            "raw": "2026-09-30"
+        },
+        "servicePeriodLabel": "Leistungsdatum",
+        "deliveryDate": null,
+        "currency": "EUR",
+        "document": {
+            "typeCode": "380",
+            "type": "Rechnung",
+            "isCreditNote": false,
+            "isSelfBilled": false,
+            "profile": null,
+            "profileKey": null,
+            "kind": "invoice",
+            "isInvoice": true,
+            "showPrices": true,
+            "showTotals": true
+        },
+        "documentInfo": null,
+        "seller": {
+            "name": "Muster GmbH",
+            "tradingName": null,
+            "displayName": "Muster GmbH",
+            "address": {
+                "lines": [
+                    "Muster GmbH",
+                    "Hauptstraße 1",
+                    "12345 Musterstadt"
+                ],
+                "street": "Hauptstraße 1",
+                "additional": null,
+                "line3": null,
+                "postcode": "12345",
+                "city": "Musterstadt",
+                "subdivision": null,
+                "countryCode": "DE",
+                "country": "Deutschland"
+            },
+            "vatId": "DE123456789",
+            "taxNumber": "12/345/67890",
+            "legalRegistration": "HRB 12345",
+            "additionalLegalInfo": "Amtsgericht Musterstadt · Geschäftsführer: Max Muster",
+            "contact": {
+                "name": "Max Muster",
+                "phone": "+49 123 456789",
+                "email": "rechnung@muster.de"
+            },
+            "electronicAddress": "rechnung@muster.de",
+            "identifiers": []
+        },
+        "buyer": {
+            "name": "Kunde AG",
+            "tradingName": null,
+            "displayName": "Kunde AG",
+            "address": {
+                "lines": [
+                    "Kunde AG",
+                    "Bahnhofstraße 5",
+                    "54321 Beispielstadt"
+                ],
+                "street": "Bahnhofstraße 5",
+                "additional": null,
+                "line3": null,
+                "postcode": "54321",
+                "city": "Beispielstadt",
+                "subdivision": null,
+                "countryCode": "DE",
+                "country": "Deutschland"
+            },
+            "vatId": "DE987654321",
+            "customerNumber": "K-10001",
+            "legalRegistration": null,
+            "contact": {
+                "name": "Erika Kunde",
+                "phone": "+49 987 654321",
+                "email": "einkauf@kunde.de"
+            },
+            "isConsumer": false
+        },
+        "issuer": {
+            "name": "Muster GmbH",
+            "tradingName": null,
+            "displayName": "Muster GmbH",
+            "address": {
+                "lines": [
+                    "Muster GmbH",
+                    "Hauptstraße 1",
+                    "12345 Musterstadt"
+                ],
+                "street": "Hauptstraße 1",
+                "additional": null,
+                "line3": null,
+                "postcode": "12345",
+                "city": "Musterstadt",
+                "subdivision": null,
+                "countryCode": "DE",
+                "country": "Deutschland"
+            },
+            "vatId": "DE123456789",
+            "taxNumber": "12/345/67890",
+            "legalRegistration": "HRB 12345",
+            "additionalLegalInfo": "Amtsgericht Musterstadt · Geschäftsführer: Max Muster",
+            "contact": {
+                "name": "Max Muster",
+                "phone": "+49 123 456789",
+                "email": "rechnung@muster.de"
+            },
+            "electronicAddress": "rechnung@muster.de",
+            "identifiers": []
+        },
+        "recipient": {
+            "name": "Kunde AG",
+            "tradingName": null,
+            "displayName": "Kunde AG",
+            "address": {
+                "lines": [
+                    "Kunde AG",
+                    "Bahnhofstraße 5",
+                    "54321 Beispielstadt"
+                ],
+                "street": "Bahnhofstraße 5",
+                "additional": null,
+                "line3": null,
+                "postcode": "54321",
+                "city": "Beispielstadt",
+                "subdivision": null,
+                "countryCode": "DE",
+                "country": "Deutschland"
+            },
+            "vatId": "DE987654321",
+            "customerNumber": "K-10001",
+            "legalRegistration": null,
+            "contact": {
+                "name": "Erika Kunde",
+                "phone": "+49 987 654321",
+                "email": "einkauf@kunde.de"
+            },
+            "isConsumer": false
+        },
+        "payee": null,
+        "taxRepresentative": null,
+        "delivery": {
+            "recipientName": null,
+            "date": {
+                "formatted": "30.09.2026",
+                "raw": "2026-09-30"
+            },
+            "address": null
+        },
+        "references": [
+            {
+                "key": "buyer_reference",
+                "label": "Ihre Referenz",
+                "value": "PO-4711"
+            }
+        ],
+        "precedingInvoices": [],
+        "lineGroups": [
+            {
+                "id": null,
+                "title": null,
+                "lines": [
+                    {
+                        "position": "1",
+                        "id": "1",
+                        "name": "Schrauben",
+                        "description": {
+                            "text": null,
+                            "html": ""
+                        },
+                        "note": null,
+                        "sellerId": null,
+                        "buyerId": null,
+                        "quantity": {
+                            "formatted": "250",
+                            "raw": "250"
+                        },
+                        "unit": {
+                            "code": "H87",
+                            "label": "Stk."
+                        },
+                        "unitPrice": {
+                            "formatted": "12,3456 €",
+                            "raw": "12.3456"
+                        },
+                        "grossUnitPrice": null,
+                        "listPrice": null,
+                        "baseQuantity": {
+                            "formatted": "100",
+                            "raw": "100"
+                        },
+                        "unitPriceBase": {
+                            "formatted": "100 Stk.",
+                            "raw": "100"
+                        },
+                        "showGrossPrice": false,
+                        "total": {
+                            "formatted": "29,32 €",
+                            "raw": "EUR 29.32"
+                        },
+                        "vatRate": {
+                            "formatted": "19 %",
+                            "raw": "19"
+                        },
+                        "vatCategory": "S",
+                        "period": null,
+                        "attributes": [],
+                        "allowances": [
+                            {
+                                "reason": "Mengenrabatt",
+                                "amount": {
+                                    "formatted": "1,54 €",
+                                    "raw": "EUR 1.54"
+                                },
+                                "percent": {
+                                    "formatted": "5 %",
+                                    "raw": "5"
+                                },
+                                "label": "Nachlass Mengenrabatt 5 %"
+                            }
+                        ],
+                        "charges": [],
+                        "subLines": [],
+                        "highlight": false,
+                        "groupId": null,
+                        "optional": false,
+                        "alternativeTo": null,
+                        "serialNumbers": [],
+                        "carryOver": {
+                            "formatted": "29,32 €",
+                            "raw": "EUR 29.32"
+                        }
+                    },
+                    {
+                        "position": "2",
+                        "id": "2",
+                        "name": "Dübel",
+                        "description": {
+                            "text": null,
+                            "html": ""
+                        },
+                        "note": null,
+                        "sellerId": null,
+                        "buyerId": null,
+                        "quantity": {
+                            "formatted": "100",
+                            "raw": "100"
+                        },
+                        "unit": {
+                            "code": "H87",
+                            "label": "Stk."
+                        },
+                        "unitPrice": {
+                            "formatted": "0,20 €",
+                            "raw": "0.20"
+                        },
+                        "grossUnitPrice": null,
+                        "listPrice": {
+                            "formatted": "0,25 €",
+                            "raw": "0.25"
+                        },
+                        "baseQuantity": null,
+                        "unitPriceBase": null,
+                        "showGrossPrice": false,
+                        "total": {
+                            "formatted": "22,50 €",
+                            "raw": "EUR 22.50"
+                        },
+                        "vatRate": {
+                            "formatted": "19 %",
+                            "raw": "19"
+                        },
+                        "vatCategory": "S",
+                        "period": null,
+                        "attributes": [],
+                        "allowances": [],
+                        "charges": [
+                            {
+                                "reason": "Sonderverpackung",
+                                "amount": {
+                                    "formatted": "2,50 €",
+                                    "raw": "EUR 2.50"
+                                },
+                                "percent": null,
+                                "label": "Zuschlag Sonderverpackung"
+                            }
+                        ],
+                        "subLines": [],
+                        "highlight": false,
+                        "groupId": null,
+                        "optional": false,
+                        "alternativeTo": null,
+                        "serialNumbers": [],
+                        "carryOver": {
+                            "formatted": "51,82 €",
+                            "raw": "EUR 51.82"
+                        }
+                    }
+                ],
+                "subtotal": null
+            }
+        ],
+        "lines": [
+            {
+                "position": "1",
+                "id": "1",
+                "name": "Schrauben",
+                "description": {
+                    "text": null,
+                    "html": ""
+                },
+                "note": null,
+                "sellerId": null,
+                "buyerId": null,
+                "quantity": {
+                    "formatted": "250",
+                    "raw": "250"
+                },
+                "unit": {
+                    "code": "H87",
+                    "label": "Stk."
+                },
+                "unitPrice": {
+                    "formatted": "12,3456 €",
+                    "raw": "12.3456"
+                },
+                "grossUnitPrice": null,
+                "listPrice": null,
+                "baseQuantity": {
+                    "formatted": "100",
+                    "raw": "100"
+                },
+                "unitPriceBase": {
+                    "formatted": "100 Stk.",
+                    "raw": "100"
+                },
+                "showGrossPrice": false,
+                "total": {
+                    "formatted": "29,32 €",
+                    "raw": "EUR 29.32"
+                },
+                "vatRate": {
+                    "formatted": "19 %",
+                    "raw": "19"
+                },
+                "vatCategory": "S",
+                "period": null,
+                "attributes": [],
+                "allowances": [
+                    {
+                        "reason": "Mengenrabatt",
+                        "amount": {
+                            "formatted": "1,54 €",
+                            "raw": "EUR 1.54"
+                        },
+                        "percent": {
+                            "formatted": "5 %",
+                            "raw": "5"
+                        },
+                        "label": "Nachlass Mengenrabatt 5 %"
+                    }
+                ],
+                "charges": [],
+                "subLines": [],
+                "highlight": false,
+                "groupId": null,
+                "optional": false,
+                "alternativeTo": null,
+                "serialNumbers": []
+            },
+            {
+                "position": "2",
+                "id": "2",
+                "name": "Dübel",
+                "description": {
+                    "text": null,
+                    "html": ""
+                },
+                "note": null,
+                "sellerId": null,
+                "buyerId": null,
+                "quantity": {
+                    "formatted": "100",
+                    "raw": "100"
+                },
+                "unit": {
+                    "code": "H87",
+                    "label": "Stk."
+                },
+                "unitPrice": {
+                    "formatted": "0,20 €",
+                    "raw": "0.20"
+                },
+                "grossUnitPrice": null,
+                "listPrice": {
+                    "formatted": "0,25 €",
+                    "raw": "0.25"
+                },
+                "baseQuantity": null,
+                "unitPriceBase": null,
+                "showGrossPrice": false,
+                "total": {
+                    "formatted": "22,50 €",
+                    "raw": "EUR 22.50"
+                },
+                "vatRate": {
+                    "formatted": "19 %",
+                    "raw": "19"
+                },
+                "vatCategory": "S",
+                "period": null,
+                "attributes": [],
+                "allowances": [],
+                "charges": [
+                    {
+                        "reason": "Sonderverpackung",
+                        "amount": {
+                            "formatted": "2,50 €",
+                            "raw": "EUR 2.50"
+                        },
+                        "percent": null,
+                        "label": "Zuschlag Sonderverpackung"
+                    }
+                ],
+                "subLines": [],
+                "highlight": false,
+                "groupId": null,
+                "optional": false,
+                "alternativeTo": null,
+                "serialNumbers": []
+            }
+        ],
+        "allowances": [
+            {
+                "reason": "Treuerabatt",
+                "amount": {
+                    "formatted": "1,04 €",
+                    "raw": "EUR 1.04"
+                },
+                "percent": {
+                    "formatted": "2 %",
+                    "raw": "2"
+                },
+                "base": {
+                    "formatted": "51,82 €",
+                    "raw": "EUR 51.82"
+                },
+                "vatRate": {
+                    "formatted": "19 %",
+                    "raw": "19"
+                },
+                "vatCategory": "S",
+                "label": "Nachlass Treuerabatt 2 %"
+            }
+        ],
+        "charges": [
+            {
+                "reason": "Fracht",
+                "amount": {
+                    "formatted": "15,00 €",
+                    "raw": "EUR 15.00"
+                },
+                "percent": null,
+                "base": null,
+                "vatRate": {
+                    "formatted": "19 %",
+                    "raw": "19"
+                },
+                "vatCategory": "S",
+                "label": "Zuschlag Fracht"
+            }
+        ],
+        "vatRows": [
+            {
+                "label": "USt. 19 %",
+                "category": "S",
+                "categoryLabel": "Normaler Steuersatz",
+                "rate": {
+                    "formatted": "19 %",
+                    "raw": "19"
+                },
+                "base": {
+                    "formatted": "65,78 €",
+                    "raw": "EUR 65.78"
+                },
+                "amount": {
+                    "formatted": "12,50 €",
+                    "raw": "EUR 12.50"
+                },
+                "isSpecialScheme": false,
+                "exemptionReason": null,
+                "exemptionReasonCode": null
+            }
+        ],
+        "totals": {
+            "lineNetSum": {
+                "formatted": "51,82 €",
+                "raw": "EUR 51.82"
+            },
+            "allowanceSum": {
+                "formatted": "1,04 €",
+                "raw": "EUR 1.04"
+            },
+            "chargeSum": {
+                "formatted": "15,00 €",
+                "raw": "EUR 15.00"
+            },
+            "netTotal": {
+                "formatted": "65,78 €",
+                "raw": "EUR 65.78"
+            },
+            "vatTotal": {
+                "formatted": "12,50 €",
+                "raw": "EUR 12.50"
+            },
+            "vatTotalInTaxCurrency": null,
+            "taxCurrencyNote": null,
+            "grossTotal": {
+                "formatted": "78,28 €",
+                "raw": "EUR 78.28"
+            },
+            "dueEqualsGross": true,
+            "prepaid": null,
+            "rounding": null,
+            "thirdPartyPayments": [],
+            "amountDue": {
+                "formatted": "78,28 €",
+                "raw": "EUR 78.28"
+            },
+            "amountDueLabel": "Zahlbetrag"
+        },
+        "payment": {
+            "meansCode": "58",
+            "means": "SEPA-Überweisung",
+            "meansText": null,
+            "remittance": "RE-2026-0042",
+            "accounts": [
+                {
+                    "iban": "DE02 1203 0000 0000 2020 51",
+                    "bic": "BYLADEM1001",
+                    "name": "Muster GmbH"
+                }
+            ],
+            "card": null,
+            "directDebit": null,
+            "qrCode": {
+                "type": "girocode",
+                "payload": "BCD\n002\n1\nSCT\nBYLADEM1001\nMuster GmbH\nDE02120300000000202051\nEUR78.28\n\n\nRE-2026-0042",
+                "dataUri": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAZAAAAGQCAIAAAAP3aGbAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAH10lEQVR42u3dW47bMBBE0VGg/W/ZWcEYCd0uF+lz/jPRyxcS0CCvx+PxA7CDPy4BIFgAggUIFoBgAQgWIFgAggUgWIBgAQgWgGABggUgWACCBQgWgGABCBYgWACCBSBYgGABCBaAYAGCBSBYAIIFCBaAYAGCBSBYAIIFCBaAYAEIFvBd7uR/dl3Xppfp8XgsnNSTf9VwzRtOavzwxu/vwsHP/rWtfx3esACfhACCBSBYgGABCBaAYAHf4m44iIZ5pZ/VQZiFcaHx81078tiIVvnY1DtuvR+INyzAJyGAYAEIFiBYAIIFIFiAYAFUusuPr2TmsPx8S1aMW/iDJSsjrh3G7Pn6gXjDAnwSAggWgGABggUgWACCBQgWwPvdLsGLZucbx0dAn/zB8aHNhhVWG+Yey2cvvWEBCBaAYAGCBSBYAIIFCBaAYAFfzODoG+27IuXsYYzPtY6f7+xVKp9r9YYFIFgAggUIFoBgAQgWIFgAggV8sfbB0SMH7ZLLiq6J/V/jc61ry6jO3qzkQ/ttk6jesADBAhAsQLAABAtAsADBAhAsgNdUDI6uTfT1a1iRsmH1y7VhzvF/FTvC8cM79QfiDQsQLADBAhAsQLAABAtAsADBAoi77J396hXs3o9+fAXO2HmVHF7D4CjesADBAhAsAMECBAtAsADBAhAsgCHRFUd/G6g7dZBy9j8q2QD9ycHHZmhjI6Altz55fxt+v96wAJ+EAIIFIFiAYAEIFoBgAYIF8DbRwdHZFRpLdjlfULKW5vj5LvzBtUuRHL9ceJaSD23y/nrDAhAsQLAABAtAsADBAhAsgF+17/w8PoFS8gcX/qOSaxu7eiVzSQ1XqeS34w0LQLAAwQIQLADBAgQLQLAABAvY373voR+5al1yVcKGTbDXrlL5Y9awSGTyjtj5GUCwAMECECwAwQIEC0CwAAQL2Ed0cHRhFHB8lcgjt5IuGUecPYzkXOvsTUw+tN6wAAQLQLAAwQIQLADBAgQLQLAA/kfFVvX9a0s27Po9fgzjk4oLK1ImTyr2wIxPIJc86g2t8IYF+CQEECxAsAAEC0CwAMECECyA11z7LmaYHM+bHbRLjqGOjyPGHpj+I589wpL723DrvWEBPgkBBAtAsADBAhAsAMECBAvgbe6Ggzh1xdHZ81oblE2e1OwKnCVig8H9FlaU9YYF+CQEECwAwQIEC0CwAAQLECyAMtEVRxtWaBw/vNnJzORJlWybHrsUsSdz/GkpGa81OAogWIBgAQgWgGABggUgWACCBeyvYqv6b1uRMnkpxqdhY1dv7fDKR16Tc7yxIWSDowCCBQgWgGABCBYgWACCBSBYwD6u/snMXw89OCJ45OKcDeOIJYOjyQv48WvuDQtAsAAECxAsAMECECxAsADm3eXHt/WCZ7P/0dpJJQedGsaFxp+Khjm78d9Ow/PsDQvwSQggWACCBQgWgGABCBYgWACf8HU7Px+5wFvyyGPbWZfcqYYFC0seGDs/AwgWIFgAggUgWIBgAQgWgGAB+2vf+Xl80C45WLgwaJecsYxdpf6x29gKq1tvV97QCm9YgE9CAMECBAtAsAAECxAsAMECeE10q/qFwcIjdx4fX99y3wVRSwZlGw5j/CaWXFtvWIBPQgDBAhAsQLAABAtAsADBAmgSHRxtWLGwfIXVJ0pWidx3V/fYrS9ZG3Z8ptQbFoBgAYIFIFgAggUIFoBgAQgWsL+Nt6rvH8+b3co8ufN4w7KTySez/CYmV5RdOMLknfKGBfgkBBAsQLAABAtAsADBAhAsgNfc5ceXnEmLLc755D8qmQ4t35994Zon/2DJNd93cV1vWIBgAQgWgGABggUgWACCBQgWwNtEB0dnZ/DWjA/1HTme1zCpOL4CZ2zdzuSCt8mb2PCoe8MCfBICCBYgWACCBSBYgGABCBbAa+59D33fwcI1ayOvDZvOj9+p8Zs4+wdLtqrvv1nesACfhACCBSBYgGABCBaAYAHnuMrXn0uOtMR25S0Z+OrfdTl2UrPDRw3Xof+ae8MCfBICCBaAYAGCBSBYAIIFCBbAJ1xHblwcvYKpmcPk2m+zo4/lKyMmJYd1G2ZovWEBPgkBBAtAsADBAhAsAMECBAugTHTn531HAWdH5pLX4chrnlx8NXYBy6d/vWEBCBYgWACCBSBYgGABCBaAYAFHuBsOomTV07VBu4WDXxtTLFlbcnYccevhxt+uUuxBKvmB2KoeQLAAwQIQLADBAgQLQLAABAvYx11+fMm1JcePcHamNHl4senQ/vPdd7HZ8R9Iw8F7wwJ8EgIIFiBYAIIFIFiAYAEIFsBrbpfgRQuDdiWzebEZy+RJJVe/jJ3XkSflDQvwSQggWACCBQgWgGABCBYgWACfYHD0jWJbmY+PgO67jOrsnfrZeTp0/DHzhgUgWIBgAQgWgGABggUgWACCBeyvfXC0fIztufIVR2dP6mdpUDY5DdvwcB55f71hAQgWIFgAggUgWIBgAQgWgGAB+7jsgv0vZicVrS35kZMqv0pH/jq8YQE+CQEEC0CwAMECECwAwQK+xbX1CnmANywAwQIQLECwAAQLQLAAwQIQLADBAgQLQLAABAsQLADBAhAsQLAABAtAsADBAhAsAMECBAtAsADBAhAsAMECBAtAsAAECxAsAMECECxAsAAEC0CwgHP9BdJJtCeQJaJsAAAAAElFTkSuQmCC",
+                "amount": {
+                    "formatted": "78,28 €",
+                    "raw": "EUR 78.28"
+                },
+                "note": null
+            },
+            "isRefund": false,
+            "isPayout": false
+        },
+        "paymentTerms": {
+            "lines": [
+                "Bitte bis zum 17.10.2026 überweisen."
+            ],
+            "discounts": [],
+            "dueDate": {
+                "formatted": "17.10.2026",
+                "raw": "2026-10-17"
+            }
+        },
+        "legalNotes": [],
+        "notes": [],
+        "attachments": [],
+        "texts": {
+            "salutation": null,
+            "intro": "",
+            "closing": ""
+        },
+        "labels": {
+            "title_380": "Rechnung",
+            "title_381": "Rechnungskorrektur",
+            "title_384": "Korrigierte Rechnung",
+            "title_389": "Gutschrift",
+            "title_325": "Proforma-Rechnung",
+            "title_326": "Teilrechnung",
+            "title_386": "Anzahlungsrechnung",
+            "title_875": "Abschlagsrechnung",
+            "title_876": "Teilschlussrechnung",
+            "title_877": "Schlussrechnung",
+            "title_default": "Rechnung",
+            "invoice_number": "Rechnungsnummer",
+            "invoice_date": "Rechnungsdatum",
+            "due_date": "Fällig am",
+            "delivery_date": "Leistungsdatum",
+            "service_period": "Leistungszeitraum",
+            "customer_number": "Kundennummer",
+            "buyer_reference": "Ihre Referenz",
+            "purchase_order": "Bestellnummer",
+            "sales_order": "Auftragsnummer",
+            "contract": "Vertrag",
+            "project": "Projekt",
+            "despatch_advice": "Lieferschein",
+            "tender": "Vergabe/Los",
+            "invoiced_object": "Objekt",
+            "accounting_reference": "Kostenstelle",
+            "preceding_invoice": "Bezug auf Rechnung",
+            "preceding_invoice_text": "Bezug: Rechnung :number vom :date",
+            "page": "Seite",
+            "of": "von",
+            "position": "Pos.",
+            "description": "Beschreibung",
+            "item_number": "Art.-Nr.",
+            "quantity": "Menge",
+            "unit": "Einheit",
+            "unit_price": "Einzelpreis",
+            "unit_price_gross": "Einzelpreis brutto",
+            "vat_rate": "USt.",
+            "total": "Betrag",
+            "subtotal": "Zwischensumme",
+            "carry_over": "Übertrag",
+            "carry_over_from": "Übertrag von Seite :page",
+            "continued_on": "Fortsetzung auf Seite :page",
+            "line_net_sum": "Summe Positionen",
+            "allowance": "Nachlass",
+            "charge": "Zuschlag",
+            "net_total": "Nettobetrag",
+            "vat_row": ":rate USt. auf :base",
+            "vat_row_single": "USt. :rate",
+            "vat_row_exempt": "Umsatzsteuerfrei (:category) auf :base",
+            "vat_row_reverse_charge": "Keine USt. (Steuerschuldnerschaft des Leistungsempfängers) auf :base",
+            "vat_row_zero_rated": "0 % USt. (Nullsatz) auf :base",
+            "vat_row_not_subject": "Nicht steuerbar: :base",
+            "vat_row_special_scheme": "Sonderregelung, kein gesonderter Steuerausweis: :base",
+            "allowance_vat_rate": ":rate USt.",
+            "vat_total": "Umsatzsteuer",
+            "gross_total": "Gesamtbetrag",
+            "prepaid": "Bereits gezahlt",
+            "rounding": "Rundung",
+            "third_party_payment": "Fremdleistung",
+            "amount_due": "Zahlbetrag",
+            "refund_amount": "Erstattungsbetrag",
+            "payout_amount": "Auszahlungsbetrag",
+            "tax_currency_note": "Umsatzsteuer in :currency: :amount (Kurs :rate vom :date)",
+            "payment_terms": "Zahlungsbedingungen",
+            "payment": "Zahlung",
+            "payable_until": "Bitte zahlen Sie den Betrag bis zum :date.",
+            "transfer_until": "Bitte bis zum :date überweisen.",
+            "payout_until": "Wir überweisen den Betrag bis zum :date auf Ihr Konto.",
+            "cash_discount": ":percent Skonto bis :date: :amount",
+            "cash_discount_payout": "Bei Auszahlung bis :date ziehen wir :percent Skonto ab (Auszahlungsbetrag :amount).",
+            "cash_discount_terms": "Bei Zahlung innerhalb von :days Tagen gewähren wir :percent Skonto.",
+            "bank_details": "Bankverbindung",
+            "payout_account": "Auszahlung auf Ihr Konto",
+            "account_holder": "Kontoinhaber",
+            "iban": "IBAN",
+            "bic": "BIC",
+            "remittance": "Verwendungszweck",
+            "remittance_short": "Zweck",
+            "girocode": "GiroCode",
+            "girocode_discounted": "QR-Code mit Betrag nach Skonto (:amount), gültig bis :date.",
+            "card": "Kartenzahlung",
+            "direct_debit": "Der Betrag wird per Lastschrift eingezogen.",
+            "mandate": "Mandatsreferenz",
+            "creditor_id": "Gläubiger-ID",
+            "vat_id": "USt-IdNr.",
+            "tax_number": "Steuernummer",
+            "tax_number_short": "St.-Nr.",
+            "your_vat_id": "Ihre USt-IdNr.",
+            "your_tax_number": "Ihre Steuernummer",
+            "tax_representative": "Steuerlicher Vertreter",
+            "register": "Register",
+            "seller": "Verkäufer",
+            "buyer": "Käufer",
+            "supplier": "Lieferant",
+            "payee": "Zahlungsempfänger",
+            "deliver_to": "Lieferanschrift",
+            "contact": "Kontakt",
+            "phone": "Telefon",
+            "email": "E-Mail",
+            "notes": "Hinweise",
+            "attachments": "Anlagen",
+            "draft": "ENTWURF",
+            "preview": "VORSCHAU",
+            "document_quote": "Angebot",
+            "document_order_confirmation": "Auftragsbestätigung",
+            "document_delivery_note": "Lieferschein",
+            "document_proforma": "Proforma-Rechnung",
+            "document_payment_reminder": "Zahlungserinnerung",
+            "document_payment_reminder_level": ":level. Mahnung",
+            "document_account_statement": "Kontoauszug",
+            "document_number": "Nummer",
+            "document_date": "Datum",
+            "valid_until": "Gültig bis",
+            "reference_document": "Bezug",
+            "optional_line": "Optional",
+            "alternative_line": "Alternative zu Pos. :position",
+            "serial_numbers": "Seriennummern",
+            "packages": "Packstücke",
+            "weight": "Gewicht",
+            "tracking_number": "Sendungsnummer",
+            "proforma_notice": "Diese Proforma-Rechnung ist keine Rechnung im steuerlichen Sinne.",
+            "acceptance": "Auftrag erteilt:",
+            "acceptance_signature": "Datum, Unterschrift",
+            "open_items": "Offene Posten",
+            "invoice_amount": "Rechnungsbetrag",
+            "paid": "Bezahlt",
+            "open_amount": "Offen",
+            "fees": "Gebühren",
+            "interest": "Zinsen",
+            "interest_text": "Verzugszinsen :rate p. a. auf :base vom :from bis :until",
+            "dunning_total": "Zu zahlender Gesamtbetrag",
+            "dunning_deadline": "Bitte zahlen Sie den Gesamtbetrag bis zum :date.",
+            "statement_period": "Zeitraum",
+            "opening_balance": "Anfangssaldo",
+            "balance": "Saldo",
+            "cancellation_note": "Stornierung der Rechnung :number vom :date.",
+            "cancellation_note_self_billed": "Stornierung der Gutschrift :number vom :date.",
+            "cancellation_reason": "Grund: :reason",
+            "cancellation_vat_aligned": "Die Umsatzsteuer ist auf die bereits stornierten Teilbeträge abgestimmt.",
+            "cancellation_terms": "Der Betrag wird mit offenen Forderungen verrechnet oder erstattet."
+        },
+        "design": {
+            "primaryColor": "#2741d9",
+            "secondaryColor": "#2741d9",
+            "textColor": "#15171c",
+            "mutedColor": "#5f6470",
+            "font": "geist",
+            "fontMedium": "geistmedium",
+            "logo": null,
+            "letterLayout": "free",
+            "addressTop": 45,
+            "addressLeft": 20,
+            "pageMarginTop": 15,
+            "continuationMarginTop": 40,
+            "letterheadHeight": 30,
+            "logoMaxHeight": 14,
+            "addressHeight": 45,
+            "addressWidth": 85,
+            "addressZoneTop": 17.7,
+            "senderLineHeight": 5,
+            "noticeZoneHeight": 12.7,
+            "foldMarks": [],
+            "punchMark": null,
+            "paper": "A4",
+            "watermark": null,
+            "watermarkCss": null,
+            "senderLine": "Muster GmbH · Hauptstraße 1 · 12345 Musterstadt",
+            "footerColumns": [
+                [
+                    "Muster GmbH",
+                    "Hauptstraße 1",
+                    "12345 Musterstadt"
+                ],
+                [
+                    "+49 123 456789",
+                    "rechnung@muster.de"
+                ],
+                [
+                    "HRB 12345",
+                    "Amtsgericht Musterstadt",
+                    "Geschäftsführer: Max Muster"
+                ],
+                [
+                    "USt-IdNr. DE123456789",
+                    "St.-Nr. 12/345/67890"
+                ]
+            ],
+            "footerHasAddress": true,
+            "footerHasTaxIds": true,
+            "showItemNumbers": false,
+            "showGrossPrices": false
+        },
+        "meta": {
+            "locale": "de",
+            "custom": [],
+            "source": null
+        }
+    },
+    "aliases": {
+        "issuer": "seller",
+        "recipient": "buyer",
+        "design.footerColumns[0]": "issuer.address.lines",
+        "design.footerColumns[3][0]": "issuer.vatId",
+        "design.footerColumns[3][1]": "issuer.taxNumber"
+    }
+}
