@@ -26,7 +26,6 @@ use Quittio\Core\Data\Party\BuyerParty;
 use Quittio\Core\Documents\DocumentBuilder;
 use Quittio\Core\Documents\DocumentData;
 use Quittio\Core\Exceptions\ConfigurationException;
-use Quittio\Core\Exceptions\InvalidArgumentException;
 use Quittio\Core\Exceptions\InvalidInvoiceData;
 use Quittio\Core\Formats\DefaultFormatResolver;
 use Quittio\Core\Formats\FormatRegistry;
@@ -69,6 +68,7 @@ use Quittio\Laravel\Rendering\RenderedDocument;
 use Quittio\Laravel\Rendering\RenderedInvoice;
 use Quittio\Laravel\Support\ConfigMapper;
 use Quittio\Laravel\Support\CountryPackDiscovery;
+use Quittio\Laravel\Support\DriverRegistry;
 use Quittio\Laravel\Support\Settings;
 use Quittio\Laravel\Templates\BladeTemplateEngine;
 use ReflectionClass;
@@ -81,22 +81,23 @@ class QuittioManager
 {
     use Macroable;
 
-    public const array EXTENSION_TYPES = ['renderer', 'validator', 'serializer', 'format_resolver'];
+    public const array EXTENSION_TYPES = DriverRegistry::TYPES;
 
     private ?Quittio $core = null;
 
     /** @var array{0: array<array-key, mixed>, 1: bool}|null the configuration the core was built from */
     private ?array $coreSettings = null;
 
-    /** @var array<string, array<string, Closure(ContainerContract, array<string, mixed>): object>> */
-    private array $extensions = ['renderer' => [], 'validator' => [], 'serializer' => [], 'format_resolver' => []];
+    private readonly DriverRegistry $drivers;
 
     /** @var list<CountryPack> */
     private array $countryPacks = [];
 
     public function __construct(
         protected readonly ContainerContract $app,
-    ) {}
+    ) {
+        $this->drivers = new DriverRegistry;
+    }
 
     /**
      * Starts a render call: format(), profile(), locale() … and render() or queue(). A builder is
@@ -334,11 +335,7 @@ class QuittioManager
      */
     public function extend(string $type, string $name, Closure $factory): static
     {
-        if (! in_array($type, self::EXTENSION_TYPES, true)) {
-            throw new InvalidArgumentException(sprintf('Unknown extension type "%s". Known types: %s.', $type, implode(', ', self::EXTENSION_TYPES)));
-        }
-
-        $this->extensions[$type][$name] = $factory;
+        $this->drivers->extend($type, $name, $factory);
         $this->core = null;
 
         return $this;
@@ -493,13 +490,12 @@ class QuittioManager
             $quittio->setPaymentQrGenerator($instance);
         }
 
-        foreach ($this->extensions['serializer'] as $name => $factory) {
-            $quittio->addSerializer($this->instance('serializer', $name, $factory($this->container(), $settings->array('serializers.'.$name)), XmlSerializer::class));
+        foreach ($this->drivers->names('serializer') as $name) {
+            $quittio->addSerializer($this->drivers->make('serializer', $name, $this->container(), $settings->array('serializers.'.$name), XmlSerializer::class));
         }
         foreach ($levels as $level) {
-            $factory = $this->extensions['validator'][$level] ?? null;
-            if ($factory !== null) {
-                $quittio->addValidator($this->instance('validator', $level, $factory($this->container(), $settings->array('validation.drivers.'.$level)), ValidationDriver::class));
+            if ($this->drivers->has('validator', $level)) {
+                $quittio->addValidator($this->drivers->make('validator', $level, $this->container(), $settings->array('validation.drivers.'.$level), ValidationDriver::class));
             }
         }
 
@@ -595,8 +591,8 @@ class QuittioManager
         $name = $settings->string('pdf.renderer', 'mpdf');
         $options = $settings->section('pdf.renderers.'.$name);
 
-        if (isset($this->extensions['renderer'][$name])) {
-            return $this->instance('renderer', $name, $this->extensions['renderer'][$name]($this->container(), $settings->array('pdf.renderers.'.$name)), PdfRenderer::class);
+        if ($this->drivers->has('renderer', $name)) {
+            return $this->drivers->make('renderer', $name, $this->container(), $settings->array('pdf.renderers.'.$name), PdfRenderer::class);
         }
         if ($name !== 'mpdf') {
             throw new ConfigurationException(sprintf('Unknown PDF renderer "%s". Register it with Quittio::extend(\'renderer\', ...).', $name));
@@ -662,10 +658,7 @@ class QuittioManager
             return $lookup === null ? null : new DefaultFormatResolver($config->profile ?? Quittio::DEFAULT_PROFILE, $config->autoUpgradeProfile, $lookup);
         }
 
-        $factory = $this->extensions['format_resolver'][$name]
-            ?? throw new ConfigurationException(sprintf('Unknown format resolver "%s".', $name));
-
-        return $this->instance('format_resolver', $name, $factory($this->container(), $settings->array('format_resolver')), FormatResolver::class);
+        return $this->drivers->make('format_resolver', $name, $this->container(), $settings->array('format_resolver'), FormatResolver::class);
     }
 
     /**
@@ -687,20 +680,5 @@ class QuittioManager
         }
 
         return static fn (BuyerParty $buyer): bool => $instance($buyer) === true;
-    }
-
-    /**
-     * @template T of object
-     *
-     * @param  class-string<T>  $expected
-     * @return T
-     */
-    private function instance(string $type, string $name, object $instance, string $expected): object
-    {
-        if (! $instance instanceof $expected) {
-            throw new ConfigurationException(sprintf('The %s "%s" must return an instance of %s.', $type, $name, $expected));
-        }
-
-        return $instance;
     }
 }
