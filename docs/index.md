@@ -83,8 +83,9 @@ New to Quittio? Follow [Getting started](getting-started.md); new to e-invoicing
 | [Artisan commands](commands.md) | All commands and publish tags |
 | [Testing](testing.md) | Fake, assertions, factories, scenarios |
 | [Country packs](country-packs.md) | The German pack: tax presets, rules, XRechnung, reminders; writing a pack |
-| [Managed layer](managed.md) | Issuer profiles, customers, numbering, archive, cancellations and corrections, delivery, audit log, immutability, retention |
+| [Managed layer](managed.md) | Preview of the unreleased package: issuer profiles, customers, numbering, archive, cancellations and corrections, delivery, audit log, immutability, retention |
 | [Troubleshooting](troubleshooting.md) | Common errors with cause and fix |
+| [FAQ](faq.md) | Sending, the German e-invoicing obligation, Java, temporary files, queued invoices |
 | [Field reference](field-reference.md) | Every field of the data model with BT, cardinality and XML paths (generated) |
 | [AI assistants](ai.md) | llms.txt, the MCP server of this documentation, Laravel Boost guidelines and skill |
 

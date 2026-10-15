@@ -119,3 +119,4 @@ The KoSIT validator (official check of XRechnung and EN 16931) or veraPDF (PDF/A
 - Render the sample invoices: `php artisan quittio:preview --scenario=simple` shows whether configuration and template work.
 - Validate an existing file: `php artisan quittio:validate invoice.xml` ([Artisan commands](commands.md)).
 - Compare with a complete example on [Examples](examples.md).
+- Questions about sending, the German e-invoicing obligation, Java or temporary files: [FAQ](faq.md).

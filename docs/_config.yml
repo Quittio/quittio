@@ -104,7 +104,9 @@ defaults:
     values: { title: Managed layer (preview), nav_order: 16, render_with_liquid: false }
   - scope: { path: "troubleshooting.md" }
     values: { title: Troubleshooting, nav_order: 17, render_with_liquid: false }
+  - scope: { path: "faq.md" }
+    values: { title: FAQ, nav_order: 18, render_with_liquid: false }
   - scope: { path: "field-reference.md" }
-    values: { title: Field reference, nav_order: 18, render_with_liquid: false }
+    values: { title: Field reference, nav_order: 19, render_with_liquid: false }
   - scope: { path: "ai.md" }
-    values: { title: AI assistants, nav_order: 19, render_with_liquid: false }
+    values: { title: AI assistants, nav_order: 20, render_with_liquid: false }

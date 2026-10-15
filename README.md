@@ -88,7 +88,8 @@ The documentation is published at **[docs.quittio.dev](https://docs.quittio.dev)
 - [Country packs](docs/country-packs.md)
 - [Testing](docs/testing.md)
 - [Artisan commands](docs/commands.md)
-- [Managed layer](docs/managed.md)
+- [Managed layer](docs/managed.md) (preview)
+- [Troubleshooting](docs/troubleshooting.md) and [FAQ](docs/faq.md)
 - [Field reference](docs/field-reference.md) (generated)
 - [AI assistants](docs/ai.md): llms.txt, the MCP server `https://docs.quittio.dev/mcp` and Laravel Boost
 
