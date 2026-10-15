@@ -79,8 +79,8 @@ it('supports macros', function () {
 
     $invoice = Invoices::simple()->internalNote('check')->build();
 
+    // Not flushed: that would remove the macros of country packs for later tests of the process.
     expect($invoice->notes[0]->content)->toBe('[internal] check');
-    InvoiceBuilder::flushMacros();
 });
 
 it('changes and removes existing lines', function () {
@@ -227,9 +227,5 @@ it('gives macros access to the builder state on subclasses', function () {
         return $this->currency;
     });
 
-    try {
-        expect($subclass::make()->currency('USD')->currencyForTest())->toBe('USD');
-    } finally {
-        InvoiceBuilder::flushMacros();
-    }
+    expect($subclass::make()->currency('USD')->currencyForTest())->toBe('USD');
 });
