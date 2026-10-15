@@ -3,6 +3,8 @@
 // - _site/llms.txt, _site/llms-full.txt (https://llmstxt.org) and every page as _site/{page}.md
 // - _worker/docs.generated.json, the pages and sections the MCP server (index.js) searches
 //
+// Preview pages of unreleased packages (PREVIEW) are left out of all of them.
+//
 // Usage (in docs/): DOCS_URL=https://docs.quittio.dev node _worker/build.mjs
 
 import { mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
@@ -16,7 +18,11 @@ const base = (process.env.DOCS_URL || 'https://docs.quittio.dev').replace(/\/+$/
 // Pages that AI tools may skip (llms.txt section "Optional").
 const OPTIONAL = new Set(['field-reference']);
 
-const pages = navigation().map(({ file, title, order }) => {
+// Pages of unreleased packages: on the website as a preview, but not in llms.txt, llms-full.txt and
+// the MCP index, so that assistants do not write code for a package that cannot be installed.
+const PREVIEW = new Set(['managed']);
+
+const pages = navigation().filter(({ file }) => !PREVIEW.has(file.replace(/\.md$/, ''))).map(({ file, title, order }) => {
     const slug = file.replace(/\.md$/, '');
     const markdown = readFileSync(join(docs, file), 'utf8')
         .split('\n')

@@ -13,6 +13,8 @@ Two files list or contain all pages, in the [llms.txt](https://llmstxt.org) form
 | [`/llms.txt`](https://docs.quittio.dev/llms.txt) | Index of all pages with a short description |
 | [`/llms-full.txt`](https://docs.quittio.dev/llms-full.txt) | All pages in one file |
 
+The preview of the unreleased [Managed layer](managed.md) is left out of the Markdown files, both lists and the MCP server below, so that assistants do not write code for a package that cannot be installed yet.
+
 ## MCP server
 
 `https://docs.quittio.dev/mcp` is a read-only [MCP](https://modelcontextprotocol.io) server for this documentation. MCP (Model Context Protocol) is a standard that lets an assistant call the tools of a server. The server uses the Streamable HTTP transport and needs no authentication. It always answers with the documentation of the published website.

@@ -1,14 +1,16 @@
 # Managed layer (`quittio/managed`)
 
+> **Preview of an unreleased package.** `quittio/managed` is not released yet, and nothing on
+> this page can be installed today. The page describes the package as it is planned to ship:
+> commercially licensed and distributed separately from the open source packages. Names,
+> configuration keys and behaviour may still change before the release.
+
 The Managed layer stores your invoices in the database and handles what happens after you
 build them: numbering, issuing, archiving, cancelling, correcting, sending, and deleting them
 after the retention period. You need it when your Laravel application issues the invoices
 itself and has to keep them. Read [Getting started](getting-started.md) first: the Managed
 layer uses the same invoice builder. Terms such as e-invoice, format and profile are explained
 in [E-invoicing basics](concepts.md).
-
-> **Status:** `quittio/managed` is not released yet. This page describes the package as it
-> will ship: commercially licensed and distributed separately from the open source packages.
 
 ## What Managed adds
 

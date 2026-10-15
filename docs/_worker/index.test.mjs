@@ -59,7 +59,7 @@ test('search_docs finds the matching sections', async () => {
 test('get_page returns a page, a section or the outline of a long page', async () => {
     const page = await call('get_page', { page: 'getting-started' });
     const section = await call('get_page', { page: 'https://docs.quittio.dev/country-packs#tax-presets' });
-    const outline = await call('get_page', { page: 'managed' });
+    const outline = await call('get_page', { page: 'building-invoices' });
 
     assert.match(page.content[0].text, /^# Getting started\n/);
     assert.match(section.content[0].text, /^### Tax presets\n/);
@@ -77,6 +77,11 @@ test('list_pages lists every page', async () => {
 
     assert.match(text, /^- index: Overview/);
     assert.match(text, /- ai: AI assistants/);
+});
+
+test('preview pages of unreleased packages are not indexed', async () => {
+    assert.ok(!(await call('list_pages')).content[0].text.includes('- managed:'));
+    assert.equal((await call('get_page', { page: 'managed' })).isError, true);
 });
 
 test('protocol errors use JSON-RPC error codes', async () => {

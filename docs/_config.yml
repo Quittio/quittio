@@ -101,7 +101,7 @@ defaults:
   - scope: { path: "country-packs.md" }
     values: { title: Country packs, nav_order: 15, render_with_liquid: false }
   - scope: { path: "managed.md" }
-    values: { title: Managed layer, nav_order: 16, render_with_liquid: false }
+    values: { title: Managed layer (preview), nav_order: 16, render_with_liquid: false }
   - scope: { path: "troubleshooting.md" }
     values: { title: Troubleshooting, nav_order: 17, render_with_liquid: false }
   - scope: { path: "field-reference.md" }
