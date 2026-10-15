@@ -22,6 +22,7 @@ All notable changes to this project are documented in this file. The format foll
 
 ### Deprecated
 
+- Environment variables are named after their configuration keys: `QUITTIO_DEFAULT_COUNTRY`, `QUITTIO_VALIDATION_MODE`, `QUITTIO_MANDATORY_FIELD_GUARD`, `QUITTIO_STORAGE_DISK` and `QUITTIO_PREVIEW_ENABLED`. The names of 0.1.0 (`QUITTIO_COUNTRY`, `QUITTIO_VALIDATION`, `QUITTIO_GUARD`, `QUITTIO_DISK`, `QUITTIO_PREVIEW`) are still read when the new one is not set, until 1.0.
 - The methods of `Quittio\Core\Quittio` that change the instance are named after what they do: `addSerializer()`, `addValidator()`, `clearValidators()`, `setRenderer()`, `setTemplateEngine()`, `setPaymentQrGenerator()` and `setFormatResolver()`. The `with…()` names, which elsewhere in Quittio return a changed copy, remain as deprecated aliases until 1.0.
 
 ### Security

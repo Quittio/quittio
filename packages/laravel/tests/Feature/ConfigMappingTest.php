@@ -165,3 +165,26 @@ it('dispatches the snapshot form', function () {
 
     Illuminate\Support\Facades\Queue::assertPushed(RenderInvoice::class, fn (RenderInvoice $job): bool => str_starts_with($job->invoice, '{"_version":'.InvoiceData::SNAPSHOT_VERSION));
 });
+
+it('reads the environment variables of 0.1.0 when the new names are not set', function () {
+    $variables = ['QUITTIO_DEFAULT_COUNTRY', 'QUITTIO_COUNTRY', 'QUITTIO_VALIDATION_MODE', 'QUITTIO_VALIDATION', 'QUITTIO_MANDATORY_FIELD_GUARD', 'QUITTIO_GUARD', 'QUITTIO_STORAGE_DISK', 'QUITTIO_DISK', 'QUITTIO_PREVIEW_ENABLED', 'QUITTIO_PREVIEW'];
+    $config = static fn (): array => require dirname(__DIR__, 2).'/config/quittio.php';
+
+    try {
+        foreach (['QUITTIO_COUNTRY=AT', 'QUITTIO_VALIDATION=warn', 'QUITTIO_GUARD=log', 'QUITTIO_DISK=s3', 'QUITTIO_PREVIEW=false'] as $assignment) {
+            putenv($assignment);
+        }
+        $old = $config();
+        foreach (['QUITTIO_DEFAULT_COUNTRY=CH', 'QUITTIO_VALIDATION_MODE=off', 'QUITTIO_MANDATORY_FIELD_GUARD=off', 'QUITTIO_STORAGE_DISK=public', 'QUITTIO_PREVIEW_ENABLED=true'] as $assignment) {
+            putenv($assignment);
+        }
+        $new = $config();
+    } finally {
+        foreach ($variables as $variable) {
+            putenv($variable);
+        }
+    }
+
+    expect([$old['defaults']['country'], $old['validation']['mode'], $old['validation']['mandatory_field_guard'], $old['storage']['disk'], $old['preview']['enabled']])->toBe(['AT', 'warn', 'log', 's3', false])
+        ->and([$new['defaults']['country'], $new['validation']['mode'], $new['validation']['mandatory_field_guard'], $new['storage']['disk'], $new['preview']['enabled']])->toBe(['CH', 'off', 'off', 'public', true]);
+});

@@ -133,21 +133,23 @@ The Managed layer has its own file, `config/quittio-managed.php`, with the datab
 
 | Variable | Key | Default |
 |---|---|---|
-| `QUITTIO_COUNTRY` | `defaults.country` | – (the only installed country pack) |
+| `QUITTIO_DEFAULT_COUNTRY` | `defaults.country` | – (the only installed country pack) |
 | `QUITTIO_SELLER_NAME` | `seller.name` | – |
 | `QUITTIO_SELLER_VAT_ID` | `seller.vat_id` | – |
 | `QUITTIO_SELLER_TAX_NUMBER` | `seller.tax_number` | – |
 | `QUITTIO_SELLER_SMALL_BUSINESS` | `seller.small_business` | `false` |
 | `QUITTIO_DEFAULT_VAT` | `defaults.vat` | – (standard rate of the seller's country) |
-| `QUITTIO_VALIDATION` | `validation.mode` | `error` |
+| `QUITTIO_VALIDATION_MODE` | `validation.mode` | `error` |
 | `QUITTIO_VALIDATION_LOCALE` | `validation.locale` | – (the language of the application) |
-| `QUITTIO_GUARD` | `validation.mandatory_field_guard` | – (`exception`, in production `log`) |
+| `QUITTIO_MANDATORY_FIELD_GUARD` | `validation.mandatory_field_guard` | – (`exception`, in production `log`) |
 | `QUITTIO_KOSIT_URL` | `validation.drivers.kosit.url` | `http://127.0.0.1:8081` (start the validator with `-P 8081`; its own default port is 8080) |
 | `QUITTIO_CANCELLATION_STRATEGY` | `corrections.cancellation_strategy` | – (country pack) |
-| `QUITTIO_DISK` | `storage.disk` | `local` |
-| `QUITTIO_PREVIEW` | `preview.enabled` | – (local environment only) |
+| `QUITTIO_STORAGE_DISK` | `storage.disk` | `local` |
+| `QUITTIO_PREVIEW_ENABLED` | `preview.enabled` | – (local environment only) |
 
-`QUITTIO_PREVIEW` must be `true` or `false`. Other values count as not set.
+`QUITTIO_PREVIEW_ENABLED` must be `true` or `false`. Other values count as not set.
+
+Quittio 0.1.0 used shorter names for some variables: `QUITTIO_COUNTRY`, `QUITTIO_VALIDATION`, `QUITTIO_GUARD`, `QUITTIO_DISK` and `QUITTIO_PREVIEW`. They are still read when the new name is not set, until 1.0.
 
 ## Defaults
 
@@ -155,7 +157,7 @@ Values used when an invoice or a render call does not set them itself.
 
 | Key | Type | Default | Effect |
 |---|---|---|---|
-| `defaults.country` | string\|null | `env('QUITTIO_COUNTRY')` | Country pack used when the seller has no country code (BT-40), e.g. `'DE'`. Normally the seller's country decides; `->country()` on a render call wins as well. `null` = the only installed country pack if there is exactly one (`quittio/quittio` installs Germany). Without an installed pack for the code, only the generic EN 16931 rules apply. |
+| `defaults.country` | string\|null | `env('QUITTIO_DEFAULT_COUNTRY')` | Country pack used when the seller has no country code (BT-40), e.g. `'DE'`. Normally the seller's country decides; `->country()` on a render call wins as well. `null` = the only installed country pack if there is exactly one (`quittio/quittio` installs Germany). Without an installed pack for the code, only the generic EN 16931 rules apply. |
 | `defaults.profile` | string\|null | `null` | Profile of the e-invoice XML, i.e. how much of EN 16931 it contains ([Profiles](concepts.md#profiles)), e.g. `'en16931'`, `'extended'`, `'xrechnung'`. It applies to every format that allows it, also to `->format('zugferd')` and to formats chosen by a country rule. Formats that do not allow it ignore it (e.g. `basic` for XRechnung or Peppol). `null` = the profile of the automatic choice or the format's default (`zugferd`, `cii`, `ubl`: `en16931`; `xrechnung-cii`, `xrechnung-ubl`: `xrechnung`; `peppol`: `peppol`). `->profile()` on a render call always wins. See [Formats and profiles](formats.md). |
 | `defaults.format` | string\|null | `null` | Format of a render call without `->format()`. `null` or `'auto'` = automatic choice by the format resolver: XRechnung for public buyers with a Leitweg-ID (the routing ID of a German public buyer, see [German terms](concepts.md#german-terms)), PDF for consumers, ZUGFeRD for businesses ([Automatic choice](formats.md#automatic-choice)). Keys: `zugferd` (PDF with embedded XML; aliases `factur-x`, `facturx`), `xrechnung-cii` (alias `xrechnung`), `xrechnung-ubl`, `cii`, `ubl`, `peppol`, `pdf`, `html`, `json`. |
 | `defaults.locale` | string\|null | `null` | Language of the invoice (labels, generated texts, number and date formats), e.g. `'de'` or `'en'`, when neither `->locale()` on the render call nor the invoice (`InvoiceBuilder::locale()`) sets one. `null` = the default of the seller's country pack (Germany: `de`). |
@@ -276,11 +278,11 @@ Every invoice is checked before it is created: against EN 16931, the rules of th
 
 | Key | Type | Default | Effect |
 |---|---|---|---|
-| `validation.mode` | string | `env('QUITTIO_VALIDATION', 'error')` | What happens with errors. `error`: throw a `ValidationException`. `warn`: create the invoice anyway and attach the result (`$result->validation()`). `off`: no validation while rendering. Per call: `->validate()`, `->validate(false)`, `->withoutValidation()`. |
+| `validation.mode` | string | `env('QUITTIO_VALIDATION_MODE', 'error')` | What happens with errors. `error`: throw a `ValidationException`. `warn`: create the invoice anyway and attach the result (`$result->validation()`). `off`: no validation while rendering. Per call: `->validate()`, `->validate(false)`, `->withoutValidation()`. |
 | `validation.levels` | list | `['php', 'xsd']` | Checks that run while rendering and in `validateFile()`: `php` (rules of EN 16931, format and country; levels L1–L3 and L7), `xsd` (XML schema, L4), `kosit` (the official KoSIT validator for XRechnung and Peppol, needs Java; L5), `verapdf` (PDF/A check, needs veraPDF; L6), or the name of a driver registered with `Quittio::extend('validator', …)`. Without `php`, the PHP rules do not run. |
 | `validation.block_on_warnings` | bool | `false` | In mode `error`, warnings block like errors |
 | `validation.locale` | string\|null | `env('QUITTIO_VALIDATION_LOCALE')` | Language of the validation messages and hints. `null` = the language of the application (`app()->getLocale()`), `'invoice'` = the language of the invoice, or a locale such as `'de'`. The invoice itself keeps its language. |
-| `validation.mandatory_field_guard` | string\|null | `env('QUITTIO_GUARD')` | Check that the PDF shows every legally required value (the template could leave one out): `exception`, `log` or `off`. `null` = `exception` outside production, `log` in production. See [Mandatory field guard](validation.md#mandatory-field-guard). |
+| `validation.mandatory_field_guard` | string\|null | `env('QUITTIO_MANDATORY_FIELD_GUARD')` | Check that the PDF shows every legally required value (the template could leave one out): `exception`, `log` or `off`. `null` = `exception` outside production, `log` in production. See [Mandatory field guard](validation.md#mandatory-field-guard). |
 | `validation.drivers.kosit.mode` | string | `'daemon'` | `daemon` (a running validator via HTTP, fast) or `cli` (one Java call per file) |
 | `validation.drivers.kosit.url` | string | `env('QUITTIO_KOSIT_URL', 'http://127.0.0.1:8081')` | Address of the validator daemon. The validator listens on port 8080 unless started with `-P 8081` (or mapped, `docker run -p 8081:8080`). `quittio:schemas:download` prints a start command for the port of this URL. |
 | `validation.drivers.kosit.jar` | string\|null | `null` | Validator JAR (mode `cli`) |
@@ -366,11 +368,11 @@ Published files of earlier versions may contain a `networks` section (mail, Pepp
 
 | Key | Type | Default | Effect |
 |---|---|---|---|
-| `storage.disk` | string | `env('QUITTIO_DISK', 'local')` | Filesystem disk (`config/filesystems.php`, e.g. `local` or `s3`) of `->save()` on rendered results and of queued renders without a disk. Empty = the default disk. The archive of the Managed layer uses `quittio-managed.disk`. |
+| `storage.disk` | string\|null | `env('QUITTIO_STORAGE_DISK', 'local')` | Filesystem disk (`config/filesystems.php`, e.g. `local` or `s3`) of `->save()` on rendered results and of queued renders without a disk. `null` or `''` = the default disk of `config/filesystems.php`. The archive of the Managed layer uses `quittio-managed.disk`. |
 | `queue.connection` | string\|null | `null` | Queue connection of `->queue()`. `null` = the default connection. |
 | `queue.queue` | string\|null | `'quittio'` | Queue name of `->queue()`. Workers must listen on it: `php artisan queue:work --queue=quittio,default`. |
 | `queue.after_commit` | bool | `true` | Inside a database transaction the job is dispatched after the commit, and not at all after a rollback. `false` = at once. |
-| `preview.enabled` | bool\|null | `env('QUITTIO_PREVIEW', null)` | `true` = register the browser preview of the sample invoices, `false` = never. `null` = only in the `local` environment. Never registered while routes are cached (`route:cache`). |
+| `preview.enabled` | bool\|null | `env('QUITTIO_PREVIEW_ENABLED')` | `true` = register the browser preview of the sample invoices, `false` = never. `null` = only in the `local` environment. Never registered while routes are cached (`route:cache`). |
 | `preview.path` | string | `'_quittio/preview'` | URL prefix of the preview |
 | `preview.middleware` | list | `['web']` | Middleware of the preview routes, e.g. `['web', 'auth']` when you enable it outside `local`. Outside `local` the gate `viewQuittioPreview` must also allow the request ([Preview route](laravel.md#preview-route)). |
 | `preview.throttle` | string\|null | `'30,1'` | Rate limit of the preview as `attempts,minutes` (Laravel's `throttle` middleware); `null` = none |

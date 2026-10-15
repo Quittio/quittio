@@ -87,7 +87,7 @@ The validation mode decides what happens with errors:
 | `warn` | The run continues. `$rendered->validation()` holds all findings, errors included. |
 | `off` | Nothing is validated while rendering; the result is empty. `check()` and `prepare()` still validate. |
 
-Set it for the application with `validation.mode` (environment variable `QUITTIO_VALIDATION`), or for one call.
+Set it for the application with `validation.mode` (environment variable `QUITTIO_VALIDATION_MODE`), or for one call.
 
 ### Per call
 
@@ -104,11 +104,11 @@ In Laravel (keys of `config/quittio.php`, see [Configuration](configuration.md#v
 
 | Key | Values | Default |
 |---|---|---|
-| `validation.mode` | `error` (throw), `warn` (attach the result only), `off` | `error` (`QUITTIO_VALIDATION`) |
+| `validation.mode` | `error` (throw), `warn` (attach the result only), `off` | `error` (`QUITTIO_VALIDATION_MODE`) |
 | `validation.levels` | `php` (L1, L2, L3, L7), `xsd` (L4), `kosit` (L5), `verapdf` (L6), or the name of a driver registered with `Quittio::extend('validator', …)` | `['php', 'xsd']` |
 | `validation.block_on_warnings` | `true`: warnings block like errors | `false` |
 | `validation.locale` | language of the messages: `null` = the language of the application, `'invoice'` = the language of the invoice, or a locale | `null` (`QUITTIO_VALIDATION_LOCALE`) |
-| `validation.mandatory_field_guard` | `exception`, `log`, `off`; `null` = `exception` outside production, `log` in production | `null` (`QUITTIO_GUARD`) |
+| `validation.mandatory_field_guard` | `exception`, `log`, `off`; `null` = `exception` outside production, `log` in production | `null` (`QUITTIO_MANDATORY_FIELD_GUARD`) |
 | `validation.drivers.kosit` | see [KoSIT validator](#kosit-validator-l5) | |
 | `validation.drivers.verapdf` | see [veraPDF](#verapdf-l6) | |
 | `validation.drivers.vies` | see [VIES](#vat-identifiers-and-vies) | |
