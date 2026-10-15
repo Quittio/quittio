@@ -26,6 +26,8 @@ use Quittio\Core\Enums\NoteSubjectCode;
 use Quittio\Core\Enums\UnitCode;
 use Quittio\Core\Enums\VatCategory;
 use Quittio\Core\Enums\VatExemptionReasonCode;
+use Quittio\Core\Exceptions\InvalidArgumentException;
+use Quittio\Core\Exceptions\InvalidInvoiceData;
 use Quittio\Core\Support\Amount;
 use Quittio\Core\Support\Date;
 use Quittio\Core\Support\Decimal;
@@ -79,26 +81,41 @@ class DocumentBuilder
         $this->invoice = InvoiceBuilder::make();
     }
 
+    /**
+     * A new builder for a document of $type.
+     */
     public static function make(DocumentType $type): static
     {
         return new static($type);
     }
 
+    /**
+     * A quote (Angebot): lines, optional and alternative lines, validUntil().
+     */
     public static function quote(): static
     {
         return new static(DocumentType::Quote);
     }
 
+    /**
+     * An order confirmation (Auftragsbestätigung), e.g. with reference() to the quote.
+     */
     public static function orderConfirmation(): static
     {
         return new static(DocumentType::OrderConfirmation);
     }
 
+    /**
+     * A delivery note (Lieferschein), e.g. with packages and serialised lines.
+     */
     public static function deliveryNote(): static
     {
         return new static(DocumentType::DeliveryNote);
     }
 
+    /**
+     * A proforma invoice: looks like an invoice, but is not one for tax purposes.
+     */
     public static function proforma(): static
     {
         return new static(DocumentType::Proforma);
@@ -115,11 +132,18 @@ class DocumentBuilder
         return $builder;
     }
 
+    /**
+     * An account statement (Kontoauszug): open items of a statementPeriod() with an opening
+     * balance.
+     */
     public static function accountStatement(): static
     {
         return new static(DocumentType::AccountStatement);
     }
 
+    /**
+     * Document number.
+     */
     public function number(string $number): static
     {
         $this->invoice->number($number);
@@ -127,6 +151,9 @@ class DocumentBuilder
         return $this;
     }
 
+    /**
+     * Document date; default today.
+     */
     public function issueDate(Date|DateTimeInterface|string $date): static
     {
         $this->invoice->issueDate($date);
@@ -134,6 +161,9 @@ class DocumentBuilder
         return $this;
     }
 
+    /**
+     * Currency, ISO 4217; default EUR.
+     */
     public function currency(string $currency): static
     {
         $this->invoice->currency($currency);
@@ -274,6 +304,9 @@ class DocumentBuilder
         return $this;
     }
 
+    /**
+     * Adds a note with an optional subject code, see InvoiceBuilder::note().
+     */
     public function note(string $content, NoteSubjectCode|RawCode|string|null $subject = null): static
     {
         $this->invoice->note($content, $subject);
@@ -281,6 +314,10 @@ class DocumentBuilder
         return $this;
     }
 
+    /**
+     * Percentage discount on the lines that count towards the totals, see
+     * InvoiceBuilder::discountPercent().
+     */
     public function discountPercent(BigDecimal|int|float|string $percent, ?string $reason = null, AllowanceReasonCode|RawCode|string|null $reasonCode = AllowanceReasonCode::Discount): static
     {
         $this->invoice->discountPercent($percent, $reason, $reasonCode);
@@ -288,6 +325,10 @@ class DocumentBuilder
         return $this;
     }
 
+    /**
+     * Absolute discount on the lines that count towards the totals, see
+     * InvoiceBuilder::discountAmount().
+     */
     public function discountAmount(BigDecimal|int|float|string $amount, ?string $reason = null, AllowanceReasonCode|RawCode|string|null $reasonCode = AllowanceReasonCode::Discount): static
     {
         $this->invoice->discountAmount($amount, $reason, $reasonCode);
@@ -325,6 +366,9 @@ class DocumentBuilder
         return $this;
     }
 
+    /**
+     * Bank account for the payment, see InvoiceBuilder::creditTransfer().
+     */
     public function creditTransfer(string $iban, ?string $bic = null, ?string $accountName = null): static
     {
         $this->invoice->creditTransfer($iban, $bic, $accountName);
@@ -332,6 +376,9 @@ class DocumentBuilder
         return $this;
     }
 
+    /**
+     * The buyer's reference; null removes it.
+     */
     public function buyerReference(?string $reference): static
     {
         $this->invoice->buyerReference($reference);
@@ -339,6 +386,9 @@ class DocumentBuilder
         return $this;
     }
 
+    /**
+     * The buyer's purchase order reference; null removes it.
+     */
     public function purchaseOrderReference(?string $reference): static
     {
         $this->invoice->purchaseOrderReference($reference);
@@ -357,6 +407,9 @@ class DocumentBuilder
         return $this;
     }
 
+    /**
+     * Date until which a quote is valid.
+     */
     public function validUntil(Date|DateTimeInterface|string $date): static
     {
         $this->validUntil = Date::parse($date);
@@ -364,6 +417,9 @@ class DocumentBuilder
         return $this;
     }
 
+    /**
+     * Delivery date.
+     */
     public function deliveryDate(Date|DateTimeInterface|string $date): static
     {
         $this->invoice->deliveryDate($date);
@@ -371,6 +427,9 @@ class DocumentBuilder
         return $this;
     }
 
+    /**
+     * Deliver-to party: recipient name and address, see InvoiceBuilder::deliverTo().
+     */
     public function deliverTo(?string $recipientName, ?Address $address = null): static
     {
         $this->invoice->deliverTo($recipientName, $address);
@@ -378,6 +437,9 @@ class DocumentBuilder
         return $this;
     }
 
+    /**
+     * Adds a package of a delivery note.
+     */
     public function package(Package $package): static
     {
         $this->packages[] = $package;
@@ -385,6 +447,9 @@ class DocumentBuilder
         return $this;
     }
 
+    /**
+     * Payment deadline of a payment reminder.
+     */
     public function deadline(Date|DateTimeInterface|string $date): static
     {
         $this->deadline = Date::parse($date);
@@ -392,6 +457,10 @@ class DocumentBuilder
         return $this;
     }
 
+    /**
+     * Adds an open invoice of a payment reminder or account statement: number, date, amount
+     * (string), due date, the amount paid so far and a description.
+     */
     public function openItem(
         string $invoiceNumber,
         Date|DateTimeInterface|string $invoiceDate,
@@ -412,6 +481,11 @@ class DocumentBuilder
         return $this;
     }
 
+    /**
+     * Adds a fee of a payment reminder, e.g. a reminder fee.
+     *
+     * @throws InvalidArgumentException for a float amount
+     */
     public function fee(string $description, BigDecimal|int|float|string $amount): static
     {
         $this->fees[] = ['description' => $description, 'amount' => (string) Decimal::rejectFloat($amount)];
@@ -445,6 +519,9 @@ class DocumentBuilder
         return $this;
     }
 
+    /**
+     * Period of an account statement.
+     */
     public function statementPeriod(Date|DateTimeInterface|string $start, Date|DateTimeInterface|string $end): static
     {
         $this->statementPeriod = new Period(Date::parse($start), Date::parse($end));
@@ -452,6 +529,11 @@ class DocumentBuilder
         return $this;
     }
 
+    /**
+     * Opening balance of an account statement.
+     *
+     * @throws InvalidArgumentException for a float amount
+     */
     public function openingBalance(BigDecimal|int|float|string $amount): static
     {
         $this->openingBalance = (string) Decimal::rejectFloat($amount);
@@ -471,6 +553,9 @@ class DocumentBuilder
         return $this;
     }
 
+    /**
+     * Language of the document, see InvoiceBuilder::locale().
+     */
     public function locale(string $locale): static
     {
         $this->invoice->locale($locale);
@@ -478,6 +563,9 @@ class DocumentBuilder
         return $this;
     }
 
+    /**
+     * Free data for templates (view model key meta.custom).
+     */
     public function custom(string $key, mixed $value): static
     {
         $this->invoice->custom($key, $value);
@@ -497,6 +585,12 @@ class DocumentBuilder
         return $this;
     }
 
+    /**
+     * The immutable document, not calculated yet (DocumentCalculator, or the render run).
+     *
+     * @throws InvalidInvoiceData when the seller or the buyer is missing, or an item name or the VAT
+     * of a line without default VAT
+     */
     public function build(): DocumentData
     {
         $draft = $this->invoice->buildDraft();

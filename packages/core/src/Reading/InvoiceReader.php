@@ -11,6 +11,7 @@ use Quittio\Core\Calculation\En16931Calculator;
 use Quittio\Core\Calculation\TotalsCalculator;
 use Quittio\Core\Data\InvoiceData;
 use Quittio\Core\Pdf\PdfEmbeddedFileExtractor;
+use Quittio\Core\Pdf\PdfException;
 use Quittio\Core\Profiles\ProfileRegistry;
 use Quittio\Core\Support\Amount;
 use Quittio\Core\Validation\Severity;
@@ -18,6 +19,7 @@ use Quittio\Core\Validation\ValidationLevel;
 use Quittio\Core\Validation\ValidationMessage;
 use Quittio\Core\Xml\Cii\CiiReader;
 use Quittio\Core\Xml\Ubl\UblReader;
+use Quittio\Core\Xml\UnsafeXmlException;
 use Quittio\Core\Xml\XmlSecurity;
 
 /**
@@ -60,6 +62,9 @@ final class InvoiceReader
         return [new CiiReader, new UblReader];
     }
 
+    /**
+     * A copy that also tries $reader after the readers so far, e.g. for a national format.
+     */
     public function withReader(FormatReader $reader): self
     {
         $clone = clone $this;
@@ -72,6 +77,10 @@ final class InvoiceReader
      * Reads the content (bytes) of an XML or PDF e-invoice.
      *
      * The argument is always treated as content, never as a file name; use readFile() for paths.
+     *
+     * @throws UnsafeXmlException when the XML is too large, not well-formed or not allowed (DOCTYPE, limits)
+     * @throws PdfException when the PDF is too large, encrypted, malformed or exceeds a limit
+     * @throws UnreadableInvoiceException for an unknown format, ZUGFeRD 1.0 or a PDF without an embedded invoice
      */
     public function read(string $content): ReadResult
     {
@@ -103,6 +112,10 @@ final class InvoiceReader
 
     /**
      * Reads an XML or PDF e-invoice from a local file.
+     *
+     * @throws UnsafeXmlException when the XML is too large, not well-formed or not allowed (DOCTYPE, limits)
+     * @throws PdfException when the PDF is too large, encrypted, malformed or exceeds a limit
+     * @throws UnreadableInvoiceException for an unknown format, ZUGFeRD 1.0, a PDF without an embedded invoice, or a file that does not exist, is not readable or is too large
      */
     public function readFile(string $path): ReadResult
     {

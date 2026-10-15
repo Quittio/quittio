@@ -45,6 +45,9 @@ final class PartyBuilder
 
     private bool $consumer = false;
 
+    /**
+     * A builder with the values of an existing seller, e.g. to change one of them.
+     */
     public static function fromSeller(SellerParty $seller): self
     {
         $builder = new self;
@@ -62,6 +65,9 @@ final class PartyBuilder
         return $builder;
     }
 
+    /**
+     * A builder with the values of an existing buyer.
+     */
     public static function fromBuyer(BuyerParty $buyer): self
     {
         $builder = new self;
@@ -78,6 +84,9 @@ final class PartyBuilder
         return $builder;
     }
 
+    /**
+     * A builder with the values of an existing payee.
+     */
     public static function fromPayee(PayeeParty $payee): self
     {
         $builder = new self;
@@ -88,6 +97,9 @@ final class PartyBuilder
         return $builder;
     }
 
+    /**
+     * Lets an application model fill this builder (ProvidesParty).
+     */
     public function fromModel(ProvidesParty $model): self
     {
         $model->fillParty($this);
@@ -95,6 +107,9 @@ final class PartyBuilder
         return $this;
     }
 
+    /**
+     * Legal name: seller BT-27, buyer BT-44, payee BT-59. Required.
+     */
     public function name(string $name): self
     {
         $this->name = $name;
@@ -102,6 +117,9 @@ final class PartyBuilder
         return $this;
     }
 
+    /**
+     * Trading name: seller BT-28, buyer BT-45; null removes it.
+     */
     public function tradingName(?string $tradingName): self
     {
         $this->tradingName = $tradingName;
@@ -109,6 +127,10 @@ final class PartyBuilder
         return $this;
     }
 
+    /**
+     * VAT identifier with country prefix, e.g. "DE123456789" (seller BT-31, buyer BT-48);
+     * uppercased, spaces removed; null removes it.
+     */
     public function vatId(?string $vatId): self
     {
         $this->vatId = $vatId === null ? null : strtoupper(str_replace(' ', '', $vatId));
@@ -116,6 +138,10 @@ final class PartyBuilder
         return $this;
     }
 
+    /**
+     * The seller's tax registration number (BT-32), e.g. the German Steuernummer; ignored for
+     * the buyer.
+     */
     public function taxNumber(?string $taxNumber): self
     {
         $this->taxNumber = $taxNumber;
@@ -123,6 +149,10 @@ final class PartyBuilder
         return $this;
     }
 
+    /**
+     * Legal registration identifier, e.g. the commercial register number (seller BT-30,
+     * buyer BT-47, payee BT-61), with its scheme.
+     */
     public function legalRegistration(?string $value, IdentifierScheme|RawCode|string|null $scheme = null): self
     {
         $this->legalRegistration = $value === null ? null : Identifier::of($value, $scheme);
@@ -130,6 +160,10 @@ final class PartyBuilder
         return $this;
     }
 
+    /**
+     * The seller's additional legal information (BT-33), e.g. legal form and share capital;
+     * ignored for the buyer.
+     */
     public function additionalLegalInfo(?string $info): self
     {
         $this->additionalLegalInfo = $info;
@@ -148,6 +182,10 @@ final class PartyBuilder
         return $this;
     }
 
+    /**
+     * Postal address (seller BG-5, buyer BG-8); the country code (ISO 3166-1 alpha-2) is
+     * uppercased. Required for seller and buyer.
+     */
     public function address(
         ?string $line1,
         ?string $postcode,
@@ -170,6 +208,9 @@ final class PartyBuilder
         return $this;
     }
 
+    /**
+     * Postal address as object, see address().
+     */
     public function postalAddress(Address $address): self
     {
         $this->address = $address;
@@ -177,6 +218,10 @@ final class PartyBuilder
         return $this;
     }
 
+    /**
+     * Electronic address (seller BT-34, buyer BT-49) with its EAS scheme; default e-mail (EM).
+     * Required by XRechnung and Peppol.
+     */
     public function electronicAddress(string $value, ElectronicAddressScheme|RawCode|string $scheme = ElectronicAddressScheme::Email): self
     {
         $this->electronicAddress = ElectronicAddress::of($value, $scheme);
@@ -184,6 +229,10 @@ final class PartyBuilder
         return $this;
     }
 
+    /**
+     * Contact (seller BG-6, buyer BG-9): name, phone and e-mail. XRechnung requires all three
+     * for the seller.
+     */
     public function contact(?string $name = null, ?string $phone = null, ?string $email = null): self
     {
         $this->contact = new Contact($name, $phone, $email);
@@ -210,6 +259,11 @@ final class PartyBuilder
         return $this->address?->countryCode;
     }
 
+    /**
+     * The seller party (BG-4).
+     *
+     * @throws InvalidInvoiceData when the name (BT-27) or the postal address (BG-5) is missing
+     */
     public function buildSeller(): SellerParty
     {
         return new SellerParty(
@@ -239,6 +293,11 @@ final class PartyBuilder
         );
     }
 
+    /**
+     * The buyer party (BG-7).
+     *
+     * @throws InvalidInvoiceData when the name (BT-44) or the postal address (BG-8) is missing
+     */
     public function buildBuyer(): BuyerParty
     {
         return new BuyerParty(

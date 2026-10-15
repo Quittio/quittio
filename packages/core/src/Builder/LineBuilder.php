@@ -178,6 +178,9 @@ final class LineBuilder
         return $this->netPrice !== null || $this->grossPrice !== null || $this->priceInclVat !== null;
     }
 
+    /**
+     * Lets an application model fill this line (ProvidesInvoiceLine::fillLine()).
+     */
     public function fromModel(ProvidesInvoiceLine $model): self
     {
         $model->fillLine($this);
@@ -185,6 +188,9 @@ final class LineBuilder
         return $this;
     }
 
+    /**
+     * Line identifier (BT-126); default the position, "1", "2", …
+     */
     public function id(string $id): self
     {
         $this->id = $id;
@@ -200,6 +206,9 @@ final class LineBuilder
         return $this->id;
     }
 
+    /**
+     * Item name (BT-153). Required.
+     */
     public function name(string $name): self
     {
         $this->name = $name;
@@ -207,6 +216,9 @@ final class LineBuilder
         return $this;
     }
 
+    /**
+     * Item description (BT-154); null removes it.
+     */
     public function description(?string $description): self
     {
         $this->description = $description;
@@ -214,6 +226,9 @@ final class LineBuilder
         return $this;
     }
 
+    /**
+     * Line note (BT-127); null removes it.
+     */
     public function note(?string $note): self
     {
         $this->note = $note;
@@ -221,6 +236,12 @@ final class LineBuilder
         return $this;
     }
 
+    /**
+     * Invoiced quantity (BT-129), optionally with the unit (BT-130); default 1. Negative
+     * quantities for returns and discounts.
+     *
+     * @throws InvalidArgumentException for a float
+     */
     public function quantity(BigDecimal|int|float|string $quantity, UnitCode|RawCode|string|null $unit = null): self
     {
         $this->quantity = Decimal::rejectFloat($quantity);
@@ -231,6 +252,10 @@ final class LineBuilder
         return $this;
     }
 
+    /**
+     * Unit of the quantity (BT-130), UN/ECE Recommendation 20/21; default C62 (one). Unknown
+     * codes are kept as RawCode.
+     */
     public function unit(UnitCode|RawCode|string $unit): self
     {
         $this->unit = is_string($unit) ? (UnitCode::tryFrom($unit) ?? new RawCode($unit)) : $unit;
@@ -299,6 +324,9 @@ final class LineBuilder
         return $this;
     }
 
+    /**
+     * Line period (BG-26): start (BT-134) and end (BT-135); one of them may be null.
+     */
     public function period(Date|string|null $start, Date|string|null $end = null): self
     {
         $this->period = Period::between($start, $end);
@@ -306,6 +334,10 @@ final class LineBuilder
         return $this;
     }
 
+    /**
+     * Adds a line allowance (BG-27): an amount (BT-136), or a percentage (BT-138) of the base
+     * amount (BT-137, default quantity × net price), with reason (BT-139) and reason code (BT-140).
+     */
     public function allowance(?string $amount = null, ?string $percent = null, ?string $reason = null, AllowanceReasonCode|RawCode|string|null $reasonCode = null, ?string $baseAmount = null): self
     {
         $this->allowanceCharges[] = [
@@ -320,6 +352,10 @@ final class LineBuilder
         return $this;
     }
 
+    /**
+     * Adds a line charge (BG-28): an amount (BT-141), or a percentage (BT-143) of the base
+     * amount (BT-142, default quantity × net price), with reason (BT-144) and reason code (BT-145).
+     */
     public function charge(?string $amount = null, ?string $percent = null, ?string $reason = null, ChargeReasonCode|RawCode|string|null $reasonCode = null, ?string $baseAmount = null): self
     {
         $this->allowanceCharges[] = [
@@ -334,6 +370,9 @@ final class LineBuilder
         return $this;
     }
 
+    /**
+     * The seller's item number (BT-155); null removes it.
+     */
     public function sellerId(?string $id): self
     {
         $this->sellerId = $id;
@@ -341,6 +380,9 @@ final class LineBuilder
         return $this;
     }
 
+    /**
+     * The buyer's item number (BT-156); null removes it.
+     */
     public function buyerId(?string $id): self
     {
         $this->buyerId = $id;
@@ -348,6 +390,9 @@ final class LineBuilder
         return $this;
     }
 
+    /**
+     * Standard item identifier (BT-157) with its scheme (BT-157-1); default scheme GTIN (0160).
+     */
     public function standardId(string $value, IdentifierScheme|RawCode|string $scheme = IdentifierScheme::Gtin): self
     {
         $this->standardId = Identifier::of($value, $scheme);
@@ -355,6 +400,10 @@ final class LineBuilder
         return $this;
     }
 
+    /**
+     * Adds an item classification (BT-158) with list identifier (BT-158-1) and version
+     * (BT-158-2).
+     */
     public function classification(string $code, ItemClassificationScheme|RawCode|string $scheme, ?string $version = null): self
     {
         $this->classifications[] = new Classification(
@@ -366,6 +415,9 @@ final class LineBuilder
         return $this;
     }
 
+    /**
+     * Country of origin of the item (BT-159), ISO 3166-1 alpha-2, uppercased; null removes it.
+     */
     public function originCountry(?string $country): self
     {
         $this->originCountry = $country === null ? null : strtoupper($country);
@@ -373,6 +425,9 @@ final class LineBuilder
         return $this;
     }
 
+    /**
+     * Adds an item attribute (BG-32): name (BT-160) and value (BT-161).
+     */
     public function attribute(string $name, string $value): self
     {
         $this->attributes[] = new ItemAttribute($name, $value);
@@ -380,6 +435,9 @@ final class LineBuilder
         return $this;
     }
 
+    /**
+     * Line of the purchase order (BT-132); null removes it.
+     */
     public function orderLineReference(?string $reference): self
     {
         $this->orderLineReference = $reference;
@@ -387,6 +445,9 @@ final class LineBuilder
         return $this;
     }
 
+    /**
+     * The buyer's accounting reference of the line (BT-133); null removes it.
+     */
     public function buyerAccountingReference(?string $reference): self
     {
         $this->buyerAccountingReference = $reference;
@@ -394,6 +455,9 @@ final class LineBuilder
         return $this;
     }
 
+    /**
+     * Invoiced object identifier of the line (BT-128) with its scheme.
+     */
     public function objectId(string $value, string|RawCode|null $scheme = null): self
     {
         $this->objectId = Identifier::of($value, $scheme);
@@ -422,6 +486,10 @@ final class LineBuilder
         return $this;
     }
 
+    /**
+     * Adds a reference to an order, contract, despatch or receiving advice or another document
+     * (profile EXTENDED only).
+     */
     public function reference(DocumentReference $reference): self
     {
         $this->references[] = $reference;
@@ -429,6 +497,9 @@ final class LineBuilder
         return $this;
     }
 
+    /**
+     * Line data of the profile EXTENDED; other profiles do not write it.
+     */
     public function extended(LineExtendedData $extended): self
     {
         $this->extended = $extended;

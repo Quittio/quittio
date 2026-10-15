@@ -7,6 +7,7 @@ namespace Quittio\Core;
 use Closure;
 use Psr\Log\LoggerInterface;
 use Quittio\Core\Builder\InvoiceBuilder;
+use Quittio\Core\Calculation\CalculationException;
 use Quittio\Core\Calculation\En16931Calculator;
 use Quittio\Core\Calculation\TotalsCalculator;
 use Quittio\Core\Contracts\ProvidesInvoiceData;
@@ -23,6 +24,7 @@ use Quittio\Core\Data\Presentation\Presentation;
 use Quittio\Core\Documents\DocumentCalculator;
 use Quittio\Core\Documents\DocumentData;
 use Quittio\Core\Exceptions\ConfigurationException;
+use Quittio\Core\Exceptions\InvalidInvoiceData;
 use Quittio\Core\Formats\DefaultFormatResolver;
 use Quittio\Core\Formats\ExtendedFeatures;
 use Quittio\Core\Formats\FormatRegistry;
@@ -45,6 +47,7 @@ use Quittio\Core\Profiles\ProfileRegistry;
 use Quittio\Core\Profiles\Syntax;
 use Quittio\Core\Reading\InvoiceReader;
 use Quittio\Core\Reading\ReadResult;
+use Quittio\Core\Reading\UnreadableInvoiceException;
 use Quittio\Core\Rendering\PendingDocument;
 use Quittio\Core\Rendering\PendingInvoice;
 use Quittio\Core\Rendering\PreparedInvoice;
@@ -76,6 +79,7 @@ use Quittio\Core\View\ViewModelFactory;
 use Quittio\Core\Xml\Cii\CiiWriter;
 use Quittio\Core\Xml\SerializationOptions;
 use Quittio\Core\Xml\Ubl\UblWriter;
+use Quittio\Core\Xml\UnsafeXmlException;
 use Quittio\Core\Xml\XmlSerializer;
 
 /**
@@ -223,6 +227,12 @@ final class Quittio
         return $quittio;
     }
 
+    /**
+     * Starts a render call: format(), profile(), locale() … and render(). A builder is built and a
+     * model converted (ProvidesInvoiceData) at once.
+     *
+     * @throws InvalidInvoiceData when a builder misses an essential part (see InvoiceBuilder::build())
+     */
     public function make(InvoiceData|ProvidesInvoiceData|InvoiceBuilder $data): PendingInvoice
     {
         $invoice = match (true) {
@@ -265,6 +275,10 @@ final class Quittio
         );
     }
 
+    /**
+     * Starts the render call of a quote, order confirmation, delivery note, proforma invoice,
+     * payment reminder or account statement.
+     */
     public function document(DocumentData $document): PendingDocument
     {
         return new PendingDocument($this, $document);
@@ -272,6 +286,10 @@ final class Quittio
 
     /**
      * Reads an incoming XML or PDF e-invoice from its content (bytes), never from a path.
+     *
+     * @throws UnsafeXmlException when the XML is too large, not well-formed or not allowed (DOCTYPE, limits)
+     * @throws PdfException when the PDF is too large, encrypted, malformed or exceeds a limit
+     * @throws UnreadableInvoiceException for an unknown format, ZUGFeRD 1.0 or a PDF without an embedded invoice
      */
     public function read(string $content): ReadResult
     {
@@ -280,6 +298,10 @@ final class Quittio
 
     /**
      * Reads an incoming XML or PDF e-invoice from a file.
+     *
+     * @throws UnsafeXmlException when the XML is too large, not well-formed or not allowed (DOCTYPE, limits)
+     * @throws PdfException when the PDF is too large, encrypted, malformed or exceeds a limit
+     * @throws UnreadableInvoiceException for an unknown format, ZUGFeRD 1.0, a PDF without an embedded invoice, or a file that cannot be read
      */
     public function readFile(string $path): ReadResult
     {
@@ -288,6 +310,10 @@ final class Quittio
 
     /**
      * Reads and validates an incoming XML or PDF e-invoice (content, never a path) with all configured levels.
+     *
+     * @throws UnsafeXmlException when the XML is too large, not well-formed or not allowed (DOCTYPE, limits)
+     * @throws PdfException when the PDF is too large, encrypted, malformed or exceeds a limit
+     * @throws UnreadableInvoiceException for an unknown format, ZUGFeRD 1.0 or a PDF without an embedded invoice
      */
     public function validateFile(string $content): ValidationResult
     {
@@ -296,6 +322,10 @@ final class Quittio
 
     /**
      * Reads and validates an incoming XML or PDF e-invoice from a file with all configured levels.
+     *
+     * @throws UnsafeXmlException when the XML is too large, not well-formed or not allowed (DOCTYPE, limits)
+     * @throws PdfException when the PDF is too large, encrypted, malformed or exceeds a limit
+     * @throws UnreadableInvoiceException for an unknown format, ZUGFeRD 1.0, a PDF without an embedded invoice, or a file that cannot be read
      */
     public function validatePath(string $path): ValidationResult
     {
@@ -355,6 +385,20 @@ final class Quittio
         return $result;
     }
 
+    /**
+     * The render run behind PendingInvoice::render(): calculates the data, applies the configured
+     * defaults, chooses formats and profiles, validates, writes the XML, renders the template and the
+     * PDF/A with the embedded XML. Returns the result of the first format; the others are reachable
+     * with as().
+     *
+     * @throws ValidationException when validation finds errors in the mode "error"
+     * @throws ConfigurationException for an unknown format, a profile the format does not support or a
+     *         watermark with e-invoice XML
+     * @throws MandatoryFieldMissing when the template omits mandatory values in the guard mode "exception"
+     * @throws CalculationException when the data cannot be calculated
+     * @throws InvalidInvoiceData when a text cannot be written to XML (control characters, invalid UTF-8)
+     * @throws PdfException when the PDF cannot be rendered or post-processed
+     */
     public function render(InvoiceData $data, RenderOptions $options = new RenderOptions): RenderedInvoice
     {
         $invoice = $this->calculator->calculate($this->withDefaults($data));
@@ -379,6 +423,9 @@ final class Quittio
      * An explicit validation request: it validates whatever the validation mode of the
      * configuration or the call (also "off" and withoutValidation()) and returns the result
      * without throwing a ValidationException.
+     *
+     * @throws ConfigurationException for an unknown format or a profile the format does not support
+     * @throws CalculationException when the data cannot be calculated
      */
     public function check(InvoiceData $data, RenderOptions $options = new RenderOptions): ValidationResult
     {
@@ -397,6 +444,9 @@ final class Quittio
      * whatever the validation mode (also "off" and withoutValidation()), and never throws a
      * ValidationException: the caller decides on the result. Configuration errors (e.g. an
      * unsupported profile) still throw.
+     *
+     * @throws ConfigurationException for an unknown format or a profile the format does not support
+     * @throws CalculationException when the data cannot be calculated
      */
     public function prepare(InvoiceData $data, RenderOptions $options = new RenderOptions): PreparedInvoice
     {
@@ -421,6 +471,14 @@ final class Quittio
         return new PreparedInvoice($invoice, $formats, $countries->leading, $countries->buyer, $locale, $result);
     }
 
+    /**
+     * The render run behind PendingDocument::render(): calculates the document and renders
+     * the template and, unless the format "html" is requested, the PDF. Documents carry no XML and are
+     * not validated.
+     *
+     * @throws CalculationException when the document cannot be calculated
+     * @throws PdfException when the PDF cannot be rendered
+     */
     public function renderDocument(DocumentData $document, RenderOptions $options = new RenderOptions): RenderedDocument
     {
         $document = (new DocumentCalculator($this->calculator))->calculate($document);
@@ -444,6 +502,10 @@ final class Quittio
         return new RenderedDocument($document, $html, $this->filenamePattern($view->title(), $document->number, $document->issueDate->toIsoString(), $document->type->value), $pdf);
     }
 
+    /**
+     * Registers a country pack with its profiles and translations; a pack with the same code
+     * replaces the earlier one. Changes this instance.
+     */
     public function registerCountry(CountryPack $pack): self
     {
         $this->countries->register($pack);
@@ -611,21 +673,33 @@ final class Quittio
         return $this->setFormatResolver($resolver);
     }
 
+    /**
+     * The configuration of this instance.
+     */
     public function config(): Config
     {
         return $this->config;
     }
 
+    /**
+     * The registered profiles, those of the country packs included.
+     */
     public function profiles(): ProfileRegistry
     {
         return $this->profiles;
     }
 
+    /**
+     * The registered country packs.
+     */
     public function countries(): CountryRegistry
     {
         return $this->countries;
     }
 
+    /**
+     * The output formats (zugferd, xrechnung-cii, ubl, pdf, html, json …).
+     */
     public function formats(): FormatRegistry
     {
         return $this->formats;

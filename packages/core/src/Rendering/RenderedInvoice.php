@@ -44,21 +44,34 @@ final class RenderedInvoice
         $this->siblings = $all;
     }
 
+    /**
+     * The calculated invoice data of the run (totals, VAT breakdown, due date).
+     */
     public function data(): InvoiceData
     {
         return $this->data;
     }
 
+    /**
+     * Key of the format of this result, e.g. "zugferd".
+     */
     public function format(): string
     {
         return $this->format;
     }
 
+    /**
+     * Profile of the XML; null for formats without XML.
+     */
     public function profile(): ?Profile
     {
         return $this->profile;
     }
 
+    /**
+     * Validation result of this format; in the mode "warn" it may contain errors, empty in the
+     * mode "off".
+     */
     public function validation(): ValidationResult
     {
         return $this->validation;
@@ -84,31 +97,55 @@ final class RenderedInvoice
         return $this->siblings === [] ? [$this->format] : array_keys($this->siblings);
     }
 
+    /**
+     * Whether this format produced a PDF.
+     */
     public function hasPdf(): bool
     {
         return $this->pdf !== null;
     }
 
+    /**
+     * Whether this format produced XML (also the XML embedded in a PDF).
+     */
     public function hasXml(): bool
     {
         return $this->xml !== null;
     }
 
+    /**
+     * The PDF.
+     *
+     * @throws LogicException when the format produces no PDF (see hasPdf())
+     */
     public function pdf(): string
     {
         return $this->pdf ?? throw new LogicException(sprintf('The format "%s" produces no PDF.', $this->format));
     }
 
+    /**
+     * The e-invoice XML, also the one embedded in the PDF.
+     *
+     * @throws LogicException when the format produces no XML (see hasXml())
+     */
     public function xml(): string
     {
         return $this->xml ?? throw new LogicException(sprintf('The format "%s" produces no XML.', $this->format));
     }
 
+    /**
+     * The rendered template, as mPDF received it.
+     *
+     * @throws LogicException when the format produced no HTML
+     */
     public function html(): string
     {
         return $this->html ?? throw new LogicException(sprintf('The format "%s" produces no HTML.', $this->format));
     }
 
+    /**
+     * The invoice as JSON (InvoiceData::toJson()).
+     */
     public function json(): string
     {
         return $this->json ?? $this->data->toJson(JSON_PRETTY_PRINT);
@@ -122,6 +159,9 @@ final class RenderedInvoice
         return $this->pdf ?? $this->xml ?? $this->html ?? $this->json();
     }
 
+    /**
+     * Extension of the main output (contents()): pdf, xml, html or json.
+     */
     public function extension(): string
     {
         return match (true) {
@@ -132,6 +172,9 @@ final class RenderedInvoice
         };
     }
 
+    /**
+     * MIME type of the main output (contents()).
+     */
     public function mimeType(): string
     {
         return match ($this->extension()) {
@@ -142,6 +185,10 @@ final class RenderedInvoice
         };
     }
 
+    /**
+     * File name of the main output, from the configured pattern; $extension replaces the
+     * extension of the main output.
+     */
     public function filename(?string $extension = null): string
     {
         return str_replace('{ext}', $extension ?? $this->extension(), $this->filenamePattern);

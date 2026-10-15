@@ -177,6 +177,9 @@ class InvoiceBuilder
         $this->meta = new Meta;
     }
 
+    /**
+     * A new, empty builder; type code 380 and the issue date today unless set.
+     */
     public static function make(): static
     {
         return new static;
@@ -302,6 +305,9 @@ class InvoiceBuilder
 
     private bool $linesChanged = false;
 
+    /**
+     * Invoice number (BT-1). Not checked here; the validation requires it.
+     */
     public function number(string $number): static
     {
         $this->number = $number;
@@ -309,6 +315,10 @@ class InvoiceBuilder
         return $this;
     }
 
+    /**
+     * Issue date (BT-2); default today. A DateTimeInterface is converted in the time zone of
+     * timezone(), so call timezone() first.
+     */
     public function issueDate(Date|DateTimeInterface|string $date): static
     {
         $this->issueDate = Date::parse($date, $this->meta->timezone);
@@ -316,6 +326,10 @@ class InvoiceBuilder
         return $this;
     }
 
+    /**
+     * Type code (BT-3) from UNTDID 1001, e.g. 381 for a credit note; default 380. Unknown
+     * codes are kept as RawCode and reported by the validation.
+     */
     public function type(InvoiceTypeCode|RawCode|string $type): static
     {
         $this->typeCode = is_string($type) ? (InvoiceTypeCode::tryFrom($type) ?? new RawCode($type)) : $type;
@@ -323,6 +337,9 @@ class InvoiceBuilder
         return $this;
     }
 
+    /**
+     * Invoice currency (BT-5), ISO 4217; stored in upper case. Default EUR.
+     */
     public function currency(string $currency): static
     {
         $this->currency = strtoupper($currency);
@@ -343,6 +360,13 @@ class InvoiceBuilder
         return $this;
     }
 
+    /**
+     * Exchange rate from the invoice currency to the VAT accounting currency (BT-6), used to
+     * calculate the VAT total in that currency (BT-111), with the date of the rate. Replaces a rate
+     * implied by declared amounts (see from()).
+     *
+     * @throws InvalidArgumentException for a float
+     */
     public function exchangeRate(BigDecimal|int|float|string $rate, Date|DateTimeInterface|string|null $date = null): static
     {
         $this->impliedExchangeRate = false;
@@ -354,6 +378,10 @@ class InvoiceBuilder
         return $this;
     }
 
+    /**
+     * Date when VAT becomes chargeable (BT-7), if it differs from the issue date. EN 16931
+     * allows BT-7 or BT-8, not both (BR-CO-03).
+     */
     public function taxPointDate(Date|DateTimeInterface|string $date): static
     {
         $this->taxPointDate = Date::parse($date, $this->meta->timezone);
@@ -361,6 +389,10 @@ class InvoiceBuilder
         return $this;
     }
 
+    /**
+     * Code of the date when VAT becomes chargeable (BT-8): issue, delivery or payment date.
+     * EN 16931 allows BT-7 or BT-8, not both (BR-CO-03).
+     */
     public function taxPointDateCode(TaxPointDateCode $code): static
     {
         $this->taxPointDateCode = $code;
@@ -368,6 +400,10 @@ class InvoiceBuilder
         return $this;
     }
 
+    /**
+     * Due date (BT-9). Without it the calculator derives it from dueInDays(); otherwise the
+     * configured due_days apply when rendering, never for credit notes.
+     */
     public function dueDate(Date|DateTimeInterface|string $date): static
     {
         $this->dueDate = Date::parse($date, $this->meta->timezone);
@@ -383,6 +419,10 @@ class InvoiceBuilder
         return $this->reference('buyerReference', $reference);
     }
 
+    /**
+     * Project reference (BT-11) with the project name, which CII requires in addition to the
+     * identifier.
+     */
     public function projectReference(string $id, ?string $name = null): static
     {
         $this->projectReference = new ProjectReference($id, $name);
@@ -390,41 +430,66 @@ class InvoiceBuilder
         return $this;
     }
 
+    /**
+     * Contract reference (BT-12); null removes it.
+     */
     public function contractReference(?string $reference): static
     {
         return $this->reference('contractReference', $reference);
     }
 
+    /**
+     * The buyer's purchase order reference (BT-13); null removes it.
+     */
     public function purchaseOrderReference(?string $reference): static
     {
         return $this->reference('purchaseOrderReference', $reference);
     }
 
+    /**
+     * The seller's sales order reference (BT-14); null removes it.
+     */
     public function salesOrderReference(?string $reference): static
     {
         return $this->reference('salesOrderReference', $reference);
     }
 
+    /**
+     * Receiving advice reference (BT-15); null removes it.
+     */
     public function receivingAdviceReference(?string $reference): static
     {
         return $this->reference('receivingAdviceReference', $reference);
     }
 
+    /**
+     * Despatch advice reference (BT-16); null removes it.
+     */
     public function despatchAdviceReference(?string $reference): static
     {
         return $this->reference('despatchAdviceReference', $reference);
     }
 
+    /**
+     * Tender or lot reference (BT-17); null removes it.
+     */
     public function tenderReference(?string $reference): static
     {
         return $this->reference('tenderReference', $reference);
     }
 
+    /**
+     * The buyer's accounting reference (BT-19), e.g. a cost centre; null removes it.
+     */
     public function buyerAccountingReference(?string $reference): static
     {
         return $this->reference('buyerAccountingReference', $reference);
     }
 
+    /**
+     * Identifier of the invoiced object (BT-18), e.g. a meter or subscription number, with
+     * its scheme (BT-18-1).
+     */
     public function invoicedObject(string $value, string|RawCode|null $scheme = null): static
     {
         $this->invoicedObject = Identifier::of($value, $scheme);
@@ -432,6 +497,10 @@ class InvoiceBuilder
         return $this;
     }
 
+    /**
+     * Adds an invoice note (BG-1): the text (BT-22) and an optional subject code (BT-21,
+     * UNTDID 4451, e.g. "REG" for regulatory information). Unknown codes are kept as RawCode.
+     */
     public function note(string $content, NoteSubjectCode|RawCode|string|null $subject = null): static
     {
         $this->notes[] = new Note(
@@ -442,6 +511,10 @@ class InvoiceBuilder
         return $this;
     }
 
+    /**
+     * Business process identifier (BT-23); Peppol and XRechnung write their process when it is
+     * not set. null removes it.
+     */
     public function businessProcess(?string $process): static
     {
         $this->businessProcess = $process;
@@ -449,6 +522,10 @@ class InvoiceBuilder
         return $this;
     }
 
+    /**
+     * Adds a reference to a preceding invoice (BG-3): its number (BT-25) and issue date
+     * (BT-26), e.g. for a corrected invoice or a credit note.
+     */
     public function precedingInvoice(string $number, Date|DateTimeInterface|string|null $issueDate = null): static
     {
         $this->precedingInvoices[] = new PrecedingInvoiceReference($number, $issueDate === null ? null : Date::parse($issueDate));
@@ -558,6 +635,10 @@ class InvoiceBuilder
         return $this;
     }
 
+    /**
+     * The seller's tax representative (BG-11): name (BT-62), VAT identifier (BT-63) and
+     * postal address (BG-12).
+     */
     public function taxRepresentative(string $name, string $vatId, Address $address): static
     {
         $this->taxRepresentative = new TaxRepresentativeParty($name, $vatId, $address);
@@ -589,6 +670,9 @@ class InvoiceBuilder
         return $this;
     }
 
+    /**
+     * Replaces the whole delivery information (BG-13), including the delivery date (BT-72).
+     */
     public function delivery(Delivery $delivery): static
     {
         $this->delivery = $delivery;
@@ -659,6 +743,12 @@ class InvoiceBuilder
         return $this;
     }
 
+    /**
+     * Payment card (BG-18): the last 4 to 6 digits of the card number (BT-87) and the holder
+     * (BT-88). Without payment instructions it starts them with BankCard (48).
+     *
+     * @throws InvalidArgumentException for more or fewer digits
+     */
     public function paymentCard(string $lastDigits, ?string $holderName = null): static
     {
         $instructions = $this->paymentInstructions ?? new PaymentInstructions(PaymentMeansCode::BankCard);
@@ -667,6 +757,11 @@ class InvoiceBuilder
         return $this;
     }
 
+    /**
+     * SEPA direct debit (BG-19): mandate reference (BT-89), creditor identifier (BT-90) and the
+     * debited IBAN (BT-91, spaces removed). Without payment instructions it starts them with
+     * SepaDirectDebit (59).
+     */
     public function directDebit(?string $mandateReference, ?string $creditorId = null, ?string $debitedIban = null): static
     {
         $instructions = $this->paymentInstructions ?? new PaymentInstructions(PaymentMeansCode::SepaDirectDebit);
@@ -991,6 +1086,10 @@ class InvoiceBuilder
         return $this;
     }
 
+    /**
+     * Data of the profile EXTENDED of ZUGFeRD/Factur-X (further parties, delivery terms,
+     * instalments …); other profiles do not write it.
+     */
     public function extended(ExtendedData $extended): static
     {
         $this->extended = $extended;
@@ -998,6 +1097,10 @@ class InvoiceBuilder
         return $this;
     }
 
+    /**
+     * Data of the XRechnung extension (e.g. third party payments), written only with the
+     * profile xrechnung-extension.
+     */
     public function xrechnungExtension(XRechnungExtensionData $extension): static
     {
         $this->xrechnungExtension = $extension;
@@ -1045,6 +1148,10 @@ class InvoiceBuilder
         return $this;
     }
 
+    /**
+     * Language of the invoice: labels, generated texts and the exemption texts of presets.
+     * The locale of a render call wins; without both, the configured locale or the country default.
+     */
     public function locale(string $locale): static
     {
         $this->meta = $this->meta->with(['locale' => $locale]);
@@ -1052,6 +1159,10 @@ class InvoiceBuilder
         return $this;
     }
 
+    /**
+     * Time zone for DateTimeInterface values and for the default issue date; call it before the
+     * date setters.
+     */
     public function timezone(string $timezone): static
     {
         $this->meta = $this->meta->with(['timezone' => $timezone]);
@@ -1059,6 +1170,9 @@ class InvoiceBuilder
         return $this;
     }
 
+    /**
+     * Free data for templates (view model key meta.custom); the same key replaces the value.
+     */
     public function custom(string $key, mixed $value): static
     {
         $this->meta = $this->meta->with(['custom' => [...$this->meta->custom, $key => $value]]);
@@ -1079,6 +1193,9 @@ class InvoiceBuilder
         return $this;
     }
 
+    /**
+     * Origin of the data, e.g. "shop" (view model key meta.source).
+     */
     public function source(string $source): static
     {
         $this->meta = $this->meta->with(['source' => $source]);
@@ -1086,6 +1203,10 @@ class InvoiceBuilder
         return $this;
     }
 
+    /**
+     * Version of EN 16931 (BT-24 of the profile): 2017 (default) or 2026, which only the profile
+     * EN 16931 supports.
+     */
     public function standard(StandardVersion $version): static
     {
         $this->standardVersion = $version;
@@ -1144,6 +1265,13 @@ class InvoiceBuilder
         self::$applicationVat = $default instanceof TaxPreset || $default === null ? $default : $default(...);
     }
 
+    /**
+     * The invoice data, not calculated yet (the calculator or a render run adds the totals).
+     *
+     * @throws InvalidInvoiceData when seller (BG-4), buyer (BG-7), the lines (BG-25), an item name
+     * (BT-153) or the VAT of a line without default VAT (BG-30) is missing, or a line identifier
+     * is used twice
+     */
     public function build(): InvoiceData
     {
         return $this->assemble(requireLines: true);

@@ -26,6 +26,10 @@ interface CountryPack
      */
     public function code(): string;
 
+    /**
+     * Defaults of the country: locale, paper, letter layout, payment QR code and default VAT
+     * presets, plus informational values (currency, time zone, profile); see CountryDefaults.
+     */
     public function defaults(): CountryDefaults;
 
     /**
@@ -63,6 +67,10 @@ interface CountryPack
      */
     public function formatRules(): array;
 
+    /**
+     * Values that the PDF of $invoice must show by law; the mandatory field guard checks that
+     * the template printed them.
+     */
     public function mandatoryOutput(InvoiceData $invoice): MandatoryFieldList;
 
     /**
@@ -101,6 +109,9 @@ interface CountryPack
      */
     public function paymentQr(): ?PaymentQrGenerator;
 
+    /**
+     * Formats postal addresses by the conventions of the country, e.g. for the address window.
+     */
     public function addressFormatter(): AddressFormatter;
 
     /**

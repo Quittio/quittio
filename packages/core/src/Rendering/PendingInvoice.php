@@ -4,13 +4,18 @@ declare(strict_types=1);
 
 namespace Quittio\Core\Rendering;
 
+use Quittio\Core\Calculation\CalculationException;
 use Quittio\Core\Config;
 use Quittio\Core\Data\InvoiceData;
 use Quittio\Core\Data\Presentation\Presentation;
+use Quittio\Core\Exceptions\ConfigurationException;
+use Quittio\Core\Pdf\PdfException;
 use Quittio\Core\Profiles\Profile;
 use Quittio\Core\Quittio;
 use Quittio\Core\Support\Macroable;
+use Quittio\Core\Validation\ValidationException;
 use Quittio\Core\Validation\ValidationResult;
+use Quittio\Core\View\MandatoryFieldMissing;
 
 /**
  * Fluent render call: Quittio::make($data)->profile()->format()->locale()->render().
@@ -42,6 +47,10 @@ class PendingInvoice
         protected readonly InvoiceData $data,
     ) {}
 
+    /**
+     * Profile of the XML for this call, as key, alias or Profile object, e.g. "xrechnung"; the
+     * format must support it. Wins over the configured profile.
+     */
     public function profile(Profile|string $profile): static
     {
         $this->profile = $profile;
@@ -49,6 +58,9 @@ class PendingInvoice
         return $this;
     }
 
+    /**
+     * Output format of this call, e.g. "zugferd", "xrechnung-cii", "pdf"; replaces earlier formats.
+     */
     public function format(string $format): static
     {
         $this->formats = [$format];
@@ -68,6 +80,10 @@ class PendingInvoice
         return $this;
     }
 
+    /**
+     * Template of this call (a shipped or a configured template); wins over the invoice
+     * presentation and the configuration.
+     */
     public function template(string $template): static
     {
         $this->template = $template;
@@ -75,6 +91,9 @@ class PendingInvoice
         return $this;
     }
 
+    /**
+     * Locale of this call; wins over the invoice locale and the configuration.
+     */
     public function locale(string $locale): static
     {
         $this->locale = $locale;
@@ -82,6 +101,9 @@ class PendingInvoice
         return $this;
     }
 
+    /**
+     * Leading country pack of this call (ISO 3166-1 alpha-2), instead of the seller's country.
+     */
     public function country(string $country): static
     {
         $this->country = strtoupper($country);
@@ -99,6 +121,9 @@ class PendingInvoice
         return $this;
     }
 
+    /**
+     * Validation mode "off" for this call: nothing is validated, no ValidationException.
+     */
     public function withoutValidation(): static
     {
         $this->validation = Config::VALIDATION_OFF;
@@ -116,6 +141,9 @@ class PendingInvoice
         return $this;
     }
 
+    /**
+     * Output option of this call, e.g. option('fold_marks', false); see the output configuration.
+     */
     public function option(string $key, mixed $value): static
     {
         $this->options[$key] = $value;
@@ -123,11 +151,17 @@ class PendingInvoice
         return $this;
     }
 
+    /**
+     * The invoice data of this call, as passed (not calculated).
+     */
     public function data(): InvoiceData
     {
         return $this->data;
     }
 
+    /**
+     * The options collected so far, as passed to the render run.
+     */
     public function options(): RenderOptions
     {
         return new RenderOptions(
@@ -142,6 +176,17 @@ class PendingInvoice
         );
     }
 
+    /**
+     * Renders the formats of this call; the result is the first format, the others are reachable
+     * with as(). See Quittio::render().
+     *
+     * @throws ValidationException when validation finds errors in the mode "error"
+     * @throws ConfigurationException for an unknown format, a profile the format does not support or a
+     *         watermark with e-invoice XML
+     * @throws MandatoryFieldMissing when the template omits mandatory values in the guard mode "exception"
+     * @throws CalculationException when the data cannot be calculated
+     * @throws PdfException when the PDF cannot be rendered
+     */
     public function render(): RenderedInvoice
     {
         return $this->quittio->render($this->data, $this->options());
