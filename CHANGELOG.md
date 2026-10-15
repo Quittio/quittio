@@ -37,6 +37,7 @@ All notable changes to this project are documented in this file. The format foll
 
 ### Fixed
 
+- `DE-USTG-08` names the limit of `Flags::SMALL_AMOUNT_LIMIT` (250.00 EUR) instead of a second, hard-coded value. The English fallback messages of four UStG rules matched their translations no longer; a test now compares every rule's fallback with `lang/en/rules.php` and requires a German message.
 - The field reference documents the UBL credit note path of BT-129 and BT-130 (`cbc:CreditedQuantity`) and no longer shows pseudo-XPath for BT-110 and BT-111. A test now evaluates every documented CII and UBL path against the XML of the sample invoices and of the official XRechnung test suite.
 - A custom `TotalsCalculator` was bypassed by the VAT alignment of partial cancellations; `Cancellation::of()` and `DeclaredAmounts::needed()` accept the calculator, and `Quittio::cancellation()` passes its own.
 - Texts with control characters (e.g. a vertical tab copied from a spreadsheet cell) or invalid UTF-8 produced XML that was not well-formed and was rejected by every receiver. The new rule `QUITTIO-INVALID-CHARACTERS` names the field, and the CII and UBL writers refuse such data with an `InvalidInvoiceData` exception.

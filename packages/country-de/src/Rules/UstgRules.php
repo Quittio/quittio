@@ -75,7 +75,7 @@ final class UstgRules
                     $report->error('BT-31', 'seller.vatId');
                 }
             }),
-            $r('DE-USTG-03', 'The date of the supply or service must be stated: delivery date (BT-72), invoicing period (BG-14) or line periods (BG-26) (section 14 (4) no. 6 UStG).', function (InvoiceData $i, RuleReporter $report) use ($small, $smallBusiness): void {
+            $r('DE-USTG-03', 'The date of the supply or service must be stated: delivery date (BT-72), invoicing period (BG-14) or periods on all lines (BG-26) (section 14 (4) no. 6 UStG).', function (InvoiceData $i, RuleReporter $report) use ($small, $smallBusiness): void {
                 // Small amount invoices (section 33 UStDV) and small business invoices (section 34a UStDV) need no service date.
                 if ($small($i) || $smallBusiness($i) || self::hasServiceDate($i)) {
                     return;
@@ -128,7 +128,7 @@ final class UstgRules
                     }
                 }
             }),
-            $r('DE-USTG-08', 'A small amount invoice must not exceed 250 EUR gross (section 33 UStDV).', function (InvoiceData $i, RuleReporter $report): void {
+            $r('DE-USTG-08', 'A small amount invoice must not exceed :limit gross (section 33 UStDV).', function (InvoiceData $i, RuleReporter $report): void {
                 if (! $i->meta->hasFlag(Flags::SMALL_AMOUNT) || $i->totals === null) {
                     return;
                 }
@@ -137,7 +137,7 @@ final class UstgRules
                 $rate = $i->meta->exchangeRate;
                 $euro = $i->currency === 'EUR' ? $gross : ($rate !== null && $i->taxCurrency === 'EUR' ? $gross->multipliedBy($rate) : null);
                 if ($euro === null || $euro->isGreaterThan(Flags::SMALL_AMOUNT_LIMIT)) {
-                    $report->error('BT-112', 'totals.grossTotal', ['limit' => '250,00 EUR']);
+                    $report->error('BT-112', 'totals.grossTotal', ['limit' => Flags::SMALL_AMOUNT_LIMIT.' EUR']);
                 }
             }),
             $r('DE-USTG-09', 'A small business (section 19 UStG) must not charge VAT in the same invoice.', function (InvoiceData $i, RuleReporter $report) use ($smallBusinessSeller): void {
@@ -160,7 +160,7 @@ final class UstgRules
                     }
                 }
             }),
-            $r('DE-USTG-10', 'The VAT amount should also be stated in EUR (BT-111 with BT-6 = EUR) for invoices in a foreign currency (Article 230 VAT Directive, section 16 (6) UStG).', function (InvoiceData $i, RuleReporter $report): void {
+            $r('DE-USTG-10', 'For invoices in a foreign currency, the VAT amount should also be stated in EUR (BT-111 with BT-6 = EUR) (Article 230 VAT Directive, section 16 (6) UStG).', function (InvoiceData $i, RuleReporter $report): void {
                 if ($i->currency === 'EUR' || $i->totals === null || $i->totals->vatTotal === null || $i->totals->vatTotal->isZero()) {
                     return;
                 }
@@ -168,7 +168,7 @@ final class UstgRules
                     $report->warning('BT-6', 'taxCurrency');
                 }
             }),
-            $r('DE-USTG-11', 'Reverse charge services in another EU member state and triangular transactions must state the VAT identifiers of the seller (BT-31) and the buyer (BT-48) (section 14a (1) and (7) UStG).', function (InvoiceData $i, RuleReporter $report): void {
+            $r('DE-USTG-11', 'Reverse charge services in another EU member state and intra-community triangular transactions must state the VAT identifiers of the seller (BT-31) and the buyer (BT-48) (section 14a (1) and (7) UStG).', function (InvoiceData $i, RuleReporter $report): void {
                 if (! self::hasReverseChargeInOtherMemberState($i, triangular: true)) {
                     return;
                 }
