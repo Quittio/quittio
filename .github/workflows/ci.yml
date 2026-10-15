@@ -6,6 +6,11 @@ on:
     # Tags run CI too: the split below publishes a tag only after every job passed.
     tags: ['*']
   pull_request:
+  # Weekly run of the tests and the official validation: composer.lock is not committed, so
+  # new releases of dependencies are caught here before a user installs them.
+  schedule:
+    - cron: '17 4 * * 1'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -25,9 +30,12 @@ jobs:
         with:
           php: '8.4'
           coverage: none
-      - run: composer install --no-interaction --no-progress
+      - uses: ramsey/composer-install@65e4f84970763564f46a70b8a54b90d033b3bdda # 4.0.0
       - run: composer lint
+      - run: composer validate --no-check-publish --no-check-lock --strict
       - run: for p in packages/*/; do composer validate --no-check-publish --no-check-lock --strict --working-dir="$p"; done
+      # Known vulnerabilities of the resolved dependencies; abandoned packages are only reported.
+      - run: composer audit --no-interaction --abandoned=report
 
   analyse:
     runs-on: ubuntu-latest
@@ -39,7 +47,7 @@ jobs:
           php: '8.4'
           extensions: dom, libxml, mbstring, xmlwriter, zlib, intl, gd, bcmath
           coverage: none
-      - run: composer install --no-interaction --no-progress
+      - uses: ramsey/composer-install@65e4f84970763564f46a70b8a54b90d033b3bdda # 4.0.0
       - run: composer analyse
 
   test:
@@ -76,7 +84,7 @@ jobs:
           extensions: dom, libxml, mbstring, xmlwriter, zlib, intl, gd, bcmath
           coverage: none
       - run: sudo apt-get update && sudo apt-get install -y poppler-utils
-      - run: composer install --no-interaction --no-progress
+      - uses: ramsey/composer-install@65e4f84970763564f46a70b8a54b90d033b3bdda # 4.0.0
       - run: vendor/bin/pest --group=visual
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
@@ -99,7 +107,15 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-      - run: composer install --no-interaction --no-progress
+      - uses: ramsey/composer-install@65e4f84970763564f46a70b8a54b90d033b3bdda # 4.0.0
+      # The download scripts skip files that exist; their pinned versions and checksums are part
+      # of the key, so a new pin downloads (and verifies) again.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            tools/validators
+            packages/country-de/tests/Fixtures/xrechnung-testsuite
+          key: validators-${{ hashFiles('tools/schemas/download.sh', 'tools/fixtures/download.sh', 'packages/core/src/Validation/Drivers/KositArtifacts.php') }}
       - run: tools/schemas/download.sh
       - run: tools/fixtures/download.sh
       - run: tools/validate-fixtures.sh
