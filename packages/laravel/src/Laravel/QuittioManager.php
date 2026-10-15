@@ -7,6 +7,7 @@ namespace Quittio\Laravel;
 use Closure;
 use Composer\Autoload\ClassLoader;
 use Illuminate\Container\Container;
+use Illuminate\Contracts\Bus\Dispatcher as BusDispatcher;
 use Illuminate\Contracts\Config\Repository;
 use Illuminate\Contracts\Container\Container as ContainerContract;
 use Illuminate\Contracts\Events\Dispatcher;
@@ -55,6 +56,7 @@ use Quittio\Laravel\Events\InvoiceRendering;
 use Quittio\Laravel\Events\InvoiceValidated;
 use Quittio\Laravel\Events\InvoiceValidationFailed;
 use Quittio\Laravel\Events\MandatoryFieldMissing;
+use Quittio\Laravel\Jobs\RenderInvoice;
 use Quittio\Laravel\Rendering\PendingDocument;
 use Quittio\Laravel\Rendering\PendingInvoice;
 use Quittio\Laravel\Rendering\RenderedDocument;
@@ -191,7 +193,7 @@ class QuittioManager
         $events->dispatch(new InvoiceRendering($invoice, $options));
 
         try {
-            $result = new RenderedInvoice($this->core()->render($invoice, $options));
+            $result = $this->run($invoice, $options);
         } catch (ValidationException $e) {
             $events->dispatch(new InvoiceValidationFailed($invoice, $e->result));
             throw $e;
@@ -204,6 +206,17 @@ class QuittioManager
         $events->dispatch(new InvoiceRendered($result));
 
         return $result;
+    }
+
+    /**
+     * Dispatches a queued render job; PendingInvoice::queue()->save() calls it, the fake
+     * records the job as well.
+     */
+    public function queueInvoice(RenderInvoice $job): RenderInvoice
+    {
+        $this->container()->make(BusDispatcher::class)->dispatch($job);
+
+        return $job;
     }
 
     public function check(InvoiceData $invoice, RenderOptions $options): ValidationResult
@@ -388,6 +401,14 @@ class QuittioManager
         });
 
         return $quittio;
+    }
+
+    /**
+     * The render run behind renderInvoice(), without the events; the fake replaces it.
+     */
+    protected function run(InvoiceData $invoice, RenderOptions $options): RenderedInvoice
+    {
+        return new RenderedInvoice($this->core()->render($invoice, $options));
     }
 
     /**

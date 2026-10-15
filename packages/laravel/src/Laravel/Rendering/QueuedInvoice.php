@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace Quittio\Laravel\Rendering;
 
 use Illuminate\Container\Container;
-use Illuminate\Contracts\Bus\Dispatcher;
 use Illuminate\Contracts\Config\Repository;
 use Quittio\Core\Data\InvoiceData;
 use Quittio\Core\Rendering\RenderOptions;
 use Quittio\Laravel\Jobs\RenderInvoice;
+use Quittio\Laravel\QuittioManager;
 
 /**
  * Pending queued render; dispatching happens on save().
@@ -17,6 +17,7 @@ use Quittio\Laravel\Jobs\RenderInvoice;
 final readonly class QueuedInvoice
 {
     public function __construct(
+        private QuittioManager $manager,
         private InvoiceData $data,
         private RenderOptions $options,
         private ?string $connection = null,
@@ -39,8 +40,6 @@ final readonly class QueuedInvoice
             $job->afterCommit();
         }
 
-        $container->make(Dispatcher::class)->dispatch($job);
-
-        return $job;
+        return $this->manager->queueInvoice($job);
     }
 }

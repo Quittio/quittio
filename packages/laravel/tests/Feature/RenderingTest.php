@@ -301,7 +301,8 @@ it('fakes the format and profile choice of a real run', function () {
     Quittio::flush();
     expect(Quittio::make(invoice())->render()->format())->toBe('zugferd')
         ->and($fake->rendered())->toHaveCount(9);
-    Event::assertNothingDispatched();
+    // The fake dispatches the events of a real run.
+    Event::assertDispatchedTimes(InvoiceRendered::class, 9);
 });
 
 it('fakes documents and records them', function () {

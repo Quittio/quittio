@@ -4,10 +4,7 @@ declare(strict_types=1);
 
 namespace Quittio\Laravel\Testing;
 
-use Closure;
-use Illuminate\Contracts\Container\Container;
 use PHPUnit\Framework\Assert;
-use Quittio\Core\Countries\CountryPack;
 use Quittio\Core\Data\InvoiceData;
 use Quittio\Core\Documents\DocumentCalculator;
 use Quittio\Core\Documents\DocumentData;
@@ -17,6 +14,7 @@ use Quittio\Core\Rendering\RenderedDocument as CoreRenderedDocument;
 use Quittio\Core\Rendering\RenderedInvoice as CoreRenderedInvoice;
 use Quittio\Core\Rendering\RenderOptions;
 use Quittio\Core\Validation\ValidationResult;
+use Quittio\Laravel\Jobs\RenderInvoice;
 use Quittio\Laravel\QuittioManager;
 use Quittio\Laravel\Rendering\RenderedDocument;
 use Quittio\Laravel\Rendering\RenderedInvoice;
@@ -24,7 +22,9 @@ use Quittio\Laravel\Rendering\RenderedInvoice;
 /**
  * Calculates invoices and chooses formats and profiles like a real run (requested formats,
  * defaults.format, the automatic choice, profile keys and objects, defaults.profile), but
- * skips validation, XML, template and PDF. Records every render call.
+ * skips validation, XML, template and PDF. Records every render call and every queued render,
+ * and dispatches the events of a real run (InvoiceRendering, InvoiceValidated with an empty
+ * result unless validation is off, InvoiceRendered).
  */
 final class QuittioFake extends QuittioManager
 {
@@ -34,10 +34,27 @@ final class QuittioFake extends QuittioManager
     /** @var list<RenderedDocument> */
     private array $documents = [];
 
+    /** @var list<RenderInvoice> */
+    private array $queued = [];
+
     /** Core without validators that takes the decisions of a run (see Quittio::prepare()). */
     private ?Quittio $planner = null;
 
-    public function renderInvoice(InvoiceData $invoice, RenderOptions $options): RenderedInvoice
+    /** The core the planner was copied from; a new core (other configuration) gets a new planner. */
+    private ?Quittio $plannerSource = null;
+
+    /**
+     * Records the job and dispatches it like the real manager, so Queue::fake() sees it and a
+     * sync queue renders it with the fake.
+     */
+    public function queueInvoice(RenderInvoice $job): RenderInvoice
+    {
+        $this->queued[] = $job;
+
+        return parent::queueInvoice($job);
+    }
+
+    protected function run(InvoiceData $invoice, RenderOptions $options): RenderedInvoice
     {
         $prepared = $this->planner()->prepare($invoice, $options);
         $invoice = $prepared->data;
@@ -82,30 +99,6 @@ final class QuittioFake extends QuittioManager
     }
 
     /**
-     * @param  Closure(Container, array<string, mixed>): object  $factory
-     */
-    public function extend(string $type, string $name, Closure $factory): static
-    {
-        $this->planner = null;
-
-        return parent::extend($type, $name, $factory);
-    }
-
-    public function registerCountry(CountryPack $pack): static
-    {
-        $this->planner = null;
-
-        return parent::registerCountry($pack);
-    }
-
-    public function flush(): static
-    {
-        $this->planner = null;
-
-        return parent::flush();
-    }
-
-    /**
      * @param  (callable(RenderedInvoice): bool)|null  $callback
      */
     public function assertRendered(?callable $callback = null): void
@@ -123,6 +116,21 @@ final class QuittioFake extends QuittioManager
     public function assertNothingRendered(): void
     {
         Assert::assertSame([], $this->rendered, sprintf('Expected no rendered invoice, got %d.', count($this->rendered)));
+    }
+
+    /**
+     * @param  (callable(RenderInvoice): bool)|null  $callback  e.g. fn ($job) => $job->data()->number === 'RE-1'
+     */
+    public function assertQueued(?callable $callback = null): void
+    {
+        $matching = $callback === null ? $this->queued : array_filter($this->queued, $callback);
+
+        Assert::assertNotEmpty($matching, $callback === null ? 'No invoice was queued.' : 'No queued invoice matches the given callback.');
+    }
+
+    public function assertNothingQueued(): void
+    {
+        Assert::assertSame([], $this->queued, sprintf('Expected no queued invoice, got %d.', count($this->queued)));
     }
 
     /**
@@ -155,8 +163,24 @@ final class QuittioFake extends QuittioManager
         return $this->documents;
     }
 
+    /**
+     * The recorded queued render jobs, in order.
+     *
+     * @return list<RenderInvoice>
+     */
+    public function queued(): array
+    {
+        return $this->queued;
+    }
+
     private function planner(): Quittio
     {
-        return $this->planner ??= $this->build()->clearValidators();
+        $core = $this->core();
+        if ($this->planner === null || $this->plannerSource !== $core) {
+            $this->planner = (clone $core)->clearValidators();
+            $this->plannerSource = $core;
+        }
+
+        return $this->planner;
     }
 }

@@ -6,6 +6,7 @@ All notable changes to this project are documented in this file. The format foll
 
 ### Added
 
+- `QuittioFake` dispatches the events of a real run (`InvoiceRendering`, `InvoiceValidated`, `InvoiceRendered`) and records queued invoices: `assertQueued()`, `assertNothingQueued()`, `queued()`. Its decisions follow configuration changes without `Quittio::flush()`.
 - Events `QueuedInvoiceStored` (a queued job stored the file, with disk and path) and `QueuedInvoiceFailed` (a queued job failed for good).
 - `Quittio\Core\Quittio::resetState()` forgets the process-wide state (translator bridge, default snapshot upcasters, application default VAT, base rates of the German pack); extensions register their own state with `onResetState()`. The test trait `InteractsWithQuittio` calls it after each test.
 

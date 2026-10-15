@@ -166,6 +166,6 @@ class PendingInvoice
      */
     public function queue(?string $connection = null, ?string $queue = null): QueuedInvoice
     {
-        return new QueuedInvoice($this->data, $this->options(), $connection, $queue);
+        return new QueuedInvoice($this->manager, $this->data, $this->options(), $connection, $queue);
     }
 }

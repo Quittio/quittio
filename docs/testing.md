@@ -58,9 +58,10 @@ The fake takes the decisions of a real run: it calls `prepare()` of the core wit
 | Outputs | Placeholders according to the format: XML `<fake number="…"/>`, PDF `%PDF-1.7` with a comment, HTML `<p>{number}</p>`, JSON of the data |
 | File name | `Invoice_{number}.{ext}` |
 | Documents | Calculated; fake HTML and, unless `htmlOnly()`, a fake PDF; file name `{number}.{ext}` |
-| Events | None |
+| Events | As in a real run: `InvoiceRendering`, `InvoiceValidated` (with the empty result, not in mode `off`) and `InvoiceRendered`, so `Event::fake()` with `Event::assertDispatched(InvoiceRendered::class)` works |
+| Queue | `queue()->save()` records the job (`queued()`, `assertQueued()`) and dispatches it like a real run: `Queue::fake()` sees it, a `sync` queue renders it with the fake |
 
-Not faked: `check()`, `prepare()`, `read()`, `readFile()`, `validateFile()`, `validatePath()` and `cancellation()` run the real core. Responses, `save()`, mail attachments and `queue()` work on the fake results.
+Not faked: `check()`, `prepare()`, `read()`, `readFile()`, `validateFile()`, `validatePath()` and `cancellation()` run the real core. Responses, `save()` and mail attachments work on the fake results.
 
 The fake stays active until the application is rebuilt for the next test.
 
@@ -76,6 +77,9 @@ These methods belong to the fake and are also callable through the facade (`Quit
 | `assertDocumentRendered(?callable $callback = null)` | At least one document (quote, reminder, …) was rendered; with a callback, one `RenderedDocument` matches |
 | `rendered(): array` | The recorded `RenderedInvoice` results (the main format of each call), in order |
 | `documents(): array` | The recorded `RenderedDocument` results, in order |
+| `assertQueued(?callable $callback = null)` | At least one invoice was queued with `queue()->save()`; with a callback, one `RenderInvoice` job matches (`$job->data()` is the invoice, `$job->disk`, `$job->path`) |
+| `assertNothingQueued()` | No invoice was queued |
+| `queued(): array` | The recorded `RenderInvoice` jobs, in order |
 
 Documents such as quotes and reminders ([Quotes and other documents](documents.md)) are recorded separately from invoices:
 
