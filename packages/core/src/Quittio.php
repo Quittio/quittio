@@ -25,7 +25,7 @@ use Quittio\Core\Documents\DocumentData;
 use Quittio\Core\Exceptions\ConfigurationException;
 use Quittio\Core\Exceptions\InvalidInvoiceData;
 use Quittio\Core\Formats\DefaultFormatResolver;
-use Quittio\Core\Formats\ExtendedFeatures;
+use Quittio\Core\Formats\FormatChooser;
 use Quittio\Core\Formats\FormatRegistry;
 use Quittio\Core\Formats\FormatResolver;
 use Quittio\Core\Formats\OutputFormat;
@@ -41,7 +41,6 @@ use Quittio\Core\Pdf\Renderers\MpdfRenderer;
 use Quittio\Core\Pdf\RenderRequest;
 use Quittio\Core\Profiles\Capabilities\DescribesEmbeddedXml;
 use Quittio\Core\Profiles\Profile;
-use Quittio\Core\Profiles\ProfileLevel;
 use Quittio\Core\Profiles\ProfileRegistry;
 use Quittio\Core\Profiles\Syntax;
 use Quittio\Core\Reading\InvoiceReader;
@@ -409,7 +408,7 @@ final class Quittio
         $locale = $options->locale ?? $invoice->meta->locale ?? $this->config->locale ?? $countries->leading->defaults()->locale;
 
         $results = [];
-        foreach ($this->chooseFormats($invoice, $countries, $options) as [$format, $profile]) {
+        foreach ($this->formatChooser()->choose($invoice, $countries, $options) as [$format, $profile]) {
             $results[$format->key] = $this->renderFormat($invoice, $countries, $format, $profile, $locale, $options);
         }
 
@@ -460,8 +459,8 @@ final class Quittio
 
         $result = new ValidationResult;
         $formats = [];
-        foreach ($this->chooseFormats($invoice, $countries, $options) as [$format, $profile]) {
-            $syntax = $this->xmlSyntax($format, $watermarked);
+        foreach ($this->formatChooser()->choose($invoice, $countries, $options) as [$format, $profile]) {
+            $syntax = $this->formatChooser()->xmlSyntax($format, $watermarked);
             $formats[$format->key] = $syntax === null ? null : $profile;
             $subject = new ValidationSubject($invoice, $this->validationContext($profile, $countries, $locale, $options, $syntax));
             $result = $result->merge($this->validateStage($subject, 'data', $format));
@@ -716,87 +715,9 @@ final class Quittio
         return $this->validators;
     }
 
-    /**
-     * Formats and profiles of a run: the requested formats, otherwise the configured format
-     * or the automatic choice.
-     *
-     * Drafts and previews carry a watermark and must never look like an issued e-invoice:
-     * no format of the run may produce e-invoice XML, also not next to a watermarked PDF.
-     *
-     * @return non-empty-list<array{OutputFormat, Profile}>
-     */
-    private function chooseFormats(InvoiceData $invoice, ResolvedCountries $countries, RenderOptions $options): array
+    private function formatChooser(): FormatChooser
     {
-        $chosen = [];
-        foreach ($options->formats === [] ? [$this->config->format] : $options->formats as $key) {
-            $chosen[] = $this->choose($invoice, $countries, $key, $options->profile);
-        }
-
-        if ($this->presentation->hasWatermark($invoice->presentation, $options)) {
-            foreach ($chosen as [$format]) {
-                if ($format->syntax !== null) {
-                    throw new ConfigurationException(sprintf('The format "%s" produces e-invoice XML and cannot be rendered with a watermark (draft or preview). Render drafts with the format "pdf" or "html" only.', $format->key));
-                }
-            }
-        }
-
-        return $chosen;
-    }
-
-    /**
-     * Syntax of the XML a format writes: its own syntax, or CII for "pdf" with b2cEmbedXml
-     * (embedded as in ZUGFeRD) unless the run has a watermark; null = no XML.
-     */
-    private function xmlSyntax(OutputFormat $format, bool $watermarked): ?Syntax
-    {
-        return $format->syntax ?? ($format->pdf && $this->config->b2cEmbedXml && ! $watermarked ? Syntax::Cii : null);
-    }
-
-    /**
-     * Format and profile for one requested format key (null = automatic choice).
-     *
-     * @return array{OutputFormat, Profile}
-     */
-    private function choose(InvoiceData $invoice, ResolvedCountries $countries, ?string $key, Profile|string|null $requested): array
-    {
-        $resolvedProfile = null;
-        if ($key === null) {
-            $choice = $this->formatResolver->resolve($invoice, $countries);
-            $key = $choice->format;
-            $resolvedProfile = $choice->profile;
-        }
-
-        $format = $this->formats->get($key);
-        // A requested profile wins; the configured one applies wherever the format allows it,
-        // also when the format was requested or chosen by a country rule.
-        $configured = $this->config->profile === null ? null : $this->profiles->get($this->config->profile);
-        $profile = match (true) {
-            $requested !== null => $this->profiles->get($requested),
-            $configured !== null && $this->fits($format, $configured) => $configured,
-            default => $this->profiles->get($resolvedProfile ?? $format->defaultProfile ?? self::DEFAULT_PROFILE),
-        };
-
-        // Only formats that allow EXTENDED are upgraded; the others (e.g. XRechnung) report the
-        // EXTENDED features in the validation instead.
-        if ($requested === null && $format->syntax === Syntax::Cii && $format->allowsProfile('extended')
-            && $profile->level() !== ProfileLevel::Extended && $profile->key() !== 'xrechnung-extension' && ExtendedFeatures::used($invoice)) {
-            if (! $this->config->autoUpgradeProfile) {
-                throw new ConfigurationException('The invoice uses features of profile EXTENDED (e.g. sub lines), but the automatic profile upgrade is switched off.');
-            }
-            $profile = $this->profiles->get('extended');
-        }
-
-        if (! $format->allowsProfile($profile->key())) {
-            throw new ConfigurationException(sprintf('The format "%s" does not support profile "%s".', $format->key, $profile->key()));
-        }
-        if ($format->syntax !== null && ! in_array($format->syntax, $profile->syntaxes(), true)) {
-            throw new ConfigurationException(sprintf('Profile "%s" is not available in syntax %s (format "%s").', $profile->key(), strtoupper($format->syntax->value), $format->key));
-        }
-        if ($format->embedsXml && $profile->embeddedFilename() === null) {
-            throw new ConfigurationException(sprintf('Profile "%s" cannot be embedded into a PDF (format "%s").', $profile->key(), $format->key));
-        }
-
-        return [$format, $profile];
+        return new FormatChooser($this->config, $this->profiles, $this->formats, $this->formatResolver, $this->presentation);
     }
 
     private function renderFormat(InvoiceData $invoice, ResolvedCountries $countries, OutputFormat $format, Profile $profile, string $locale, RenderOptions $options): RenderedInvoice
@@ -807,7 +728,7 @@ final class Quittio
             throw new ConfigurationException(sprintf('The format "%s" produces e-invoice XML and cannot be rendered with a watermark (draft or preview). Render drafts with the format "pdf" or "html" only.', $format->key));
         }
 
-        $syntax = $this->xmlSyntax($format, $watermarked);
+        $syntax = $this->formatChooser()->xmlSyntax($format, $watermarked);
         $subject = new ValidationSubject($invoice, $this->validationContext($profile, $countries, $locale, $options, $syntax));
         $mode = $options->validation ?? $this->config->validation;
         $result = $this->validated($this->validateStage($subject, 'data', $format, $mode), $mode);
@@ -900,16 +821,6 @@ final class Quittio
         }
 
         return ($this->postProcessor ?? new MpdfPostProcessor($this->config->tempDir))->process($pdf, $request->embedded, $request->title, $request->author);
-    }
-
-    /**
-     * Whether the profile can be used with the format (allowed profile, syntax, embedding).
-     */
-    private function fits(OutputFormat $format, Profile $profile): bool
-    {
-        return $format->allowsProfile($profile->key())
-            && ($format->syntax === null || in_array($format->syntax, $profile->syntaxes(), true))
-            && (! $format->embedsXml || $profile->embeddedFilename() !== null);
     }
 
     /**
