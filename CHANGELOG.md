@@ -20,7 +20,10 @@ All notable changes to this project are documented in this file. The format foll
 ### Changed
 
 - README and documentation mark the Managed layer `quittio/managed` as not released yet; its documentation page is a preview and is left out of `llms.txt`, `llms-full.txt` and the MCP index.
-- The documentation is built and link-checked on pull requests.
+- The documentation is built and link-checked on pull requests; every PHP code block of the documentation must parse.
+- `quittio/core`, `quittio/laravel` and `quittio/country-de` declare their test dependencies and ship a `phpunit.xml.dist`, so their split repositories run `composer test` on their own.
+- `quittio/quittio` registers the `Quittio` facade alias and suggests `ext-intl`, `ext-zip` and `opis/json-schema` like the single packages.
+- Development: Composer scripts `test:fast`, `test:official`, `test:visual`, `test:coverage`, `test:mutation`, `docs:generate`, `codelists:update` and `ci`; a weekly CI run with `composer audit`, line coverage and mutation testing; PHPStan also checks `tools/*.php` and reports calls of deprecated code.
 - Visual baselines are written only with `QUITTIO_UPDATE_BASELINES=1`; a missing baseline fails the test. The default Blade partials that print pre-escaped HTML carry a warning comment.
 - Queued `RenderInvoice` jobs store the render options as versioned JSON (`RenderOptions::toArray()`/`fromArray()`) instead of a PHP-serialised object, so an update of Quittio no longer breaks jobs in the queue; jobs queued by 0.1.0 still run. Errors that another attempt cannot fix (validation, invalid data, configuration) fail the job at once instead of three times; other errors are retried after 10 and 60 seconds. Inside a database transaction the job is dispatched after the commit (`quittio.queue.after_commit`).
 - Every exception that Quittio throws implements `QuittioException`: invalid arguments and runtime errors are now `Quittio\Core\Exceptions\InvalidArgumentException`, `RuntimeException` or `LogicException`, which extend the PHP classes of the same name, so existing `catch` blocks keep working.
