@@ -96,7 +96,7 @@ composer analyse     # PHPStan, level max
 composer lint        # Pint
 ```
 
-Development happens in this repository. `packages/core`, `packages/laravel` and `packages/country-de` are copied to the read-only repositories `quittio/core`, `quittio/laravel` and `quittio/country-de` on every push and tag (`.github/workflows/split.yml`); open issues and pull requests here.
+Development happens in this repository. `packages/core`, `packages/laravel` and `packages/country-de` are copied to the read-only repositories `quittio/core`, `quittio/laravel` and `quittio/country-de` on every push and tag once CI passed (`.github/workflows/split.yml`, called by `ci.yml`); open issues and pull requests here.
 
 Official validation (KoSIT validator and veraPDF) runs in CI and locally:
 
