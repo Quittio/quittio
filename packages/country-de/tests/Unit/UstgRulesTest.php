@@ -15,6 +15,7 @@ use Quittio\Core\Quittio;
 use Quittio\Core\Testing\Scenarios;
 use Quittio\Core\Validation\Drivers\PhpRulesDriver;
 use Quittio\Core\Validation\ValidationContext;
+use Quittio\Core\Validation\ValidationException;
 use Quittio\Core\Validation\ValidationResult;
 use Quittio\Core\Validation\ValidationSubject;
 use Quittio\Country\DE\CountryDE;
@@ -50,6 +51,28 @@ function ustgCodes(ValidationResult $result): array
 
 it('accepts a complete German invoice', function () {
     expect(ustgCodes(ustg(Scenarios::make('simple'))))->toBe([]);
+});
+
+it('names the party and the missing address fields', function () {
+    $seller = fn ($s) => $s->name('Niklas GmbH')->vatId('DE123456789')->address(null, null, null, 'DE');
+    $de = ustg(Scenarios::make('simple')->seller($seller), 'de')->errors();
+    $en = ustg(Scenarios::make('simple')->buyer(fn ($b) => $b->name('Kunde AG')->address('Weg 1', null, null, 'DE')), 'en')->errors();
+    $fr = ustg(Scenarios::make('simple')->seller($seller), 'fr')->errors();
+
+    expect($de[0]->code)->toBe('DE-USTG-01')
+        ->and($de[0]->message)->toBe('Die Anschrift des leistenden Unternehmers (Verkäufer, BG-5) ist unvollständig, es fehlt: Straße und Hausnummer, Postleitzahl, Ort (§ 14 Abs. 4 Nr. 1 UStG).')
+        ->and($de[0]->hint)->toStartWith('Mit Quittio::invoice() kommt der Verkäufer aus config/quittio.php')
+        ->and($en[0]->message)->toBe('The address of the buyer (BG-8) is incomplete; missing: post code, city (section 14 (4) no. 1 UStG).')
+        ->and($en[0]->hint)->toContain('->buyer(Party::make(…)->address(')
+        ->and($fr[0]->message)->toContain('of the seller (BG-5)');               // other locales: English
+});
+
+it('puts the hints into the message of the validation exception', function () {
+    $quittio = Quittio::create([], [new CountryDE]);
+    $invoice = Scenarios::make('simple')->seller(fn ($s) => $s->name('Niklas GmbH')->vatId('DE123456789')->address(null, null, null, 'DE'));
+
+    expect(fn () => $quittio->make($invoice)->locale('de')->format('zugferd')->render())
+        ->toThrow(ValidationException::class, "ist unvollständig, es fehlt: Straße und Hausnummer, Postleitzahl, Ort (§ 14 Abs. 4 Nr. 1 UStG).\n    Mit Quittio::invoice() kommt der Verkäufer aus config/quittio.php");
 });
 
 it('requires the full address of both parties', function () {

@@ -54,15 +54,16 @@ final class UstgRules
             || array_filter($i->allLines(), static fn (InvoiceLine $l): bool => $l->vat->presetKey === VatPreset::SmallBusiness->value) !== [];
 
         return [
-            $r('DE-USTG-01', 'Name and full address of the seller and the buyer must be stated (section 14 (4) no. 1 UStG).', function (InvoiceData $i, RuleReporter $report) use ($small): void {
+            $r('DE-USTG-01', 'The address :party is incomplete; missing: :fields (section 14 (4) no. 1 UStG).', function (InvoiceData $i, RuleReporter $report) use ($small): void {
                 $seller = $i->seller->address;
-                if (! Inspect::filled($seller->line1) || ! Inspect::filled($seller->city) || ! Inspect::filled($seller->postcode)) {
-                    $report->error('BG-5', 'seller.address');
+                $missing = self::missingAddressFields($seller->line1, $seller->postcode, $seller->city, postcodeRequired: true);
+                if ($missing !== []) {
+                    $report->error('BG-5', 'seller.address', self::addressReplacements($report, 'seller', $missing));
                 }
                 $buyer = $i->buyer->address;
-                $postcodeMissing = $buyer->countryCode === CountryDE::CODE && ! Inspect::filled($buyer->postcode);
-                if (! $small($i) && (! Inspect::filled($buyer->line1) || ! Inspect::filled($buyer->city) || $postcodeMissing)) {
-                    $report->error('BG-8', 'buyer.address');
+                $missing = self::missingAddressFields($buyer->line1, $buyer->postcode, $buyer->city, postcodeRequired: $buyer->countryCode === CountryDE::CODE);
+                if (! $small($i) && $missing !== []) {
+                    $report->error('BG-8', 'buyer.address', self::addressReplacements($report, 'buyer', $missing));
                 }
             }),
             $r('DE-USTG-02', 'The seller\'s tax number (BT-32) or VAT identifier (BT-31) must be stated (section 14 (4) no. 2 UStG).', function (InvoiceData $i, RuleReporter $report) use ($small): void {
@@ -310,6 +311,60 @@ final class UstgRules
         }
 
         return false;
+    }
+
+    /** English words of DE-USTG-01 for locales without them in the catalog. */
+    private const array ADDRESS_WORDS = [
+        'party.seller' => 'of the seller (BG-5)',
+        'party.buyer' => 'of the buyer (BG-8)',
+        'fields.line1' => 'street and number',
+        'fields.postcode' => 'post code',
+        'fields.city' => 'city',
+        'advice.seller' => 'Add street, post code and city to the seller.',
+        'advice.buyer' => 'Add street, post code and city to the buyer.',
+    ];
+
+    /**
+     * The address fields of section 14 (4) no. 1 UStG that are empty: street, post code (for
+     * the buyer only in Germany) and city.
+     *
+     * @return list<string>
+     */
+    private static function missingAddressFields(?string $line1, ?string $postcode, ?string $city, bool $postcodeRequired): array
+    {
+        return array_keys(array_filter([
+            'line1' => ! Inspect::filled($line1),
+            'postcode' => $postcodeRequired && ! Inspect::filled($postcode),
+            'city' => ! Inspect::filled($city),
+        ]));
+    }
+
+    /**
+     * The party, the missing fields and the advice of DE-USTG-01 in the locale of the run.
+     *
+     * @param  list<string>  $missing
+     * @return array<string, string>
+     */
+    private static function addressReplacements(RuleReporter $report, string $party, array $missing): array
+    {
+        $translator = $report->context()->translator();
+        $locale = $report->context()->locale;
+        $word = static function (string $key) use ($translator, $locale): string {
+            $catalog = CountryDE::TRANSLATION_NAMESPACE.'::rules.DE-USTG-01.'.$key;
+            foreach ([$locale, 'en'] as $candidate) {
+                if ($translator->has($catalog, $candidate)) {
+                    return $translator->get($catalog, [], $candidate);
+                }
+            }
+
+            return self::ADDRESS_WORDS[$key] ?? $key;
+        };
+
+        return [
+            'party' => $word('party.'.$party),
+            'fields' => implode(', ', array_map(static fn (string $field): string => $word('fields.'.$field), $missing)),
+            'advice' => $word('advice.'.$party),
+        ];
     }
 
     /**

@@ -105,8 +105,17 @@ return [
         'hint' => 'Set corrections.cancellation_strategy to negative_invoice or pass the strategy when cancelling.',
     ],
     'DE-USTG-01' => [
-        'message' => 'Name and full address of the seller and the buyer must be stated (section 14 (4) no. 1 UStG).',
-        'hint' => 'Add street, post code and city for seller and buyer.',
+        'message' => 'The address :party is incomplete; missing: :fields (section 14 (4) no. 1 UStG).',
+        'hint' => ':advice',
+        'party' => [
+            'seller' => 'of the seller (BG-5)',
+            'buyer' => 'of the buyer (BG-8)',
+        ],
+        'fields' => ['line1' => 'street and number', 'postcode' => 'post code', 'city' => 'city'],
+        'advice' => [
+            'seller' => 'With Quittio::invoice() the seller comes from config/quittio.php: fill in seller.address (line1, postcode, city). Otherwise: ->seller(Party::make(…)->address(street, post code, city, country)).',
+            'buyer' => 'Add the buyer\'s address: ->buyer(Party::make(…)->address(street, post code, city, country)) or in fillParty() of your model.',
+        ],
     ],
     'DE-USTG-02' => [
         'message' => 'The seller\'s tax number (BT-32) or VAT identifier (BT-31) must be stated (section 14 (4) no. 2 UStG).',

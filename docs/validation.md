@@ -90,7 +90,7 @@ They are explicit validation requests: they run the data and xml stages of every
 
 ## Errors while rendering
 
-In mode `error`, a blocking result throws `Quittio\Core\Validation\ValidationException`. Its message lists the first five errors (`[BR-CO-25] BT-9: …`), or the blocking warnings when only warnings block; the full result is in `$e->result`:
+In mode `error`, a blocking result throws `Quittio\Core\Validation\ValidationException`. Its message lists the first five errors (`[BR-CO-25] BT-9: …`), each followed by its hint on the next line, or the blocking warnings when only warnings block; the full result is in `$e->result`:
 
 ```php
 use Quittio\Core\Validation\ValidationException;

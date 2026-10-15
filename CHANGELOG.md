@@ -32,6 +32,7 @@ All notable changes to this project are documented in this file. The format foll
 
 ### Changed
 
+- Country pack Germany: `DE-USTG-01` names the party and the missing address fields ("Die Anschrift des leistenden Unternehmers (Verkäufer, BG-5) ist unvollständig, es fehlt: Straße und Hausnummer, Postleitzahl, Ort") and says where to fill them in. The message of `ValidationException` contains the hint of every listed finding.
 - Core: macros of `InvoiceBuilder`, `LineBuilder` and `DocumentBuilder` run in the scope of the builder class, so they reach its state also on subclasses.
 - Core: a line without `quantity()` has the quantity 1 instead of failing with BT-129.
 - Repository layout: the root package is `quittio/quittio` (it replaces `quittio/core`, `quittio/laravel` and `quittio/country-de`); the meta package was removed; the packages are split into read-only repositories on every push; the commercial `quittio/managed` lives in its own repository.

@@ -105,8 +105,17 @@ return [
         'hint' => 'Setzen Sie corrections.cancellation_strategy auf negative_invoice oder übergeben Sie die Strategie beim Storno.',
     ],
     'DE-USTG-01' => [
-        'message' => 'Name und vollständige Anschrift des leistenden Unternehmers und des Leistungsempfängers müssen angegeben sein (§ 14 Abs. 4 Nr. 1 UStG).',
-        'hint' => 'Ergänzen Sie Straße, Postleitzahl und Ort bei Verkäufer und Käufer.',
+        'message' => 'Die Anschrift :party ist unvollständig, es fehlt: :fields (§ 14 Abs. 4 Nr. 1 UStG).',
+        'hint' => ':advice',
+        'party' => [
+            'seller' => 'des leistenden Unternehmers (Verkäufer, BG-5)',
+            'buyer' => 'des Leistungsempfängers (Käufer, BG-8)',
+        ],
+        'fields' => ['line1' => 'Straße und Hausnummer', 'postcode' => 'Postleitzahl', 'city' => 'Ort'],
+        'advice' => [
+            'seller' => 'Mit Quittio::invoice() kommt der Verkäufer aus config/quittio.php: ergänzen Sie seller.address (line1, postcode, city). Sonst: ->seller(Party::make(…)->address(Straße, PLZ, Ort, Land)).',
+            'buyer' => 'Ergänzen Sie die Anschrift des Käufers: ->buyer(Party::make(…)->address(Straße, PLZ, Ort, Land)) oder in fillParty() Ihres Models.',
+        ],
     ],
     'DE-USTG-02' => [
         'message' => 'Die Steuernummer (BT-32) oder die USt-IdNr. (BT-31) des leistenden Unternehmers muss angegeben sein (§ 14 Abs. 4 Nr. 2 UStG).',

@@ -23,7 +23,9 @@ final class ValidationException extends RuntimeException implements QuittioExcep
             $kind = 'blocking warnings';
         }
         $first = array_slice($errors, 0, 5);
-        $lines = array_map(static fn (ValidationMessage $m): string => sprintf('[%s]%s %s', $m->code, $m->bt === null ? '' : ' '.$m->bt.':', $m->message), $first);
+        // The hint says how to fix the finding, e.g. which configuration key to fill in.
+        $lines = array_map(static fn (ValidationMessage $m): string => sprintf('[%s]%s %s', $m->code, $m->bt === null ? '' : ' '.$m->bt.':', $m->message)
+            .($m->hint === null || $m->hint === '' ? '' : "\n    ".$m->hint), $first);
         $more = count($errors) > 5 ? sprintf("\n… and %d more.", count($errors) - 5) : '';
 
         parent::__construct(sprintf("The invoice is not valid (%d %s):\n%s%s", count($errors), $kind, implode("\n", $lines), $more));
