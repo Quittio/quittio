@@ -20,7 +20,6 @@ use Quittio\Core\Countries\DefaultCountryResolver;
 use Quittio\Core\Countries\MandatoryField;
 use Quittio\Core\Countries\ResolvedCountries;
 use Quittio\Core\Data\InvoiceData;
-use Quittio\Core\Data\Presentation\Presentation;
 use Quittio\Core\Documents\DocumentCalculator;
 use Quittio\Core\Documents\DocumentData;
 use Quittio\Core\Exceptions\ConfigurationException;
@@ -54,6 +53,7 @@ use Quittio\Core\Rendering\PreparedInvoice;
 use Quittio\Core\Rendering\RenderedDocument;
 use Quittio\Core\Rendering\RenderedInvoice;
 use Quittio\Core\Rendering\RenderOptions;
+use Quittio\Core\Rendering\RunPresentation;
 use Quittio\Core\Serialization\Snapshots\SnapshotUpcasterChain;
 use Quittio\Core\Support\Date;
 use Quittio\Core\Templates\PhpTemplateEngine;
@@ -114,6 +114,8 @@ final class Quittio
     /** PDF/A and XML embedding for renderers that cannot embed; null = MpdfPostProcessor. */
     private ?PdfPostProcessor $postProcessor = null;
 
+    private readonly RunPresentation $presentation;
+
     /** @var array<string, Closure(): void> see onResetState() */
     private static array $stateResetters = [];
 
@@ -132,6 +134,7 @@ final class Quittio
     ) {
         $this->formatResolver = $formatResolver ?? new DefaultFormatResolver($config->profile ?? self::DEFAULT_PROFILE, $config->autoUpgradeProfile);
         $this->countryResolver = $countryResolver ?? new DefaultCountryResolver($countries, $config->country);
+        $this->presentation = new RunPresentation($config);
         $this->addSerializer(new CiiWriter)->addSerializer(new UblWriter);
     }
 
@@ -453,7 +456,7 @@ final class Quittio
         $invoice = $this->calculator->calculate($this->withDefaults($data));
         $countries = $this->countryResolver->resolve($invoice, $options->country);
         $locale = $options->locale ?? $invoice->meta->locale ?? $this->config->locale ?? $countries->leading->defaults()->locale;
-        $watermarked = $this->hasWatermark($invoice->presentation, $options);
+        $watermarked = $this->presentation->hasWatermark($invoice->presentation, $options);
 
         $result = new ValidationResult;
         $formats = [];
@@ -488,14 +491,14 @@ final class Quittio
 
         $htmlOnly = in_array('html', $options->formats, true);
         // PDF/A forbids the transparency of watermarks: watermarked documents are plain PDF.
-        $pdfa = ! $htmlOnly && $this->config->pdfa && ! $this->hasWatermark($document->presentation, $options);
+        $pdfa = ! $htmlOnly && $this->config->pdfa && ! $this->presentation->hasWatermark($document->presentation, $options);
         $view = (new ViewModelFactory)->buildDocument($document, $this->viewContext($locale, $countries, null, $options, $pdfa));
-        $html = $this->templates->render($this->template($document->presentation, $options), $view);
+        $html = $this->templates->render($this->presentation->template($document->presentation, $options), $view);
         $pdf = $htmlOnly ? null : $this->renderPdf(new RenderRequest(
             html: $html,
             title: $view->title(),
             author: $document->seller->name,
-            paper: $this->paper($document->presentation, $options, $countries->leading),
+            paper: $this->presentation->paper($document->presentation, $options, $countries->leading),
             pdfa: $pdfa,
         ));
 
@@ -729,7 +732,7 @@ final class Quittio
             $chosen[] = $this->choose($invoice, $countries, $key, $options->profile);
         }
 
-        if ($this->hasWatermark($invoice->presentation, $options)) {
+        if ($this->presentation->hasWatermark($invoice->presentation, $options)) {
             foreach ($chosen as [$format]) {
                 if ($format->syntax !== null) {
                     throw new ConfigurationException(sprintf('The format "%s" produces e-invoice XML and cannot be rendered with a watermark (draft or preview). Render drafts with the format "pdf" or "html" only.', $format->key));
@@ -799,7 +802,7 @@ final class Quittio
     private function renderFormat(InvoiceData $invoice, ResolvedCountries $countries, OutputFormat $format, Profile $profile, string $locale, RenderOptions $options): RenderedInvoice
     {
         // Checked for the whole run in render(); kept here for formats with XML (defence in depth).
-        $watermarked = $this->hasWatermark($invoice->presentation, $options);
+        $watermarked = $this->presentation->hasWatermark($invoice->presentation, $options);
         if ($watermarked && $format->syntax !== null) {
             throw new ConfigurationException(sprintf('The format "%s" produces e-invoice XML and cannot be rendered with a watermark (draft or preview). Render drafts with the format "pdf" or "html" only.', $format->key));
         }
@@ -823,7 +826,7 @@ final class Quittio
             // PDF/A for embedded XML, otherwise as configured; watermarks need transparency (no PDF/A).
             $pdfa = $format->pdf && ($xml !== null || ($this->config->pdfa && ! $watermarked));
             $view = (new ViewModelFactory)->build($invoice, $this->viewContext($locale, $countries, $profile, $options, $pdfa));
-            $html = $this->templates->render($this->template($invoice->presentation, $options), $view);
+            $html = $this->templates->render($this->presentation->template($invoice->presentation, $options), $view);
             $title = $view->title();
 
             $mandatory = MandatoryFieldGuard::baseFields($invoice)->merge($countries->leading->mandatoryOutput($invoice));
@@ -853,7 +856,7 @@ final class Quittio
                     html: $html,
                     title: $title.' '.$invoice->number,
                     author: $invoice->seller->name,
-                    paper: $this->paper($invoice->presentation, $options, $countries->leading),
+                    paper: $this->presentation->paper($invoice->presentation, $options, $countries->leading),
                     pdfa: $pdfa,
                     embedded: $embedded,
                 ));
@@ -883,19 +886,6 @@ final class Quittio
     }
 
     /**
-     * Same precedence as the view model: invoice presentation, then the presentation
-     * defaults of the call and the configuration, then the "watermark" option.
-     */
-    private function hasWatermark(?Presentation $own, RenderOptions $options): bool
-    {
-        $option = $options->options['watermark'] ?? $this->config->options['watermark'] ?? null;
-        $defaults = $this->presentationDefaults($options);
-        $watermark = $own === null ? $defaults?->watermark : ViewModelFactory::mergePresentation($own, $defaults ?? new Presentation)->watermark;
-
-        return ($watermark ?? (is_string($option) ? $option : null)) !== null;
-    }
-
-    /**
      * Renders the PDF; PDF/A and the embedded XML are added afterwards for renderers that
      * cannot do it themselves.
      */
@@ -913,15 +903,6 @@ final class Quittio
     }
 
     /**
-     * Template of a run: the call (template()), the invoice presentation, the presentation
-     * defaults of the call and the configuration, then the configured template.
-     */
-    private function template(?Presentation $own, RenderOptions $options): string
-    {
-        return $options->template ?? $own->template ?? $this->presentationDefaults($options)->template ?? $this->config->template;
-    }
-
-    /**
      * Whether the profile can be used with the format (allowed profile, syntax, embedding).
      */
     private function fits(OutputFormat $format, Profile $profile): bool
@@ -929,41 +910,6 @@ final class Quittio
         return $format->allowsProfile($profile->key())
             && ($format->syntax === null || in_array($format->syntax, $profile->syntaxes(), true))
             && (! $format->embedsXml || $profile->embeddedFilename() !== null);
-    }
-
-    /**
-     * Presentation defaults of a run: the presentation of the call over the configured one,
-     * property by property (unset values of the call keep the configured design).
-     */
-    private function presentationDefaults(RenderOptions $options): ?Presentation
-    {
-        $call = $options->presentation;
-        $configured = $this->config->presentation;
-        if ($call === null || $configured === null) {
-            return $call ?? $configured;
-        }
-
-        return ViewModelFactory::mergePresentation($call, $configured);
-    }
-
-    /**
-     * Paper size: invoice presentation, then the presentation defaults of the call and the
-     * configuration, then an explicitly configured size (option "paper", e.g. pdf.paper),
-     * then the country pack. The presentation default "A4" counts as not set unless the
-     * presentation names "paper" in $explicit.
-     */
-    private function paper(?Presentation $own, RenderOptions $options, CountryPack $pack): string
-    {
-        $default = (new Presentation)->paper;
-        foreach ([$own, $this->presentationDefaults($options)] as $presentation) {
-            if ($presentation !== null && $presentation->paper !== '' && ($presentation->paper !== $default || $presentation->isExplicit('paper'))) {
-                return $presentation->paper;
-            }
-        }
-
-        $explicit = $options->options['paper'] ?? $this->config->options['paper'] ?? null;
-
-        return is_string($explicit) && $explicit !== '' ? $explicit : $pack->defaults()->paper;
     }
 
     /**
@@ -1050,7 +996,7 @@ final class Quittio
             country: $countries->leading,
             profile: $profile,
             formatter: $this->formatter,
-            defaults: $this->presentationDefaults($options),
+            defaults: $this->presentation->defaults($options),
             paymentQr: $this->paymentQr,
             options: [
                 'girocode_amount' => $this->config->girocodeAmount,
