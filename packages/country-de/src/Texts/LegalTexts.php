@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Quittio\Country\DE\Texts;
 
 use Quittio\Core\Countries\LegalTextCatalog;
+use Quittio\Core\I18n\Translations;
 use Quittio\Country\DE\CountryDE;
 use Quittio\Country\DE\Tax\VatPreset;
 
@@ -45,48 +46,52 @@ final class LegalTexts
 
     public const string NEW_VEHICLE = 'new_vehicle';
 
+    /** Description of a default interest charge of a payment reminder (DefaultInterest). */
+    public const string DEFAULT_INTEREST = 'default_interest';
+
     public const string FALLBACK_LOCALE = 'de';
 
+    /** Keys of the texts in resources/lang/{locale}/legal.php. */
+    private const array TRANSLATED = [
+        self::SELF_BILLING, self::PROPERTY_RETENTION, self::PREPAYMENT, self::ADVANCE_DEDUCTION,
+        self::ADVANCE_DEDUCTION_TAXED, self::ADVANCE_DEDUCTION_UNTAXED, self::CONSUMER_DEFAULT,
+        self::NEW_VEHICLE, self::DEFAULT_INTEREST,
+    ];
+
+    /** @var array{0: int, 1: LegalTextCatalog}|null the catalog of a translator version */
+    private static ?array $catalog = null;
+
+    /**
+     * The texts in every locale the pack ships. They come from the pack's language files
+     * (resources/lang/{locale}/legal.php, the exemption reasons from tax.php) through the active
+     * translator, so that lang/vendor/quittio-de overrides them in Laravel.
+     */
     public static function catalog(): LegalTextCatalog
     {
-        return new LegalTextCatalog([
-            self::SELF_BILLING => [
-                'de' => 'Gutschrift',
-                'en' => 'Gutschrift (self-billed invoice)',
-            ],
-            self::PROPERTY_RETENTION => [
-                'de' => 'Sie sind gesetzlich verpflichtet, diese Rechnung, einen Zahlungsbeleg oder eine andere beweiskräftige Unterlage zwei Jahre lang aufzubewahren (§ 14b Abs. 1 Satz 5 UStG).',
-                'en' => 'You are required by law to keep this invoice, a payment receipt or other conclusive document for two years (section 14b (1) sentence 5 UStG).',
-            ],
-            self::REVERSE_CHARGE => self::presetTexts(VatPreset::ReverseChargeEu),
-            self::INTRA_COMMUNITY_SUPPLY => self::presetTexts(VatPreset::IntraCommunitySupply),
-            self::EXPORT => self::presetTexts(VatPreset::Export),
-            self::SMALL_BUSINESS => self::presetTexts(VatPreset::SmallBusiness),
-            self::PREPAYMENT => [
-                'de' => 'Die Umsatzsteuer entsteht mit Vereinnahmung der Anzahlung. Die Leistung wird voraussichtlich am :date erbracht.',
-                'en' => 'VAT becomes due on receipt of the prepayment. The service is expected to be performed on :date.',
-            ],
-            self::ADVANCE_DEDUCTION => [
-                'de' => 'Abzüglich Anzahlung gemäß Rechnung :number vom :date: :amounts (§ 14 Abs. 5 Satz 2 UStG).',
-                'en' => 'Less advance payment according to invoice :number of :date: :amounts (section 14 (5) sentence 2 UStG).',
-            ],
-            self::ADVANCE_DEDUCTION_TAXED => [
-                'de' => 'Entgelt :net zzgl. :rate Umsatzsteuer :vat',
-                'en' => 'net :net plus :rate VAT :vat',
-            ],
-            self::ADVANCE_DEDUCTION_UNTAXED => [
-                'de' => 'Entgelt :net ohne Umsatzsteuer',
-                'en' => 'net :net without VAT',
-            ],
-            self::CONSUMER_DEFAULT => [
-                'de' => 'Sie kommen spätestens in Verzug, wenn Sie nicht innerhalb von 30 Tagen nach Fälligkeit und Zugang dieser Rechnung zahlen (§ 286 Abs. 3 BGB).',
-                'en' => 'You will be in default at the latest if you do not pay within 30 days of the due date and receipt of this invoice (section 286 (3) BGB).',
-            ],
-            self::NEW_VEHICLE => [
-                'de' => 'Innergemeinschaftliche Lieferung eines neuen Fahrzeugs (§ 14a Abs. 4 UStG); die Fahrzeugmerkmale nach § 1b Abs. 2 und 3 UStG sind bei der Position angegeben.',
-                'en' => 'Intra-Community supply of a new means of transport (section 14a (4) UStG); the vehicle details under section 1b (2) and (3) UStG are stated with the line.',
-            ],
-        ], fallbackLocale: self::FALLBACK_LOCALE);
+        CountryDE::registerTranslations();
+        if (self::$catalog !== null && self::$catalog[0] === Translations::version()) {
+            return self::$catalog[1];
+        }
+
+        $translator = Translations::translator();
+        $texts = [];
+        foreach (self::TRANSLATED as $key) {
+            foreach (CountryDE::locales() as $locale) {
+                $id = CountryDE::TRANSLATION_NAMESPACE.'::legal.'.$key;
+                if ($translator->has($id, $locale)) {
+                    $texts[$key][$locale] = $translator->get($id, [], $locale);
+                }
+            }
+        }
+        $texts[self::REVERSE_CHARGE] = self::presetTexts(VatPreset::ReverseChargeEu);
+        $texts[self::INTRA_COMMUNITY_SUPPLY] = self::presetTexts(VatPreset::IntraCommunitySupply);
+        $texts[self::EXPORT] = self::presetTexts(VatPreset::Export);
+        $texts[self::SMALL_BUSINESS] = self::presetTexts(VatPreset::SmallBusiness);
+
+        $catalog = new LegalTextCatalog($texts, fallbackLocale: self::FALLBACK_LOCALE);
+        self::$catalog = [Translations::version(), $catalog];
+
+        return $catalog;
     }
 
     /**

@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace Quittio\Country\DE\Dunning;
 
+use Brick\Math\BigDecimal;
 use Brick\Money\Money;
 use Quittio\Core\Countries\DunningLaw;
 use Quittio\Core\Documents\InterestCharge;
 use Quittio\Core\Support\Amount;
 use Quittio\Core\Support\Date;
 use Quittio\Country\DE\CountryDE;
+use Quittio\Country\DE\Texts\LegalTexts;
 
 /**
  * Default interest according to section 288 BGB: base rate plus 9 points (business)
@@ -55,9 +57,7 @@ final readonly class DefaultInterest
                 from: $period['from'],
                 until: $period['until'],
                 dayCount: $this->law->dayCount,
-                description: $locale === 'de'
-                    ? sprintf('Verzugszinsen %s %% p. a. (Basiszinssatz %s %% + %s Prozentpunkte) vom %s bis %s', self::number($rate->toString()), self::number($period['rate']->toString()), self::number($points), $period['from']->format('d.m.Y'), $lastDay->format('d.m.Y'))
-                    : sprintf('Default interest %s %% p.a. (base rate %s %% + %s points) from %s to %s', $rate->toString(), $period['rate']->toString(), $points, $period['from']->toIsoString(), $lastDay->toIsoString()),
+                description: self::description($rate, $period['rate'], $points, $period['from'], $lastDay, $locale),
             );
         }
 
@@ -72,8 +72,21 @@ final readonly class DefaultInterest
         return $this->law->b2bFlatRate === null ? null : Amount::of($this->law->b2bFlatRate, $currency);
     }
 
-    private static function number(string $value): string
+    /**
+     * The text of LegalTexts::DEFAULT_INTEREST; German texts (also for "de_AT") with German
+     * numbers and dates.
+     */
+    private static function description(BigDecimal $rate, BigDecimal $baseRate, string $points, Date $from, Date $lastDay, string $locale): string
     {
-        return str_replace('.', ',', $value);
+        $german = LegalTexts::localeOf(LegalTexts::DEFAULT_INTEREST, $locale) === 'de';
+        $number = static fn (string $value): string => $german ? str_replace('.', ',', $value) : $value;
+
+        return LegalTexts::text(LegalTexts::DEFAULT_INTEREST, $locale, [
+            'rate' => $number($rate->toString()),
+            'base_rate' => $number($baseRate->toString()),
+            'points' => $number($points),
+            'from' => $german ? $from->format('d.m.Y') : $from->toIsoString(),
+            'until' => $german ? $lastDay->format('d.m.Y') : $lastDay->toIsoString(),
+        ]);
     }
 }

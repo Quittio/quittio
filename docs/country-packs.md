@@ -588,7 +588,7 @@ The default templates print all of them.
 
 ### Legal texts
 
-`Quittio\Country\DE\Texts\LegalTexts::catalog()` (also `CountryDE::legalTexts()`) holds the German notices in German and English. Its fallback locale is `de` (`LegalTexts::FALLBACK_LOCALE`). Builder macros add some of them; texts marked "–" are for your own notes.
+`Quittio\Country\DE\Texts\LegalTexts::catalog()` (also `CountryDE::legalTexts()`) holds the German notices in German and English. The texts live in the pack's language files `resources/lang/{de,en}/legal.php` (the exemption reasons in `tax.php`) and are read through the translator, so in Laravel `lang/vendor/quittio-de/{locale}/legal.php` overrides single texts. Its fallback locale is `de` (`LegalTexts::FALLBACK_LOCALE`). Builder macros add some of them; texts marked "–" are for your own notes.
 
 | Constant (key) | German | English | Added by |
 |---|---|---|---|
@@ -603,6 +603,7 @@ The default templates print all of them.
 | `ADVANCE_DEDUCTION_TAXED` (`advance_deduction_taxed`) | Entgelt :net zzgl. :rate Umsatzsteuer :vat | net :net plus :rate VAT :vat | `deductAdvance()`, part of `:amounts` |
 | `ADVANCE_DEDUCTION_UNTAXED` (`advance_deduction_untaxed`) | Entgelt :net ohne Umsatzsteuer | net :net without VAT | `deductAdvance()`, part of `:amounts` |
 | `CONSUMER_DEFAULT` (`consumer_default`) | Sie kommen spätestens in Verzug, wenn Sie nicht innerhalb von 30 Tagen nach Fälligkeit und Zugang dieser Rechnung zahlen (§ 286 Abs. 3 BGB). | You will be in default at the latest if you do not pay within 30 days of the due date and receipt of this invoice (section 286 (3) BGB). | `consumerDefaultNotice()` |
+| `DEFAULT_INTEREST` (`default_interest`) | Verzugszinsen :rate % p. a. (Basiszinssatz :base_rate % + :points Prozentpunkte) vom :from bis :until | Default interest :rate % p.a. (base rate :base_rate % + :points points) from :from to :until | `DefaultInterest` (interest lines of payment reminders; German numbers and dates for every German locale) |
 | `NEW_VEHICLE` (`new_vehicle`) | Innergemeinschaftliche Lieferung eines neuen Fahrzeugs (§ 14a Abs. 4 UStG); die Fahrzeugmerkmale nach § 1b Abs. 2 und 3 UStG sind bei der Position angegeben. | Intra-Community supply of a new means of transport (section 14a (4) UStG); the vehicle details under section 1b (2) and (3) UStG are stated with the line. | `newVehicle()` |
 
 - `REVERSE_CHARGE`, `INTRA_COMMUNITY_SUPPLY`, `EXPORT` and `SMALL_BUSINESS` are the exemption reasons of the named [tax presets](#tax-presets), in every locale the pack ships (`CountryDE::locales()`). So a notice has one wording in BT-120 and in your notes, including overrides of `tax.php`.

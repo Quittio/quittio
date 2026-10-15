@@ -6,6 +6,7 @@ All notable changes to this project are documented in this file. The format foll
 
 ### Added
 
+- The legal texts of the German pack (`LegalTexts`) and the text of default interest come from its language files (`resources/lang/{de,en}/legal.php`), so `lang/vendor/quittio-de` overrides them in Laravel; `LegalTexts::DEFAULT_INTEREST` is new.
 - `quittio/country-de` ships `stubs/InvoiceBuilder.stub.php`, which describes its builder macros (`smallAmount()`, `selfBilled()`, `deductAdvance()`, …) for IDEs and PHPStan.
 - Tests: generated round trips through CII and UBL, fuzzing of the XML, PDF and array input, and tests for formats, mapping, serialisation, the PDF parser, mail attachments, a second boot and the escaping of the Blade templates.
 - Documentation: [Versioning and compatibility](docs/compatibility.md) with the backwards compatibility promise; `ARCHITECTURE.md`, decision records in `docs/adr/`, `RELEASING.md`, a reworked `CONTRIBUTING.md`, an FAQ page; issue and pull request templates, `CODEOWNERS` and response times in `SECURITY.md`. Classes outside the public API (`XPathReader`, `XmlBuilder`, `Pdf\Parsing`, `CarryOver`, `ConfigMapper`, the command and preview classes, …) are marked `@internal`.
@@ -40,6 +41,7 @@ All notable changes to this project are documented in this file. The format foll
 
 ### Fixed
 
+- Default interest of payment reminders was described in English for German locales with a region such as `de_AT`.
 - `InvoiceData::fromJson()` threw PHP's `JsonException` for JSON that cannot be parsed (empty, too deep, invalid UTF-8); it now throws a `HydrationException`. `JsonSchemaValidator::validate()` reports such input as a finding.
 - `DE-USTG-08` names the limit of `Flags::SMALL_AMOUNT_LIMIT` (250.00 EUR) instead of a second, hard-coded value. The English fallback messages of four UStG rules matched their translations no longer; a test now compares every rule's fallback with `lang/en/rules.php` and requires a German message.
 - The field reference documents the UBL credit note path of BT-129 and BT-130 (`cbc:CreditedQuantity`) and no longer shows pseudo-XPath for BT-110 and BT-111. A test now evaluates every documented CII and UBL path against the XML of the sample invoices and of the official XRechnung test suite.
