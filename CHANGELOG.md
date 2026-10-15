@@ -4,6 +4,8 @@ All notable changes to this project are documented in this file. The format foll
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-16
+
 ### Added
 
 - The legal texts of the German pack (`LegalTexts`) and the text of default interest come from its language files (`resources/lang/{de,en}/legal.php`), so `lang/vendor/quittio-de` overrides them in Laravel; `LegalTexts::DEFAULT_INTEREST` is new.
@@ -193,5 +195,6 @@ First release.
 - `pdf.paper` and the VIES verification (`validation.drivers.vies.enabled`) take effect; file names of XML-only formats no longer contain a raw translation key.
 - Watermarks (draft and preview PDFs) were never printed: mPDF needs `showWatermarkText`, and PDF/A forbids their transparency. Watermarked PDFs without embedded XML are now rendered without PDF/A.
 
-[Unreleased]: https://github.com/Quittio/quittio/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/Quittio/quittio/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/Quittio/quittio/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/Quittio/quittio/releases/tag/v0.1.0
