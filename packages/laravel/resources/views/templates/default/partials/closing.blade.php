@@ -1,3 +1,4 @@
+{{-- texts->closing is pre-escaped HTML: Quittio escapes the text (and renders only safe Markdown with pdf.markdown). Print your own data with {{ }}, never with {!! !!}. --}}
 @if ($invoice->texts->closing)
     <div class="section">{!! $invoice->texts->closing !!}</div>
 @endif

@@ -1,3 +1,4 @@
+{{-- $line->description->html is pre-escaped HTML: Quittio escapes the description (and renders only safe Markdown with pdf.markdown). Print your own data with {{ }}, never with {!! !!}. --}}
 @if (count($invoice->lines) > 0)
 {{-- Fixed column widths: the PDF renderer splits the table at page breaks and inserts the carry-over. --}}
 @php($descriptionWidth = $prices ? ($vatColumn ? 65.9 : 79.9) : 135.9)

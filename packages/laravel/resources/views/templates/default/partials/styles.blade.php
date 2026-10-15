@@ -1,3 +1,4 @@
+{{-- $design->watermarkCss is a pre-escaped CSS string (every character except letters, digits and spaces is a CSS escape). Print your own data with {{ }}, never with {!! !!}. --}}
 @php
     $primary = $design->primaryColor;
     $secondary = $design->secondaryColor;
