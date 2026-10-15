@@ -156,7 +156,7 @@ php artisan quittio:render {invoice?} {--json=} {--format=} {--profile=} {--outp
 | `--json` | JSON file with invoice data in the format of `InvoiceData::toJson()` (see [Getting started](getting-started.md#json)) |
 | `--format` | Output format; default: `defaults.format`, else the automatic choice |
 | `--profile` | Profile |
-| `--output` | Existing directory (the file gets `filename()`) or target file; default: the current directory |
+| `--output` | Directory (an existing one or a path ending in `/`; the file gets `filename()`) or target file; missing directories are created; default: the current directory. A file that cannot be written fails the command |
 
 **From a JSON file.** With `--json`, the command renders like `Quittio::make($data)->format(…)->profile(…)->render()`, with the configured validation mode. It writes the main output (`contents()`): the PDF of `zugferd` and `pdf`, the XML of the XML formats. It prints the number, format, profile and path, and the findings when there are warnings. Validation errors are printed as a table and exit with `1`. A missing `--json`, an unreadable file and any other error exit with `1` as well.
 

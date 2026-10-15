@@ -8,6 +8,7 @@ use Quittio\Core\Data\InvoiceData;
 use Quittio\Core\Validation\ValidationException;
 use Quittio\Laravel\Contracts\ManagedInvoiceRenderer;
 use Quittio\Laravel\QuittioManager;
+use RuntimeException;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Throwable;
 
@@ -71,9 +72,14 @@ final class RenderCommand extends QuittioCommand
         }
 
         $cwd = getcwd();
-        $output = $this->stringOption('output') ?? ($cwd === false ? '.' : $cwd);
-        $path = is_dir($output) ? rtrim($output, '/').'/'.$result->filename() : $output;
-        file_put_contents($path, $result->contents());
+        try {
+            // A directory (existing or ending in "/") gets the file name of the invoice.
+            $path = $result->core()->save($this->stringOption('output') ?? ($cwd === false ? '.' : $cwd));
+        } catch (RuntimeException $e) {
+            $this->components->error($e->getMessage());
+
+            return self::FAILURE;
+        }
 
         $this->components->info(sprintf('%s (%s, profile %s) written to %s', $result->data()->number, $result->format(), $result->profile()?->key() ?? '–', $path));
         if ($result->validation()->hasWarnings()) {

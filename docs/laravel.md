@@ -278,7 +278,7 @@ Validation levels and messages: [Validation](validation.md). Common errors and t
 | `stream(?string $filename = null)` | HTTP response for inline display in the browser |
 | `toResponse($request)` | Same as `download()`: return the result from a controller |
 | `toMailAttachment()` | `Illuminate\Mail\Attachment` with file name and MIME type |
-| `save(?string $disk = null, ?string $path = null)` | Stores the main output on a filesystem disk, returns the path |
+| `save(?string $disk = null, ?string $path = null)` | Stores the main output on a filesystem disk, returns the path; throws a `RuntimeException` when the disk does not store it |
 | `cancel(string $number, ?string $reason = null, ?array $lines = null, Date\|DateTimeInterface\|string\|null $issueDate = null, ?string $strategy = null, ?CancellationHistory $history = null)` | Builds the cancellation of this invoice with `Quittio::cancellation()` and renders it in the formats of this run; returns its `RenderedInvoice` ([Cancellations](#cancellations)) |
 | `core()` | The core result `Quittio\Core\Rendering\RenderedInvoice` (adds `extension()` and `save(string $localPath)` for local files) |
 

@@ -6,7 +6,7 @@ namespace Quittio\Core\Rendering;
 
 use LogicException;
 use Quittio\Core\Documents\DocumentData;
-use RuntimeException;
+use Quittio\Core\Support\LocalFile;
 
 /**
  * Rendered quote, delivery note, reminder or other document (PDF and HTML, never XML).
@@ -55,15 +55,14 @@ final readonly class RenderedDocument
         return str_replace('{ext}', $extension ?? ($this->pdf === null ? 'html' : 'pdf'), $this->filenamePattern);
     }
 
+    /**
+     * Writes the output to a file, or into a directory (an existing one or a path ending in "/")
+     * with filename(); creates missing directories.
+     *
+     * @return string the written path
+     */
     public function save(string $path): string
     {
-        if (is_dir($path)) {
-            $path = rtrim($path, '/').'/'.$this->filename();
-        }
-        if (file_put_contents($path, $this->contents()) === false) {
-            throw new RuntimeException(sprintf('Unable to write "%s".', $path));
-        }
-
-        return $path;
+        return LocalFile::save($path, $this->filename(), $this->contents());
     }
 }

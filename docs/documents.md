@@ -247,7 +247,7 @@ The PDF is PDF/A-3b (the archivable PDF variant) when `pdf.pdfa` is set and no w
 
 - `data()`, `html()`, `hasPdf()`, `pdf()` (`LogicException` after `htmlOnly()`), `contents()` (PDF, otherwise HTML) and `mimeType()`;
 - `filename(?string $extension = null)`;
-- `save(string $path)`: a file, or a directory for the generated file name.
+- `save(string $path)`: a file, or a directory (an existing one or a path ending in `/`) for the generated file name; missing directories are created.
 
 The Laravel class adds `core()`, `download(?string $filename = null)`, `stream(?string $filename = null)` and `save(?string $disk = null, ?string $path = null)` (default disk `quittio.storage.disk`; a path ending in `/` gets the file name appended). It is `Responsable`, so a controller can return it as a download, and `Attachable` for mails ([Laravel integration](laravel.md)).
 

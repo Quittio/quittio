@@ -10,6 +10,7 @@ use Illuminate\Contracts\Filesystem\Factory as FilesystemFactory;
 use Illuminate\Http\Request;
 use Illuminate\Mail\Attachment;
 use Illuminate\Support\Str;
+use RuntimeException;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -52,6 +53,8 @@ trait DeliversFile
      * Stores the main output on a filesystem disk (default: quittio.storage.disk).
      *
      * @return string the stored path
+     *
+     * @throws RuntimeException when the disk does not store the file
      */
     public function save(?string $disk = null, ?string $path = null): string
     {
@@ -64,7 +67,10 @@ trait DeliversFile
         $configured = $container->make(Repository::class)->get('quittio.storage.disk');
         $disk ??= is_string($configured) && $configured !== '' ? $configured : null;
         $filesystem = $container->make(FilesystemFactory::class)->disk($disk);
-        $filesystem->put($path, $this->contents());
+        // Disks without "throw" report a failed write only through the return value.
+        if (! $filesystem->put($path, $this->contents())) {
+            throw new RuntimeException(sprintf('Unable to store "%s" on the disk "%s".', $path, $disk ?? 'default'));
+        }
 
         return $path;
     }

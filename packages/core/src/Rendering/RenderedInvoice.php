@@ -7,8 +7,8 @@ namespace Quittio\Core\Rendering;
 use LogicException;
 use Quittio\Core\Data\InvoiceData;
 use Quittio\Core\Profiles\Profile;
+use Quittio\Core\Support\LocalFile;
 use Quittio\Core\Validation\ValidationResult;
-use RuntimeException;
 
 /**
  * Result of a render run. With several formats, every format is
@@ -171,18 +171,6 @@ final class RenderedInvoice
      */
     public function save(string $path): string
     {
-        if (is_dir($path)) {
-            $path = rtrim($path, '/').'/'.$this->filename();
-        }
-
-        $directory = dirname($path);
-        if (! is_dir($directory) && ! mkdir($directory, 0775, true) && ! is_dir($directory)) {
-            throw new RuntimeException(sprintf('Unable to create the directory "%s".', $directory));
-        }
-        if (file_put_contents($path, $this->contents()) === false) {
-            throw new RuntimeException(sprintf('Unable to write "%s".', $path));
-        }
-
-        return $path;
+        return LocalFile::save($path, $this->filename(), $this->contents());
     }
 }

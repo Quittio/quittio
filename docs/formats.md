@@ -406,7 +406,7 @@ $result->as('xrechnung-cii')->xml();
 | `contents(): string`, `extension(): string`, `mimeType(): string` | The main output (PDF, otherwise XML, HTML, JSON), its extension and MIME type. |
 | `filename(?string $extension = null): string` | File name of the main output, or with another extension. |
 | `hashes(): array` | SHA-256 hashes of PDF, XML and HTML (`['pdf' => …, 'xml' => …]`), e.g. for archiving. |
-| `save(string $path): string` | Writes the main output to a file, or into a directory with `filename()`; creates missing directories and returns the path. |
+| `save(string $path): string` | Writes the main output to a file, or into a directory (an existing one or a path ending in `/`) with `filename()`; creates missing directories and returns the path. Throws a `RuntimeException` when the file cannot be written. |
 
 ### File names
 

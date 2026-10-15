@@ -135,6 +135,20 @@ it('saves to a directory with the configured file name', function () {
         ->and(file_get_contents($path))->toStartWith('<?xml');
 });
 
+it('saves into a new directory given with a trailing slash', function () {
+    $dir = sys_get_temp_dir().'/quittio-save-'.bin2hex(random_bytes(4)).'/2026/';
+    $path = quittio()->make(Invoices::simple())->format('cii')->render()->save($dir);
+
+    expect($path)->toStartWith($dir)->toEndWith('.xml')
+        ->and(is_file($path))->toBeTrue();
+});
+
+it('throws when the file cannot be written', function () {
+    $file = tempnam(sys_get_temp_dir(), 'quittio');
+
+    quittio()->make(Invoices::simple())->format('cii')->render()->save($file.'/invoice.xml');
+})->throws(RuntimeException::class, 'Unable to create the directory');
+
 it('reads and validates incoming files', function () {
     $quittio = quittio();
     $pdf = $quittio->make(Invoices::simple())->format('zugferd')->render()->pdf();

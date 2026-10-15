@@ -182,6 +182,20 @@ it('stores on the configured disk by default', function () {
     Storage::disk('archive')->assertExists('2026/Rechnung_RE-2026-0042.pdf');
 });
 
+it('throws when a disk does not store the file', function () {
+    // A directory in the place of the file: the local disk reports the failed write by returning false.
+    $root = sys_get_temp_dir().'/quittio-disk-'.bin2hex(random_bytes(4));
+    mkdir($root.'/RE-2026-0042.xml', 0775, true);
+    config()->set('filesystems.disks.broken', ['driver' => 'local', 'root' => $root, 'throw' => false]);
+
+    try {
+        Quittio::make(invoice())->format('cii')->render()->save('broken', 'RE-2026-0042.xml');
+    } finally {
+        rmdir($root.'/RE-2026-0042.xml');
+        rmdir($root);
+    }
+})->throws(RuntimeException::class, 'Unable to store "RE-2026-0042.xml" on the disk "broken"');
+
 it('renders in the queue', function () {
     Queue::fake();
     Quittio::make(invoice())->format('zugferd')->queue()->save('invoices', 'queued/');
