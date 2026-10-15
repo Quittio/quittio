@@ -85,7 +85,22 @@ function runDocsExample(string $code, array $variables = []): array
 }
 
 /**
- * Runs all code blocks of one heading in order and checks their printed output.
+ * Applies a block of the page that shows configuration ("// config/quittio.php", then array
+ * entries): every key replaces the configured one, on top of the defaults of the package.
+ */
+function applyDocsConfiguration(string $code): void
+{
+    $values = eval('return ['.$code.'];');
+    $defaults = require dirname(__DIR__, 2).'/config/quittio.php';
+    foreach ($values as $key => $value) {
+        config()->set('quittio.'.$key, is_array($value) && is_array($defaults[$key] ?? null) ? array_replace($defaults[$key], $value) : $value);
+    }
+    Quittio::flush();
+}
+
+/**
+ * Runs all code blocks of one heading in order and checks their printed output; configuration
+ * blocks are applied.
  *
  * @param  array<string, mixed>  $variables
  * @return array<string, mixed>
@@ -94,6 +109,11 @@ function runDocsExampleSection(string $heading, array $variables = []): array
 {
     expect(docsExamples())->toHaveKey($heading);
     foreach (docsExamples()[$heading] as $block) {
+        if (str_starts_with($block['code'], '// config/quittio.php')) {
+            applyDocsConfiguration($block['code']);
+
+            continue;
+        }
         $variables = runDocsExample($block['code'], $variables);
         if ($block['output'] !== null) {
             expect($variables['__output'])->toBe($block['output'], $heading);
@@ -202,9 +222,7 @@ beforeEach(function () {
     }
 
     // The seller configuration at the top of the page.
-    $setup = eval('return ['.docsExamples()['Examples'][0]['code'].'];');
-    config()->set('quittio.seller', $setup['seller'] + config('quittio.seller'));
-    Quittio::flush();
+    applyDocsConfiguration(docsExamples()['Examples'][0]['code']);
     Storage::fake('invoices');
     Storage::fake('documents');
 });

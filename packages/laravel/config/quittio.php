@@ -41,9 +41,9 @@ return [
     | Seller
     |--------------------------------------------------------------------------
     | Used by Seller::fromConfig(). With quittio/managed, issuer profiles replace it.
-    | small_business: Seller::apply() marks invoices of a small business (DE:
-    |                 section 19 UStG), invoices with VAT are then rejected. Use
-    |                 VatPreset::SmallBusiness for the lines.
+    | small_business: Quittio::invoice() marks invoices of a small business (DE:
+    |                 section 19 UStG): lines without ->vat() get the small business
+    |                 exemption (VatPreset::SmallBusiness), invoices with VAT are rejected.
     | identifiers:    seller identifiers (BT-29) as ['value' => ..., 'scheme' => null].
     |                 Without a VAT identifier (e.g. a small business with tax number
     |                 only) EN 16931 needs BT-29 or legal_registration (BT-30), BR-CO-26.
@@ -59,7 +59,7 @@ return [
         'contact' => ['name' => null, 'phone' => null, 'email' => null],
         'electronic_address' => ['value' => null, 'scheme' => 'EM'],
         'bank_accounts' => [['iban' => null, 'bic' => null, 'name' => null]],
-        'small_business' => false,
+        'small_business' => (bool) env('QUITTIO_SELLER_SMALL_BUSINESS', false),
     ],
 
     /*

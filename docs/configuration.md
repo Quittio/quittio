@@ -41,6 +41,8 @@ replace the `seller` section below.
 | `QUITTIO_SELLER_NAME` | `seller.name` | – |
 | `QUITTIO_SELLER_VAT_ID` | `seller.vat_id` | – |
 | `QUITTIO_SELLER_TAX_NUMBER` | `seller.tax_number` | – |
+| `QUITTIO_SELLER_SMALL_BUSINESS` | `seller.small_business` | `false` |
+| `QUITTIO_DEFAULT_VAT` | `defaults.vat` | – (standard rate of the seller's country) |
 | `QUITTIO_VALIDATION` | `validation.mode` | `error` |
 | `QUITTIO_GUARD` | `validation.mandatory_field_guard` | – (`exception`, in production `log`) |
 | `QUITTIO_KOSIT_URL` | `validation.drivers.kosit.url` | `http://127.0.0.1:8081` (start the validator with `-P 8081`; its own default port is 8080) |
@@ -129,7 +131,7 @@ issuer profiles replace it.
 | `seller.electronic_address.value` | string\|null | `null` | Electronic address (BT-34); added only when set |
 | `seller.electronic_address.scheme` | string | `'EM'` | Scheme of the electronic address (EAS code, `EM` = e-mail) |
 | `seller.bank_accounts` | list | `[['iban' => null, 'bic' => null, 'name' => null]]` | `Quittio::invoice()` (`Seller::apply()`) adds a credit transfer with the first entry whose `iban` is not empty (`bic` and `name` optional); the other entries are ignored. |
-| `seller.small_business` | bool | `false` | `Quittio::invoice()` (`Seller::apply()`) marks the invoice as an invoice of a small business (Germany: § 19 UStG, `Meta::FLAG_SMALL_BUSINESS`); country packs then reject VAT on it (Germany also the intra-community supply exemption, except for new vehicles). Use `VatPreset::SmallBusiness` for the lines. |
+| `seller.small_business` | bool | `false` (`QUITTIO_SELLER_SMALL_BUSINESS`) | `Quittio::invoice()` (`Seller::apply()`) marks the invoice as an invoice of a small business (Germany: § 19 UStG, `Meta::FLAG_SMALL_BUSINESS`); lines without `->vat()` get the small business preset of the country pack (Germany: `VatPreset::SmallBusiness`), and country packs reject VAT on the invoice (Germany also the intra-community supply exemption, except for new vehicles). |
 
 ## PDF and design
 

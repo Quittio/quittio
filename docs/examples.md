@@ -5,6 +5,7 @@ Complete examples for common situations, from a service invoice to an incoming e
 The examples use the Laravel facade and this seller in `config/quittio.php` ([Seller](configuration.md#seller)):
 
 ```php
+// config/quittio.php
 'seller' => [
     'name' => 'Muster GmbH',
     'vat_id' => 'DE123456789',
@@ -145,40 +146,44 @@ $result->data()->totals->amountDue;                    // EUR 0.00
 
 ### Small business
 
-A small business under section 19 UStG charges no VAT. This seller has a tax number but no VAT identifier; it is not the seller of the configuration, so the example starts with `InvoiceBuilder::make()` and renders with `Quittio::make()`:
+A small business under section 19 UStG charges no VAT. It says so once, in the configuration; this seller has a tax number but no VAT identifier:
 
 ```php
-use Quittio\Core\Builder\InvoiceBuilder;
+// config/quittio.php of the small business
+'seller' => [
+    'name' => 'Lisa Klein Grafikdesign',
+    'tax_number' => '21/815/08150',
+    'identifiers' => [['value' => '21/815/08150', 'scheme' => null]],   // BT-29: needed without a VAT identifier
+    'address' => ['line1' => 'Gartenstraße 7', 'postcode' => '12345', 'city' => 'Musterstadt', 'country' => 'DE'],
+    'electronic_address' => ['value' => 'hallo@lisaklein.de', 'scheme' => 'EM'],
+    'bank_accounts' => [['iban' => 'DE89370400440532013000', 'name' => 'Lisa Klein']],
+    'small_business' => true,                                            // or QUITTIO_SELLER_SMALL_BUSINESS=true
+],
+```
+
+Then every invoice is written as usual, without VAT on the lines:
+
+```php
 use Quittio\Core\Builder\Party;
-use Quittio\Core\Data\Meta;
-use Quittio\Core\Enums\PaymentMeansCode;
 use Quittio\Core\Enums\UnitCode;
 use Quittio\Laravel\Facades\Quittio;
 
-$invoice = InvoiceBuilder::make()
-    ->seller(Party::make('Lisa Klein Grafikdesign')
-        ->taxNumber('21/815/08150')
-        ->identifier('21/815/08150')                     // BT-29: required without a VAT identifier (BR-CO-26)
-        ->address('Gartenstraße 7', '12345', 'Musterstadt', 'DE')
-        ->electronicAddress('hallo@lisaklein.de', 'EM'))
-    ->flag(Meta::FLAG_SMALL_BUSINESS)                    // no VAT: lines get VatPreset::SmallBusiness
+$result = Quittio::invoice()
     ->number('2026-017')
     ->issueDate('2026-10-07')
     ->buyer(Party::make('Café Sonnenschein GmbH')->address('Am Markt 3', '12345', 'Musterstadt', 'DE'))
     ->line('Logo design', netPrice: '650.00', unit: UnitCode::LumpSum)
     ->line('Business card layout', netPrice: '55.00', quantity: 2, unit: UnitCode::Hour)
-    ->payment(PaymentMeansCode::SepaCreditTransfer, iban: 'DE89370400440532013000', accountName: 'Lisa Klein')
     ->paymentTerms(fn ($t) => $t->dueInDays(14))
-    ->build();
+    ->render();
 
-$result = Quittio::make($invoice)->render();
 $result->data()->totals->amountDue;                    // EUR 760.00, no VAT
 ```
 
-- The flag `Meta::FLAG_SMALL_BUSINESS` marks a small business invoice: lines without `vat()` get `VatPreset::SmallBusiness`, and the German pack rejects VAT on the invoice (`DE-USTG-09`). With `Seller::apply()` set `quittio.seller.small_business` to `true` instead.
+- `seller.small_business` makes `Quittio::invoice()` flag the invoice as small business invoice (`Meta::FLAG_SMALL_BUSINESS`): lines without `vat()` get `VatPreset::SmallBusiness`, and the German pack rejects VAT on the invoice (`DE-USTG-09`). Only an invoice started with `InvoiceBuilder::make()` and an own seller needs `->flag(Meta::FLAG_SMALL_BUSINESS)`.
 - Every line carries the exemption text "Steuerfreie Leistung nach § 19 Abs. 1 UStG (Steuerbefreiung für Kleinunternehmer)." in PDF and XML.
 - Invoices of a small business need no service date (section 34a UStDV), but the tax number or VAT identifier ([Small businesses](country-packs.md#small-businesses)).
-- Without a VAT identifier, EN 16931 needs a seller identifier (BT-29) or a register number (BT-30, `legalRegistration()`), otherwise rendering fails with `BR-CO-26`.
+- Without a VAT identifier, EN 16931 needs a seller identifier (BT-29, `seller.identifiers`) or a register number (BT-30, `seller.legal_registration`), otherwise rendering fails with `BR-CO-26`; here the tax number serves as identifier.
 
 ### Public sector
 
