@@ -17,6 +17,7 @@ In Laravel, `Quittio::quote()`, `Quittio::orderConfirmation()`, `Quittio::delive
 
 ```php
 use Quittio\Core\Builder\Party;
+use Quittio\Core\Enums\UnitCode;
 use Quittio\Laravel\Facades\Quittio;
 
 $quote = Quittio::quote()
@@ -24,9 +25,9 @@ $quote = Quittio::quote()
     ->issueDate('2026-10-06')
     ->buyer(Party::make('Kunde AG')->address('Weg 1', '54321', 'Beispielstadt', 'DE'))
     ->validUntil('2026-10-31')
-    ->line('Consulting', netPrice: '120.00', quantity: 10, unit: 'HUR')
-    ->optionalLine('Training', netPrice: '800.00', unit: 'DAY')
-    ->alternativeLine('1', 'Senior consulting', netPrice: '150.00', quantity: 10, unit: 'HUR')
+    ->line('Consulting', netPrice: '120.00', quantity: 10, unit: UnitCode::Hour)
+    ->optionalLine('Training', netPrice: '800.00', unit: UnitCode::Day)
+    ->alternativeLine('1', 'Senior consulting', netPrice: '150.00', quantity: 10, unit: UnitCode::Hour)
     ->build();
 
 Quittio::document($quote)->locale('de')->render()->download();
@@ -88,6 +89,7 @@ Delivery notes print quantities without prices or totals. Lines given as builder
 ```php
 use Brick\Math\BigDecimal;
 use Quittio\Core\Documents\Package;
+use Quittio\Core\Enums\UnitCode;
 use Quittio\Laravel\Facades\Quittio;
 
 $note = Quittio::deliveryNote()
@@ -95,8 +97,8 @@ $note = Quittio::deliveryNote()
     ->buyer($buyer)
     ->reference('AB-2026-0003')
     ->deliveryDate('2026-10-02')
-    ->serialisedLine('Router', ['SN-1001', 'SN-1002'], quantity: 2, unit: 'C62')
-    ->line(['name' => 'Cable', 'quantity' => [5, 'MTR']])
+    ->serialisedLine('Router', ['SN-1001', 'SN-1002'], quantity: 2, unit: UnitCode::Unit)
+    ->line(['name' => 'Cable', 'quantity' => [5, UnitCode::Metre]])
     ->package(new Package('P1', type: 'Box', weightKg: BigDecimal::of('2.5'), dimensions: '30 × 20 × 10 cm', trackingNumber: '00340434161094042557'))
     ->build();
 ```

@@ -16,7 +16,11 @@ The examples use the Laravel facade and this seller in `config/quittio.php` ([Se
 ],
 ```
 
-`Quittio::invoice()` starts an invoice with this seller and its bank account, and `->render()` at the end of the chain renders it ([Starting invoices](laravel.md#starting-invoices)); `Quittio::quote()`, `Quittio::paymentReminder()` and the other document methods work the same way. `invoices` and `documents` are filesystem disks of your application. A line is its name with named values (`->line('Hosting', netPrice: '49.00')`), `Line::make()` when it needs further values, or an array; parties are `Party::make()` or your own model ([Lines](building-invoices.md#lines), [Seller and buyer](building-invoices.md#seller-and-buyer)). A line without `quantity()` has the quantity 1, and a line without `vat()` gets 19 %, the standard rate of the German seller ([Default VAT](building-invoices.md#default-vat)); the examples set VAT only where it differs. Without Laravel, the same builder works with the core instance ([Without Laravel](#without-laravel)).
+`Quittio::invoice()` starts an invoice with this seller and its bank account, and `->render()` at the end of the chain renders it ([Starting invoices](laravel.md#starting-invoices)); `Quittio::quote()`, `Quittio::paymentReminder()` and the other document methods work the same way. `invoices` and `documents` are filesystem disks of your application. The examples follow [one way to write it](getting-started.md#one-way-to-write-it):
+
+- A line is its name with named values: `->line('Hosting', netPrice: '49.00', quantity: 12, unit: UnitCode::Month)`. Without `quantity` it is 1, without `vat` it is 19 %, the standard rate of the German seller ([Default VAT](building-invoices.md#default-vat)); the examples set VAT only where it differs.
+- `Line::make('…', netPrice: …)->…` appears only where a line needs more than these values; the example says why.
+- Lines from data appear as arrays or models, the customer as `Party::make()` or as your model, payment terms as `->dueInDays()` and `->cashDiscount()`. Without Laravel, the same builder works with the core instance ([Without Laravel](#without-laravel)).
 
 | Example | Shows |
 |---|---|
@@ -367,13 +371,14 @@ $result = Quittio::invoice()
         ->vatId('ATU12345675')
         ->address('Mariahilfer Straße 1', '1060', 'Wien', 'AT'))
     ->deliverTo('Kunde Handels GmbH, Lager', Address::make('Industriestraße 4', '4020', 'Linz', 'AT'))
+    // Item number and country of origin go beyond the named values: Line::make()
     ->line(Line::make('Industrial pump', netPrice: '1450.00', quantity: 2, unit: UnitCode::Piece, vat: VatPreset::IntraCommunitySupply)
-        ->sellerId('P-200')                              // further values on the line builder
+        ->sellerId('P-200')
         ->originCountry('DE'))
     ->render();
 ```
 
-- `Line::make()` takes the same named values as `line()` and allows further ones, here the item number and the country of origin.
+- The line needs an item number and a country of origin, so it uses `Line::make()`, which takes the same named values as `line()` and allows the other methods of the line builder.
 - `VatPreset::IntraCommunitySupply` sets VAT category K with 0 % and the text "Steuerfreie innergemeinschaftliche Lieferung (§ 4 Nr. 1b i. V. m. § 6a UStG)".
 - EN 16931 requires the buyer's VAT identifier, the delivery date and the country of the deliver-to address for category K (`BR-IC-02`, `BR-IC-11`, `BR-IC-12`). The German pack warns after the 15th of the following month (`DE-USTG-15`).
 - The automatic choice renders ZUGFeRD ([Reverse charge, intra-community supplies and VAT identifiers](country-packs.md#reverse-charge-intra-community-supplies-and-vat-identifiers)).
@@ -729,13 +734,14 @@ The design of a single invoice:
 use Quittio\Core\Builder\Party;
 use Quittio\Core\Data\Presentation\Colors;
 use Quittio\Core\Data\Presentation\Presentation;
+use Quittio\Core\Enums\UnitCode;
 use Quittio\Laravel\Facades\Quittio;
 
 $result = Quittio::invoice()
     ->number('RE-2026-0150')
     ->deliveryDate('2026-10-14')
     ->buyer(Party::make('Kunde AG')->vatId('DE987654321')->address('Bahnhofstraße 5', '54321', 'Beispielstadt', 'DE'))
-    ->line('Consulting', netPrice: '120.00', quantity: 4, unit: 'HUR')
+    ->line('Consulting', netPrice: '120.00', quantity: 4, unit: UnitCode::Hour)
     ->presentation(new Presentation(
         logo: storage_path('app/logo.png'),
         colors: new Colors(primary: '#0f766e'),

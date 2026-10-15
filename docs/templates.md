@@ -284,14 +284,13 @@ Line-level hints are `LinePresentation` (`groupId`, `highlight`, `showGrossPrice
 use Quittio\Core\Builder\Line;
 use Quittio\Core\Data\Presentation\Colors;
 use Quittio\Core\Data\Presentation\Presentation;
-use Quittio\Country\DE\Tax\VatPreset;
 use Quittio\Laravel\Facades\Quittio;
 
 $invoice = Quittio::invoice()
     // ...
     ->presentation(['logo' => storage_path('app/logo.png'), 'introText' => 'Thank you for your order.'])
     ->group('hardware', 'Hardware')                                     // line group with subtotal
-    ->line(Line::make('Router', netPrice: '89.00', quantity: 2)->group('hardware'))
+    ->line(Line::make('Router', netPrice: '89.00', quantity: 2)->group('hardware'))   // group(): Line::make()
     ->build();
 
 Quittio::make($invoice)

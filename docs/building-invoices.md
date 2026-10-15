@@ -273,16 +273,16 @@ use Quittio\Core\Enums\IdentifierScheme;
 | `updateLine(string $id, ?callable $change = null, netPrice, quantity, priceInclVat, name, description)` | Changes an existing line: with the named values (`->updateLine('2', netPrice: '80.00', quantity: 3)`), or with a callable that receives the `InvoiceLine` and returns the changed one. The line net amount is reset, and percentage allowances and charges of the line are recalculated from the new line amount. |
 | `removeLine(string $id)` | Removes an existing line by its identifier (BT-126). |
 
-A line can be given as:
+A line can be given in these forms; use the first one that fits:
 
-| Form | Example |
-|---|---|
-| The name, with the common values as named arguments | `->line('Web development', netPrice: '95.00', quantity: 24, unit: UnitCode::Hour)` |
-| `Line::make()` (`Quittio\Core\Builder\Line`), a `LineBuilder` with the same arguments, for everything else | `->line(Line::make('Web development', netPrice: '95.00')->sellerId('WD-1')->allowance(percent: '10', reason: 'Framework agreement'))` |
-| An array whose keys are methods of the `LineBuilder` | `->line(['name' => 'Hosting', 'quantity' => [1, UnitCode::Month], 'netPrice' => '49.00'])` |
-| An application model implementing `ProvidesInvoiceLine` ([Application models](#application-models)) | `->lines($order->items)` |
-| A callable that receives a new `LineBuilder` | `->line(fn (LineBuilder $l) => $l->name('Travel expenses')->netPrice('120.00'))` |
-| A finished `InvoiceLine`, taken as it is | `->line($invoice->lines[0])` |
+| Form | Use it when | Example |
+|---|---|---|
+| The name with named values | the line needs only price, quantity, unit, VAT or description (the usual case) | `->line('Web development', netPrice: '95.00', quantity: 24, unit: UnitCode::Hour)` |
+| `Line::make()` (`Quittio\Core\Builder\Line`) | the line needs more: item number, line allowance or charge, list price, base quantity, period, sub lines, line group. It takes the same named values and returns the `LineBuilder` for the other methods. | `->line(Line::make('Web development', netPrice: '95.00')->sellerId('WD-1')->allowance(percent: '10', reason: 'Framework agreement'))` |
+| An application model implementing `ProvidesInvoiceLine` ([Application models](#application-models)) | the lines come from your models | `->lines($order->items)` |
+| An array whose keys are methods of the `LineBuilder` | the lines come as data, e.g. database rows or a JSON request | `->lines([['name' => 'Hosting', 'quantity' => [1, UnitCode::Month], 'netPrice' => '49.00']])` |
+| A callable that receives a new `LineBuilder` | rarely; the forms above cover the same | `->line(fn (LineBuilder $l) => $l->name('Travel expenses')->netPrice('120.00'))` |
+| A finished `InvoiceLine`, taken as it is | you copy a line of existing data | `->line($invoice->lines[0])` |
 
 The named arguments of `line()` and `Line::make()` are `netPrice` (BT-146, the price without VAT), `priceInclVat` (the price including VAT, [gross price mode](#gross-price-mode)), `quantity` (default 1), `unit`, `vat` (a preset or a category without rate; default the [default VAT](#default-vat)) and `description`; they are allowed only together with a name. A string is always the name of the line, never a callable.
 
@@ -294,7 +294,7 @@ use Quittio\Core\Enums\UnitCode;
 use Quittio\Country\DE\Tax\VatPreset;
 
 $builder->lines([
-    Line::make('Web development', netPrice: '95.00', quantity: 24, unit: UnitCode::Hour),
+    Line::make('Web development', netPrice: '95.00', quantity: 24, unit: UnitCode::Hour),   // in a list: Line::make()
     ['name' => 'Hosting', 'quantity' => [1, UnitCode::Month], 'netPrice' => '49.00'],
     ['name' => 'Book', 'netPrice' => '39.00', 'vat' => VatPreset::Reduced7],
 ]);
@@ -362,7 +362,8 @@ Line identifiers: a line without `id()` gets its position (1, 2, 3 …), skippin
 ### Prices
 
 ```php
-->line(Line::make('Paper A4', quantity: 5000, unit: 'H87', vat: VatPreset::Standard19)
+// A base quantity or a list price needs Line::make()
+->line(Line::make('Paper A4', quantity: 5000, unit: UnitCode::Piece, vat: VatPreset::Standard19)
     ->netPrice('12.50', baseQuantity: 1000))                 // 12.50 per 1000 sheets: 62.50
 ->line(Line::make('Monitor', quantity: 2, vat: VatPreset::Standard19)
     ->listPrice('299.00', discount: '30.00'))                // net price 269.00
@@ -375,6 +376,7 @@ The line amount before allowances and charges is round2(quantity × net price / 
 A line allowance or charge has an amount, or a percentage of a base amount. Without a base amount the base is the line amount before allowances and charges (quantity × price); the calculator writes it to BT-137/BT-142. EN 16931 requires a reason text or a reason code (`AllowanceReasonCode` and `ChargeReasonCode`, see [Document level allowances and charges](#document-level-allowances-and-charges)).
 
 ```php
+// Line allowances and charges need Line::make()
 ->line(Line::make('Seminar', netPrice: '400.00', quantity: 3, vat: VatPreset::Standard19)
     ->allowance(percent: '10', reason: 'Early bird')       // 120.00 of 1200.00
     ->charge('25.00', reason: 'Materials', reasonCode: 'ABK'))
@@ -398,6 +400,7 @@ Restrictions: all lines of the invoice use `priceInclVat()`; gross price lines h
 ### Sub lines
 
 ```php
+// Sub lines need Line::make() for the parent line; the sub lines take the short form
 ->line(Line::make('Workstation', vat: VatPreset::Standard19)
     ->subLine('Computer', netPrice: '900.00', vat: VatPreset::Standard19)
     ->subLine('Monitor', netPrice: '250.00', quantity: 2, vat: VatPreset::Standard19))
@@ -675,7 +678,7 @@ use Quittio\Core\Support\Date;
 
 ->presentation(['introText' => 'Thank you for your order.', 'showGrossPrices' => true])
 ->group('hardware', 'Hardware')
-->line(Line::make('Notebook', netPrice: '1200.00', vat: VatPreset::Standard19)->group('hardware'))
+->line(Line::make('Notebook', netPrice: '1200.00', vat: VatPreset::Standard19)->group('hardware'))   // group(): Line::make()
 ```
 
 The flags `declared_amounts`, `declared_amounts_recalculated`, `cancellation_vat_aligned` and those with the prefixes `amounts_fingerprint:` and `declared_vat_in_tax_currency:` are set by Quittio itself ([Declared amounts](#declared-amounts)); do not set them.

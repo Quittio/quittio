@@ -46,7 +46,22 @@ $invoice = Quittio::invoice()                          // seller and bank accoun
     ->build();
 ```
 
-`Quittio::invoice()` starts an `InvoiceBuilder` with the seller, the first bank account and the small business setting of `config/quittio.php`; `build()` returns the data, `render()` instead renders it right away ([Rendering](#rendering)). A line is its name with named values: `netPrice` (without VAT) or `priceInclVat`, `quantity` (default 1), `unit`, `vat` and `description`. For further values (item number, line allowance, period) use `Line::make('…', netPrice: '…')->…`; arrays, models and callables work as well ([Lines](building-invoices.md#lines)). Without `vat()` it gets the default VAT: `quittio.defaults.vat`, otherwise the standard rate of the seller's country (Germany: 19 %; small businesses: the small business exemption), see [Default VAT](building-invoices.md#default-vat).
+`Quittio::invoice()` starts an `InvoiceBuilder` with the seller, the first bank account and the small business setting of `config/quittio.php`; `build()` returns the data, `render()` instead renders it right away ([Rendering](#rendering)).
+
+### One way to write it
+
+Every part of an invoice has one usual form. The documentation and the examples use these forms; the other forms exist for special cases and are explained in [Building invoices](building-invoices.md).
+
+| You need | Write |
+|---|---|
+| A line with price, quantity, unit, VAT or description | `->line('Hosting', netPrice: '49.00', quantity: 12, unit: UnitCode::Month)`. Without `quantity` it is 1, without `vat` the [default VAT](building-invoices.md#default-vat) applies (19 % for a German seller). |
+| A line with more than that: item number, line discount, list price, period, sub lines, line group | `->line(Line::make('Pump', netPrice: '1450.00', quantity: 2)->sellerId('P-200'))`. `Line::make()` takes the same named values as `line()` and returns the line builder for the other methods. |
+| Many lines from your data | `->lines($order->items)` with models that implement `ProvidesInvoiceLine`, or `->lines($rows)` with arrays such as `['name' => 'Hosting', 'netPrice' => '49.00']` |
+| The customer | `->buyer($customer)` with a model that implements `ProvidesParty`, otherwise `->buyer(Party::make('Kunde AG')->address(…))` |
+| Payment terms | `->dueInDays(14)->cashDiscount(days: 7, percent: '2.00')` |
+| The result | `->render()` for PDF and XML, `->build()` for the data only, e.g. to store a draft |
+
+The seller comes from the configuration; set it in code only for another company (see [Starting invoices](laravel.md#starting-invoices)).
 
 Amounts and quantities are strings (or `Brick\Math` values) to avoid floating point errors; floats are rejected with an `InvalidArgumentException`. Rounding follows EN 16931 (half up, two decimals for amounts, VAT per VAT group). References, notes, further parties, allowances and charges, payment means such as direct debit, attachments, gross prices and all other options are described in [Building invoices](building-invoices.md); the German tax presets (`VatPreset::Standard19`, `Reduced7`, `ReverseChargeEu` …) in [Tax presets](country-packs.md#tax-presets).
 
