@@ -9,7 +9,8 @@ namespace Quittio\Core\Countries;
  *
  * Applied by the core: $locale (locale of a run that names none), $paper (paper size unless the
  * presentation or the configuration sets one), $letterLayout (letter layout unless the
- * presentation names one) and $paymentQr (what the payment QR code type "auto" prints).
+ * presentation names one), $paymentQr (what the payment QR code type "auto" prints) and
+ * $vatPreset and $smallBusinessVatPreset (VAT of lines without one, see CountryDefaultVat).
  * Informational metadata for applications, not applied by the core: $currency, $timezone,
  * $profile and $requiredLocales.
  */
@@ -24,6 +25,10 @@ final readonly class CountryDefaults
      * @param  list<string>  $requiredLocales  languages an invoice must (also) be issued in; a run renders one locale
      * @param  string  $paymentQr  payment QR code of the type "auto": girocode (the pack's generator, otherwise the
      *         EPC GiroCode), swiss-qr-bill or another type (the pack's generator, otherwise none) or none
+     * @param  string|null  $vatPreset  key of the preset of the pack for lines without VAT treatment, usually the
+     *         standard rate
+     * @param  string|null  $smallBusinessVatPreset  key of that preset for invoices of small businesses
+     *         (Meta::FLAG_SMALL_BUSINESS)
      */
     public function __construct(
         public string $currency = 'EUR',
@@ -34,5 +39,7 @@ final readonly class CountryDefaults
         public string $profile = 'en16931',
         public array $requiredLocales = [],
         public string $paymentQr = 'girocode',
+        public ?string $vatPreset = null,
+        public ?string $smallBusinessVatPreset = null,
     ) {}
 }

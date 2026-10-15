@@ -59,6 +59,7 @@ singleton.
 | `renderDocument(DocumentData $document, RenderOptions $options)` | `RenderedDocument` | The render run behind `PendingDocument::render()` |
 | `extend(string $type, string $name, Closure $factory)` | `QuittioManager` | Registers a renderer, validator, serializer or format resolver (see [Extensions](#extensions)) |
 | `registerCountry(CountryPack $pack)` | `QuittioManager` | Registers a country pack; it wins over configured and discovered packs with the same code |
+| `defaultVat(?string $sellerCountry, bool $smallBusiness)` | `?TaxPreset` | Default VAT of lines without `->vat()`: `defaults.vat`, otherwise the standard preset of the seller's country pack, for small businesses its small business preset ([Default VAT](building-invoices.md#default-vat)); the service provider installs it with `InvoiceBuilder::useDefaultVat()` |
 | `countries()` | `CountryRegistry` | Active country packs: `all()`, `has($code)`, `get($code)`, `getOrGeneric($code)` |
 | `profiles()` | `ProfileRegistry` | Profiles of the core and the country packs: `all()`, `has($key)`, `get($key)`, `bySpecificationId($id)` |
 | `formats()` | `FormatRegistry` | Output formats: `all()`, `has($key)`, `get($key)` |
@@ -209,6 +210,7 @@ implements `Illuminate\Contracts\Mail\Attachable` and `Illuminate\Contracts\Supp
 | `toResponse($request)` | Same as `download()`: return the result from a controller |
 | `toMailAttachment()` | `Illuminate\Mail\Attachment` with file name and MIME type |
 | `save(?string $disk = null, ?string $path = null)` | Stores the main output on a filesystem disk, returns the path |
+| `cancel(string $number, ?string $reason = null, ?array $lines = null, Date\|DateTimeInterface\|string\|null $issueDate = null, ?string $strategy = null, ?CancellationHistory $history = null)` | Builds the cancellation of this invoice with `Quittio::cancellation()` and renders it in the formats of this run; returns its `RenderedInvoice` ([Cancellations](#cancellations)) |
 | `core()` | The core result `Quittio\Core\Rendering\RenderedInvoice` (adds `extension()` and `save(string $localPath)` for local files) |
 
 ### File names
@@ -325,6 +327,10 @@ immediately.
 ### Cancellations
 
 ```php
+$result = Quittio::make($invoice)->render();
+$cancellation = $result->cancel('ST-2026-0001', reason: 'Charged twice');      // rendered in the formats of $result
+
+// stored data: build the cancellation and render it
 $builder = Quittio::cancellation($original, 'ST-2026-0001', reason: 'Charged twice');
 Quittio::make($builder)->render();
 
@@ -332,7 +338,7 @@ Quittio::make($builder)->render();
 Quittio::cancellation($original, 'ST-2026-0002', lines: [['line' => '2', 'quantity' => 1]], history: $history);
 ```
 
-The strategy (`credit_note` or `negative_invoice`) comes from the argument, then
+`$result->cancel()` takes the arguments of `Quittio::cancellation()` (`reason`, `lines`, `issueDate`, `strategy`, `history`) and renders the cancellation with the formats of the invoice, so a cancellation of an XRechnung is an XRechnung again. The strategy (`credit_note` or `negative_invoice`) comes from the argument, then
 `corrections.cancellation_strategy`, then the country pack; the locale from the original,
 then `defaults.locale`, then the country pack. Details:
 [Getting started](getting-started.md#rendering) and, for stored invoices,
@@ -341,14 +347,15 @@ then `defaults.locale`, then the country pack. Details:
 ## Documents
 
 ```php
+use Quittio\Core\Builder\Line;
+use Quittio\Core\Builder\Party;
 use Quittio\Core\Documents\DocumentBuilder;
-use Quittio\Core\Enums\VatCategory;
 use Quittio\Laravel\Seller;
 
 $quote = DocumentBuilder::quote()->number('AN-2026-0007')->issueDate('2026-10-01')
     ->seller(Seller::fromConfig())
-    ->buyer(fn ($b) => $b->name('Kunde AG')->address('Weg 1', '54321', 'Beispielstadt', 'DE'))
-    ->line(fn ($l) => $l->name('Beratung')->quantity(2, 'HUR')->netPrice('100.00')->vat(VatCategory::StandardRate, '19'));
+    ->buyer(Party::make('Kunde AG')->address('Weg 1', '54321', 'Beispielstadt', 'DE'))
+    ->line(Line::make('Beratung')->quantity(2, 'HUR')->netPrice('100.00'));
 
 return Quittio::document($quote)->locale('de')->render()->download();
 ```

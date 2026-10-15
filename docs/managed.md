@@ -371,9 +371,9 @@ from it:
 
 ```php
 $draft = Invoice::draft($issuer->builder()
-    ->buyer(fn (PartyBuilder $b) => $b->name('Kunde AG')->address('Bahnhofstraße 5', '54321', 'Beispielstadt', 'DE'))
+    ->buyer(Party::make('Kunde AG')->address('Bahnhofstraße 5', '54321', 'Beispielstadt', 'DE'))
     ->deliveryDate('2026-09-30')
-    ->line(fn (LineBuilder $l) => $l->name('Beratung')->quantity(8, UnitCode::Hour)->netPrice('120.00')->vat(VatPreset::Standard19)));
+    ->line(Line::make('Beratung')->quantity(8, UnitCode::Hour)->netPrice('120.00')->vat(VatPreset::Standard19)));
 ```
 
 The builder copies these values into the draft. Later changes of the issuer do not change
@@ -555,7 +555,7 @@ invoiceable unless `$invoiceable` is given.
 ```php
 $invoice = $user->draftInvoice(fn (InvoiceBuilder $b) => $b
     ->deliveryDate('2026-10-31')
-    ->line(fn (LineBuilder $l) => $l->name('Pro plan October')
+    ->line(Line::make('Pro plan October')
         ->quantity(1, UnitCode::Month)->netPrice('29.00')->vat(VatPreset::Standard19)),
     invoiceable: $subscription,
 )->issue();
@@ -599,7 +599,7 @@ Rules worth knowing:
 - The references only link records. What counts legally is the buyer copied into the
   invoice data when the draft was built: when the user changes the address later, issued
   invoices stay as they are (§ 14 UStG, GoBD). A draft keeps its buyer until you set it
-  again: `$draft->updateData(fn (InvoiceBuilder $b) => $b->buyer(fn (PartyBuilder $p) => $p->fromModel($user)))`.
+  again: `$draft->updateData(fn (InvoiceBuilder $b) => $b->buyer($user))`.
 - Cancellations, partial cancellations and corrections take `billable` and `invoiceable`
   over from the original invoice.
 - There is no foreign key to your models. Deleting a user leaves the invoices in place

@@ -14,8 +14,9 @@ Documents share parties, lines, calculation, design and templates with invoices 
 `DocumentBuilder::make(DocumentType $type)` creates a builder for any type (reminders then have level 0). `DocumentType` has `showsPrices()` (`false` for delivery notes), `hasLineTotals()` (quotes, order confirmations, proformas) and `labelKey()` (`document_{value}`).
 
 ```php
+use Quittio\Core\Builder\Line;
+use Quittio\Core\Builder\Party;
 use Quittio\Core\Documents\DocumentBuilder;
-use Quittio\Country\DE\Tax\VatPreset;
 use Quittio\Laravel\Facades\Quittio;
 use Quittio\Laravel\Seller;
 
@@ -23,11 +24,11 @@ $quote = DocumentBuilder::quote()
     ->number('AN-2026-0007')
     ->issueDate('2026-10-06')
     ->seller(Seller::fromConfig())
-    ->buyer(fn ($b) => $b->name('Kunde AG')->address('Weg 1', '54321', 'Beispielstadt', 'DE'))
+    ->buyer(Party::make('Kunde AG')->address('Weg 1', '54321', 'Beispielstadt', 'DE'))
     ->validUntil('2026-10-31')
-    ->line(fn ($l) => $l->name('Consulting')->quantity(10, 'HUR')->netPrice('120.00')->vat(VatPreset::Standard19))
-    ->optionalLine(fn ($l) => $l->name('Training')->quantity(1, 'DAY')->netPrice('800.00')->vat(VatPreset::Standard19))
-    ->alternativeLine('1', fn ($l) => $l->name('Senior consulting')->quantity(10, 'HUR')->netPrice('150.00')->vat(VatPreset::Standard19))
+    ->line(Line::make('Consulting')->quantity(10, 'HUR')->netPrice('120.00'))
+    ->optionalLine(Line::make('Training')->quantity(1, 'DAY')->netPrice('800.00'))
+    ->alternativeLine('1', Line::make('Senior consulting')->quantity(10, 'HUR')->netPrice('150.00'))
     ->build();
 
 Quittio::document($quote)->locale('de')->render()->download();
@@ -35,19 +36,20 @@ Quittio::document($quote)->locale('de')->render()->download();
 
 ## Builder methods
 
-Parties, lines, notes, discounts and payment data work exactly like in the [invoice builder](building-invoices.md). Dates accept `Date`, `DateTimeInterface` or a string; amounts are strings.
+Parties, lines, notes, discounts and payment data work exactly like in the [invoice builder](building-invoices.md): lines as `Line::make()`, arrays, models or callables, parties as `Party::make()`, models or callables, and lines without `vat()` get the [default VAT](building-invoices.md#default-vat). Dates accept `Date`, `DateTimeInterface` or a string; amounts are strings.
 
 | Method | Effect |
 |---|---|
 | `number(string $number)` | Document number |
 | `issueDate($date)` | Document date; default today (in the time zone of the document) |
 | `currency(string $currency)` | Currency; default `EUR` |
-| `seller(SellerParty\|callable $seller)`, `buyer(BuyerParty\|callable $buyer)` | Parties; the callable receives a `PartyBuilder` |
-| `line(InvoiceLine\|ProvidesInvoiceLine\|callable $line, ?DocumentLineOptions $options = null)` | Line; the callable receives a `LineBuilder` |
+| `seller(SellerParty\|PartyBuilder\|ProvidesParty\|callable $seller)`, `buyer(BuyerParty\|PartyBuilder\|ProvidesParty\|callable $buyer)` | Parties ([Seller and buyer](building-invoices.md#seller-and-buyer)) |
+| `line(InvoiceLine\|LineBuilder\|ProvidesInvoiceLine\|array\|callable $line, ?DocumentLineOptions $options = null)` | Line ([Lines](building-invoices.md#lines)) |
+| `defaultVat(TaxPreset\|VatCategory $presetOrCategory, …)` | VAT of lines without `vat()` ([Default VAT](building-invoices.md#default-vat)) |
 | `lines(iterable $lines)` | Several lines |
-| `optionalLine(InvoiceLine\|callable $line)` | Optional quote line: shown with its amounts, not in the totals |
-| `alternativeLine(string $alternativeTo, InvoiceLine\|callable $line)` | Alternative to the line with identifier `$alternativeTo` (BT-126; lines are numbered `1`, `2`, … unless set with `LineBuilder::id()`); shown, not in the totals |
-| `serialisedLine(InvoiceLine\|callable $line, array $serialNumbers)` | Delivery note line with serial numbers |
+| `optionalLine(InvoiceLine\|LineBuilder\|array\|callable $line)` | Optional quote line: shown with its amounts, not in the totals |
+| `alternativeLine(string $alternativeTo, InvoiceLine\|LineBuilder\|array\|callable $line)` | Alternative to the line with identifier `$alternativeTo` (BT-126; lines are numbered `1`, `2`, … unless set with `LineBuilder::id()`); shown, not in the totals |
+| `serialisedLine(InvoiceLine\|LineBuilder\|array\|callable $line, array $serialNumbers)` | Delivery note line with serial numbers |
 | `note(string $content, ?NoteSubjectCode $subject = null)` | Note |
 | `discountPercent(string $percent, ?string $reason = null)`, `discountAmount(string $amount, ?string $reason = null)` | Document discount, on the lines that count towards the totals |
 | `paymentTerms(PaymentTerms\|string\|callable $terms)` | Payment terms |
@@ -82,7 +84,7 @@ Order confirmations reference the quote with `reference('AN-2026-0007', '2026-10
 
 ## Delivery notes
 
-Delivery notes print quantities without prices or totals. Lines given as callable start with net price 0 and VAT category O (not subject to VAT), so they need only name, quantity and unit; the callable may still set prices. `InvoiceLine` objects and `ProvidesInvoiceLine` models are taken as they are.
+Delivery notes print quantities without prices or totals. Lines given as builder, array or callable get the net price 0 and VAT category O (not subject to VAT) unless they set a price or VAT, so they need only name, quantity and unit. `InvoiceLine` objects and `ProvidesInvoiceLine` models are taken as they are.
 
 ```php
 use Quittio\Core\Documents\Package;
@@ -94,8 +96,8 @@ $note = DocumentBuilder::deliveryNote()
     ->buyer($buyer)
     ->reference('AB-2026-0003')
     ->deliveryDate('2026-10-02')
-    ->serialisedLine(fn ($l) => $l->name('Router')->quantity(2, 'C62'), ['SN-1001', 'SN-1002'])
-    ->line(fn ($l) => $l->name('Cable')->quantity(5, 'MTR'))
+    ->serialisedLine(Line::make('Router')->quantity(2, 'C62'), ['SN-1001', 'SN-1002'])
+    ->line(['name' => 'Cable', 'quantity' => [5, 'MTR']])
     ->package(new Package('P1', type: 'Box', weightKg: BigDecimal::of('2.5'), dimensions: '30 × 20 × 10 cm', trackingNumber: '00340434161094042557'))
     ->build();
 ```

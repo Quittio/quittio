@@ -25,6 +25,8 @@ php artisan quittio:preview --scenario=simple
 
 ```php
 use Quittio\Core\Builder\InvoiceBuilder;
+use Quittio\Core\Builder\Line;
+use Quittio\Core\Builder\Party;
 use Quittio\Core\Enums\UnitCode;
 use Quittio\Country\DE\Tax\VatPreset;
 use Quittio\Laravel\Seller;
@@ -34,20 +36,21 @@ $invoice = Seller::apply(InvoiceBuilder::make())       // seller and bank accoun
     ->issueDate('2026-10-03')
     ->deliveryDate('2026-09-30')                         // service date, mandatory in Germany
     ->buyerReference('PO-4711')                          // BT-10, required by XRechnung
-    ->buyer(fn ($b) => $b
-        ->name('Kunde AG')
+    ->buyer(Party::make('Kunde AG')
         ->vatId('DE987654321')
         ->address('Bahnhofstraße 5', '54321', 'Beispielstadt', 'DE')
         ->electronicAddress('ap@kunde.de', 'EM'))
-    ->line(fn ($l) => $l
-        ->name('Web development')
+    ->line(Line::make('Web development')
         ->description('Customer portal, sprint 3')       // plain text (Markdown with pdf.markdown)
         ->quantity(24, UnitCode::Hour)
-        ->netPrice('95.00')
-        ->vat(VatPreset::Standard19))
+        ->netPrice('95.00'))                             // 19 %: the default VAT
+    ->line(['name' => 'Hosting', 'quantity' => [1, UnitCode::Month], 'netPrice' => '49.00'])
+    ->line(Line::make('Handbook of VAT law')->netPrice('39.00')->vat(VatPreset::Reduced7))
     ->paymentTerms(fn ($t) => $t->dueInDays(14)->cashDiscount(days: 7, percent: '2.00'))
     ->build();
 ```
+
+Lines are a `Line::make()` builder, an array whose keys are the builder's methods, a model or a callable ([Lines](building-invoices.md#lines)). Without `quantity()` a line has the quantity 1. Without `vat()` it gets the default VAT: `quittio.defaults.vat`, otherwise the standard rate of the seller's country (Germany: 19 %; small businesses: the small business exemption), see [Default VAT](building-invoices.md#default-vat).
 
 Amounts and quantities are strings (or `Brick\Math` values) to avoid floating point errors; floats are rejected with an `InvalidArgumentException`. Rounding follows EN 16931 (half up, two decimals for amounts, VAT per VAT group). References, notes, further parties, allowances and charges, payment means such as direct debit, attachments, gross prices and all other options are described in [Building invoices](building-invoices.md); the German tax presets (`VatPreset::Standard19`, `Reduced7`, `ReverseChargeEu` …) in [Tax presets](country-packs.md#tax-presets).
 
@@ -71,7 +74,7 @@ class User extends Authenticatable implements ProvidesParty
 }
 
 $invoice = Seller::apply(InvoiceBuilder::make())
-    ->buyer(fn (PartyBuilder $b) => $b->fromModel($user))
+    ->buyer($user)                                       // ProvidesParty
     ->lines($order->items)                               // items implement ProvidesInvoiceLine
     // ...
     ->build();
@@ -115,16 +118,21 @@ All formats and profiles, the embedded files and own PDF renderers are described
 Cancel an issued invoice (a new invoice with its own number and a reference to the original):
 
 ```php
-$cancellation = Quittio::cancellation($original, 'ST-2026-0001', reason: 'Charged twice');
-Quittio::make($cancellation)->render();
+$cancellation = $result->cancel('ST-2026-0001', reason: 'Charged twice');   // rendered, in the formats of $result
 ```
 
-`$original` is the issued, calculated invoice, e.g. `$result->data()`. The sign strategy is `credit_note` (type code 381, positive amounts, default in Germany) or `negative_invoice` (type code 380, negative amounts); set it per call (`strategy:`) or in `corrections.cancellation_strategy`. Both are permitted in Germany; the document is called "Stornorechnung", never "Gutschrift".
+For an invoice you stored as data, build the cancellation and render it:
+
+```php
+$cancellation = Quittio::make(Quittio::cancellation($original, 'ST-2026-0001', reason: 'Charged twice'))->render();
+```
+
+`$original` is the issued, calculated invoice, e.g. `$result->data()` or `InvoiceData::fromJson()` of what you stored. The sign strategy is `credit_note` (type code 381, positive amounts, default in Germany) or `negative_invoice` (type code 380, negative amounts); set it per call (`strategy:`) or in `corrections.cancellation_strategy`. Both are permitted in Germany; the document is called "Stornorechnung", never "Gutschrift".
 
 `lines:` cancels part of an invoice (whole lines, quantities or amounts):
 
 ```php
-$part = Quittio::cancellation($original, 'ST-2026-0002', lines: [
+$part = $result->cancel('ST-2026-0002', lines: [
     ['line' => '1', 'quantity' => '1'],
     ['line' => '2', 'amount' => '50.00'],
 ]);
@@ -136,16 +144,19 @@ Pass the earlier partial cancellations as `history:` (`CancellationHistory`, e.g
 
 ```php
 use Quittio\Core\Builder\InvoiceBuilder;
+use Quittio\Core\Builder\Party;
 use Quittio\Core\Quittio;
+use Quittio\Core\Tax\CountryDefaultVat;
 use Quittio\Country\DE\CountryDE;
 
 $quittio = Quittio::create([
     'validation' => ['mode' => 'error', 'levels' => ['L1', 'L2', 'L3', 'L4', 'L7']],
     'pdf' => ['b2c_embed_xml' => false],
 ], [new CountryDE]);
+InvoiceBuilder::useDefaultVat(new CountryDefaultVat($quittio->countries()));   // lines without vat(): 19 %
 
 $invoice = InvoiceBuilder::make()
-    ->seller(fn ($s) => $s->name('Muster GmbH')->vatId('DE123456789')->address('Hauptstraße 1', '12345', 'Musterstadt', 'DE'))
+    ->seller(Party::make('Muster GmbH')->vatId('DE123456789')->address('Hauptstraße 1', '12345', 'Musterstadt', 'DE'))
     // ... as above, without Seller::apply()
     ->build();
 

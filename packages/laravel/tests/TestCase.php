@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Quittio\Tests;
 
 use Orchestra\Testbench\TestCase as Orchestra;
+use Quittio\Core\Builder\InvoiceBuilder;
 use Quittio\Core\I18n\Translations;
 use Quittio\Core\Serialization\Snapshots\SnapshotUpcasterChain;
 use Quittio\Country\DE\CountryDE;
@@ -22,6 +23,7 @@ abstract class TestCase extends Orchestra
         Translations::reset();
         SnapshotUpcasterChain::useDefault(null);
         BaseRates::reset();
+        InvoiceBuilder::useDefaultVat(null);
     }
 
     protected function getPackageProviders($app): array

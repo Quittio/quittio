@@ -7,10 +7,13 @@ namespace Quittio\Core\Documents;
 use Brick\Math\BigDecimal;
 use DateTimeInterface;
 use Quittio\Core\Builder\InvoiceBuilder;
+use Quittio\Core\Builder\Line;
 use Quittio\Core\Builder\LineBuilder;
 use Quittio\Core\Builder\PartyBuilder;
 use Quittio\Core\Builder\PaymentTermsBuilder;
+use Quittio\Core\Codes\RawCode;
 use Quittio\Core\Contracts\ProvidesInvoiceLine;
+use Quittio\Core\Contracts\ProvidesParty;
 use Quittio\Core\Data\Delivery\Period;
 use Quittio\Core\Data\Lines\InvoiceLine;
 use Quittio\Core\Data\Party\Address;
@@ -20,10 +23,12 @@ use Quittio\Core\Data\Payment\PaymentTerms;
 use Quittio\Core\Data\Presentation\Presentation;
 use Quittio\Core\Enums\NoteSubjectCode;
 use Quittio\Core\Enums\VatCategory;
+use Quittio\Core\Enums\VatExemptionReasonCode;
 use Quittio\Core\Support\Amount;
 use Quittio\Core\Support\Date;
 use Quittio\Core\Support\Decimal;
 use Quittio\Core\Support\Macroable;
+use Quittio\Core\Tax\TaxPreset;
 
 /**
  * Fluent builder for documents. Parties, lines, notes, discounts and
@@ -135,9 +140,9 @@ class DocumentBuilder
     }
 
     /**
-     * @param  SellerParty|callable(PartyBuilder): mixed  $seller
+     * @param  SellerParty|PartyBuilder|ProvidesParty|callable(PartyBuilder): mixed  $seller
      */
-    public function seller(SellerParty|callable $seller): static
+    public function seller(SellerParty|PartyBuilder|ProvidesParty|callable $seller): static
     {
         $this->invoice->seller($seller);
 
@@ -145,9 +150,9 @@ class DocumentBuilder
     }
 
     /**
-     * @param  BuyerParty|callable(PartyBuilder): mixed  $buyer
+     * @param  BuyerParty|PartyBuilder|ProvidesParty|callable(PartyBuilder): mixed  $buyer
      */
-    public function buyer(BuyerParty|callable $buyer): static
+    public function buyer(BuyerParty|PartyBuilder|ProvidesParty|callable $buyer): static
     {
         $this->invoice->buyer($buyer);
 
@@ -155,17 +160,19 @@ class DocumentBuilder
     }
 
     /**
-     * @param  InvoiceLine|ProvidesInvoiceLine|callable(LineBuilder): mixed  $line
+     * @param  InvoiceLine|LineBuilder|ProvidesInvoiceLine|array<array-key, mixed>|callable(LineBuilder): mixed  $line
      */
-    public function line(InvoiceLine|ProvidesInvoiceLine|callable $line, ?DocumentLineOptions $options = null): static
+    public function line(InvoiceLine|LineBuilder|ProvidesInvoiceLine|array|callable $line, ?DocumentLineOptions $options = null): static
     {
         if ($this->type === DocumentType::DeliveryNote && ! $line instanceof InvoiceLine && ! $line instanceof ProvidesInvoiceLine) {
             // Delivery notes carry no prices: defaults keep the line valid for the calculator.
-            $callback = $line;
-            $line = static function (LineBuilder $builder) use ($callback): void {
-                $builder->netPrice(0)->vat(VatCategory::NotSubjectToVat);
-                $callback($builder);
-            };
+            $line = Line::from($line);
+            if (! $line->hasPrice()) {
+                $line->netPrice(0);
+            }
+            if (! $line->hasVat()) {
+                $line->vat(VatCategory::NotSubjectToVat);
+            }
         }
 
         $this->invoice->line($line);
@@ -178,7 +185,7 @@ class DocumentBuilder
     }
 
     /**
-     * @param  iterable<InvoiceLine|ProvidesInvoiceLine|callable(LineBuilder): mixed>  $lines
+     * @param  iterable<InvoiceLine|LineBuilder|ProvidesInvoiceLine|array<array-key, mixed>|callable(LineBuilder): mixed>  $lines
      */
     public function lines(iterable $lines): static
     {
@@ -192,9 +199,9 @@ class DocumentBuilder
     /**
      * Optional quote line, shown with its price but not included in the totals.
      *
-     * @param  InvoiceLine|callable(LineBuilder): mixed  $line
+     * @param  InvoiceLine|LineBuilder|array<array-key, mixed>|callable(LineBuilder): mixed  $line
      */
-    public function optionalLine(InvoiceLine|callable $line): static
+    public function optionalLine(InvoiceLine|LineBuilder|array|callable $line): static
     {
         return $this->line($line, new DocumentLineOptions(optional: true));
     }
@@ -202,9 +209,9 @@ class DocumentBuilder
     /**
      * Alternative to another line, shown but not included in the totals.
      *
-     * @param  InvoiceLine|callable(LineBuilder): mixed  $line
+     * @param  InvoiceLine|LineBuilder|array<array-key, mixed>|callable(LineBuilder): mixed  $line
      */
-    public function alternativeLine(string $alternativeTo, InvoiceLine|callable $line): static
+    public function alternativeLine(string $alternativeTo, InvoiceLine|LineBuilder|array|callable $line): static
     {
         return $this->line($line, new DocumentLineOptions(alternativeTo: $alternativeTo));
     }
@@ -212,12 +219,22 @@ class DocumentBuilder
     /**
      * Delivery note line with serial numbers.
      *
-     * @param  InvoiceLine|callable(LineBuilder): mixed  $line
+     * @param  InvoiceLine|LineBuilder|array<array-key, mixed>|callable(LineBuilder): mixed  $line
      * @param  list<string>  $serialNumbers
      */
-    public function serialisedLine(InvoiceLine|callable $line, array $serialNumbers): static
+    public function serialisedLine(InvoiceLine|LineBuilder|array|callable $line, array $serialNumbers): static
     {
         return $this->line($line, new DocumentLineOptions(serialNumbers: $serialNumbers));
+    }
+
+    /**
+     * VAT treatment of the lines that set none, see InvoiceBuilder::defaultVat().
+     */
+    public function defaultVat(TaxPreset|VatCategory $presetOrCategory, BigDecimal|int|float|string|null $rate = null, ?string $exemptionReason = null, VatExemptionReasonCode|RawCode|string|null $exemptionReasonCode = null): static
+    {
+        $this->invoice->defaultVat($presetOrCategory, $rate, $exemptionReason, $exemptionReasonCode);
+
+        return $this;
     }
 
     public function note(string $content, ?NoteSubjectCode $subject = null): static

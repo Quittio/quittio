@@ -12,6 +12,9 @@ return [
     | profile: null = default of the format (EN 16931 for ZUGFeRD/Factur-X).
     | format:  null or 'auto' = automatic choice by the format resolver; or one of
     |          zugferd, xrechnung-cii, xrechnung-ubl, cii, ubl, peppol, pdf, html, json.
+    | vat:     tax preset of lines without ->vat(), e.g. 'de.reduced_7'; null = the standard
+    |          rate of the seller's country pack (DE: 'de.standard_19'). Small business
+    |          invoices use the small business preset of the pack (DE: 'de.small_business').
     */
     'defaults' => [
         'country' => env('QUITTIO_COUNTRY', 'DE'),
@@ -19,6 +22,7 @@ return [
         'format' => null,
         'locale' => null,
         'due_days' => 14,
+        'vat' => env('QUITTIO_DEFAULT_VAT'),
     ],
 
     /*

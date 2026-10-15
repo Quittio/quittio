@@ -201,6 +201,15 @@ final class PartyBuilder
         return $this;
     }
 
+    /**
+     * Country code of the postal address set so far (BT-40, BT-55), e.g. for defaults that
+     * depend on the seller's country.
+     */
+    public function countryCode(): ?string
+    {
+        return $this->address?->countryCode;
+    }
+
     public function buildSeller(): SellerParty
     {
         return new SellerParty(

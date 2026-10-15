@@ -101,7 +101,7 @@ Registering a pack does three things: it adds the pack to the `CountryRegistry` 
 
 ### CountryDefaults
 
-`new CountryDefaults(currency: 'EUR', timezone: 'UTC', locale: 'en', paper: 'A4', letterLayout: 'free', profile: 'en16931', requiredLocales: [], paymentQr: 'girocode')`
+`new CountryDefaults(currency: 'EUR', timezone: 'UTC', locale: 'en', paper: 'A4', letterLayout: 'free', profile: 'en16931', requiredLocales: [], paymentQr: 'girocode', vatPreset: null, smallBusinessVatPreset: null)`
 
 | Property | Default | Effect |
 |---|---|---|
@@ -111,6 +111,7 @@ Registering a pack does three things: it adds the pack to the `CountryRegistry` 
 | `currency`, `profile` | `EUR`, `en16931` | Shown by `quittio:countries`; not applied to invoices. |
 | `timezone`, `requiredLocales` | `UTC`, `[]` | Informational metadata for applications; not applied by the core. Set the time zone of dates with `->timezone()` on the builder. |
 | `paymentQr` | `girocode` | QR code of the mode `auto` when the pack has no `paymentQr()` generator: `girocode` = EPC GiroCode, `none` = no code. A generator registered with `withPaymentQrGenerator()` comes first. |
+| `vatPreset`, `smallBusinessVatPreset` | `null`, `null` | Keys of presets of `taxPresets()` for invoice lines without VAT treatment: the usual rate, and the rate of small business invoices (`Meta::FLAG_SMALL_BUSINESS`). Used by `CountryDefaultVat` for the seller's country ([Default VAT](building-invoices.md#default-vat)); Germany: `de.standard_19` and `de.small_business`. |
 
 ### CorrectionPolicy
 
@@ -385,8 +386,8 @@ Messages come from the catalog key `{namespace}::rules.{code}` with the entries 
 ```php
 use Quittio\Country\DE\Tax\VatPreset;
 
-->line(fn ($l) => $l->name('Webentwicklung')->quantity(24, UnitCode::Hour)->netPrice('95.00')->vat(VatPreset::Standard19))
-->line(fn ($l) => $l->name('Heilbehandlung')->quantity(1, UnitCode::Piece)->netPrice('90.00')->vat(VatPreset::exempt('§ 4 Nr. 14 UStG', 'VATEX-EU-132-1C')))
+->line(Line::make('Webentwicklung')->quantity(24, UnitCode::Hour)->netPrice('95.00')->vat(VatPreset::Standard19))
+->line(Line::make('Heilbehandlung')->quantity(1, UnitCode::Piece)->netPrice('90.00')->vat(VatPreset::exempt('§ 4 Nr. 14 UStG', 'VATEX-EU-132-1C')))
 ```
 
 | Case | Key | Category | Rate | Code (BT-121) | Use |
@@ -602,7 +603,7 @@ $advance = (new En16931Calculator)->calculate($advanceInvoice);   // or $rendere
 
 $final = InvoiceBuilder::make()
     // number, dates, parties, payment …
-    ->line(fn ($l) => $l->name('Website')->quantity(1, UnitCode::Piece)->netPrice('3000.00')->vat(VatPreset::Standard19))
+    ->line(Line::make('Website')->quantity(1, UnitCode::Piece)->netPrice('3000.00')->vat(VatPreset::Standard19))
     ->deductAdvance($advance);
 ```
 
@@ -632,7 +633,7 @@ With an advance invoice RE-2026-0040 of 1,000.00 EUR net plus 19 % VAT, the fina
 
 ### Small businesses
 
-- Use `VatPreset::SmallBusiness` on every line. An invoice whose lines all use it is a small business invoice under section 34a UStDV: no service date is required (`DE-USTG-03`) or checked in the PDF; the tax number or VAT identifier is still required (`DE-USTG-02`), and the preset's text (BT-120) appears in the PDF.
+- Use `VatPreset::SmallBusiness` on every line. Lines without `->vat()` get it automatically when the invoice is flagged as small business invoice (see below) and the default VAT comes from the country pack (`CountryDefaultVat`, in Laravel always; [Default VAT](building-invoices.md#default-vat)). An invoice whose lines all use it is a small business invoice under section 34a UStDV: no service date is required (`DE-USTG-03`) or checked in the PDF; the tax number or VAT identifier is still required (`DE-USTG-02`), and the preset's text (BT-120) appears in the PDF.
 - Mark the seller as a small business so that VAT is rejected (`DE-USTG-09`): `quittio.seller.small_business = true` (applied by `Seller::apply($builder)`), the Managed issuer setting `tax_settings.small_business`, or `->flag(Meta::FLAG_SMALL_BUSINESS)`. `Flags::SMALL_BUSINESS` is the same flag (`small_business`). The flag does not set presets or texts.
 - A small business cannot use the exemption for intra-community supplies (category `K`, `DE-USTG-14`, section 19 (1) sentence 2 UStG); only the intra-community supply of a new vehicle (`->newVehicle()`) is excepted (section 19 (6) sentence 1 UStG).
 - Without a VAT identifier, EN 16931 needs a seller identifier (BT-29) or legal registration (BT-30) (BR-CO-26); in Laravel set `quittio.seller.identifiers` or `legal_registration` (see [configuration](configuration.md)).
@@ -642,7 +643,7 @@ use Quittio\Core\Builder\InvoiceBuilder;
 use Quittio\Laravel\Seller;
 
 $builder = Seller::apply(InvoiceBuilder::make())   // quittio.seller.small_business = true
-    ->line(fn ($l) => $l->name('Beratung')->quantity(1, UnitCode::Hour)->netPrice('80.00')->vat(VatPreset::SmallBusiness));
+    ->line(Line::make('Beratung')->quantity(1, UnitCode::Hour)->netPrice('80.00')->vat(VatPreset::SmallBusiness));
 ```
 
 ### Reverse charge, intra-community supplies and VAT identifiers

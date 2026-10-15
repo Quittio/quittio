@@ -11,11 +11,13 @@ use Illuminate\Foundation\Console\AboutCommand;
 use Illuminate\Routing\Router;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Translation\Translator as IlluminateTranslator;
+use Quittio\Core\Builder\InvoiceBuilder;
 use Quittio\Core\Exceptions\ConfigurationException;
 use Quittio\Core\I18n\Translations;
 use Quittio\Core\Profiles\Profile;
 use Quittio\Core\Serialization\Snapshots\SnapshotUpcaster;
 use Quittio\Core\Serialization\Snapshots\SnapshotUpcasterChain;
+use Quittio\Core\Tax\TaxPreset;
 use Quittio\Laravel\Commands\BenchmarkCommand;
 use Quittio\Laravel\Commands\CodeListsUpdateCommand;
 use Quittio\Laravel\Commands\CountriesCommand;
@@ -66,6 +68,8 @@ final class QuittioServiceProvider extends ServiceProvider
         $this->bridgeTranslations();
         // InvoiceData::fromSnapshot() uses the configured upcasters.
         SnapshotUpcasterChain::useDefault($this->app->make(SnapshotUpcasterChain::class));
+        // Lines without ->vat() use quittio.defaults.vat or the default of the seller's country.
+        InvoiceBuilder::useDefaultVat(fn (?string $country, bool $smallBusiness): ?TaxPreset => $this->app->make(QuittioManager::class)->defaultVat($country, $smallBusiness));
         $this->registerPublishing();
         $this->registerPreviewRoutes();
 

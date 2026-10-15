@@ -6,6 +6,7 @@ namespace Quittio\Core\Builder;
 
 use Brick\Math\BigDecimal;
 use Brick\Money\Money;
+use Closure;
 use DateTimeInterface;
 use InvalidArgumentException;
 use Quittio\Core\Calculation\AllowanceSplitter;
@@ -15,6 +16,7 @@ use Quittio\Core\Calculation\LargestRemainder;
 use Quittio\Core\Calculation\LineCalculator;
 use Quittio\Core\Codes\RawCode;
 use Quittio\Core\Contracts\ProvidesInvoiceLine;
+use Quittio\Core\Contracts\ProvidesParty;
 use Quittio\Core\Data\AllowanceCharge\DocumentAllowance;
 use Quittio\Core\Data\AllowanceCharge\DocumentAllowanceCharge;
 use Quittio\Core\Data\AllowanceCharge\DocumentCharge;
@@ -63,6 +65,7 @@ use Quittio\Core\Support\Amount;
 use Quittio\Core\Support\Date;
 use Quittio\Core\Support\Decimal;
 use Quittio\Core\Support\Macroable;
+use Quittio\Core\Tax\TaxPreset;
 
 /**
  * Fluent builder for InvoiceData.
@@ -139,6 +142,12 @@ class InvoiceBuilder
 
     /** @var list<LineBuilder|InvoiceLine> */
     private array $lines = [];
+
+    /** VAT treatment of lines that set none, see defaultVat(). */
+    private ?LineBuilder $defaultVat = null;
+
+    /** @var (Closure(?string, bool): ?TaxPreset)|TaxPreset|null see useDefaultVat() */
+    private static Closure|TaxPreset|null $applicationVat = null;
 
     private ?string $prepaid = null;
 
@@ -439,12 +448,16 @@ class InvoiceBuilder
     }
 
     /**
-     * @param  SellerParty|callable(PartyBuilder): mixed  $seller
+     * The seller (BG-4): a SellerParty, a PartyBuilder (Party::make()) or an application model
+     * (ProvidesParty) replace the seller set before; a callable receives the builder of the
+     * seller set before and changes it.
+     *
+     * @param  SellerParty|PartyBuilder|ProvidesParty|callable(PartyBuilder): mixed  $seller
      */
-    public function seller(SellerParty|callable $seller): static
+    public function seller(SellerParty|PartyBuilder|ProvidesParty|callable $seller): static
     {
-        if ($seller instanceof SellerParty) {
-            $this->seller = $seller;
+        if ($seller instanceof SellerParty || $seller instanceof PartyBuilder || $seller instanceof ProvidesParty) {
+            $this->seller = $seller instanceof SellerParty ? $seller : self::partyBuilder($seller);
 
             return $this;
         }
@@ -457,12 +470,16 @@ class InvoiceBuilder
     }
 
     /**
-     * @param  BuyerParty|callable(PartyBuilder): mixed  $buyer
+     * The buyer (BG-7): a BuyerParty, a PartyBuilder (Party::make()) or an application model
+     * (ProvidesParty), e.g. ->buyer($customer), replace the buyer set before; a callable
+     * receives the builder of the buyer set before and changes it.
+     *
+     * @param  BuyerParty|PartyBuilder|ProvidesParty|callable(PartyBuilder): mixed  $buyer
      */
-    public function buyer(BuyerParty|callable $buyer): static
+    public function buyer(BuyerParty|PartyBuilder|ProvidesParty|callable $buyer): static
     {
-        if ($buyer instanceof BuyerParty) {
-            $this->buyer = $buyer;
+        if ($buyer instanceof BuyerParty || $buyer instanceof PartyBuilder || $buyer instanceof ProvidesParty) {
+            $this->buyer = $buyer instanceof BuyerParty ? $buyer : self::partyBuilder($buyer);
 
             return $this;
         }
@@ -782,30 +799,22 @@ class InvoiceBuilder
     }
 
     /**
-     * @param  InvoiceLine|ProvidesInvoiceLine|callable(LineBuilder): mixed  $line
+     * Adds a line (BG-25): a LineBuilder (Line::make()), an array with the keys of
+     * LineBuilder::ARRAY_KEYS, an application model (ProvidesInvoiceLine), a callable that
+     * receives a new LineBuilder, or a finished InvoiceLine.
+     *
+     * @param  InvoiceLine|LineBuilder|ProvidesInvoiceLine|array<array-key, mixed>|callable(LineBuilder): mixed  $line
      */
-    public function line(InvoiceLine|ProvidesInvoiceLine|callable $line): static
+    public function line(InvoiceLine|LineBuilder|ProvidesInvoiceLine|array|callable $line): static
     {
         $this->linesChanged = true;
-        if ($line instanceof InvoiceLine) {
-            $this->lines[] = $line;
-
-            return $this;
-        }
-
-        $builder = new LineBuilder;
-        if ($line instanceof ProvidesInvoiceLine) {
-            $builder->fromModel($line);
-        } else {
-            $line($builder);
-        }
-        $this->lines[] = $builder;
+        $this->lines[] = $line instanceof InvoiceLine ? $line : Line::from($line);
 
         return $this;
     }
 
     /**
-     * @param  iterable<InvoiceLine|ProvidesInvoiceLine|callable(LineBuilder): mixed>  $lines
+     * @param  iterable<InvoiceLine|LineBuilder|ProvidesInvoiceLine|array<array-key, mixed>|callable(LineBuilder): mixed>  $lines
      */
     public function lines(iterable $lines): static
     {
@@ -974,6 +983,32 @@ class InvoiceBuilder
         return $this;
     }
 
+    /**
+     * VAT treatment of the lines that set none (also sub lines), with the arguments of
+     * LineBuilder::vat(). Without it, the application default of useDefaultVat() applies.
+     */
+    public function defaultVat(TaxPreset|VatCategory $presetOrCategory, BigDecimal|int|float|string|null $rate = null, ?string $exemptionReason = null, VatExemptionReasonCode|RawCode|string|null $exemptionReasonCode = null): static
+    {
+        $this->defaultVat = (new LineBuilder)->vat($presetOrCategory, $rate, $exemptionReason, $exemptionReasonCode);
+
+        return $this;
+    }
+
+    /**
+     * Application default VAT of lines that set none, for invoices without defaultVat(): a
+     * preset, or a callable that receives the seller's country code and whether the invoice is
+     * flagged as small business invoice (Meta::FLAG_SMALL_BUSINESS) and returns a preset or null,
+     * e.g. Quittio\Core\Tax\CountryDefaultVat. The Laravel integration sets it from
+     * quittio.defaults.vat; null removes it. Lines without VAT and without a default make
+     * build() fail (BG-30).
+     *
+     * @param  (callable(?string, bool): ?TaxPreset)|TaxPreset|null  $default
+     */
+    public static function useDefaultVat(callable|TaxPreset|null $default): void
+    {
+        self::$applicationVat = $default instanceof TaxPreset || $default === null ? $default : $default(...);
+    }
+
     public function build(): InvoiceData
     {
         return $this->assemble(requireLines: true);
@@ -1017,6 +1052,32 @@ class InvoiceBuilder
     }
 
     /**
+     * The VAT treatment for lines without one: defaultVat(), otherwise the application default.
+     */
+    private function vatDefault(): ?LineBuilder
+    {
+        if ($this->defaultVat !== null) {
+            return $this->defaultVat;
+        }
+        $default = self::$applicationVat;
+        if ($default instanceof Closure) {
+            $country = $this->seller instanceof SellerParty ? $this->seller->address->countryCode : $this->seller?->countryCode();
+            $default = $default($country, $this->meta->hasFlag(Meta::FLAG_SMALL_BUSINESS));
+        }
+
+        return $default instanceof TaxPreset ? (new LineBuilder)->vat($default) : null;
+    }
+
+    /**
+     * The builder of a party given to seller() or buyer(): a builder is copied, so a party used
+     * as template stays unchanged.
+     */
+    private static function partyBuilder(PartyBuilder|ProvidesParty $party): PartyBuilder
+    {
+        return $party instanceof PartyBuilder ? clone $party : (new PartyBuilder)->fromModel($party);
+    }
+
+    /**
      * Identifiers of the lines and their sub lines.
      *
      * @param  list<InvoiceLine>  $lines
@@ -1045,6 +1106,13 @@ class InvoiceBuilder
                 $taken[$id] = true;
             }
         }
+        $vatDefault = null;
+        foreach ($this->lines as $line) {
+            if ($line instanceof LineBuilder && $line->lacksVat()) {
+                $vatDefault = $this->vatDefault();
+                break;
+            }
+        }
         $lines = [];
         foreach ($this->lines as $index => $line) {
             if (! $line instanceof InvoiceLine) {
@@ -1054,7 +1122,7 @@ class InvoiceBuilder
                         $default++;
                     }
                 }
-                $line = $line->build($this->currency, (string) $default, $locale);
+                $line = $line->build($this->currency, (string) $default, $locale, $vatDefault);
                 $taken[$line->id] = true;
             }
             $lines[] = $line;

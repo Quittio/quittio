@@ -23,6 +23,7 @@ use Quittio\Laravel\Testing\QuittioFake;
  * @method static \Quittio\Core\Validation\ValidationResult validatePath(string $path) path of an XML or PDF e-invoice
  * @method static QuittioManager extend(string $type, string $name, \Closure $factory) type renderer, validator, serializer or format_resolver; the factory receives the container and the driver configuration
  * @method static QuittioManager registerCountry(\Quittio\Core\Countries\CountryPack $pack)
+ * @method static \Quittio\Core\Tax\TaxPreset|null defaultVat(string|null $sellerCountry, bool $smallBusiness)
  * @method static \Quittio\Core\Countries\CountryRegistry countries()
  * @method static \Quittio\Core\Profiles\ProfileRegistry profiles()
  * @method static \Quittio\Core\Formats\FormatRegistry formats()

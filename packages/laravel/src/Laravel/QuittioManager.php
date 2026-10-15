@@ -37,6 +37,8 @@ use Quittio\Core\Reading\ReadResult;
 use Quittio\Core\Rendering\PreparedInvoice;
 use Quittio\Core\Rendering\RenderOptions;
 use Quittio\Core\Support\Date;
+use Quittio\Core\Tax\CountryDefaultVat;
+use Quittio\Core\Tax\TaxPreset;
 use Quittio\Core\Validation\Drivers\PhpRulesDriver;
 use Quittio\Core\Validation\Plausibility\VatIdVerifier;
 use Quittio\Core\Validation\Plausibility\ViesVerifier;
@@ -191,6 +193,20 @@ class QuittioManager
         $this->core?->registerCountry($pack);
 
         return $this;
+    }
+
+    /**
+     * VAT of invoice lines without VAT treatment (InvoiceBuilder::useDefaultVat()): the preset
+     * of quittio.defaults.vat, otherwise the standard preset of the seller's country pack;
+     * invoices of small businesses use the small business preset of the pack.
+     */
+    public function defaultVat(?string $sellerCountry, bool $smallBusiness): ?TaxPreset
+    {
+        $key = $this->settings()->nullableString('defaults.vat');
+        $preset = $key === null ? null : ($this->countries()->taxPreset($key)
+            ?? throw new ConfigurationException(sprintf('quittio.defaults.vat: unknown tax preset "%s".', $key)));
+
+        return (new CountryDefaultVat($this->countries(), $preset))($sellerCountry, $smallBusiness);
     }
 
     public function countries(): CountryRegistry

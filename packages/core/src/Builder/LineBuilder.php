@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Quittio\Core\Builder;
 
 use Brick\Math\BigDecimal;
+use InvalidArgumentException;
 use Quittio\Core\Codes\RawCode;
 use Quittio\Core\Contracts\ProvidesInvoiceLine;
 use Quittio\Core\Data\AllowanceCharge\LineAllowance;
@@ -109,6 +110,73 @@ final class LineBuilder
     private ?LineExtendedData $extended = null;
 
     private ?LinePresentation $presentation = null;
+
+    /**
+     * Keys of a line given as array (InvoiceBuilder::line(), Line::fromArray()): the methods of
+     * this builder that can be called with the value.
+     */
+    public const array ARRAY_KEYS = [
+        'id', 'name', 'description', 'note', 'quantity', 'unit', 'netPrice', 'listPrice', 'priceInclVat', 'vat',
+        'period', 'allowance', 'charge', 'sellerId', 'buyerId', 'standardId', 'classification', 'originCountry',
+        'attribute', 'orderLineReference', 'buyerAccountingReference', 'objectId', 'group', 'highlight', 'showGrossPrice',
+    ];
+
+    /**
+     * Calls the method of every key with its value: ['name' => 'Consulting', 'quantity' => 4,
+     * 'netPrice' => '120.00']. An array value holds the arguments, as list or by name
+     * (['quantity' => [4, UnitCode::Hour]], ['allowance' => ['percent' => '10', 'reason' => 'Early bird']]);
+     * null values are skipped.
+     *
+     * @param  array<array-key, mixed>  $values
+     */
+    public function fill(array $values): self
+    {
+        foreach ($values as $key => $value) {
+            if (! is_string($key) || ! in_array($key, self::ARRAY_KEYS, true)) {
+                throw new InvalidArgumentException(sprintf('Unknown key "%s" of an invoice line. Known keys: %s.', $key, implode(', ', self::ARRAY_KEYS)));
+            }
+            if ($value === null) {
+                continue;
+            }
+            // PHP checks the argument types of the method (strict types).
+            call_user_func_array([$this, $key], is_array($value) ? $value : [$value]);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Whether the line or one of its sub lines has no VAT treatment yet.
+     */
+    public function lacksVat(): bool
+    {
+        if (! $this->hasVat()) {
+            return true;
+        }
+        foreach ($this->subLines as $subLine) {
+            if ($subLine->lacksVat()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Whether vat() was called.
+     */
+    public function hasVat(): bool
+    {
+        return $this->preset !== null || $this->vatCategory !== null;
+    }
+
+    /**
+     * Whether a net price, list price or price including VAT was set.
+     */
+    public function hasPrice(): bool
+    {
+        return $this->netPrice !== null || $this->grossPrice !== null || $this->priceInclVat !== null;
+    }
 
     public function fromModel(ProvidesInvoiceLine $model): self
     {
@@ -334,15 +402,14 @@ final class LineBuilder
     }
 
     /**
-     * Adds a sub line (profile EXTENDED or XRechnung extension).
+     * Adds a sub line (profile EXTENDED or XRechnung extension), in the forms of
+     * InvoiceBuilder::line(): Line::make(), an array, a model or a callable.
      *
-     * @param  callable(LineBuilder): mixed  $callback
+     * @param  LineBuilder|ProvidesInvoiceLine|array<array-key, mixed>|callable(LineBuilder): mixed  $line
      */
-    public function subLine(callable $callback): self
+    public function subLine(self|ProvidesInvoiceLine|array|callable $line): self
     {
-        $builder = new self;
-        $callback($builder);
-        $this->subLines[] = $builder;
+        $this->subLines[] = Line::from($line);
 
         return $this;
     }
@@ -394,7 +461,11 @@ final class LineBuilder
         return $this;
     }
 
-    public function build(string $currency, string $defaultId, ?string $locale = null): InvoiceLine
+    /**
+     * Builds the line; called by InvoiceBuilder. $vatDefault is a builder whose VAT treatment
+     * applies to this line and its sub lines when they have none (InvoiceBuilder::defaultVat()).
+     */
+    public function build(string $currency, string $defaultId, ?string $locale = null, ?self $vatDefault = null): InvoiceLine
     {
         $name = $this->name ?? throw InvalidInvoiceData::missing('BT-153', sprintf('item name of line %s', $this->id ?? $defaultId));
         $id = $this->id ?? $defaultId;
@@ -408,12 +479,12 @@ final class LineBuilder
 
         $subLines = [];
         foreach ($this->subLines as $index => $subLine) {
-            $subLines[] = $subLine->build($currency, $id.'.'.($index + 1), $locale);
+            $subLines[] = $subLine->build($currency, $id.'.'.($index + 1), $locale, $vatDefault);
         }
 
         return new InvoiceLine(
             id: $id,
-            quantity: Decimal::of($this->quantity ?? ($subLines !== [] ? 1 : throw InvalidInvoiceData::missing('BT-129', sprintf('quantity of line %s', $id)))),
+            quantity: Decimal::of($this->quantity ?? 1),
             unit: $this->unit,
             price: new Price(
                 netPrice: $netPrice,
@@ -423,7 +494,7 @@ final class LineBuilder
                 baseQuantityUnit: $this->baseQuantityUnit ?? ($this->baseQuantity !== null ? $this->unit : null),
                 priceInclVat: Decimal::ofNullable($this->priceInclVat),
             ),
-            vat: $this->buildVat($id, $locale),
+            vat: ($this->hasVat() || $vatDefault === null ? $this : $vatDefault)->buildVat($id, $locale),
             item: new Item(
                 name: $name,
                 description: $this->description,

@@ -69,6 +69,8 @@ class CountryDE extends AbstractCountryPack
             letterLayout: 'din5008b',
             profile: 'en16931',
             paymentQr: 'girocode',
+            vatPreset: VatPreset::Standard19->value,
+            smallBusinessVatPreset: VatPreset::SmallBusiness->value,
         );
     }
 

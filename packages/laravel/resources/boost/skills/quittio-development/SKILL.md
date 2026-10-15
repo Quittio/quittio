@@ -18,14 +18,14 @@ Use this skill when code creates, renders, sends, validates, cancels or reads in
 ## Building invoices
 
 - `InvoiceBuilder::make()` with fluent setters; `build()` returns the immutable `InvoiceData`. `Seller::apply($builder)` sets the seller and bank account from `config/quittio.php`.
-- Parties: `->buyer(fn ($b) => $b->name()->vatId()->address($street, $postcode, $city, $country)->electronicAddress($email, 'EM'))`. Models can implement `Quittio\Core\Contracts\ProvidesParty` (`fillParty()`), `ProvidesInvoiceLine` (`fillLine()`) or `ProvidesInvoiceData` (`toInvoiceData()`); use `$b->fromModel($user)` and `->lines($order->items)`.
-- Lines: `->line(fn ($l) => $l->name()->quantity('2', UnitCode::Piece)->netPrice('19.90')->vat(VatPreset::Standard19))`.
+- Parties: `->buyer(Party::make('Kunde AG')->vatId()->address($street, $postcode, $city, $country)->electronicAddress($email, 'EM'))` (`Quittio\Core\Builder\Party`). Models can implement `Quittio\Core\Contracts\ProvidesParty` (`fillParty()`), `ProvidesInvoiceLine` (`fillLine()`) or `ProvidesInvoiceData` (`toInvoiceData()`); pass them directly: `->buyer($user)`, `->lines($order->items)`, `Quittio::make($order)`. A callable (`->seller(fn ($s) => $s->contact(…))`) changes the party set before.
+- Lines: `->line(Line::make('Name')->quantity('2', UnitCode::Piece)->netPrice('19.90'))` (`Quittio\Core\Builder\Line`) or arrays whose keys are the `LineBuilder` methods: `->lines([['name' => 'Hosting', 'quantity' => [1, UnitCode::Month], 'netPrice' => '49.00']])`. The quantity defaults to 1. Without `->vat()` a line gets the default VAT (`->defaultVat()` of the invoice, otherwise `quittio.defaults.vat`, otherwise the standard rate of the seller's country).
 - Amounts, prices and quantities are strings or `Brick\Math` values; floats throw an `InvalidArgumentException`. Do not set totals: the calculator computes line amounts, the VAT breakdown and totals (EN 16931 rounding).
 - Payment: `->paymentTerms(fn ($t) => $t->dueInDays(14)->cashDiscount(days: 7, percent: '2.00'))`, `->payment(PaymentMeansCode::SepaCreditTransfer, iban: '…')`.
 
 ## German VAT (quittio/country-de)
 
-- Use `Quittio\Country\DE\Tax\VatPreset`: `Standard19`, `Reduced7`, `ZeroRatedPv`, `SmallBusiness`, `ReverseChargeDomestic`, `ReverseChargeEu`, `IntraCommunitySupply`, `TriangularTransaction`, `Export`, `NotTaxableInGermany`, the margin schemes, `TravelAgency`, or `VatPreset::exempt('§ 4 Nr. 14 UStG')`. The presets add the mandatory notes.
+- Lines without `->vat()` get 19 % (`VatPreset::Standard19`), small business invoices (`quittio.seller.small_business`) `VatPreset::SmallBusiness`. For other cases use `Quittio\Country\DE\Tax\VatPreset`: `Standard19`, `Reduced7`, `ZeroRatedPv`, `SmallBusiness`, `ReverseChargeDomestic`, `ReverseChargeEu`, `IntraCommunitySupply`, `TriangularTransaction`, `Export`, `NotTaxableInGermany`, the margin schemes, `TravelAgency`, or `VatPreset::exempt('§ 4 Nr. 14 UStG')`. The presets add the mandatory notes.
 - Mandatory: a delivery date or period (`->deliveryDate()`, `->invoicingPeriod()`), the seller's VAT identifier or tax number, full addresses. Reverse charge in another member state and triangular transactions need the VAT identifiers of both parties.
 - Special cases are builder macros: `->selfBilled()` (Gutschrift), `->smallAmount()` (up to 250 EUR), `->newVehicle()`, `->propertyRelatedService()`, `->deductAdvance($advanceInvoice)` for final invoices.
 - Small businesses: `VatPreset::SmallBusiness` on every line and `seller.small_business = true`; never VAT and never `IntraCommunitySupply` (except new vehicles).
@@ -41,7 +41,7 @@ Use this skill when code creates, renders, sends, validates, cancels or reads in
 
 ## Cancellations and corrections
 
-- Issued invoices are never changed. Cancel: `Quittio::cancellation($result->data(), 'ST-2026-0001', reason: 'Charged twice')` returns an `InvoiceBuilder` for the cancellation (type 381 with positive amounts by default in Germany); render it like an invoice.
+- Issued invoices are never changed. Cancel: `$result->cancel('ST-2026-0001', reason: 'Charged twice')` renders the cancellation (type 381 with positive amounts by default in Germany) in the formats of the invoice. For stored data, `Quittio::cancellation($data, 'ST-2026-0001', reason: '…')` returns an `InvoiceBuilder`; render it like an invoice.
 - Partial: `lines: [['line' => '1', 'quantity' => '1'], ['line' => '2', 'amount' => '50.00']]`, with `history:` (a `CancellationHistory`) for later parts.
 - With `quittio/managed`, use its issuer, numbering and cancellation features instead of numbering invoices yourself.
 

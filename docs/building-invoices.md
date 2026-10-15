@@ -4,8 +4,8 @@
 
 ```php
 use Quittio\Core\Builder\InvoiceBuilder;
-use Quittio\Core\Builder\LineBuilder;
-use Quittio\Core\Builder\PartyBuilder;
+use Quittio\Core\Builder\Line;
+use Quittio\Core\Builder\Party;
 use Quittio\Core\Builder\PaymentTermsBuilder;
 use Quittio\Core\Enums\PaymentMeansCode;
 use Quittio\Core\Enums\UnitCode;
@@ -16,19 +16,16 @@ $invoice = InvoiceBuilder::make()
     ->issueDate('2026-10-03')
     ->deliveryDate('2026-09-30')
     ->buyerReference('PO-4711')
-    ->seller(fn (PartyBuilder $s) => $s
-        ->name('Muster GmbH')
+    ->seller(Party::make('Muster GmbH')
         ->vatId('DE123456789')
         ->address('Hauptstraße 1', '12345', 'Musterstadt', 'DE')
         ->contact('Max Muster', '+49 123 456789', 'rechnung@muster.de')
         ->electronicAddress('rechnung@muster.de', 'EM'))
-    ->buyer(fn (PartyBuilder $b) => $b
-        ->name('Kunde AG')
+    ->buyer(Party::make('Kunde AG')
         ->vatId('DE987654321')
         ->address('Bahnhofstraße 5', '54321', 'Beispielstadt', 'DE')
         ->electronicAddress('ap@kunde.de', 'EM'))
-    ->line(fn (LineBuilder $l) => $l
-        ->name('Web development')
+    ->line(Line::make('Web development')
         ->quantity(24, UnitCode::Hour)
         ->netPrice('95.00')
         ->vat(VatPreset::Standard19))
@@ -64,8 +61,7 @@ $invoice = InvoiceBuilder::make()
 | Buyer, buyer name, buyer postal address | BG-7, BT-44, BG-8 |
 | Lines (`build()` only) | BG-25 |
 | Item name of a line | BT-153 |
-| Quantity of a line without sub lines | BT-129 |
-| VAT category of a line | BG-30 |
+| VAT category of a line, unless the invoice has a [default VAT](#default-vat) | BG-30 |
 
 Everything else, e.g. a missing invoice number or a buyer reference that XRechnung requires, is reported by the [validation](validation.md) when the invoice is rendered or checked. Without `issueDate()` the issue date is today in the builder's time zone (`timezone()`, otherwise PHP's default time zone).
 
@@ -204,12 +200,24 @@ Cancellations take over the notes with subject `REG` and `TXD` of the original.
 
 ### Seller and buyer
 
-`seller(SellerParty|callable $seller)` and `buyer(BuyerParty|callable $buyer)` take a finished party or a callable that receives a `PartyBuilder`. A callable continues the party set before, also a `SellerParty` or `BuyerParty` (e.g. from `Seller::apply()` in Laravel or from `InvoiceBuilder::from()`), so single values can be changed:
+`seller()` and `buyer()` take one of four kinds of party:
+
+| Argument | Effect |
+|---|---|
+| `Party::make('Kunde AG')->vatId(…)->address(…)` | A `PartyBuilder` (`Quittio\Core\Builder\Party`); it replaces the party set before. The builder is copied, so it can serve as template. |
+| An application model implementing `ProvidesParty`, e.g. `->buyer($customer)` | The model fills a new `PartyBuilder` ([Application models](#application-models)); it replaces the party set before. |
+| `SellerParty`, `BuyerParty` | A finished party, e.g. `Seller::fromConfig()` in Laravel; it replaces the party set before. |
+| A callable that receives a `PartyBuilder` | Continues the party set before, also a `SellerParty` or `BuyerParty` (e.g. from `Seller::apply()` in Laravel or from `InvoiceBuilder::from()`), so single values can be changed. |
 
 ```php
+use Quittio\Core\Builder\Party;
+
 Seller::apply(InvoiceBuilder::make())                              // seller from config/quittio.php
     ->seller(fn (PartyBuilder $s) => $s->contact('Erika Muster', '+49 123 4567', 'erika@muster.de'))
-    ->buyer(fn (PartyBuilder $b) => $b->fromModel($customer));     // ProvidesParty
+    ->buyer($customer);                                            // ProvidesParty
+
+InvoiceBuilder::make()
+    ->buyer(Party::make('Kunde AG')->vatId('DE987654321')->address('Bahnhofstraße 5', '54321', 'Beispielstadt', 'DE'));
 ```
 
 `PartyBuilder` (`Quittio\Core\Builder\PartyBuilder`):
@@ -260,12 +268,36 @@ use Quittio\Core\Enums\IdentifierScheme;
 
 | `InvoiceBuilder` method | Description |
 |---|---|
-| `line(InvoiceLine\|ProvidesInvoiceLine\|callable $line)` | Adds a line (BG-25): a callable receives a new `LineBuilder`, a `ProvidesInvoiceLine` model fills one ([Application models](#application-models)), an `InvoiceLine` is taken as it is. |
-| `lines(iterable $lines)` | Adds several lines; each entry may be any of the three kinds, e.g. an Eloquent collection of order items. |
+| `line(InvoiceLine\|LineBuilder\|ProvidesInvoiceLine\|array\|callable $line)` | Adds a line (BG-25), in one of the forms below. |
+| `lines(iterable $lines)` | Adds several lines; each entry may be any of the forms, e.g. an array of arrays or an Eloquent collection of order items. |
 | `updateLine(string $id, callable $change)` | Changes an existing line: the callable receives the `InvoiceLine` and returns the changed one. The line net amount is reset, and percentage allowances and charges of the line are recalculated from the new line amount. |
 | `removeLine(string $id)` | Removes an existing line by its identifier (BT-126). |
 
-`updateLine()` and `removeLine()` work on lines that already exist as `InvoiceLine`: lines of data passed to `InvoiceBuilder::from()` and lines added as `InvoiceLine`. Lines added with a callable are built only in `build()`, so they cannot be changed or removed by identifier. An unknown identifier throws an `InvalidArgumentException`.
+A line can be given as:
+
+| Form | Example |
+|---|---|
+| `Line::make(string $name)` (`Quittio\Core\Builder\Line`), a `LineBuilder` with the name set | `->line(Line::make('Web development')->quantity(24, UnitCode::Hour)->netPrice('95.00'))` |
+| An array whose keys are methods of the `LineBuilder` | `->line(['name' => 'Hosting', 'quantity' => [1, UnitCode::Month], 'netPrice' => '49.00'])` |
+| An application model implementing `ProvidesInvoiceLine` ([Application models](#application-models)) | `->lines($order->items)` |
+| A callable that receives a new `LineBuilder` | `->line(Line::make('Travel expenses')->netPrice('120.00'))` |
+| A finished `InvoiceLine`, taken as it is | `->line($invoice->lines[0])` |
+
+A `LineBuilder` is copied when it is added, so the same builder can serve as template for further lines. In an array, each key names a method (`LineBuilder::ARRAY_KEYS`: `id`, `name`, `description`, `note`, `quantity`, `unit`, `netPrice`, `listPrice`, `priceInclVat`, `vat`, `period`, `allowance`, `charge`, `sellerId`, `buyerId`, `standardId`, `classification`, `originCountry`, `attribute`, `orderLineReference`, `buyerAccountingReference`, `objectId`, `group`, `highlight`, `showGrossPrice`) and the value is its argument; an array value holds the arguments as list or by name (`'quantity' => [4, UnitCode::Hour]`, `'allowance' => ['percent' => '10', 'reason' => 'Early bird']`). Null values are skipped, so database rows with empty columns can be passed; an unknown key throws an `InvalidArgumentException`. `Line::fromArray($array)` and `LineBuilder::fill($array)` do the same for a builder.
+
+```php
+use Quittio\Core\Builder\Line;
+
+$builder->lines([
+    Line::make('Web development')->quantity(24, UnitCode::Hour)->netPrice('95.00'),
+    ['name' => 'Hosting', 'quantity' => [1, UnitCode::Month], 'netPrice' => '49.00'],
+    ['name' => 'Book', 'netPrice' => '39.00', 'vat' => VatPreset::Reduced7],
+]);
+```
+
+Without `quantity()` a line has the quantity 1; without `vat()` it takes the [default VAT](#default-vat) of the invoice.
+
+`updateLine()` and `removeLine()` work on lines that already exist as `InvoiceLine`: lines of data passed to `InvoiceBuilder::from()` and lines added as `InvoiceLine`. Lines added in the other forms are built only in `build()`, so they cannot be changed or removed by identifier. An unknown identifier throws an `InvalidArgumentException`.
 
 ```php
 use Quittio\Core\Data\Lines\InvoiceLine;
@@ -273,7 +305,7 @@ use Quittio\Core\Data\Lines\InvoiceLine;
 $changed = InvoiceBuilder::from($draft)
     ->updateLine('2', fn (InvoiceLine $line) => $line->withNetPrice('80.00')->with(['note' => 'Price adjusted']))
     ->removeLine('3')
-    ->line(fn (LineBuilder $l) => $l->name('Travel expenses')->quantity(1)->netPrice('120.00')->vat(VatPreset::Standard19))
+    ->line(Line::make('Travel expenses')->quantity(1)->netPrice('120.00')->vat(VatPreset::Standard19))
     ->build();
 ```
 
@@ -289,12 +321,12 @@ Line identifiers: a line without `id()` gets its position (1, 2, 3 …), skippin
 | `name(string $name)` | BT-153 | Item name. Required. |
 | `description(?string $description)` | BT-154 | Item description. Printed as plain text; with the option `markdown` (Laravel `pdf.markdown`) as Markdown ([Templates](templates.md)). |
 | `note(?string $note)` | BT-127 | Line note. |
-| `quantity(BigDecimal\|int\|string $quantity, UnitCode\|RawCode\|string\|null $unit = null)` | BT-129, BT-130 | Invoiced quantity and optionally the unit. Required unless the line has sub lines (then default 1). Negative quantities for returns and discounts. |
+| `quantity(BigDecimal\|int\|string $quantity, UnitCode\|RawCode\|string\|null $unit = null)` | BT-129, BT-130 | Invoiced quantity and optionally the unit; default 1. Negative quantities for returns and discounts. |
 | `unit(UnitCode\|RawCode\|string $unit)` | BT-130 | Unit (UN/ECE Rec. 20/21), default `UnitCode::Unit` (C62). |
 | `netPrice(BigDecimal\|int\|string $price, BigDecimal\|int\|string\|null $baseQuantity = null, UnitCode\|RawCode\|string\|null $baseQuantityUnit = null)` | BT-146, BT-149, BT-150 | Net price per base quantity; the base quantity unit defaults to the line unit. Each call replaces the base quantity. |
 | `listPrice(BigDecimal\|int\|string $grossPrice, BigDecimal\|int\|string\|null $discount = null)` | BT-148, BT-147 | List (gross) price before price discount and the discount per unit. Without `netPrice()` the net price is list price minus discount. |
 | `priceInclVat(BigDecimal\|int\|string $price)` | – | Price including VAT ([gross price mode](#gross-price-mode)); the calculator derives the net price. |
-| `vat(TaxPreset\|VatCategory $presetOrCategory, BigDecimal\|int\|string\|null $rate = null, ?string $exemptionReason = null, VatExemptionReasonCode\|RawCode\|string\|null $exemptionReasonCode = null)` | BG-30 (BT-151, BT-152) | VAT treatment: a tax preset of a country pack, or category, rate and exemption reason ([VAT](#vat)). Required. |
+| `vat(TaxPreset\|VatCategory $presetOrCategory, BigDecimal\|int\|string\|null $rate = null, ?string $exemptionReason = null, VatExemptionReasonCode\|RawCode\|string\|null $exemptionReasonCode = null)` | BG-30 (BT-151, BT-152) | VAT treatment: a tax preset of a country pack, or category, rate and exemption reason ([VAT](#vat)). Without it, the line takes the [default VAT](#default-vat) of the invoice. |
 | `period(Date\|string\|null $start, Date\|string\|null $end = null)` | BG-26 (BT-134, BT-135) | Line period. |
 | `allowance(?string $amount = null, ?string $percent = null, ?string $reason = null, AllowanceReasonCode\|RawCode\|string\|null $reasonCode = null, ?string $baseAmount = null)` | BG-27 | Line allowance: amount or percentage; repeatable. |
 | `charge(?string $amount = null, ?string $percent = null, ?string $reason = null, ChargeReasonCode\|RawCode\|string\|null $reasonCode = null, ?string $baseAmount = null)` | BG-28 | Line charge: amount or percentage; repeatable. |
@@ -314,6 +346,7 @@ Line identifiers: a line without `id()` gets its position (1, 2, 3 …), skippin
 | `highlight(bool $highlight = true)` | – | Highlights the line in the PDF (the default templates shade it and mark it in the secondary colour). |
 | `showGrossPrice(?bool $show = true)` | – | Prints the price including VAT below the net unit price of this line (`false`: not), whatever the presentation's `showGrossPrices` says; `null` follows the presentation. Only for lines with `priceInclVat()`. |
 | `fromModel(ProvidesInvoiceLine $model)` | – | Lets an application model fill the builder. |
+| `fill(array $values)` | – | Calls the methods named by the keys of the array ([Lines](#lines)). |
 | `build(string $currency, string $defaultId, ?string $locale = null): InvoiceLine` | – | Builds the line; called by `InvoiceBuilder`. Use it to create an `InvoiceLine` on its own, e.g. `(new LineBuilder)->name('…')->…->build('EUR', '1')`. |
 
 `UnitCode` has the cases `Unit` (C62), `Piece` (H87), `Set` (SET), `Pair` (PR), `Dozen` (DZN), `LumpSum` (LS), `Second` (SEC), `Minute` (MIN), `Hour` (HUR), `Day` (DAY), `Week` (WEE), `Month` (MON), `Quarter` (QAN), `Year` (ANN), `Gram` (GRM), `Kilogram` (KGM), `Tonne` (TNE), `Millimetre` (MMT), `Centimetre` (CMT), `Metre` (MTR), `Kilometre` (KMT), `SquareMetre` (MTK), `CubicMetre` (MTQ), `Millilitre` (MLT), `Litre` (LTR), `KilowattHour` (KWH), `Kilowatt` (KWT), `Percent` (P1), `ServiceUnit` (E48), `Package` (XPK), `Box` (XBX) and `Pallet` (XPX); every other code of the list can be passed as string. `ItemClassificationScheme` (UNTDID 7143) has `HarmonisedSystem` (HS), `Unspsc` (TST), `CustomsArticleNumber` (CV), `NationalProductGroup` (GN), `Isbn` (IB), `ProductServiceId` (MP) and `MutuallyDefined` (ZZZ).
@@ -321,10 +354,10 @@ Line identifiers: a line without `id()` gets its position (1, 2, 3 …), skippin
 ### Prices
 
 ```php
-->line(fn (LineBuilder $l) => $l->name('Paper A4')->quantity(5000, 'H87')
+->line(Line::make('Paper A4')->quantity(5000, 'H87')
     ->netPrice('12.50', baseQuantity: 1000)                  // 12.50 per 1000 sheets: 62.50
     ->vat(VatPreset::Standard19))
-->line(fn (LineBuilder $l) => $l->name('Monitor')->quantity(2)
+->line(Line::make('Monitor')->quantity(2)
     ->listPrice('299.00', discount: '30.00')                 // net price 269.00
     ->vat(VatPreset::Standard19))
 ```
@@ -336,7 +369,7 @@ The line amount before allowances and charges is round2(quantity × net price / 
 A line allowance or charge has an amount, or a percentage of a base amount. Without a base amount the base is the line amount before allowances and charges (quantity × price); the calculator writes it to BT-137/BT-142. EN 16931 requires a reason text or a reason code (`AllowanceReasonCode` and `ChargeReasonCode`, see [Document level allowances and charges](#document-level-allowances-and-charges)).
 
 ```php
-->line(fn (LineBuilder $l) => $l->name('Seminar')->quantity(3)->netPrice('400.00')->vat(VatPreset::Standard19)
+->line(Line::make('Seminar')->quantity(3)->netPrice('400.00')->vat(VatPreset::Standard19)
     ->allowance(percent: '10', reason: 'Early bird')       // 120.00 of 1200.00
     ->charge('25.00', reason: 'Materials', reasonCode: 'ABK'))
 ```
@@ -348,9 +381,9 @@ Shops and B2C invoices often work with prices including VAT. With `priceInclVat(
 ```php
 InvoiceBuilder::make()
     // ...
-    ->line(fn (LineBuilder $l) => $l->name('T-shirt')->quantity(3)->priceInclVat('19.99')->vat(VatPreset::Standard19))
-    ->line(fn (LineBuilder $l) => $l->name('Shipping')->quantity(1)->priceInclVat('4.90')->vat(VatPreset::Standard19))
-    ->line(fn (LineBuilder $l) => $l->name('Voucher')->quantity(-1)->priceInclVat('5.00')->vat(VatPreset::Standard19))
+    ->line(Line::make('T-shirt')->quantity(3)->priceInclVat('19.99')->vat(VatPreset::Standard19))
+    ->line(Line::make('Shipping')->quantity(1)->priceInclVat('4.90')->vat(VatPreset::Standard19))
+    ->line(Line::make('Voucher')->quantity(-1)->priceInclVat('5.00')->vat(VatPreset::Standard19))
     ->build();
 ```
 
@@ -359,9 +392,9 @@ Restrictions: all lines of the invoice use `priceInclVat()`; gross price lines h
 ### Sub lines
 
 ```php
-->line(fn (LineBuilder $l) => $l->name('Workstation')->vat(VatPreset::Standard19)
-    ->subLine(fn (LineBuilder $s) => $s->name('Computer')->quantity(1)->netPrice('900.00')->vat(VatPreset::Standard19))
-    ->subLine(fn (LineBuilder $s) => $s->name('Monitor')->quantity(2)->netPrice('250.00')->vat(VatPreset::Standard19)))
+->line(Line::make('Workstation')->vat(VatPreset::Standard19)
+    ->subLine(Line::make('Computer')->quantity(1)->netPrice('900.00')->vat(VatPreset::Standard19))
+    ->subLine(Line::make('Monitor')->quantity(2)->netPrice('250.00')->vat(VatPreset::Standard19)))
 ```
 
 A parent line without quantity has the quantity 1; without own price it takes the sum of its sub lines as price. Sub lines exist only in the profiles EXTENDED (CII, with parent line identifier and line status `GROUP`/`DETAIL`) and XRechnung extension (UBL only, `->format('xrechnung-ubl')->profile('xrechnung-extension')`). The automatic choice upgrades ZUGFeRD and CII to EXTENDED ([Formats and profiles](formats.md#automatic-choice)); other profiles reject sub lines (`QUITTIO-PROFILE-SUBLINES`).
@@ -382,6 +415,30 @@ use Quittio\Core\Enums\VatExemptionReasonCode;
 ```
 
 With a preset, category, rate, exemption reason and code come from the preset and the other parameters are ignored; the preset key is kept on the line (`LineVat::$presetKey`). The exemption text of a preset is resolved in the locale of the invoice (`locale()`) when the line is built; the German presets use German without a locale.
+
+### Default VAT
+
+Lines (and sub lines) without `vat()` take the default VAT of the invoice when it is built:
+
+1. `defaultVat()` of the builder, with the arguments of `LineBuilder::vat()`, e.g. `->defaultVat(VatPreset::Reduced7)` for a bookshop;
+2. otherwise the application default set with `InvoiceBuilder::useDefaultVat(callable|TaxPreset|null $default)`: a preset, or a callable that receives the seller's country code (BT-40) and whether the invoice is flagged as small business invoice (`Meta::FLAG_SMALL_BUSINESS`) and returns a preset or `null`.
+
+`Quittio\Core\Tax\CountryDefaultVat` is such a callable: `new CountryDefaultVat(CountryRegistry $countries, ?TaxPreset $preset = null)` returns `$preset`, otherwise the standard preset of the seller's country pack (`CountryDefaults::$vatPreset`, Germany `de.standard_19`); for small business invoices it returns the small business preset of the pack (`CountryDefaults::$smallBusinessVatPreset`, Germany `de.small_business`), otherwise `$preset`. The Laravel integration installs it with the preset of `quittio.defaults.vat` ([Configuration](configuration.md#defaults)), so in Laravel lines without `vat()` get 19 % for a German seller.
+
+```php
+use Quittio\Core\Tax\CountryDefaultVat;
+
+// Without Laravel, once at start-up
+InvoiceBuilder::useDefaultVat(new CountryDefaultVat($quittio->countries()));   // or a preset: VatPreset::Standard19
+
+$invoice = InvoiceBuilder::make()
+    // ...
+    ->line(Line::make('Web development')->quantity(24, UnitCode::Hour)->netPrice('95.00'))   // 19 %
+    ->line(Line::make('Book')->netPrice('39.00')->vat(VatPreset::Reduced7))                   // 7 %
+    ->build();
+```
+
+The default only fills in what a line leaves open: the built data and the XML carry the VAT of every line, as EN 16931 requires. Without a default, a line without VAT makes `build()` fail (`InvalidInvoiceData`, BG-30); `useDefaultVat(null)` removes the application default. Documents (`DocumentBuilder`) use the same defaults and have `defaultVat()` as well.
 
 ### Categories
 
@@ -424,7 +481,7 @@ $exempt = CustomTaxPreset::make('acme.exempt_132', VatCategory::Exempt, '0', 'VA
     'en' => 'Exempt according to Art. 132 VAT Directive',
 ]);
 
-->line(fn (LineBuilder $l) => $l->name('Course')->quantity(1)->netPrice('300.00')->vat($exempt))
+->line(Line::make('Course')->quantity(1)->netPrice('300.00')->vat($exempt))
 ```
 
 ## Document level allowances and charges
@@ -605,7 +662,7 @@ use Quittio\Core\Data\Presentation\Presentation;
 
 ->presentation(fn (Presentation $p) => $p->with(['introText' => 'Thank you for your order.', 'showGrossPrices' => true]))
 ->group('hardware', 'Hardware')
-->line(fn (LineBuilder $l) => $l->name('Notebook')->quantity(1)->netPrice('1200.00')->vat(VatPreset::Standard19)->group('hardware'))
+->line(Line::make('Notebook')->quantity(1)->netPrice('1200.00')->vat(VatPreset::Standard19)->group('hardware'))
 ```
 
 The flags `declared_amounts`, `declared_amounts_recalculated`, `cancellation_vat_aligned` and those with the prefixes `amounts_fingerprint:` and `declared_vat_in_tax_currency:` are set by Quittio itself ([Declared amounts](#declared-amounts)); do not set them.
@@ -616,7 +673,7 @@ Application models can provide invoice data through three contracts in `Quittio\
 
 | Contract | Method | Used by |
 |---|---|---|
-| `ProvidesParty` | `fillParty(PartyBuilder $party): void` | `PartyBuilder::fromModel($model)`, e.g. a customer or user as buyer |
+| `ProvidesParty` | `fillParty(PartyBuilder $party): void` | `InvoiceBuilder::buyer($model)` and `seller($model)`, `PartyBuilder::fromModel($model)`, e.g. a customer or user as buyer |
 | `ProvidesInvoiceLine` | `fillLine(LineBuilder $line): void` | `InvoiceBuilder::line($model)`, `lines($models)`, `LineBuilder::fromModel($model)` |
 | `ProvidesInvoiceData` | `toInvoiceData(): InvoiceData` | `Quittio::make($model)` (core and Laravel), `Invoice::draftFor($model)` and `HasInvoices::draftInvoice()` in the [Managed layer](managed.md) |
 
@@ -643,7 +700,7 @@ class Order extends Model implements ProvidesInvoiceData
     {
         return Seller::apply(InvoiceBuilder::make())
             ->number($this->invoice_number)
-            ->buyer(fn (PartyBuilder $b) => $b->fromModel($this->customer))
+            ->buyer($this->customer)                            // ProvidesParty
             ->lines($this->items)
             ->build();
     }
