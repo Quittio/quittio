@@ -21,9 +21,10 @@ return [
     */
     'defaults' => [
 
-        // Country pack used when the seller has no country code (BT-40). Normally the
-        // seller's country decides; without an installed pack only EN 16931 rules apply.
-        'country' => env('QUITTIO_COUNTRY', 'DE'),
+        // Country pack used when the seller has no country code (BT-40), e.g. 'DE'. Normally
+        // the seller's country decides; without an installed pack only EN 16931 rules apply.
+        // null = the only installed country pack, if there is exactly one.
+        'country' => env('QUITTIO_COUNTRY'),
 
         // Profile of the e-invoice XML for every format that allows it, e.g. 'en16931',
         // 'extended', 'xrechnung'. null = the default of the format (ZUGFeRD: EN 16931).
@@ -95,14 +96,14 @@ return [
         // registration and the managing directors.
         'additional_legal_info' => null,
 
-        // Postal address (BG-5). Street, postcode and city are required on German invoices.
-        // The country code also selects the country pack.
+        // Postal address (BG-5). Country packs may require street, postcode and city (Germany
+        // does). The country code also selects the country pack.
         'address' => [
             'line1' => null,        // street and number
             'line2' => null,        // additional address line
             'postcode' => null,
             'city' => null,
-            'country' => 'DE',      // ISO 3166-1 alpha-2
+            'country' => null,      // ISO 3166-1 alpha-2, e.g. 'DE'; null = defaults.country
         ],
 
         // Contact person (BG-6), added when at least one value is set. XRechnung requires
@@ -119,8 +120,9 @@ return [
             ['iban' => null, 'bic' => null, 'name' => null],
         ],
 
-        // Small business under § 19 UStG: invoices carry no VAT, lines without ->vat() get
-        // the small business exemption with its legal note, and VAT on a line is rejected.
+        // Small business exempt from VAT (e.g. § 19 UStG in Germany): invoices carry no VAT,
+        // lines without ->vat() get the country pack's small business exemption with its legal
+        // note, and VAT on a line is rejected.
         'small_business' => (bool) env('QUITTIO_SELLER_SMALL_BUSINESS', false),
     ],
 
@@ -223,7 +225,7 @@ return [
     | Validation
     |--------------------------------------------------------------------------
     | Every invoice is checked before it is created: EN 16931, the rules of the format
-    | (XRechnung, Peppol) and of the country (Germany: UStG).
+    | (XRechnung, Peppol) and of the seller's country pack (e.g. UStG for Germany).
     */
     'validation' => [
 

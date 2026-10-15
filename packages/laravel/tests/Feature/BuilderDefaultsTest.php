@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Quittio\Core\Builder\InvoiceBuilder;
 use Quittio\Core\Builder\Line;
+use Quittio\Core\Countries\CountryGeneric;
 use Quittio\Core\Exceptions\ConfigurationException;
 use Quittio\Core\Testing\Scenarios;
 use Quittio\Laravel\Facades\Quittio;
@@ -63,4 +64,22 @@ it('cancels with the fake as well', function () {
 
     expect($fake->rendered())->toHaveCount(2)
         ->and($fake->rendered()[1]->data()->number)->toBe('ST-2026-0009');
+});
+
+it('defaults the country to the only installed country pack', function () {
+    config()->set('quittio.defaults.country', null);
+    config()->set('quittio.seller.address.country', null);
+
+    expect(Quittio::core()->config()->country)->toBe('DE')
+        ->and(Seller::fromConfig()->address->countryCode)->toBe('DE');
+});
+
+it('has no default country with several country packs', function () {
+    config()->set('quittio.defaults.country', null);
+    Quittio::registerCountry(new CountryGeneric('AT'));
+
+    expect(Quittio::core()->config()->country)->toBeNull();
+
+    config()->set('quittio.defaults.country', 'AT');
+    expect(Quittio::core()->config()->country)->toBe('AT');
 });

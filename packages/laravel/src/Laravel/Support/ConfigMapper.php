@@ -19,8 +19,9 @@ final class ConfigMapper
 {
     /**
      * @param  list<string>|null  $levels  validation levels instead of validation.levels (e.g. quittio:validate --kosit)
+     * @param  string|null  $defaultCountry  country without defaults.country, e.g. the only installed pack
      */
-    public static function toCore(Settings $settings, bool $production, ?array $levels = null): Config
+    public static function toCore(Settings $settings, bool $production, ?array $levels = null, ?string $defaultCountry = null): Config
     {
         // A published file without the key keeps the default checks; only [] switches them off.
         $levelNames = $levels ?? ($settings->get('validation.levels') === null ? ['php', 'xsd'] : $settings->strings('validation.levels'));
@@ -41,7 +42,7 @@ final class ConfigMapper
             format: $format === 'auto' ? null : $format,
             profile: $settings->nullableString('defaults.profile'),
             locale: $settings->nullableString('defaults.locale'),
-            country: $settings->nullableString('defaults.country'),
+            country: $settings->nullableString('defaults.country') ?? $defaultCountry,
             template: 'default',
             filename: $settings->string('pdf.filename', '{title}_{number}.{ext}'),
             pdfa: $settings->bool('pdf.pdfa', true),

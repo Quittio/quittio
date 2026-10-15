@@ -93,7 +93,7 @@ final class QuittioFake extends QuittioManager
 
     public function registerCountry(CountryPack $pack): static
     {
-        $this->planner?->registerCountry($pack);
+        $this->planner = null;
 
         return parent::registerCountry($pack);
     }

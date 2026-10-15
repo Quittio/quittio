@@ -242,7 +242,8 @@ class QuittioManager
     public function registerCountry(CountryPack $pack): static
     {
         $this->countryPacks[] = $pack;
-        $this->core?->registerCountry($pack);
+        // The next call builds the core again: the default country depends on the packs.
+        $this->core = null;
 
         return $this;
     }
@@ -347,12 +348,14 @@ class QuittioManager
     {
         $settings = $this->settings();
         $levels ??= $settings->strings('validation.levels');
-        $config = ConfigMapper::toCore($settings, $this->production(), $levels);
+        $packs = $this->resolveCountryPacks($settings);
+        // Without defaults.country, an application with a single country pack defaults to it.
+        $config = ConfigMapper::toCore($settings, $this->production(), $levels, count($packs) === 1 ? $packs[0]->code() : null);
         $logger = $this->container()->bound(LoggerInterface::class) ? $this->container()->make(LoggerInterface::class) : null;
 
         $quittio = Quittio::create(
             config: $config,
-            countryPacks: $this->resolveCountryPacks($settings),
+            countryPacks: $packs,
             renderer: $this->renderer($settings),
             templates: BladeTemplateEngine::fromSettings($this->container()->make(ViewFactory::class), $settings),
             logger: $logger instanceof LoggerInterface ? $logger : null,

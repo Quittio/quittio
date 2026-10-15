@@ -28,7 +28,7 @@ final class Seller
                 $seller->nullableString('address.line1'),
                 $seller->nullableString('address.postcode'),
                 $seller->nullableString('address.city'),
-                $seller->string('address.country', 'DE'),
+                $seller->nullableString('address.country') ?? self::defaultCountry(),
                 $seller->nullableString('address.line2'),
             );
 
@@ -82,6 +82,15 @@ final class Seller
         }
 
         return $builder;
+    }
+
+    /**
+     * The country of a seller without address.country: quittio.defaults.country, or the code of
+     * the only installed country pack.
+     */
+    private static function defaultCountry(): string
+    {
+        return Container::getInstance()->make(QuittioManager::class)->core()->config()->country ?? '';
     }
 
     private static function settings(): Settings

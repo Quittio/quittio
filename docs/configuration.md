@@ -103,7 +103,7 @@ Inside a section you keep, a missing key gets the value Quittio uses when nothin
 
 | Key left out | Value |
 |---|---|
-| `defaults.country` | none: the seller's country decides, without it only the generic EN 16931 rules apply |
+| `defaults.country` | none: the seller's country decides; without it the only installed country pack, else the generic EN 16931 rules |
 | `defaults.due_days` | none: no due date unless the invoice sets one |
 | `pdf.cache_path` | `sys_get_temp_dir().'/quittio-mpdf'` |
 | `storage.disk` | the default disk of `config/filesystems.php` |
@@ -133,7 +133,7 @@ The Managed layer has its own file, `config/quittio-managed.php`, with the datab
 
 | Variable | Key | Default |
 |---|---|---|
-| `QUITTIO_COUNTRY` | `defaults.country` | `DE` |
+| `QUITTIO_COUNTRY` | `defaults.country` | – (the only installed country pack) |
 | `QUITTIO_SELLER_NAME` | `seller.name` | – |
 | `QUITTIO_SELLER_VAT_ID` | `seller.vat_id` | – |
 | `QUITTIO_SELLER_TAX_NUMBER` | `seller.tax_number` | – |
@@ -155,7 +155,7 @@ Values used when an invoice or a render call does not set them itself.
 
 | Key | Type | Default | Effect |
 |---|---|---|---|
-| `defaults.country` | string\|null | `env('QUITTIO_COUNTRY', 'DE')` | Country pack used when the seller has no country code (BT-40). Normally the seller's country decides; `->country()` on a render call wins as well. Without an installed pack for the code, only the generic EN 16931 rules apply. |
+| `defaults.country` | string\|null | `env('QUITTIO_COUNTRY')` | Country pack used when the seller has no country code (BT-40), e.g. `'DE'`. Normally the seller's country decides; `->country()` on a render call wins as well. `null` = the only installed country pack if there is exactly one (`quittio/quittio` installs Germany). Without an installed pack for the code, only the generic EN 16931 rules apply. |
 | `defaults.profile` | string\|null | `null` | Profile of the e-invoice XML, i.e. how much of EN 16931 it contains ([Profiles](concepts.md#profiles)), e.g. `'en16931'`, `'extended'`, `'xrechnung'`. It applies to every format that allows it, also to `->format('zugferd')` and to formats chosen by a country rule. Formats that do not allow it ignore it (e.g. `basic` for XRechnung or Peppol). `null` = the profile of the automatic choice or the format's default (`zugferd`, `cii`, `ubl`: `en16931`; `xrechnung-cii`, `xrechnung-ubl`: `xrechnung`; `peppol`: `peppol`). `->profile()` on a render call always wins. See [Formats and profiles](formats.md). |
 | `defaults.format` | string\|null | `null` | Format of a render call without `->format()`. `null` or `'auto'` = automatic choice by the format resolver: XRechnung for public buyers with a Leitweg-ID (the routing ID of a German public buyer, see [German terms](concepts.md#german-terms)), PDF for consumers, ZUGFeRD for businesses ([Automatic choice](formats.md#automatic-choice)). Keys: `zugferd` (PDF with embedded XML; aliases `factur-x`, `facturx`), `xrechnung-cii` (alias `xrechnung`), `xrechnung-ubl`, `cii`, `ubl`, `peppol`, `pdf`, `html`, `json`. |
 | `defaults.locale` | string\|null | `null` | Language of the invoice (labels, generated texts, number and date formats), e.g. `'de'` or `'en'`, when neither `->locale()` on the render call nor the invoice (`InvoiceBuilder::locale()`) sets one. `null` = the default of the seller's country pack (Germany: `de`). |
@@ -224,7 +224,7 @@ Your company as it appears on every invoice. The section is used by `Quittio::in
 | `seller.address.line2` | string\|null | `null` | Additional address line (BT-36) |
 | `seller.address.postcode` | string\|null | `null` | Postcode (BT-38). Required on German invoices. |
 | `seller.address.city` | string\|null | `null` | City (BT-37). Required on German invoices. |
-| `seller.address.country` | string | `'DE'` | Country code, ISO 3166-1 alpha-2 (BT-40). It also selects the leading country pack. |
+| `seller.address.country` | string\|null | `null` | Country code, ISO 3166-1 alpha-2 (BT-40), e.g. `'DE'`. It also selects the leading country pack. `null` = `defaults.country`, without it the code of the only installed country pack. |
 | `seller.contact.name` / `.phone` / `.email` | string\|null | `null` | Contact person (BG-6), added only when at least one value is set. XRechnung requires name, phone and e-mail. |
 | `seller.electronic_address.value` | string\|null | `null` | Electronic address of the seller (BT-34), added only when set. Required by XRechnung and Peppol. |
 | `seller.electronic_address.scheme` | string | `'EM'` | Scheme of the electronic address, a code of the EAS list (electronic address schemes): `EM` = e-mail address, `9930` = German VAT number (as Peppol participant ID) |
