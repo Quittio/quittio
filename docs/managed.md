@@ -1,47 +1,79 @@
 # Managed layer (`quittio/managed`)
 
-The Managed layer stores invoices in the database and takes care of their lifecycle:
-issuer profiles, drafts, gapless numbering, issuing, rendering and archiving, cancellations,
-partial cancellations, corrections, delivery by mail, the audit log and retention. It uses
-only the public API of `quittio/laravel` and `quittio/core`: everything it produces could
-also be produced by hand with the core.
+The Managed layer stores your invoices in the database and handles what happens after you
+build them: numbering, issuing, archiving, cancelling, correcting, sending, and deleting them
+after the retention period. You need it when your Laravel application issues the invoices
+itself and has to keep them. Read [Getting started](getting-started.md) first: the Managed
+layer uses the same invoice builder. Terms such as e-invoice, format and profile are explained
+in [E-invoicing basics](concepts.md).
 
-`quittio/managed` is commercially licensed and distributed separately from the open source packages.
+`quittio/managed` is commercially licensed and distributed separately from the open source
+packages.
+
+## What Managed adds
+
+The open source packages (`quittio/core`, `quittio/laravel` and a country pack) build,
+calculate, validate and render an invoice. What happens with the result is up to you. The
+Managed layer adds the records and rules around it:
+
+| Task | Without Managed you … | With Managed … |
+|---|---|---|
+| Seller | set your company in the `seller` section of `config/quittio.php`, or pass `->seller()` per invoice | keep one or more issuer profiles in the database, each with bank accounts, defaults, texts, design and numbering ([Issuer profiles](#issuer-profiles)) |
+| Customers | pass the buyer data for every invoice | still pass the buyer data, and every invoice also links to your own models, e.g. `$user->invoices()` ([Customers and references](#customers-and-references)) |
+| Invoice numbers | set `->number('RE-2026-0042')` yourself and make sure numbers are unique and have no gaps | get the next number when you issue, from a pattern such as `RE-{Y}-{seq:4}`, gapless and unique per company ([Numbering](#numbering)) |
+| Storing invoices | store the data, PDF and XML yourself | keep drafts and issued invoices as rows; drafts can be changed, previewed and deleted ([Drafts](#drafts)) |
+| After issuing | have nothing that stops your code from changing an invoice | cannot change an issued invoice: the model, its query builder and optional database triggers block it ([Immutability](#immutability)) |
+| Archive | save files with `$result->save()`, which overwrites existing files | get a write-once archive with SHA-256 hashes, document versions and an integrity check ([Rendering and archive](#rendering-and-archive)) |
+| Cancellations and corrections | render a cancellation with `$result->cancel('ST-…')`, track what was cancelled and pass the history for partial cancellations | call `$invoice->cancel()`, `cancelPartially()` or `correct()`; numbers, links, VAT and status are kept for you ([Cancellations and corrections](#cancellations-and-corrections)) |
+| Sending | write your own Mailable | call `$invoice->send()`, with a log of every delivery attempt ([Delivery](#delivery)) |
+| Audit and retention | keep your own records | get an append-only audit log, a retention period per invoice, a legal hold and a command that deletes expired invoices ([Audit log](#audit-log), [Retention and deletion](#retention-and-deletion)) |
+
+The Managed layer uses only the public API of `quittio/laravel` and `quittio/core`:
+everything it produces could also be produced by hand with the core.
+
+### When to use it
+
+Use only the open source packages when another system (an ERP, accounting software or a
+shop) keeps the invoices and assigns their numbers, and Quittio only produces the files.
+
+Use the Managed layer when your application is the system that issues the invoices. Then the
+numbers must be unique and without gaps, an issued invoice must never change, and the
+documents must be kept for the retention period. In Germany these rules come from the VAT Act
+(UStG), the Fiscal Code (AO) and the [GoBD](concepts.md#german-terms), the German rules for
+digital bookkeeping; invoices must be kept for 8 years.
+
+With the Managed layer installed, `Quittio::invoice()` takes the seller from the current
+issuer profile instead of `config/quittio.php` (see [The issuer builder](#the-issuer-builder)).
+It therefore needs an issuer profile and throws `IssuerNotFound` without one (see
+[Current issuer](#current-issuer)). The installer asks for the first profile.
 
 Not part of version 1.0: recording payments (the payment columns exist, see
-[Payment status](#payment-status)), bank reconciliation, dunning runs, subscriptions and
-recurring invoices, advance and final invoices, self-billing, inbound invoices, Peppol
-transmission and DATEV exports.
+[Payment status](#payment-status)), bank reconciliation, dunning runs (automatic payment
+reminders), subscriptions and recurring invoices, advance and final invoices, self-billing,
+inbound invoices, transmission over the [Peppol network](concepts.md#formats) and exports for
+DATEV (German accounting software). See [Known limitations](#known-limitations).
 
 ## Overview
+
+The Managed layer works with these records:
 
 | Concept | Model | Description |
 |---|---|---|
 | Issuer profile | `Issuer` | Your company as seller: master data, bank accounts, defaults, texts, branding, numbering |
 | Draft | `Invoice` (status `draft`) | Freely changeable, no number, can be deleted |
 | Issued invoice | `Invoice` (status `issued` …) | Number, data snapshot, dates and totals frozen; archived as XML and/or PDF |
-| Cancellation, correction | `Invoice` (kind `cancellation`, `correction`) | Own invoices with own numbers that refer to the original |
+| Cancellation, correction | `Invoice` (kind `cancellation`, `correction`) | Invoices of their own, with their own numbers, that refer to the original |
 | Relation | `InvoiceRelation` | Link from a cancellation or correction to the original, with the cancelled lines and VAT |
 | Sequence | `Sequence` | Counter of a number sequence (`{issuer}:{sequence}:{period}`) |
 | Delivery | `Delivery` | One delivery attempt by mail |
 | Audit entry | `AuditLog` | Append-only record of every business relevant action |
 
-```
+An invoice starts as a draft. `issue()` gives it a number and freezes it. After that, only
+cancellations and corrections change its status:
+
+```text
 draft ──issue()──▶ issued ──cancelPartially()──▶ partially_cancelled ──▶ … ──▶ cancelled
                      └──────── cancel() or an issued correction ─────────────▶ cancelled
-```
-
-A typical flow:
-
-```php
-use Quittio\Managed\Models\Invoice;
-use Quittio\Managed\Models\Issuer;
-
-$draft = Invoice::draft(Issuer::current()->builder()->buyer(...)->line(...));
-$draft->preview();                  // PDF with watermark, no number
-$invoice = $draft->issue();         // number, frozen data, rendering queued
-$invoice->send();                   // archived documents by mail
-$invoice->cancel(reason: 'Doppelt berechnet');
 ```
 
 ## Installation
@@ -53,28 +85,39 @@ php artisan vendor:publish --tag=quittio-managed-triggers   # recommended for pr
 php artisan migrate
 ```
 
-Requirements: PHP 8.3 or later, Laravel 13, `quittio/core` and `quittio/laravel` in the same version.
-Numbering, retention and the correction strategy come from the country pack of the issuer's
-country (e.g. `quittio/country-de`, see [Country packs](country-packs.md)); for a country
-without a pack the generic rules apply (pattern `INV-{Y}-{seq:4}`, yearly reset, retention
-10 years after the end of the year, cancellation by credit note, correction by cancel and
-reissue).
+Requirements: PHP 8.3 or later, Laravel 13, and `quittio/core` and `quittio/laravel` in the
+same version.
 
 `quittio:install --managed` runs these steps (see also [Artisan commands](commands.md)):
 
-1. publishes `config/quittio.php` and `config/quittio-managed.php` (`--force` overwrites
-   them),
-2. publishes the migrations, unless they were published before (recognised by their file
-   name: `vendor:publish` gives migrations a new timestamp each time),
-3. asks "Run the migrations now?" and runs `migrate --force`,
-4. if no issuer profile exists, asks for the first one: key (default `default`), company
-   name (required), street, postcode, city, country (default `DE`), VAT id, tax number (asked
-   only without a VAT id), e-mail address for invoices (stored as contact e-mail and as
-   electronic address with scheme `EM`), IBAN and BIC, time zone (default `app.timezone`,
-   otherwise `Europe/Berlin` for Germany and `UTC` else). The profile is marked as default.
+1. It publishes `config/quittio.php` and `config/quittio-managed.php` (`--force` overwrites
+   them).
+2. It publishes the migrations, unless they were published before. It recognises them by
+   their file name, because `vendor:publish` gives migrations a new timestamp each time.
+3. It asks "Run the migrations now?" and runs `migrate --force`.
+4. If no issuer profile exists, it asks for the first one: key (default `default`), company
+   name (required), street and number, postcode, city, country (default `DE`), VAT id, tax
+   number (asked only without a VAT id), e-mail address for invoices, IBAN, BIC (asked only
+   with an IBAN) and time zone. The e-mail address is stored as contact e-mail and as
+   electronic address with scheme `EM` (e-mail). The time zone defaults to `app.timezone`;
+   when that is `UTC`, to `Europe/Berlin` for Germany and `UTC` for other countries. The
+   profile is marked as default.
 
-With `--no-interaction` the migrations run without asking and no issuer is created. The
-installer does not publish the immutability triggers.
+With `--no-interaction`, the migrations run without asking and no issuer is created. The
+installer does not publish the immutability triggers: publish them with the third command
+above (see [Database triggers](#database-triggers)).
+
+The migrations use the database connection and table prefix of `config/quittio-managed.php`
+(`connection`, `table_prefix`, see [Database settings](#database-settings)): set both before
+migrating. To change them, answer "no" when the installer asks to run the migrations, edit
+the configuration, run `php artisan migrate` and run the installer again for the issuer
+profile.
+
+The country pack of the issuer's country supplies the defaults for numbering, retention and
+corrections (e.g. `quittio/country-de`, see [Country packs](country-packs.md)). For a country
+without a pack, generic rules apply: pattern `INV-{Y}-{seq:4}`, yearly reset, retention 10
+years after the end of the year, cancellation by credit note, correction by cancel and
+reissue (see [Cancellations and corrections](#cancellations-and-corrections)).
 
 ### Databases
 
@@ -83,45 +126,9 @@ PostgreSQL 16).
 
 | Database | Notes |
 |---|---|
-| SQLite | Set `'transaction_mode' => 'IMMEDIATE'` and a `busy_timeout` (e.g. `5000`) on the connection in `config/database.php`. Without the immediate transaction mode the numbering logs a warning once per process; concurrent issuing is then retried, but not recommended for production. |
+| SQLite | Set `'transaction_mode' => 'IMMEDIATE'` and a `busy_timeout` (e.g. `5000`) on the connection in `config/database.php`. Without the immediate transaction mode, the numbering logs a warning once per process. Concurrent issuing is then retried, but this is not recommended for production. |
 | MySQL, MariaDB | `number`, `number_space` and the archive paths use the collation `utf8mb4_bin` (case sensitive, as on the other databases). Creating the triggers with binary logging needs the `TRIGGER` privilege and `log_bin_trust_function_creators` (or `SUPER`). MySQL fires no triggers on `TRUNCATE` (see [What is not prevented](#what-is-not-prevented)). |
 | PostgreSQL | The invoice data is stored as `jsonb`. The triggers also reject `TRUNCATE`. |
-
-### Tables
-
-| Table | Model | Content |
-|---|---|---|
-| `quittio_issuers` | `Issuer` | Issuer profiles |
-| `quittio_sequences` | `Sequence` | Number sequences |
-| `quittio_invoices` | `Invoice` | Drafts and issued invoices, cancellations and corrections |
-| `quittio_invoice_relations` | `InvoiceRelation` | `cancels`, `partially_cancels`, `corrects`, `replaces` |
-| `quittio_deliveries` | `Delivery` | Delivery attempts |
-| `quittio_audit_logs` | `AuditLog` | Audit log |
-| `quittio_archive_files` | – | Manifest of every archived file (no model) |
-
-The migrations use `quittio-managed.connection` and `quittio-managed.table_prefix`: set both
-before migrating.
-
-### Publish tags
-
-`php artisan vendor:publish --tag=…`:
-
-| Tag | Publishes |
-|---|---|
-| `quittio-managed-config` | `config/quittio-managed.php` |
-| `quittio-managed-migrations` | the migrations |
-| `quittio-managed-triggers` | the immutability triggers (recommended, see [Database triggers](#database-triggers)) |
-| `quittio-managed-views` | the mail view (`resources/views/vendor/quittio-managed`) |
-| `quittio-managed-lang` | the translations (`lang/vendor/quittio-managed`) |
-
-### Morph map
-
-Register a morph map for your own models (`Relation::enforceMorphMap()`), because the
-invoices, deliveries and the audit log keep references to them (`billable`, `invoiceable`,
-`causer`, `tenant`, see [Customers and references](#customers-and-references)) for many
-years. The package registers `quittio.issuer`, `quittio.invoice`, `quittio.sequence` and
-`quittio.delivery` itself (for the configured model classes); `enforceMorphMap()` merges your
-entries with these.
 
 ### Queue worker
 
@@ -130,15 +137,1996 @@ Issued invoices are rendered by the job `RenderInvoiceDocuments` on the queue `q
 `php artisan queue:work --queue=quittio,default`, or set `queue.render_sync` to render in the
 request.
 
+### Morph map
+
+Invoices, deliveries and the audit log keep references to your own models (`billable`,
+`invoiceable`, `causer`, `tenant`, see [Customers and references](#customers-and-references))
+for many years. Eloquent stores such polymorphic references with the class name, unless a
+morph map gives the class a short name. Register a morph map for your models
+(`Relation::enforceMorphMap()`), so that renaming a class does not break old references.
+
+The package registers `quittio.issuer`, `quittio.invoice`, `quittio.sequence` and
+`quittio.delivery` itself (for the configured model classes); `enforceMorphMap()` merges your
+entries with these.
+
+## A first invoice
+
+This walkthrough creates an issuer profile, a draft, an issued invoice and its cancellation.
+It assumes that the installation is done and a queue worker runs (or `queue.render_sync` is
+set).
+
+**1. Issuer profile.** The installer asks for the first one. To create it in code instead,
+e.g. in a seeder:
+
+```php
+use Quittio\Core\Builder\Party;
+use Quittio\Managed\Models\Issuer;
+
+$issuer = new Issuer;
+$issuer->setSellerParty(Party::make('Muster GmbH')
+    ->vatId('DE123456789')
+    ->address('Hauptstraße 1', '12345', 'Musterstadt', 'DE')
+    ->electronicAddress('rechnung@muster.de', 'EM')
+    ->buildSeller());
+$issuer->forceFill([
+    'key' => 'default',                                  // part of the sequence keys and archive paths
+    'timezone' => 'Europe/Berlin',
+    'bank_accounts' => [['iban' => 'DE02120300000000202051', 'bic' => 'BYLADEM1001', 'name' => 'Muster GmbH']],
+    'defaults' => ['locale' => 'de', 'due_days' => 14],
+    'is_default' => true,                                // Issuer::current() returns it
+])->save();
+```
+
+**2. Draft.** Build the invoice as in [Getting started](getting-started.md), but pass the
+builder to `Invoice::draft()` instead of calling `render()`. `Quittio::invoice()` starts with
+the seller, bank account and defaults of the current issuer. Leave out `->number()` and
+`->issueDate()`: `issue()` sets both.
+
+```php
+use Quittio\Core\Builder\Party;
+use Quittio\Core\Enums\UnitCode;
+use Quittio\Laravel\Facades\Quittio;
+use Quittio\Managed\Models\Invoice;
+
+$draft = Invoice::draft(Quittio::invoice()
+    ->buyer(Party::make('Kunde AG')
+        ->vatId('DE987654321')
+        ->address('Bahnhofstraße 5', '54321', 'Beispielstadt', 'DE')
+        ->electronicAddress('ap@kunde.de', 'EM'))
+    ->deliveryDate('2026-09-30')
+    ->line('Consulting', netPrice: '120.00', quantity: 8, unit: UnitCode::Hour));
+
+$preview = $draft->preview();                // PDF with the watermark "ENTWURF" (draft), no number;
+                                             // return it from a controller to show it in the browser
+```
+
+**3. Issue.** `issue()` validates the invoice, takes the next number and freezes the data.
+The PDF and XML are rendered and archived by the queued job. If the validation fails, a
+`ValidationException` is thrown and no number is used up.
+
+```php
+$invoice = $draft->issue();                  // today in the issuer's time zone
+$invoice->number;                            // RE-2026-0001 (German default pattern)
+```
+
+**4. Send.** `send()` mails the archived documents. Without an address, it takes the buyer's
+e-mail address, here `ap@kunde.de`.
+
+```php
+$invoice->send();
+```
+
+**5. Cancel.** An issued invoice never changes. To reverse it, issue a cancellation: an
+invoice of its own, with its own number, that refers to the original.
+
+```php
+$cancellation = $invoice->cancel(reason: 'Charged twice');
+$cancellation->number;                       // RE-2026-0002 (cancellations share the sequence by default)
+$invoice->status;                            // Status::Cancelled
+```
+
+Next steps: link invoices to your customer model
+([Customers and references](#customers-and-references)), choose a number pattern
+([Numbering](#numbering)), cancel only some lines
+([Partial cancellation](#partial-cancellation)) or correct an invoice
+([Corrections](#corrections)).
+
+## Issuer profiles
+
+An issuer profile is the company that issues the invoices. Every invoice belongs to exactly
+one issuer, and the issuer is always its seller. The profile replaces the `seller` section of
+`config/quittio.php` and adds bank accounts, defaults, texts, design and numbering. Most
+applications need one profile. Create more for several companies, brands or tenants.
+
+```php
+use Quittio\Core\Builder\Party;
+use Quittio\Managed\Models\Issuer;
+
+$issuer = new Issuer;
+$issuer->setSellerParty(Party::make('Muster GmbH')
+    ->vatId('DE123456789')
+    ->address('Hauptstraße 1', '12345', 'Musterstadt', 'DE')
+    ->electronicAddress('rechnung@muster.de', 'EM')
+    ->buildSeller());
+$issuer->forceFill([
+    'key' => 'default',
+    'timezone' => 'Europe/Berlin',
+    'bank_accounts' => [['iban' => 'DE02120300000000202051', 'bic' => 'BYLADEM1001', 'name' => 'Muster GmbH']],
+    'defaults' => ['locale' => 'de', 'due_days' => 14, 'currency' => 'EUR', 'format' => 'zugferd'],
+    'tax_settings' => ['small_business' => false],
+    'branding' => ['logo' => storage_path('app/logo.png'), 'colors' => ['primary' => '#0f766e']],
+    // German texts on the PDF: "Thank you for your order.", "Payable within 14 days."
+    'texts' => ['de' => ['intro' => 'Vielen Dank für Ihren Auftrag.', 'payment_terms' => 'Zahlbar innerhalb von 14 Tagen.']],
+    'numbering' => ['pattern' => 'RE-{Y}-{seq:5}'],
+    'is_default' => true,
+])->save();
+```
+
+`setSellerParty()` stores the seller (`Party::make()` returns a `PartyBuilder`, see
+[Building invoices](building-invoices.md)) and sets `country` from its address. The country
+selects the country pack. The logo must exist when the profile is saved (see
+[Branding check](#branding-check)). All columns are listed in [Columns](#columns).
+
+### The issuer builder
+
+`$issuer->builder()` returns an `InvoiceBuilder` with the issuer's data:
+
+- the seller and the time zone,
+- the first bank account (as credit transfer),
+- the payment terms (text and `due_days`),
+- locale and currency,
+- the presentation (branding and texts),
+- the small business flag (see [Small business](#small-business)).
+
+`Quittio::invoice()` and the document methods (`Quittio::quote()`,
+`Quittio::paymentReminder()` …) start with the current issuer in the same way. The Managed
+layer binds `InvoiceDefaults` to `Issuer::current()->applyTo($builder)` (see
+[Starting invoices](laravel.md#starting-invoices)). The first two drafts below are therefore
+the same:
+
+```php
+use Quittio\Laravel\Facades\Quittio;
+use Quittio\Managed\Models\Invoice;
+use Quittio\Managed\Models\Issuer;
+
+$draft = Invoice::draft(Quittio::invoice()->buyer($customer)->line('Consulting', netPrice: '120.00'));
+$draft = Invoice::draft(Issuer::current()->builder()->buyer($customer)->line('Consulting', netPrice: '120.00'));
+
+// another issuer than the current one: start from its builder and pass it to draft()
+$draft = Invoice::draft($issuer->builder()->buyer($customer)->line('Consulting', netPrice: '120.00'), $issuer);
+```
+
+`->seller(...)` with another seller removes the issuer's values again (see
+[Starting invoices](laravel.md#starting-invoices)). The Managed layer still checks that the
+seller of a draft is its issuer.
+
+The builder copies these values into the draft. Later changes of the issuer do not change
+existing drafts, except the seller: it is taken from the profile again when the draft is
+issued.
+
+Further methods of `Issuer`:
+
+| Method | Returns |
+|---|---|
+| `Issuer::current()` | The issuer of the configured resolver |
+| `builder()` | `InvoiceBuilder` with the issuer's data (see above) |
+| `applyTo(InvoiceBuilder $builder)` | Sets the issuer's data (see above) on an existing builder and returns it; `builder()` is `applyTo(InvoiceBuilder::make())` |
+| `sellerParty()` / `setSellerParty(SellerParty $seller)` | The seller; the setter also sets `country` |
+| `presentation(?string $locale = null)` | `Presentation` from branding and texts, `null` if the issuer defines none |
+| `locale()` | `defaults.locale` or `null` |
+| `isSmallBusiness()` | `tax_settings.small_business` |
+| `applyTaxSettings(InvoiceData $data)` | The data with the small business flag, if the issuer is one |
+| `settings(string $column)` | Typed access to a JSON column (`Settings`) |
+| `invoices()` | `HasMany` of the issuer's invoices |
+| `tenant()` | `MorphTo` of the tenant |
+
+### Defaults, texts and branding
+
+The JSON columns `defaults`, `tax_settings`, `texts` and `branding` hold the settings of the
+issuer:
+
+| Setting | Meaning |
+|---|---|
+| `defaults.locale` | Locale of `builder()`, of the texts, the preview watermark and the mail |
+| `defaults.currency` | Currency of `builder()` |
+| `defaults.due_days` | Integer: payment terms in days; the due date is the issue date plus these days |
+| `defaults.format` | Format of new drafts (`zugferd`, `xrechnung-cii`, `xrechnung-ubl`, `cii`, `ubl`, `peppol`, `pdf`, see [Formats](formats.md)); `null` or `auto` = automatic choice when the invoice is issued |
+| `defaults.profile` | [Profile](concepts.md#profiles) of new drafts (e.g. `xrechnung`) |
+| `tax_settings.small_business` | Small business that charges no VAT (in Germany a Kleinunternehmer under section 19 UStG, see [German terms](concepts.md#german-terms)). See [Small business](#small-business). |
+| `texts.{locale}.intro`, `closing` | Intro and closing text of the PDF |
+| `texts.{locale}.payment_terms` | Text of the payment terms |
+| `texts.{locale}.footer_columns` | Footer columns, a list of lists of strings |
+| `branding.template` | PDF template (see [Branding check](#branding-check)) |
+| `branding.logo` | Logo: local file, data URI or public http(s) URL |
+| `branding.colors` | `primary` (default `#2741d9`), `text` (`#15171c`), `muted` (`#5f6470`), `secondary` |
+| `branding.font`, `sender_line`, `letter_layout` | Font, sender line above the address, letter layout (e.g. DIN 5008, the German standard for business letters) |
+| `branding.payment_qr` | [Payment QR code](templates.md#payment-qr-codes) on the PDF: `auto` (default), `girocode` (the EPC QR code for SEPA credit transfers), `swiss-qr-bill` or `none` |
+
+Texts are looked up for the locale, then under the key `default`, then the first entry. See
+[Templates](templates.md) for what the presentation settings do in the PDF.
+
+### Small business
+
+With `tax_settings.small_business`, `builder()` sets the flag `Meta::FLAG_SMALL_BUSINESS`.
+`Invoice::draft()` sets it also on data that was not built with `builder()`. The country pack
+decides what follows. The German pack rejects invoices that charge VAT (rule DE-USTG-09, see
+[Rules and validation](concepts.md#rules-and-validation)). It also rejects the tax exemption
+of an [intra-community supply](concepts.md#german-terms) except for new vehicles
+(DE-USTG-14). Such a draft cannot be issued. Give the lines the preset
+`VatPreset::SmallBusiness` of the German pack (see [Country packs](country-packs.md)).
+
+### Current issuer
+
+`Issuer::current()` asks the resolver configured in `quittio-managed.issuer_resolver`. The
+default resolver returns:
+
+1. the issuer marked as default (`is_default`; the lowest id if several are),
+2. otherwise the only issuer, if there is exactly one,
+3. otherwise it throws `IssuerNotFound`.
+
+`Invoice::draft()`, `HasInvoices` and the tenancy scope use the current issuer when none is
+given. In an application with several companies, write a resolver that picks the issuer of
+the logged-in user, e.g. by team:
+
+```php
+use Quittio\Managed\Issuers\IssuerResolver;
+use Quittio\Managed\Managed;
+use Quittio\Managed\Models\Issuer;
+
+final class TeamIssuerResolver implements IssuerResolver
+{
+    public function resolve(): Issuer
+    {
+        $team = auth()->user()->currentTeam;
+
+        return Managed::issuerModel()::query()
+            ->where('tenant_type', $team->getMorphClass())
+            ->where('tenant_id', $team->getKey())
+            ->firstOrFail();
+    }
+}
+
+// config/quittio-managed.php
+'issuer_resolver' => App\Billing\TeamIssuerResolver::class,
+```
+
+A Closure (`'issuer_resolver' => fn () => …`) works as well. It must return an `Issuer`
+(`ConfigurationException` otherwise). Laravel cannot cache a configuration that contains a
+Closure (`config:cache`), so prefer a class in production.
+
+### Tenancy scope
+
+In a multi-tenant application, one installation serves several customers (tenants, e.g.
+teams), each with its own issuer profiles. The tenancy scope restricts every invoice query to
+the current issuer.
+
+With `tenancy.scope`, the invoice model gets the global scope `Invoice::TENANCY_SCOPE`
+(`'quittio.issuer'`). Every invoice query is then restricted to `issuer_id` of the current
+issuer, including relations such as `$user->invoices()` and route model binding. Every such
+query calls the resolver. Remove the scope where needed:
+
+```php
+Invoice::query()->withoutGlobalScope(Invoice::TENANCY_SCOPE)->count();
+```
+
+The jobs and commands of the package bypass the scope. It applies to invoices only, not to
+issuers, sequences, deliveries or audit entries. It also changes the number spaces of issuers
+without a tenant (see [Number spaces](#number-spaces)): decide on it before issuing invoices.
+
+### Seller identity
+
+The seller of an invoice is always its issuer:
+
+- A draft whose seller has another VAT id or tax number than the issuer is rejected
+  (`InvalidInvoiceState`).
+- When a draft is issued, the seller (name, address, VAT id, tax number, legal information)
+  is taken from the issuer profile as it is then. Payment instructions and terms stay as the
+  draft sets them.
+- Issued invoices keep their own snapshot, so later changes of the issuer never affect them.
+
+Identifiers are compared in upper case and without spaces (also no-break and zero-width
+spaces), dots, slashes and dashes.
+
+### Changing and deleting issuers
+
+- Changes only affect invoices issued afterwards (drafts only through the seller, see above).
+- Creating, changing and deleting a profile is written to the audit log with the old and new
+  values (`issuer_created`, `issuer_updated`, `issuer_deleted`).
+- The `key` cannot change once number sequences use it (`NumberingException`): it is part of
+  the sequence keys, and a new key would start the numbering again.
+- The number space and the tenant cannot change once the issuer has issued invoices
+  (`NumberingException`).
+- An issuer with invoices cannot be deleted: the foreign key of `quittio_invoices.issuer_id`
+  restricts it (the database throws).
+- Saves that change the seller, the key, the number space or the tenant run in a
+  transaction under a lock of the tenant (see [Number spaces](#number-spaces)).
+
+### Branding check
+
+`branding.template` and `branding.logo` are checked when the issuer is saved, with the rules
+the rendering applies. Other values throw `InvalidIssuerProfile`. The reason: the logo becomes
+part of the invoice data, and an issued invoice whose logo cannot be rendered can never be
+archived.
+
+The template is checked by the engine of the rendering and the preview
+(`BladeTemplateEngine::fromSettings()`). It must be one of:
+
+- `default` or the template configured in `quittio.pdf.template`,
+- a view under `quittio::templates.` (no partials),
+- a view of `quittio.pdf.templates` (`invoices.*` allows every view below the prefix),
+- a plain PHP template of the core.
+
+The logo must be one of:
+
+- a readable local file of at most 10 MB, given as a path (not as a `file://` URI),
+- a data URI (`data:image/…`) that decodes to at most 10 MB (base64 strictly),
+- an http(s) URL of a public host. IP addresses must be public. Host names are resolved and
+  checked when the logo is downloaded. Other spellings of addresses (`2130706433`,
+  `localhost.`) are refused.
+
+The value must have no surrounding whitespace, no backslashes and no leading `//`. An SVG logo
+must be self-contained (no external references such as `href="http://…"` or `url(…)`, no
+entity declarations). A raster logo may have at most 25 megapixels.
+
+### Columns
+
+| Column | Type | Meaning |
+|---|---|---|
+| `key` | string, unique | Short name; part of the sequence keys and the archive paths; cannot change once number sequences use it |
+| `seller` | JSON | The seller party (`SellerParty`, normalised); read with `sellerParty()`, write with `setSellerParty()` |
+| `country` | char(2) | Country of the seller address; selects the country pack |
+| `timezone` | string, default `UTC` | Time zone of issue dates, "today" and the retention period |
+| `number_space` | string(128) | Invoice numbers of one company, set on save (see [Number spaces](#number-spaces)) |
+| `tenant_type`, `tenant_id` | morph, nullable | Tenant of the issuer (relation `tenant()`) |
+| `bank_accounts` | JSON list | `[{iban, bic, name}, …]`; the first account goes into `builder()` |
+| `defaults` | JSON | `locale`, `currency`, `due_days`, `format`, `profile` |
+| `tax_settings` | JSON | `small_business` |
+| `texts` | JSON | Texts per locale: `intro`, `closing`, `payment_terms`, `footer_columns` |
+| `branding` | JSON | `template`, `logo`, `colors`, `font`, `sender_line`, `letter_layout`, `payment_qr` |
+| `numbering` | JSON | `pattern`, `reset`, `start`, `per_kind` (override of the configuration) |
+| `registrations` | JSON | Further VAT registrations and establishments in other countries; stored, not evaluated yet |
+| `network_ids` | JSON | Network identifiers (e.g. Peppol); stored, not evaluated yet |
+| `is_default` | bool | Chosen by the default issuer resolver |
+
+All columns except `id` are mass assignable (`Issuer::create([...])`, `fill()`). The JSON
+columns accept arrays only.
+
+## Customers and references
+
+Every invoice can point to two of your own models. Both are optional and polymorphic, so any
+Eloquent model works (user, team, company, order, subscription):
+
+| Reference | Meaning | Example |
+|---|---|---|
+| `billable` | who is invoiced, the customer | `User`, `Team` |
+| `invoiceable` | what is invoiced | `Order`, `Subscription` |
+
+Prepare the customer model with the `HasInvoices` trait. `ProvidesParty` supplies the buyer
+data. `HasInvoiceEmail` supplies the delivery address; it is optional, without it the `email`
+attribute is used.
+
+```php
+use Quittio\Core\Builder\PartyBuilder;
+use Quittio\Core\Contracts\ProvidesParty;
+use Quittio\Managed\Concerns\HasInvoices;
+use Quittio\Managed\Delivery\HasInvoiceEmail;
+
+class User extends Authenticatable implements ProvidesParty, HasInvoiceEmail
+{
+    use HasInvoices;
+
+    public function fillParty(PartyBuilder $party): void
+    {
+        $party->name($this->company ?? $this->name)
+            ->vatId($this->vat_id)
+            ->address($this->street, $this->postcode, $this->city, $this->country)
+            ->electronicAddress($this->email, 'EM');
+    }
+
+    public function invoiceEmail(): ?string
+    {
+        return $this->billing_email ?? $this->email;
+    }
+}
+```
+
+Register short names for these models in the morph map (see [Morph map](#morph-map)):
+
+```php
+// AppServiceProvider::boot()
+Relation::enforceMorphMap(['user' => User::class, 'order' => Order::class]);
+```
+
+The trait adds three methods:
+
+| Method | Returns |
+|---|---|
+| `invoices()` | `MorphMany` relation of all invoices, cancellations and corrections of the model (drafts included) |
+| `invoiceBuilder(?Issuer $issuer = null)` | `$issuer->builder()` (default: the current issuer) with the model as buyer when it implements `ProvidesParty` |
+| `draftInvoice($data, ?Issuer $issuer = null, ?Model $invoiceable = null)` | A new draft with the model as billable |
+
+`draftInvoice()` accepts:
+
+- a callable: it receives the builder of `invoiceBuilder()`, so the model is already the buyer,
+- a builder or `InvoiceData`: used as they are, including their buyer,
+- an application model implementing `ProvidesInvoiceData`: used as it is; the model becomes
+  the invoiceable unless `$invoiceable` is given.
+
+```php
+use Quittio\Core\Builder\InvoiceBuilder;
+use Quittio\Core\Enums\UnitCode;
+use Quittio\Managed\Enums\Kind;
+
+$invoice = $user->draftInvoice(fn (InvoiceBuilder $b) => $b
+    ->deliveryDate('2026-10-31')
+    ->line('Pro plan October', netPrice: '29.00', unit: UnitCode::Month),
+    invoiceable: $subscription,
+)->issue();
+
+$invoice->send();                                    // to $user->invoiceEmail()
+
+$user->draftInvoice($order)->issue();                // $order implements ProvidesInvoiceData
+
+$user->invoices()->issued()->latest('issue_date')->get();
+$user->invoices()->overdue()->get();
+$user->invoices()->ofKind(Kind::Cancellation)->get();
+```
+
+Without the trait, pass the references yourself. `forBillable()` queries without a relation
+on the model:
+
+```php
+use Quittio\Managed\Models\Invoice;
+
+$draft = Invoice::draft($builder, $issuer, billable: $user, invoiceable: $order);
+$draft = Invoice::draftFor($order, billable: $order->user);   // $order becomes the invoiceable
+
+Invoice::query()->forBillable($user)->open()->get();
+
+$invoice->billable;                                  // the user, or null if it was deleted
+$invoice->invoiceable;
+```
+
+Laravel Cashier's `Billable` trait also has an `invoices()` method (Stripe invoices) and
+calls it internally. If you use both, keep Cashier's method and rename Quittio's relation:
+
+```php
+use Billable, HasInvoices {
+    Billable::invoices insteadof HasInvoices;
+    HasInvoices::invoices as quittioInvoices;
+}
+
+$user->quittioInvoices()->open()->get();
+```
+
+Rules worth knowing:
+
+- The references only link records. What counts legally is the buyer copied into the
+  invoice data when the draft was built. When the user changes the address later, issued
+  invoices stay as they are (section 14 UStG, the German VAT Act, and the
+  [GoBD](concepts.md#german-terms)).
+- A draft keeps its buyer until you set it again:
+  `$draft->updateData(fn (InvoiceBuilder $b) => $b->buyer($user))`.
+- Cancellations, partial cancellations and corrections take `billable` and `invoiceable`
+  over from the original invoice.
+- There is no foreign key to your models. Deleting a user leaves the invoices in place,
+  because they must be kept for eight years (section 14b UStG and section 147 AO, the German
+  Fiscal Code). `billable` then returns `null`. The buyer data in the archived files is
+  unaffected.
+- With `tenancy.scope`, the queries above are additionally restricted to the current issuer.
+
+## Drafts
+
+A draft is an invoice that is not issued yet. It has no number, can be changed freely and
+can be deleted without leaving a gap in the numbers.
+
+### Creating drafts
+
+```php
+use Quittio\Core\Builder\InvoiceBuilder;
+use Quittio\Managed\Models\Invoice;
+
+$draft = Invoice::draft($builder);                                    // current issuer
+$draft = Invoice::draft($builder, $issuer, billable: $user, invoiceable: $order);
+$draft = Invoice::draft($invoiceData, $issuer);                       // InvoiceData works too
+$draft = Invoice::draftFor($order);                 // ProvidesInvoiceData, $order becomes the invoiceable
+$draft = Invoice::draftFor($order, $issuer, billable: $order->user);
+$draft = $user->draftInvoice(fn (InvoiceBuilder $b) => $b->line('Consulting', netPrice: '120.00'));   // HasInvoices
+```
+
+| Method | Parameters |
+|---|---|
+| `Invoice::draft()` | `InvoiceData\|InvoiceBuilder $data, ?Issuer $issuer = null, ?Model $billable = null, ?Model $invoiceable = null` |
+| `Invoice::draftFor()` | `ProvidesInvoiceData $source, ?Issuer $issuer = null, ?Model $billable = null` |
+
+Creating a draft:
+
+1. takes the given issuer or the current one,
+2. builds the data without calculating or validating it (`InvoiceBuilder::buildDraft()`;
+   lines are not yet required),
+3. rejects a seller with another VAT id or tax number than the issuer
+   (`InvalidInvoiceState`),
+4. sets the small business flag of the issuer, the format and profile of
+   `defaults.format` (`auto` = `null`) and `defaults.profile`, kind `invoice`, status `draft`
+   and `created_by` (the authenticated user, if any),
+5. stores the data without number and totals, and copies the type code (the document type,
+   e.g. `380` invoice), currency, buyer country, due date, service date, service period and
+   locale into columns for queries,
+6. writes the audit entry `drafted` and dispatches `InvoiceDrafted` once the draft is
+   committed (at once outside a transaction).
+
+`$invoice->createdBy` and `$invoice->issuedBy` return the users who created the draft and
+issued the invoice (`MorphTo`; `null` without an authenticated user, e.g. in queued jobs).
+
+A draft holds no number, number space, sequence key or sequence value: `issue()` sets them.
+
+### Changing drafts
+
+```php
+use Quittio\Core\Builder\InvoiceBuilder;
+
+$draft->updateData(fn (InvoiceBuilder $b) => $b->line('Travel costs', netPrice: '80.00')->buyerReference('PO-4711'));
+
+$draft->forceFill(['format' => 'xrechnung-cii', 'profile' => 'xrechnung'])->save();
+$draft->billable()->associate($user)->save();
+```
+
+`updateData()` starts an `InvoiceBuilder` from the current data (`InvoiceBuilder::from()`),
+passes it to the callable and stores the result. It throws `InvoiceNotDraft` for issued
+invoices.
+
+The other columns of a draft can be changed through the model. They are guarded, so use
+`forceFill()`. Exceptions: `kind` and `preceding_invoice_id` are fixed when the draft is
+created, and the number columns are set only by `issue()`. Unsaved changes of the model are
+saved together with `issue()`. Draft changes are not written to the audit log.
+
+A draft keeps no totals: the invoice is calculated again when it is issued. This also applies
+to a draft started with `InvoiceBuilder::from()` on data another system rounded. Only the VAT
+breakdown of an aligned partial cancellation is kept (see
+[VAT of partial cancellations](#vat-of-partial-cancellations)).
+
+### Preview and validation
+
+```php
+return $draft->preview();                 // Responsable: PDF in the browser
+$draft->preview()->download('draft.pdf');
+$result = $draft->validate();             // Quittio\Core\Validation\ValidationResult
+$result->isValid();
+```
+
+`preview()` renders a PDF without validation:
+
+- always in the format `pdf`,
+- with the watermark of the translation `quittio-managed::invoice.draft_watermark`
+  ("ENTWURF" in German, "DRAFT" in English), in the locale of the draft or of the issuer,
+- without a number,
+- dated today in the issuer's time zone.
+
+It returns a `RenderedInvoice` of `quittio/laravel` (`pdf()`, `download()`, usable as response
+or mail attachment). It throws `InvoiceNotDraft` for issued invoices.
+
+`validate()` runs the full validation as if the draft were issued today with the next number.
+The number comes from the number generator's preview; nothing is used up. It uses the format,
+profile and locale of the draft. On an issued invoice it validates the frozen data with the
+format, profile, locale and country pack it was issued with. See [Validation](validation.md)
+for the result.
+
+### Deleting drafts
+
+```php
+$draft->delete();                                         // audit entry deleted_draft
+Invoice::query()->drafts()->where('created_at', '<', now()->subYear())->delete();
+```
+
+Deleting a draft leaves no gap in the numbers, since drafts hold none. A bulk delete:
+
+- only removes drafts,
+- throws `InvoiceImmutable` if the query would reach an issued invoice,
+- writes no audit entries (it runs without model events).
+
+Drafts of cancellations and corrections that can no longer be issued are removed by
+`quittio:drafts:prune` (see [Left-behind drafts](#left-behind-drafts)). Ordinary drafts are
+never deleted automatically.
+
+## Issuing
+
+```php
+$invoice = $draft->issue();                 // today in the issuer's time zone
+$invoice = $draft->issue('2026-10-05');     // string, DateTimeInterface or Quittio\Core\Support\Date
+```
+
+`issue()` returns the same model, now issued. In short: it validates the invoice, takes the
+next number inside a short transaction, freezes the data and queues the rendering. When
+anything fails before the commit, the draft stays a draft and no number is used up.
+
+The steps in detail:
+
+1. The invoice must be a draft (`InvoiceNotDraft`). Drafts of cancellations are issued by
+   `cancel()` and `cancelPartially()` only (`InvalidInvoiceState`). Drafts of corrections
+   follow the correction strategy (see [Corrections](#corrections)).
+2. The issue date is the given date or today in the issuer's time zone. Cancellations and
+   corrections cannot be dated before the invoice they refer to. The issuer must still be
+   the company that issued the original (same VAT id or tax number). Otherwise
+   `InvalidInvoiceState` is thrown.
+3. The seller is taken from the issuer profile as it is now, and the issue date is set. The
+   number generator prepares the sequence (outside the transaction). The data is calculated
+   and fully validated with the probable number, with the format, profile and locale of the
+   draft.
+   - A format that produces neither a PDF nor an XML invoice (`html`, `json`) is refused with
+     `InvalidInvoiceState`, because the archive must hold the invoice itself.
+   - Validation errors throw `Quittio\Core\Validation\ValidationException` (`$e->result`
+     holds the messages). With `quittio.validation.block_on_warnings`, warnings do as well.
+     No number is used up.
+4. `InvoiceIssuing` is dispatched. A listener that throws stops the issue before a number is
+   assigned.
+5. A short transaction:
+   - locks the draft (`SELECT … FOR UPDATE`) and checks again that it is a draft (another
+     process may have issued or deleted it),
+   - takes the next number,
+   - reads the issuer with a shared lock and checks that no other issuer of the number space
+     used the number,
+   - freezes the invoice: number, number space, sequence key and value, status `issued`,
+     `issued_at`, issue date, totals, the calculated data snapshot, standard version, the
+     format and profile actually used, country pack, locale, render status `pending`,
+     validation status, retention period and `issued_by` (the authenticated user, if any).
+     Cancellation and archive columns are reset.
+   - writes the audit entry `issued`.
+
+   Deadlocks, serialisation failures and concurrent sequence changes are retried (three
+   attempts).
+6. After the commit, the documents are rendered by the job `RenderInvoiceDocuments` (or at
+   once with `queue.render_sync`). Then `InvoiceIssued` is dispatched. If a listener throws,
+   the exception reaches the caller, but the invoice is issued: the model shows the committed
+   state and the job is queued.
+
+The retention period (`retention_until`) follows the rule of the country pack (DE: 8 years
+after the end of the year). It is counted from the year of issue, but never from a year
+before the invoice is actually issued: a backdated invoice keeps the full period.
+
+| Exception | When |
+|---|---|
+| `ValidationException` (core) | The calculated invoice is invalid (or has warnings with `block_on_warnings`) |
+| `InvoiceNotDraft` | Not a draft, or issued or deleted by another process meanwhile |
+| `InvalidInvoiceState` | Cancellation draft, date before the original, another company, issuer deleted, format without PDF or XML (`html`, `json`) |
+| `NumberingException` | Invalid pattern, number already taken (also by another issuer of the number space) |
+| `ConfigurationException` (core) | Reset not allowed by the country pack, `retention.years` too short, invalid generator |
+| `InvoiceImmutable` | The draft row was changed by another process since it was loaded |
+
+### Issuing inside your own transaction
+
+`issue()` (and `cancel()`, `cancelPartially()` and issuing a correction) can run inside a
+database transaction of your application on the Managed connection. Then:
+
+- there are no retries: your transaction decides,
+- the render job and the events `InvoiceIssued`, `InvoiceCancelled` … run only when your
+  transaction commits, and an exception of a listener reaches the code that commits,
+- a rollback leaves the draft a draft and uses up no number. The model in memory still shows
+  the issued state then, so load it again.
+
+## Statuses
+
+Status, payment, delivery, rendering and validation are separate columns. Their enums are
+listed in [Enums](#enums).
+
+### Status
+
+`status` moves only forward: `draft` → `issued` → `partially_cancelled` → `cancelled`. It
+changes only through `issue()`, `cancel()`, `cancelPartially()` and the issue of a
+correction, never through `save()` or bulk updates (see [Immutability](#immutability)).
+
+- `issued`: issued and not cancelled. Cancellations and corrections are themselves `issued`.
+- `partially_cancelled`: at least one partial cancellation refers to the invoice.
+- `cancelled`: cancelled completely, by `cancel()`, by partial cancellations that together
+  cover everything, or by an issued correction. `cancelled_at` and `cancellation_reason`
+  are set then, once.
+
+`cancellations` counts the documents that cancel (part of) the invoice (relations `cancels`,
+`partially_cancels`, `replaces`).
+
+### Payment status
+
+The package does not record payments in version 1.0 (planned from version 1.1): every issued
+invoice stays `unpaid` until you change it. The payment columns stay changeable after
+issuing, through the model or in bulk:
+
+```php
+use Quittio\Managed\Enums\PaymentStatus;
+use Quittio\Managed\Models\Invoice;
+
+$invoice->forceFill([
+    'payment_status' => PaymentStatus::Paid,
+    'paid_total' => $invoice->amount_due,
+    'paid_at' => now(),
+])->save();
+
+Invoice::query()->whereIn('number', $numbers)->update(['payment_status' => 'paid', 'paid_at' => now()]);
+```
+
+| Case | Value |
+|---|---|
+| `Unpaid` | `unpaid` (default) |
+| `PartiallyPaid` | `partially_paid` |
+| `Paid` | `paid` |
+| `Overpaid` | `overpaid` |
+| `WrittenOff` | `written_off` |
+
+The package does not check these values against the amounts, writes no audit entry and
+dispatches no event for them. Amounts accept at most two decimals (`InvalidArgumentException`
+otherwise).
+
+### Open and overdue
+
+"Overdue" is not stored, it is a query:
+
+```php
+use Carbon\CarbonImmutable;
+use Quittio\Managed\Models\Invoice;
+
+Invoice::query()->open()->get();        // issued or partially cancelled, no cancellation, unpaid or partially paid
+Invoice::query()->overdue()->get();     // open and due_date before today
+Invoice::query()->overdue(CarbonImmutable::parse('2026-12-31'))->get();
+```
+
+`overdue()` compares with today in the application's time zone, or with the given date.
+`open()` includes corrections and credit notes of kind `invoice`; filter by `type_code` if
+you need to tell them apart.
+
+### Delivery status
+
+`delivery_status` of the invoice:
+
+- `not_sent`,
+- `sent` after a successful `send()`,
+- `failed` after a failed attempt (a failed attempt after a successful one keeps `sent`).
+
+Every attempt is a row in `quittio_deliveries` with its own state `queued`, `sent` or
+`failed` (see [Delivery](#delivery)).
+
+### Render and validation status
+
+`render_status`: `null` for drafts, `pending` after issuing, `rendering` while the documents
+are rendered, `done` once they are archived, `failed` after the last attempt failed.
+`render_attempts` counts the attempts.
+
+`validation_status`: `not_checked` for drafts, then `valid`, `warnings` or `invalid`. It is
+set from the validation when the invoice is issued. It is replaced by the validation of the
+archived rendering, whose report is stored with the documents.
+
+## Numbering
+
+An invoice gets its number when it is issued, from a pattern and a counter (sequence). With
+the German defaults, the invoices of 2026 are numbered `RE-2026-0001`, `RE-2026-0002` …, and
+the counter starts again in 2027. Cancellations and corrections take the next number of the
+same sequence, unless you give them their own pattern.
+
+Change the scheme in `config/quittio-managed.php`. This example keeps the German pattern and
+gives cancellations their own sequence (`ST-2026-0001` …):
+
+```php
+// config/quittio-managed.php
+'numbering' => [
+    'pattern' => 'RE-{Y}-{seq:4}',          // null = country pack (DE: RE-{Y}-{seq:4})
+    'reset' => 'yearly',                    // never | yearly | monthly, within the country pack's rules
+    'start' => 1,                           // first value of every new sequence (and period)
+    'per_kind' => [
+        'cancellation' => 'ST-{Y}-{seq:4}', // own sequence, null = shared
+        'correction' => null,
+    ],
+    'generator' => null,                    // class implementing NumberGenerator
+],
+```
+
+An issuer can override `pattern`, `reset`, `start` and `per_kind` in its `numbering` column.
+Each setting is taken from the issuer, then from the configuration, then from the country
+pack:
+
+```php
+$issuer->forceFill(['numbering' => [
+    'pattern' => 'B-{Y}-{seq:4}',
+    'start' => 10,
+    'per_kind' => ['cancellation' => 'BS-{Y}-{seq:4}'],
+]])->save();
+```
+
+### Placeholders
+
+| Placeholder | Replaced by |
+|---|---|
+| `{Y}` | Year of the issue date, four digits |
+| `{y}` | Year of the issue date, two digits |
+| `{m}` | Month of the issue date, two digits |
+| `{seq}` | Running number without padding |
+| `{seq:N}` | Running number with at least `N` digits (`N` has one or two digits), e.g. `{seq:4}` → `0042` |
+| `{issuer}` | Key of the issuer |
+| `{customer}` | Buyer identifier (BT-46, see [Business terms](concepts.md#en-16931-and-business-terms)), empty without one |
+
+Patterns are checked when they are used (issuing, `validate()`, `quittio:sequence:set`). They
+throw a `NumberingException` ("Invalid numbering pattern …") when:
+
+- they contain no `{seq}` / `{seq:N}`, or more than one,
+- they contain an unknown placeholder,
+- the reset is `yearly` without `{Y}` or `{y}`, or `monthly` without a year and `{m}`
+  (numbers would repeat),
+- an own sequence per kind could produce the numbers of another sequence of the issuer.
+  `RE-{Y}-{seq}` next to `RE-{Y}-{seq:4}` is rejected, and so is `RE{Y}-{seq:2}7` next to
+  `RE{Y}-7{seq:2}` (both give `RE2026-707`); `ST-{Y}-{seq:4}` is fine. The check compares
+  the patterns exactly; `{customer}` counts as any text.
+
+A reset the country pack does not allow, or a `start` below 1, throws a
+`ConfigurationException`.
+
+### Sequences and resets
+
+Every number comes from a sequence with the key `{issuer}:{sequence}:{period}`, e.g.
+`default:invoice:2026`:
+
+- `{issuer}` is the issuer key,
+- `{sequence}` is `invoice` (shared by all kinds), or `cancellation` or `correction` when
+  `per_kind` gives that kind a pattern of its own,
+- `{period}` follows from the reset and the issue date: `2026` (yearly), `2026-10` (monthly)
+  or `all` (never).
+
+A backdated invoice uses the sequence of its period: an invoice dated 2026-12-30 and issued
+in January 2027 gets the next number of `default:invoice:2026`. Resets apply to all
+sequences of an issuer alike.
+
+`start` is the first value of every new sequence, i.e. also of every new period. To continue
+the numbers of an old system once, raise the sequence with `quittio:sequence:set` instead
+(see [Managing sequences](#managing-sequences)).
+
+### Gapless numbers
+
+Numbers are assigned inside the issuing transaction only. A draft has none, validation errors
+and failed cancellations use none, and a rolled back transaction gives its number back.
+Deleting a draft therefore never leaves a gap. The unique indexes `(number_space, number)`,
+`(issuer_id, number)` and `(sequence_key, sequence_value)` are the last line of defence.
+
+How the default generator (`SequenceNumberGenerator`) serialises concurrent issues:
+
+1. Before the transaction, a missing sequence row is created with `INSERT … OR IGNORE`, so
+   that concurrent first invoices of a period do not deadlock (MySQL).
+2. Inside the transaction, the row is locked (`SELECT … FOR UPDATE`), the number is formed
+   and the counter is raised with a conditional update. If another process changed it in
+   between (e.g. SQLite without an immediate transaction), the attempt fails and the
+   transaction is retried.
+3. Deadlocks, lock wait timeouts, serialisation failures (PostgreSQL `40001`, `40P01`) and
+   `database is locked` (SQLite) are retried up to three attempts with a short random pause.
+
+For SQLite in production, set `'transaction_mode' => 'IMMEDIATE'` and a `busy_timeout` on
+the connection. The numbering logs a warning once per process when the mode is missing.
+
+### Number spaces
+
+Invoice numbers must be unique per company (section 14 (4) no. 4 UStG, the German VAT Act).
+A company can have several issuer profiles, e.g. one per brand. The number space
+(`number_space`) groups the profiles of one company: they share their numbers, so a number
+that one of them used is taken for the others.
+
+Issued invoices store the number space of their issuer. The unique index
+`(number_space, number)` (and `(issuer_id, number)` as a safeguard) holds even when two
+issuers of the company issue at the same moment.
+
+- **Default.** When the issuer is created, its number space is `vat:{VAT id}`, otherwise
+  `tax:{tax number}`, otherwise `issuer:{key}`. The identifiers are normalised: upper case,
+  without spaces (also no-break and zero-width spaces), dots, slashes and dashes. Issuers with
+  the same VAT id thus share a number space by default. Until the issuer issues its first
+  invoice, a default follows changes of its VAT id, tax number or key; an explicit value
+  stays.
+- **Explicit.** For several brands of one company, give them the same space:
+  `$brand->forceFill(['number_space' => $main->number_space])->save()`. Any name of your own
+  works as well: at most 128 characters, no `|`, no control characters, no surrounding
+  whitespace (`InvalidIssuerProfile` otherwise).
+- **One company, one space.** Within a tenant, issuers that share a VAT id or a tax number
+  must have the same number space. Saving an issuer that would split a company throws
+  `InvalidIssuerProfile` and names the other issuer. Examples: a brand with only the tax
+  number of the main profile, or a tax number added later to a profile whose other brands use
+  another space.
+  - Sharing is transitive: A with VAT id and tax number, B with the tax number and C with the
+    VAT id share one space.
+  - To change the space of issuers that share an identifier, change them together:
+    `NumberSpaces::assign([$a, $b], 'muster')` (`Quittio\Managed\Support\NumberSpaces`).
+  - Saves of issuers of one tenant are serialised (an advisory lock on PostgreSQL,
+    `GET_LOCK()` on MySQL with a timeout of 10 seconds, after which `InvalidIssuerProfile`
+    asks to try again). So concurrent saves cannot split a company either.
+  - The check also runs for saves without model events (`saveQuietly()`, `Event::fake()`).
+- **Notations are not unified.** A German tax number in the 13-digit format of ELSTER (the
+  German tax authorities' electronic filing system) and in the regional format
+  (`12/345/67890`) are different values. If the profiles of one company use different
+  notations, or one has only the VAT id and another only the tax number, set the same
+  `number_space` explicitly.
+- **Tenants.** Number spaces apply within the tenant of the issuer (`tenant_type`,
+  `tenant_id`). The invoices store them qualified by the tenant, e.g. `team:7|vat:DE123456789`
+  for `tenant_type` `team` and `tenant_id` 7 (`NumberSpaces::qualified($issuer)`). So the same
+  VAT id or space name in another tenant never blocks a number, and errors never name issuers
+  of other tenants. With `tenancy.scope`, an issuer without a tenant is a tenant of its own
+  (`issuer:{id}|…`; give the issuers of one company the same tenant). Without it, the issuers
+  without a tenant form one tenant. Decide on `tenancy.scope` before issuing invoices: it
+  changes the number spaces of issuers without a tenant.
+- **Frozen.** Once an issuer has issued invoices, its number space and its tenant cannot
+  change (`NumberingException`). Its VAT id and tax number still can, within the rule above.
+
+Issuers that share a number space and use the same pattern compete for the same numbers: the
+second one cannot use a number the first one took (`NumberingException` naming the other
+issuer). Give such issuers different patterns, e.g. with `{issuer}`, also for the sequences
+per kind (`numbering.per_kind` per issuer).
+
+### Managing sequences
+
+```bash
+php artisan quittio:sequence:show                               # all sequences
+php artisan quittio:sequence:show --issuer=default
+php artisan quittio:sequence:set default:invoice:2026 1043      # only increases, asks
+php artisan quittio:sequence:set default:invoice:2027 1 --force # creates a sequence ahead of time
+```
+
+`quittio:sequence:show` lists key, next value and pattern.
+
+`quittio:sequence:set` sets the next value of a sequence: a positive integer above the
+current one, after a confirmation unless `--force`. It only creates sequences the numbering
+would use:
+
+- the issuer must exist,
+- the sequence must be `invoice` or a kind with its own pattern,
+- the period must match the reset (`2026`, `2026-10` or `all`).
+
+The pattern comes from the configuration at that moment. Sequences are created automatically
+when the first invoice of a period is issued.
+
+The `Sequence` model never lowers a counter (also not from a stale model) and writes every
+change to the audit log (`sequence_changed`). Key and pattern never change, and sequences
+cannot be deleted. Bulk updates, increments, touches, upserts, deletes and
+`updateOrInsert()` of these columns throw `NumberingException`. Change a counter through the
+model only:
+
+```php
+use Quittio\Managed\Managed;
+
+$sequence = Managed::sequenceModel()::query()->where('key', 'default:invoice:2026')->sole();
+$sequence->forceFill(['next_value' => 1043])->save();     // lower values throw
+```
+
+### Own number generators
+
+Numbers from another system (e.g. an ERP) come from a class implementing
+`Quittio\Managed\Numbering\NumberGenerator`:
+
+```php
+use Quittio\Core\Data\InvoiceData;
+use Quittio\Core\Support\Date;
+use Quittio\Managed\Models\Invoice;
+use Quittio\Managed\Numbering\IssuedNumber;
+use Quittio\Managed\Numbering\NumberGenerator;
+
+final class ErpNumbers implements NumberGenerator
+{
+    // Before the issuing transaction, e.g. to create a missing counter.
+    public function prepare(Invoice $invoice, Date $issueDate, InvoiceData $data): void {}
+
+    // The probable number, used to validate the invoice; must not consume a number.
+    public function preview(Invoice $invoice, Date $issueDate, InvoiceData $data): string
+    {
+        return $this->erp->peek();
+    }
+
+    // Inside the issuing transaction; a rollback must give the number back.
+    public function next(Invoice $invoice, Date $issueDate, InvoiceData $data): IssuedNumber
+    {
+        return new IssuedNumber($this->erp->take());   // sequenceKey and sequenceValue optional
+    }
+}
+
+// config/quittio-managed.php
+'numbering' => ['generator' => App\Billing\ErpNumbers::class],
+```
+
+An own generator is responsible for unique and gapless numbers. The unique index
+`(number_space, number)` (and `(issuer_id, number)`) remains as a safeguard: a number already
+used in the number space throws `NumberingException` ("The invoice number … is already
+taken"). `IssuedNumber` takes `string $number, ?string $sequenceKey = null,
+?int $sequenceValue = null`. To change only the format, extend `SequenceNumberGenerator` and
+override its protected methods `scheme()` or `format()`.
+
+## Rendering and archive
+
+Issuing only stores data. The documents (PDF and/or XML) are rendered afterwards by a queued
+job and stored in the archive. The archive is write-once: a file is never overwritten. For
+every file, a SHA-256 hash (a fingerprint that changes when the file changes) is stored with
+the invoice, so that changed or missing files are detected.
+
+### Render job
+
+After the issuing transaction has been committed, the job
+`Quittio\Managed\Rendering\RenderInvoiceDocuments` renders and archives the documents of the
+invoice. It runs on `queue.connection` and `queue.queue` (default queue `quittio`).
+
+It is tried `count(queue.backoff) + 1` times, by default again after 10 s, 1 min, 5 min and
+30 min. After the last attempt, the invoice is marked `failed`, the audit entry
+`render_failed` is written and `InvoiceRenderFailed` is dispatched. The invoice stays issued.
+
+With `queue.render_sync`, the documents are rendered in the same request, right after the
+commit and before `InvoiceIssued`. A failure is logged as an error and marks the invoice
+`failed` at once (no retries). It never undoes the issue.
+
+The documents are rendered from the frozen data snapshot with the format, profile, locale
+and country pack of the invoice. Validation runs again but does not block: its result is
+stored as the validation report and as `validation_status`.
+
+### Archive layout
+
+Documents are stored on the disk `quittio-managed.disk`, in the directory of
+`quittio-managed.path` (default `{issuer}/{Y}/{m}/{number}/v{version}`):
+
+| Placeholder | Replaced by |
+|---|---|
+| `{issuer}` | Issuer key |
+| `{Y}`, `{m}` | Year and month of the issue date |
+| `{number}` | Invoice number |
+| `{uuid}` | UUID of the invoice |
+| `{version}` | Document version (1, 2, …) |
+
+`{issuer}` and `{number}` are made safe as single path segments: characters other than
+letters, digits, `.`, `_` and `-` become `_`, so `RE/2026/1` becomes `RE_2026_1`. The pattern
+must contain `{version}` and `{number}` or `{uuid}`, because every version and every invoice
+needs a directory of its own. Otherwise archiving throws a `ConfigurationException`.
+
+The file names follow `quittio.pdf.filename` (default `{title}_{number}.{ext}`), e.g.
+`default/2026/10/RE-2026-0042/v1/Rechnung_RE-2026-0042.pdf` ("Rechnung" is the German title,
+invoice).
+
+| Format | Archived files |
+|---|---|
+| `zugferd` (`factur-x`) | PDF/A-3 and the embedded XML as its own file (byte-identical) |
+| `xrechnung-cii`, `xrechnung-ubl`, `cii`, `ubl`, `peppol` | XML |
+| `pdf` | PDF |
+
+See [Formats](concepts.md#formats) for what these formats are. Every version also holds
+`validation-report.json`, the validation result of the rendering.
+
+The invoice keeps `disk`, `xml_path`, `pdf_path`, the SHA-256 hashes `xml_hash` and
+`pdf_hash`, `validation_report_path` and `document_version`. Archiving writes the audit
+entry `rendered` (version, disk, files, report, hashes) and dispatches
+`InvoiceDocumentsStored`.
+
+For production, use an object store with object lock (WORM: write once, read many) and
+versioning, so that nobody can delete or replace the files.
+
+### Versions and re-rendering
+
+Files are never overwritten: writing a file that exists with other content throws an
+`ArchiveException` (identical content is accepted). Archiving an invoice again:
+
+- does nothing when the files of the current version are complete and unchanged (only the
+  render status is set to `done`),
+- renders a new version when files are missing (`ArchiveIntegrityViolation` with the problem
+  `missing` is dispatched for each),
+- never replaces damaged files: a hash mismatch dispatches `ArchiveIntegrityViolation` and
+  throws an `ArchiveException`, so the files stay for the investigation.
+
+A version directory that already holds files (e.g. of a failed attempt), or whose files are
+recorded for another invoice, is skipped. Only the archiver changes the archive columns of an
+issued invoice, and only together with a higher document version.
+
+```bash
+php artisan quittio:render RE-2026-0042    # number, UUID or id; renders missing or failed documents
+```
+
+`quittio:render {invoice}` prints the problems it found and the new version, or that the
+documents are complete. Damaged files are not rendered again: the command reports the
+`ArchiveException` and fails. A number that exists for several issuers must be given as UUID.
+Drafts cannot be rendered.
+
+### Archive manifest
+
+Every archive file is recorded in `quittio_archive_files` (invoice id, disk, path) before it
+is written. The manifest has two purposes:
+
+- `quittio:retention:check` can delete the files of all versions, also those of a rendering
+  that failed halfway, and retry files it could not delete.
+- Two invoices with the same archive path cannot write into the same directory.
+
+The rows have no foreign key: they outlive their invoice until the files are gone.
+
+### Integrity checks
+
+```bash
+php artisan quittio:verify                                   # all issued invoices
+php artisan quittio:verify --from=2026-01-01 --to=2026-12-31 --issuer=default
+```
+
+`quittio:verify` checks the SHA-256 hashes of the current version of every issued invoice
+(issue date from `--from` to `--to`, optionally of one issuer key). It also reports issued
+invoices whose documents were never archived (render status `pending`, `rendering` or
+`failed`).
+
+It dispatches `ArchiveIntegrityViolation` for every problem, writes the audit entry
+`verified` (checked, violations, from, to), prints a table and exits with a failure code if
+it found problems. `send()` checks the hashes before every delivery as well.
+
+`ArchiveIntegrityViolation` carries the invoice, the path and the problem: `missing`,
+`hash mismatch` or (from `quittio:verify`) `not archived (render status: …)`. The path is `-`
+when the invoice has no archived file at all.
+
+### Reading archived documents
+
+```php
+use Illuminate\Support\Facades\Storage;
+use Quittio\Managed\Rendering\DocumentArchiver;
+
+app(DocumentArchiver::class)->assertIntact($invoice);    // ArchiveException if missing or changed
+return Storage::disk($invoice->disk)->download($invoice->pdf_path);
+
+app(DocumentArchiver::class)->problems($invoice);        // ['path' => 'missing' | 'hash mismatch']
+```
+
+| `DocumentArchiver` method | Effect |
+|---|---|
+| `archive(Invoice $invoice): bool` | Renders and archives unless the current version is complete; `false` when nothing had to be done |
+| `assertIntact(Invoice $invoice): void` | Throws `ArchiveException` (and dispatches `ArchiveIntegrityViolation`) unless the current version is complete and unchanged |
+| `problems(Invoice $invoice): array` | Missing files and hash mismatches of the current version |
+
+### Own archive storage
+
+The archive goes through `Quittio\Managed\Rendering\ArchiveStorage` (default:
+`FilesystemArchive` on Laravel disks). An own implementation must keep files write-once:
+
+| Method | Contract |
+|---|---|
+| `put(string $disk, string $path, string $contents): void` | Never overwrites: identical content is accepted, other content throws `ArchiveException` |
+| `get(string $disk, string $path): ?string` | `null` when the file is missing |
+| `exists(string $disk, string $path): bool` | |
+| `delete(string $disk, string $path): bool` | Used after the retention period |
+
+Bind it in a service provider (see [Own services](#own-services)).
+
+## Cancellations and corrections
+
+An issued invoice is never changed. To reverse or fix it, you issue a new document that
+refers to it:
+
+- `cancel()` reverses the whole invoice (or what is left of it), e.g. when it was charged
+  twice. The result is a cancellation invoice, in Germany titled "Stornorechnung".
+- `cancelPartially()` reverses some lines, quantities or amounts, e.g. a returned item or a
+  price reduction.
+- `correct()` starts a draft with the data of the original. You change it and issue it as the
+  corrected invoice.
+
+```php
+use Quittio\Core\Builder\InvoiceBuilder;
+
+$cancellation = $invoice->cancel(reason: 'Charged twice');
+$cancellation = $invoice->cancel('Charged twice', '2026-10-06');   // with issue date
+
+$cancellation = $invoice->cancelPartially([
+    ['line' => '3'],                       // whole line (or what is left of it)
+    ['line' => '1', 'quantity' => 1],      // 1 of 3
+    ['line' => '2', 'amount' => '50.00'],  // amount, e.g. a price reduction
+], reason: 'Partial return');
+
+$draft = $invoice->correct();
+$draft->updateData(fn (InvoiceBuilder $b) => $b->updateLine('2', netPrice: '80.00'));
+$draft->issue();
+```
+
+The original only gets a new status. Every cancellation and correction is an invoice of its
+own with its own number. It is built from the snapshot of the original,
+in the same format, profile and locale, with the same `billable` and `invoiceable`. It refers
+to the original (preceding invoice reference, BG-3, and `preceding_invoice_id`).
+
+| Method | Signature | Returns |
+|---|---|---|
+| `cancel()` | `?string $reason = null, Date\|DateTimeInterface\|string\|null $issueDate = null` | The issued cancellation |
+| `cancelPartially()` | `array $lines, ?string $reason = null, Date\|DateTimeInterface\|string\|null $issueDate = null` | The issued partial cancellation |
+| `correct()` | – | A draft of kind `correction`; issue it with `issue()` |
+
+| Allowed for | `cancel()` | `cancelPartially()` | `correct()` |
+|---|---|---|---|
+| `issued` | yes | yes | yes |
+| `partially_cancelled` | yes (the remainder) | yes | no |
+| `cancelled` | no (`NothingToCancel`) | no (`NothingToCancel`) | no |
+| draft | no | no | no |
+| kind `cancellation` | no | no | no |
+| document level allowances or charges | yes | no | yes |
+
+### Full cancellation
+
+`cancel()`:
+
+1. checks the original (see the table above: `InvalidInvoiceState` or `NothingToCancel`) and
+   that the issuer is still the company that issued it,
+2. builds the cancellation with the core (see
+   [Getting started](getting-started.md#cancellation)): for an invoice that was partially
+   cancelled before, only what is left,
+3. creates a draft of kind `cancellation` and issues it with its own number (the steps of
+   [Issuing](#issuing)). Inside the issuing transaction:
+   - the original is locked and read again, and the remainder is checked again,
+   - the relation `cancels` is recorded,
+   - the original becomes `cancelled` (with `cancelled_at`, `cancellation_reason` and a
+     raised `cancellations` counter),
+   - the audit entry `cancelled` is written on the original,
+4. dispatches `InvoiceCancelled` after the commit.
+
+If the cancellation cannot be issued (e.g. because it is invalid), its draft is deleted again
+(audit entry `deleted_draft`), the original model shows its stored state again and no number
+is used up.
+
+The cancellation document:
+
+- has the type code of the sign strategy (see
+  [Sign strategies and credit notes](#sign-strategies-and-credit-notes)) and the title of the
+  country pack (DE: "Stornorechnung", cancellation invoice),
+- states in a note which invoice it cancels and the reason, e.g. "Stornierung der Rechnung
+  RE-2026-0042 vom 05.10.2026. Grund: Charged twice" (Cancellation of invoice RE-2026-0042 of
+  05.10.2026. Reason: Charged twice),
+- keeps the regulatory and tax notes of the original (invoice notes, BT-22, with the subject
+  codes `REG` or `TXD`),
+- keeps, when it cancels everything that is left, the paid amount (BT-113) and the rounding
+  amount (BT-114), so that all cancellations together reverse exactly the amount due,
+- cannot be dated before the original.
+
+### Partial cancellation
+
+`cancelPartially()` takes a list of line selections:
+
+| Selection | Cancels |
+|---|---|
+| `['line' => '3']` | The whole line, or what is left of it |
+| `['line' => '1', 'quantity' => 1]` | A quantity (int or numeric string) |
+| `['line' => '2', 'amount' => '50.00']` | An amount (string): the net amount; for a line with a price including VAT, the amount including VAT |
+
+`line` is the line id (BT-126, `InvoiceLine::$id`). The builder numbers lines `'1'`, `'2'`, …
+unless you set ids. The rules:
+
+- Cancelled quantities and amounts are tracked per line. More than invoiced cannot be
+  cancelled, also not by processes that cancel at the same time.
+- Quantities and amounts are magnitudes: negative lines (discounts, returns) are reversed with
+  their sign.
+- After an amount cancellation, the rest of a line can only be cancelled by amount.
+- The last part of a line cancels exactly its remaining net amount (as an amount), so the net
+  amounts of all cancellations add up exactly to the original. A line whose net amount is
+  cancelled completely is closed, even if rounding left a quantity.
+- Lines with a price including VAT (gross price mode) are tracked and cancelled by their
+  amount including VAT. The last part cancels exactly the remaining gross amount, so the
+  amounts due add up exactly.
+- Partial cancellations are not possible for invoices with document level allowances or
+  charges (`InvalidArgumentException` of the core): cancel the invoice fully and issue a new
+  one.
+
+The original becomes `partially_cancelled` (relation `partially_cancels`, audit entry
+`partially_cancelled`, event `InvoicePartiallyCancelled`). Once the partial cancellations
+cover everything, it becomes `cancelled` instead, with `cancelled_at` and the reason of the
+last part, the audit entry `cancelled` and the event `InvoiceCancelled`. `cancel()` on a
+partially cancelled invoice cancels the remainder.
+
+| Error | Exception |
+|---|---|
+| Empty list | `InvalidInvoiceState` |
+| Unknown line, line already cancelled completely, more than is left, a quantity after an amount cancellation | `UnexpectedValueException` (message names the line and what is left) |
+| Document level allowances or charges | `InvalidArgumentException` |
+| Quantity or amount given as float (`2.5` instead of `'2.5'`) | `InvalidArgumentException` |
+| Another partial cancellation was issued meanwhile | `InvalidInvoiceState` ("… partially cancelled in the meantime; try again"), no number used up |
+
+### VAT of partial cancellations
+
+VAT is calculated per document and VAT group (category and rate) and rounded there (EN 16931
+rule BR-CO-17, see [Rules and validation](concepts.md#rules-and-validation)). If every partial
+cancellation rounded its VAT on its own, all parts together could differ from the original by
+a cent or more. A partial cancellation therefore rounds its VAT cumulatively, together with
+the earlier partial cancellations of the same original:
+
+- Per VAT group, the target is round2(taxable amount of all cancellations so far × rate).
+  Once all lines of the group are cancelled, the target is the original's VAT amount
+  (BT-117).
+- The cancellation carries the target minus the VAT already cancelled.
+
+Example: three parts of 9.67, 9.67 and 9.66 net at 19 % carry 1.84, 1.83 and 1.84 VAT, 5.51
+in total. Rounded per document, they would carry 3 × 1.84 = 5.52.
+
+In gross price mode, the taxable amount follows the same way from the gross amount. Per VAT
+group it is round2(gross amount cancelled so far / (1 + rate)), as for the original, or the
+original's taxable amount (BT-116) once the group is closed. The rounding amount (BT-114)
+follows, so that the amount due of every part stays the gross amount of its lines. Example:
+3 × 9.99 including 19 % (25.18 net, 4.78 VAT, rounding amount 0.01) are cancelled as 8.39,
+8.40 and 8.39 net (rounded per document: 3 × 8.39 = 25.17).
+
+This holds for every sequence of partial cancellations (and the rest with `cancel()`):
+
+- Per VAT group, the taxable amounts (BT-116, the taxable amount of section 17 (1) UStG) and
+  the VAT amounts (BT-117) of all cancellations add up exactly to the original's. So do the
+  totals and amounts due (BT-109 net total, BT-110 VAT total, BT-112 gross total, BT-114
+  rounding amount, BT-115 amount due).
+- Every single cancellation differs by at most one cent from round2(its own taxable amount ×
+  rate), and its VAT has the sign of its taxable amount (0.00 on 0.00).
+- BR-CO-17 and BR-S-09 accept up to one currency unit (the official Schematron validation
+  rules check exactly this tolerance), so every document stays valid.
+- Such a cancellation says so in its note: "Die Umsatzsteuer ist auf die bereits stornierten
+  Teilbeträge abgestimmt." (The VAT is aligned with the amounts already cancelled.) The
+  validation reports the information `QUITTIO-CANCELLATION-VAT-ALIGNED` instead of the
+  warning `QUITTIO-VAT-ROUNDING`. That warning still reports a larger difference or another
+  sign.
+- The VAT total in accounting currency (BT-111, with a VAT accounting currency BT-6) is
+  aligned the same way: round2(VAT cancelled so far × exchange rate), and the original's
+  BT-111 with the last part.
+
+How it is recorded:
+
+- The relation of every cancellation records (column `vat`), per VAT group, the taxable
+  amount, the VAT, the share of BT-111 and, in gross price mode, the gross amount.
+- A partial cancellation that another process issues in the meantime changes the VAT of the
+  next part. That part is then rejected ("partially cancelled in the meantime; try again")
+  without using up a number.
+- A single full cancellation reverses the original exactly.
+- Drafts keep a declared VAT breakdown only for such aligned cancellations. Every other
+  invoice is recalculated with Quittio's rounding when it is issued, also a draft started with
+  `InvoiceBuilder::from()` on data another system rounded.
+
+The one-cent alignment is to be confirmed by a tax adviser (see the legal review in the
+README).
+
+### Sign strategies and credit notes
+
+A cancellation is either a credit note with positive amounts or an invoice with negative
+amounts. The type code (the document type, BT-3, from the UN code list UNTDID 1001) tells
+which:
+
+| Strategy (`quittio.corrections.cancellation_strategy`) | Type code | Amounts |
+|---|---|---|
+| `credit_note` (default, also of the German pack) | 381 | positive; the [UBL syntax](concepts.md#syntaxes-cii-and-ubl) writes a `CreditNote` document |
+| `negative_invoice` | 380 | negative |
+
+The key lives in `config/quittio.php` (env `QUITTIO_CANCELLATION_STRATEGY`); `null` takes the
+country pack's default. A credit note (381 and the other credit note type codes) is
+cancelled with an invoice (380) with the same positive amounts in both strategies.
+
+Credit notes can be issued as ordinary managed invoices: set the type code in the builder
+(`->type(InvoiceTypeCode::CreditNote)`). They are cancelled with a 380 invoice and corrected
+with a credit note, with the strategy `cancel_and_reissue` only.
+
+### Cancellation ledger
+
+Relations (`quittio_invoice_relations`) point from the new document (`invoice_id`) to the
+original (`related_invoice_id`). The cancelling ones (`cancels`, `partially_cancels`,
+`replaces`) make up the cancellation ledger of the original:
+
+| Column | Content |
+|---|---|
+| `type` | `cancels`, `partially_cancels`, `corrects`, `replaces` |
+| `amount` | Cancellations: the cancelled net amount, always positive |
+| `lines` | Cancellations: per original line `line`, `quantity` (`null` for amount cancellations), `net` and, for gross price lines, `gross` |
+| `vat` | Cancellations: per VAT group `key` (e.g. `S\|19.00`), `category`, `rate`, `taxable`, `tax`, `tax_in_tax_currency`, `gross`, signed like the original |
+| `created_at` | Time of the relation |
+
+```php
+$invoice->inverseRelations;                 // cancellations and corrections of this invoice
+$cancellation->relations;                   // what this document cancels or corrects
+$cancellation->precedingInvoice;            // the original
+$relation->cancelledLines();                // decoded lines
+$relation->cancelledVat();                  // decoded VAT groups, null if not recorded
+```
+
+The service `Quittio\Managed\Corrections\CancellationLedger` computes what is left:
+
+```php
+use Quittio\Managed\Corrections\CancellationLedger;
+
+$ledger = app(CancellationLedger::class);
+foreach ($ledger->balances($invoice) as $lineId => $balance) {
+    // LineBalance: quantity, amount, remainingQuantity, remainingAmount, amountCancelled, gross
+    echo $lineId, ': ', $balance->remainingQuantity, ' / ', $balance->remainingAmount, PHP_EOL;
+}
+$ledger->isFullyCancelled($invoice);
+$ledger->remainder($invoice);               // null if nothing was cancelled, otherwise the open selections
+$ledger->count($invoice);                   // number of cancelling documents
+```
+
+| Method | Returns |
+|---|---|
+| `balances(Invoice $original)` | `LineBalance` per line id: `isOpen()`, `byAmount()`, `isUntouched()` |
+| `remainder(Invoice $original)` | Selections for the rest (`NothingToCancel` if nothing is left), `null` if untouched |
+| `isFullyCancelled(Invoice $original)` | Whether no line is open |
+| `count(Invoice $original)` | Number of cancelling relations |
+| `normalize(Invoice $original, array $requested)` | The selections checked against the remainder (whole lines become quantities or amounts) |
+| `history(Invoice $original, array $recorded)` | `CancellationHistory` of the core: VAT cancelled so far per group |
+| `record(InvoiceData $cancellation, ?array $requested)` | The `lines` entry of a relation |
+| `vat(InvoiceData $original, InvoiceData $cancellation)` | The `vat` entry of a relation |
+
+The amount of a line is its net amount, for gross price lines its gross amount (as
+magnitudes). Relations cannot be changed. They are deleted only together with their invoice
+after its retention period.
+
+### Corrections
+
+`correct()` creates a draft of kind `correction` with the data of the original:
+
+- no number,
+- the type code 380 (a credit note keeps its credit note type code),
+- a reference to the original (BG-3, number and date),
+- no due date: it follows from the payment terms again when the correction is issued.
+
+Change it with `updateData()`, preview it, then `issue()` it. Issuing follows
+`quittio-managed.correction.strategy` (env `QUITTIO_CORRECTION_STRATEGY`; `null` = the
+country pack's default, DE: `cancel_and_reissue`):
+
+| Strategy | Issuing the correction |
+|---|---|
+| `cancel_and_reissue` | Cancels the original completely, then issues the correction as a new invoice with the relation `corrects`. The reason of the cancellation comes from the translation `quittio-managed::invoice.correction_reason` ("Rechnungskorrektur.", invoice correction). Events `InvoiceCancelled` and `InvoiceCorrected`; two numbers are used. |
+| `corrected_invoice` | Issues the correction with type code 384 (corrected invoice) and the title of the country pack (DE: "Rechnungskorrektur"), relation `replaces`. The original becomes `cancelled` with the reason `quittio-managed::invoice.replaced_by` ("Ersetzt durch Rechnung RE-2026-0043.", replaced by invoice RE-2026-0043). Event `InvoiceCorrected` (no `InvoiceCancelled`). |
+
+Both steps run in one transaction: either both documents exist or none (an invalid correction
+also rolls back the cancellation). The audit entry `corrected` (correction number and
+relation type) is written on the original.
+
+- Only `issued` invoices can be corrected, not cancellations and not partially cancelled ones
+  (`InvalidInvoiceState`). For a partially cancelled invoice, cancel the remainder with
+  `cancel()` and issue a new invoice.
+- A credit note is corrected with a credit note and only with `cancel_and_reissue`.
+  `corrected_invoice` throws `InvalidInvoiceState` for credit notes, because 384 is a
+  corrected invoice.
+- An unknown strategy throws `ConfigurationException`. The strategy is checked when the draft
+  is created and again when it is issued.
+- The correction cannot be dated before the original, and the issuer must still be the company
+  that issued it.
+- Corrections can themselves be cancelled, partially cancelled and corrected.
+- A correction draft whose original was cancelled, partially cancelled or replaced meanwhile
+  can no longer be issued; `quittio:drafts:prune` deletes it.
+
+The default strategy is to be confirmed by a tax adviser (see the legal review in the README).
+
+### Left-behind drafts
+
+A draft of a cancellation exists only while `cancel()` or `cancelPartially()` issues it. A
+correction draft can only be issued while its original can be corrected. Drafts that are left
+behind are removed by a command:
+
+```bash
+php artisan quittio:drafts:prune                     # asks
+php artisan quittio:drafts:prune --older-than=120 --force
+```
+
+`quittio:drafts:prune` deletes:
+
+- cancellation drafts older than `--older-than` minutes (default 60), left behind e.g. by a
+  crash,
+- correction drafts whose original can no longer be corrected (cancelled, partially cancelled
+  or replaced meanwhile, or deleted).
+
+A draft that has been issued meanwhile is never deleted. Every deletion writes
+`deleted_draft` to the audit log.
+
+### Self-billing
+
+Self-billing means that the buyer issues the invoice for the seller's supply (in Germany a
+"Gutschrift" in the sense of the UStG; see [German terms](concepts.md#german-terms)). It is not
+part of version 1.0: the seller of every managed invoice is its issuer. The core keeps
+self-billed documents self-billed when it cancels them (type codes 389 and 261).
+
+## Delivery
+
+`send()` mails the archived documents of an issued invoice and logs every attempt.
+
+```php
+$delivery = $invoice->send();                                    // address from the billable or the buyer
+$delivery = $invoice->send('accounting@kunde.de', ['cfo@kunde.de']);
+```
+
+`send(?string $to = null, array $cc = [])` returns the `Delivery` row. It:
+
+1. refuses drafts (`InvalidInvoiceState`); cancelled invoices, cancellations and corrections
+   can be sent,
+2. renders and archives the documents first if the render status is not `done` (in the
+   request, so it can throw),
+3. checks the hashes of the archived files: missing or damaged files dispatch
+   `ArchiveIntegrityViolation` and throw an `ArchiveException`; nothing is sent and no
+   delivery is logged,
+4. takes the recipient from `$to` or the recipient resolver (`NoRecipient` if there is none),
+5. attaches the archived PDF (ZUGFeRD, PDF), otherwise the archived XML (XRechnung, CII, UBL,
+   Peppol). With `delivery.mail.xrechnung_visualization`, a PDF visualisation of an XML-only
+   invoice is rendered from the snapshot and attached as well (it is not archived),
+6. logs the attempt in `quittio_deliveries` (status `queued`) and sends the mail at once with
+   the default mailer (`sendNow()`, also for an own Mailable that implements `ShouldQueue`):
+   to `$to`, with `$cc` and a blind copy to `delivery.mail.bcc_archive`,
+7. on success: delivery `sent` with `message_id` (`null` when the mailer returns no message,
+   e.g. with `Mail::fake()`) and `sent_at`; invoice `delivery_status` `sent`, `sent_at` and
+   `channel` `mail`; audit entry `sent`; event `InvoiceSent`,
+8. on failure: delivery `failed` with the error message; invoice `delivery_status` `failed`
+   (unless it was sent before); audit entry `delivery_failed`; event `InvoiceDeliveryFailed`;
+   the exception is rethrown.
+
+Every call is a new attempt and a new row; `$invoice->deliveries` lists them. `send()` sends
+synchronously. To send in the background, dispatch an own job that calls `send()`.
+
+### Recipients
+
+The recipient comes from `delivery.recipient_resolver`. The default
+(`DefaultRecipientResolver`) takes the first valid address of:
+
+1. `invoiceEmail()` of the billable, when it implements
+   `Quittio\Managed\Delivery\HasInvoiceEmail`,
+2. the `email` attribute of the billable,
+3. the buyer's contact e-mail (BT-58) in the invoice data,
+4. the buyer's electronic address (BT-49) with scheme `EM`.
+
+To take the address from elsewhere, implement `RecipientResolver` and set it in
+`delivery.recipient_resolver`:
+
+```php
+use Quittio\Managed\Delivery\RecipientResolver;
+use Quittio\Managed\Models\Invoice;
+
+final class AccountingRecipient implements RecipientResolver
+{
+    public function resolve(Invoice $invoice): ?string
+    {
+        return $invoice->billable?->accounting_email;
+    }
+}
+```
+
+### Mail content
+
+The default Mailable `Quittio\Managed\Delivery\InvoiceMail`:
+
+- uses the locale of the invoice, else of the issuer, else `en`,
+- has a subject and text by kind (invoice, correction, cancellation),
+- has a due date line, except for cancellations and invoices without due date,
+- has the seller's name below the closing.
+
+The texts are translations of the namespace `quittio-managed`. Publish them with
+`--tag=quittio-managed-lang`, the Markdown view with `--tag=quittio-managed-views`:
+
+| Key | German default | English default |
+|---|---|---|
+| `mail.subject.invoice` | `Rechnung :number von :seller` | `Invoice :number from :seller` |
+| `mail.subject.correction` | `Rechnungskorrektur :number von :seller` | `Corrected invoice :number from :seller` |
+| `mail.subject.cancellation` | `Stornorechnung :number von :seller` | `Cancellation :number from :seller` |
+| `mail.greeting` | `Guten Tag,` | `Hello,` |
+| `mail.body.invoice` | `anbei erhalten Sie die Rechnung :number über :amount.` | `please find attached invoice :number for :amount.` |
+| `mail.body.correction` | `anbei erhalten Sie die Rechnung :number über :amount. Sie korrigiert eine frühere Rechnung.` | `please find attached invoice :number for :amount, which corrects an earlier invoice.` |
+| `mail.body.cancellation` | `anbei erhalten Sie die Stornorechnung :number.` | `please find attached the cancellation :number.` |
+| `mail.due` | `Bitte überweisen Sie den Betrag bis zum :due_date.` | `Please pay the amount by :due_date.` |
+| `mail.closing` | `Mit freundlichen Grüßen` | `Kind regards` |
+| `invoice.draft_watermark` | `ENTWURF` | `DRAFT` (preview watermark) |
+| `invoice.correction_reason` | `Rechnungskorrektur.` | `Correction of the invoice.` (reason of the cancellation of `cancel_and_reissue`) |
+| `invoice.replaced_by` | `Ersetzt durch Rechnung :number.` | `Replaced by invoice :number.` (reason with `corrected_invoice`) |
+
+Placeholders: `:number`, `:seller`, `:amount` (amount due, formatted for the locale) and
+`:due_date`.
+
+An own Mailable is configured in `delivery.mail.mailable`. The container builds it with the
+named arguments `invoice` (the `Invoice`) and `files` (list of `Illuminate\Mail\Attachment`
+with the archived documents). Return the files from `attachments()`; extending `InvoiceMail`
+does that for you:
+
+```php
+use Illuminate\Mail\Mailables\Content;
+use Quittio\Managed\Delivery\InvoiceMail;
+
+final class BrandedInvoiceMail extends InvoiceMail
+{
+    public function content(): Content
+    {
+        return new Content(markdown: 'mail.invoice', with: ['invoice' => $this->invoice]);
+    }
+}
+```
+
+`send()` sends it at once even if it implements `ShouldQueue`, so that the delivery log holds
+the result of the transport. To send in the background, dispatch an own job that calls
+`send()`.
+
+## Audit log
+
+The audit log records who did what to invoices, issuers and sequences. `quittio_audit_logs`
+is append-only: entries are never changed or deleted. Every entry has:
+
+- an action,
+- a subject (the invoice, issuer or sequence; `null` for `verified`),
+- a JSON payload,
+- the causer: the authenticated user of the default guard (any Eloquent model),
+- for HTTP requests, IP address and user agent (at most 255 characters). Console commands and
+  queue jobs record neither.
+
+| Action | Subject | Payload |
+|---|---|---|
+| `drafted` | invoice | `kind`, `preceding` (number of the original) |
+| `issued` | invoice | `number`, `sequence_key`, `issue_date`, `gross_total` |
+| `rendered` | invoice | `version`, `disk`, `files`, `report`, `hashes` |
+| `render_failed` | invoice | `error` |
+| `sent` | invoice | `channel`, `delivery` (id), `attachments` |
+| `delivery_failed` | invoice | `channel`, `delivery` (id) |
+| `cancelled` | original | `cancellation` (number), `reason`, `net`, `lines` |
+| `partially_cancelled` | original | `cancellation` (number), `reason`, `net`, `lines` |
+| `corrected` | original | `correction` (number), `type` (`corrects` or `replaces`) |
+| `deleted_draft` | invoice | `number`, `retention_until` |
+| `deleted` | invoice | `number`, `retention_until` |
+| `sequence_changed` | sequence | `key`, `from`, `to` |
+| `issuer_created` | issuer | `key`, `changes` (per column `old` `null`, `new`) |
+| `issuer_updated` | issuer | `key`, `changes` (per changed column `old`, `new`) |
+| `issuer_deleted` | issuer | `key`, `changes` (per column `old`, `new` `null`) |
+| `verified` | – | `checked`, `violations`, `from`, `to` |
+
+```php
+$invoice->auditLogs()->orderBy('id')->get();
+AuditLog::query()->where('action', 'issued')->where('causer_id', $user->id)->get();
+$entry->causer;     // MorphTo
+$entry->subject;    // MorphTo
+```
+
+Not logged:
+
+- changes of drafts (`updateData()`, `save()`), previews and validations,
+- bulk deletes of drafts,
+- payment, legal hold and retention changes,
+- archive integrity violations outside `quittio:verify` (they are events),
+- read access.
+
+Recipients and other customer data are not part of the entries: `sent` and `delivery_failed`
+refer to the delivery row, which is deleted with the invoice (see
+[Personal data](#personal-data)).
+
+`audit.enabled => false` switches the log off completely. An own implementation of
+`Quittio\Managed\Audit\Auditor` (`record(?Model $subject, string $action, array $payload = []):
+?AuditLog`) can be bound in the container, e.g. to write to another store as well.
+
+## Authorisation
+
+The package ships two policies, `InvoicePolicy` and `IssuerPolicy`. With `policies.register`,
+they are registered for the configured invoice and issuer models. The package does not check
+them itself: call them in your controllers (`$this->authorize('issue', $invoice)`,
+`Gate::authorize()`, `@can`).
+
+Every ability needs an authenticated user. It combines the state of the record with an
+optional gate named `quittio.{ability}`. Without such a gate, every authenticated user is
+allowed.
+
+| Policy ability | Allowed when | Gate |
+|---|---|---|
+| `viewAny` (invoice class) | always | `quittio.viewAny` |
+| `view` | always | `quittio.view` |
+| `createDraft` (invoice class) | always | `quittio.createDraft` |
+| `updateDraft` | the invoice is a draft | `quittio.updateDraft` |
+| `deleteDraft` | the invoice is a draft | `quittio.deleteDraft` |
+| `issue` | a draft that is not a cancellation draft | `quittio.issue` |
+| `cancel` (also for partial cancellations) | issued or partially cancelled, no cancellation | `quittio.cancel` |
+| `correct` | issued (not partially cancelled), no cancellation | `quittio.correct` |
+| `send` | issued (any status but draft) | `quittio.send` |
+| `viewAuditLog` | always | `quittio.viewAuditLog` |
+| `viewAny`, `view` (issuer) | always | `quittio.manageIssuers` |
+| `manageIssuers` | always | `quittio.manageIssuers` |
+| `manageSequences` | always | `quittio.manageSequences` |
+
+```php
+use Illuminate\Support\Facades\Gate;
+use Quittio\Managed\Managed;
+use Quittio\Managed\Models\Invoice;
+
+Gate::define('quittio.issue', fn (User $user, Invoice $invoice) => $user->isAccountant());
+Gate::define('quittio.manageSequences', fn (User $user) => $user->isAdmin());
+
+$user->can('createDraft', Managed::invoiceModel());
+$user->can('manageSequences', Managed::issuerModel());
+```
+
+Gates receive the user and, for record abilities, the invoice or issuer. `manageIssuers` and
+`manageSequences` receive the issuer or `null`.
+
+## Immutability
+
+An issued invoice must stay as it was issued; changes are made with cancellations and
+corrections. Issued invoices are protected on three levels:
+
+1. the model (`ImmutableInvoiceGuard`),
+2. its query builder (`InvoiceQuery`),
+3. database triggers, recommended for production.
+
+Violations throw `InvoiceImmutable` (model and query builder) or a database error (triggers).
+
+### What can still change
+
+After issuing, the model only lets these columns change. Everything else throws
+`InvoiceImmutable` ("… is issued and immutable; these attributes cannot be changed: …"):
+
+| Columns | Rule |
+|---|---|
+| `payment_status`, `paid_total`, `paid_at` | Free (see [Payment status](#payment-status)) |
+| `delivery_status`, `sent_at`, `channel`, `lifecycle_status` | Free |
+| `render_status`, `render_attempts` | Free |
+| `legal_hold` | `true`, `false`, `1`, `0`, `"1"` or `"0"` only |
+| `retention_until` | Can only be extended |
+| `status` | Forward only, and only through `issue()`, `cancel()`, `cancelPartially()` and the issue of a correction |
+| `cancelled_at`, `cancellation_reason` | Written once, together with the status `cancelled` |
+| `cancellations` | Rises with every cancelling document, up to the number of their relations; the status becomes (partially) cancelled only together with such a rise |
+| `document_version`, `disk`, `xml_path`, `pdf_path`, `xml_hash`, `pdf_hash`, `validation_status`, `validation_report_path` | Archiver only, together with a higher document version |
+| `updated_at` | Free |
+
+Further rules:
+
+- Columns you add to `quittio_invoices` yourself are frozen after issuing as well.
+- Invoices are inserted as drafts only.
+- Drafts hold no number, number space, sequence key or sequence value (`issue()` sets them).
+  They keep their kind and the invoice they refer to (`kind`, `preceding_invoice_id`).
+- Issued invoices can only be deleted one by one after the retention period (plus two days,
+  see [Retention and deletion](#retention-and-deletion)) and never under legal hold.
+
+### Optimistic concurrency
+
+A save or delete only applies while the row still has the status (and the other stored
+values) the model was loaded with. Otherwise it throws `InvoiceImmutable` ("… was changed
+(e.g. issued or cancelled) by another process since it was loaded; load it again") and
+changes nothing. Examples: a draft that another process issued meanwhile, or a model whose
+original values were changed.
+
+Partly loaded models (`select('id')`) are checked against the stored row. Load the invoice
+again in that case.
+
+### Bulk queries
+
+The query builder applies the same rules to bulk operations:
+
+- Bulk updates, touches and increments of frozen columns only reach drafts. This also holds
+  with `orWhere()` and with qualified column names (`quittio_invoices.status`) or other letter
+  cases.
+- On issued invoices, bulk updates may:
+  - change payment, delivery and rendering columns,
+  - set `legal_hold` (`true`, `1` or `"1"`; values other than these and `false`, `0`, `"0"`
+    throw),
+  - extend `retention_until` (rows whose period would shrink are left out).
+
+  The status never changes in bulk (it throws), and a legal hold is only released through the
+  model.
+- Bulk updates and inserts cannot set `number`, `number_space`, `sequence_key`,
+  `sequence_value`, `kind` or `preceding_invoice_id`.
+- Upserts may only change the bulk columns and insert drafts only. Inserts create drafts
+  only. Bulk deletes, `forceDelete()` and `truncate()` throw if they would reach an issued
+  invoice.
+- `updateOrInsert()`, `updateFrom()`, `insertUsing()` and `insertOrIgnoreUsing()` are not
+  available.
+
+### Append-only tables
+
+The audit log and the invoice relations are append-only in the same way: updates, upserts,
+increments, touches and deletes through the model or its query builder throw. Relations are
+only deleted together with their invoice after its retention period. Number sequences only
+change through the `Sequence` model (see [Managing sequences](#managing-sequences)).
+
+### Database triggers
+
+Only the base query builder (`toBase()`, `getQuery()`, `DB::table()`) and raw SQL bypass the
+rules above. The database triggers, recommended for production, enforce them against direct
+queries as well (MySQL/MariaDB, PostgreSQL, SQLite):
+
+```bash
+php artisan vendor:publish --tag=quittio-managed-triggers
+php artisan migrate
+```
+
+The triggers protect:
+
+- issued invoices: frozen columns; a forward-only status that only becomes (partially)
+  cancelled together with a rise of the `cancellations` counter, which cannot exceed the
+  number of cancelling relations; write-once cancellation columns (only together with the
+  status `cancelled`); a retention period that can only be extended; archive columns only
+  with a higher document version; deletes only two days after the retention period in the
+  database clock and never under legal hold,
+- drafts: inserted and kept without number, number space and sequence value; fixed kind and
+  original; issued only with a number, a number space and a retention period and without
+  cancellation columns,
+- the audit log: no updates, no deletes,
+- the invoice relations: no updates; deletes only once their invoice is past its retention
+  period,
+- the number sequences: no lower counter, no new key or pattern, no deletes,
+- on PostgreSQL only: none of these tables can be truncated.
+
+The triggers raise errors such as `quittio: issued invoice is immutable`, `quittio: audit log
+is append-only`, `quittio: invoice relations are immutable` and `quittio: number sequences only
+increase`. On MySQL with binary logging, creating triggers needs the `TRIGGER` privilege and
+`log_bin_trust_function_creators` (or `SUPER`). Unlike the model, the triggers do not limit
+releasing a legal hold or which code changes the status.
+
+Frozen are all columns of an issued invoice except those of
+[What can still change](#what-can-still-change). On PostgreSQL the trigger compares the whole
+row without them, so columns you add to `quittio_invoices` later are frozen as well. On MySQL,
+MariaDB and SQLite the trigger lists the columns that exist when it is created. Recreate it in
+the migration that adds columns, with `ImmutabilityTriggers::refresh()`
+(`Quittio\Managed\Immutability`):
+
+```php
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+use Quittio\Managed\Immutability\ImmutabilityTriggers;
+
+Schema::table('quittio_invoices', function (Blueprint $table): void {
+    $table->string('erp_reference')->nullable();
+});
+ImmutabilityTriggers::refresh();
+```
+
+`refresh()` recreates only the check of invoice updates, with the columns the table has now.
+It returns `false` without doing anything when the triggers are not installed.
+
+- On SQLite and PostgreSQL it runs in one transaction.
+- MySQL commits each statement, so between dropping and creating the update trigger
+  (milliseconds) direct updates are not checked: run it with the migrations, not under load.
+- On PostgreSQL it is not needed for new columns. It replaces the trigger function, which
+  switches triggers installed with an earlier version (a column list) to the comparison of
+  the whole row.
+
+### What is not prevented
+
+- MySQL fires no triggers on `TRUNCATE`. The foreign keys keep invoices and relations from
+  being truncated, but the audit log and the sequences are not protected. Give the database
+  user of the application no `DROP` privilege on the `quittio_` tables (`TRUNCATE` needs it)
+  and run migrations with a separate user.
+- Without the triggers, the base query builder and raw SQL can change anything.
+- Issuer profiles are protected by their model only: change number spaces, tenants, keys and
+  seller identifiers with model saves (`$issuer->save()`, `NumberSpaces::assign()`). Bulk
+  updates of issuers through the query builder or raw SQL bypass the freeze and the
+  consistency check. The unique index on number space and number still prevents duplicate
+  numbers within a space.
+- Deliveries are ordinary rows without protection.
+- The archived files are protected by the archive (write-once) and the hashes. A disk without
+  object lock cannot keep an administrator from deleting them; `quittio:verify` detects it.
+
+## Retention and deletion
+
+Invoices must be kept for a retention period. In Germany it is 8 years after the end of the
+year of issue (section 14b UStG, the German VAT Act, and section 147 AO, the German Fiscal
+Code). Without a country pack, it is 10 years.
+
+`retention_until` is set when the invoice is issued, by the rule of the country pack. It is
+counted from the later of the issue date and the day the invoice is actually issued.
+`retention.years` can only lengthen it.
+
+The period can be extended per invoice. An invoice can also be put on legal hold: then it is
+kept beyond its retention period, e.g. during a tax audit or a lawsuit.
+
+```php
+$invoice->forceFill(['retention_until' => '2040-12-31'])->save();   // only later dates
+$invoice->forceFill(['legal_hold' => true])->save();                // also in bulk
+$invoice->forceFill(['legal_hold' => false])->save();               // release: model only
+```
+
+The period ends with `retention_until` in the issuer's time zone. The command, the model and
+the triggers compare with their own clock. They count an invoice as past its period two days
+later (`retain until 2034-12-31` → from 2035-01-03), when it has ended in every time zone
+(time zones differ by up to 26 hours).
+
+```bash
+php artisan quittio:retention:check              # list, dispatch RetentionExpired
+php artisan quittio:retention:check --delete     # delete, asks for confirmation
+php artisan quittio:retention:check --delete --force
+```
+
+`quittio:retention:check` lists the issued invoices past their retention period that are not
+on legal hold. It dispatches `RetentionExpired` for each of them, before anything is deleted.
+
+With `--delete`, it deletes invoices by group:
+
+- A group is an invoice together with all invoices connected to it through cancellations,
+  partial cancellations, corrections and replacements (transitively).
+- A group is deleted only when every one of its invoices is past its retention period and
+  none is on legal hold. Otherwise the whole group is kept, and the command says which
+  invoice keeps it.
+- The rows of a group (invoices, relations, deliveries with recipients and errors, and drafts
+  that refer to one of the invoices) are deleted in one transaction with audit entries
+  (`deleted`, `deleted_draft`). Then all archived files of all document versions from the
+  manifest are deleted.
+- A file that cannot be deleted stays recorded. The next run reports it
+  (`… archived file(s) of deleted invoices could not be deleted yet`) and, with `--delete`,
+  tries again.
+- With `--delete`, the command fails (exit code 1, `Not everything could be deleted: …`) when
+  a group or an archived file could not be deleted, after it has dealt with the others. Groups
+  kept for a legal hold or a retention period are no failure.
+
+Schedule the command (e.g. monthly) to keep the archive clean.
+
+Delete issued invoices through this command. A single `$invoice->delete()` after the
+retention period is allowed by the model, but it fails on the foreign keys while relations or
+cancellations refer to the invoice, and it leaves deliveries and archived files behind.
+
+### Personal data
+
+The audit log is append-only and stays after the retention period (GDPR Art. 17, the right to
+erasure, and GoBD), so it holds no recipients or other data of the customers. `sent` and
+`delivery_failed` refer to the delivery (`delivery`: id of the row in `quittio_deliveries`),
+which is deleted with the invoice. The invoice data itself is in the invoice row and the
+archived files.
+
+The audit log keeps the causer, IP address and user agent of the users who acted, and the
+changes of issuer profiles (the company's own master data). There is no function to
+anonymise issued invoices before the end of their retention period.
+
+## Testing
+
+### Factories
+
+```php
+use Quittio\Core\Data\InvoiceData;
+use Quittio\Managed\Models\Invoice;
+use Quittio\Managed\Models\Issuer;
+
+$issuer = Issuer::factory()->default()->create();                 // key default, Muster GmbH, DE123456789
+$other = Issuer::factory()->company('Andere AG', 'DE111111111')->create(['key' => 'other']);
+
+$draft = Invoice::factory()->for($issuer)->create();              // draft with two sample lines
+$draft = Invoice::factory()->data(InvoiceData::factory()->reverseCharge()->make())->create();
+$invoice = Invoice::factory()->create()->issue('2026-10-05');
+```
+
+| Factory | Definition and states |
+|---|---|
+| `Issuer::factory()` | Random key, Muster GmbH with a random VAT id (a company of its own), Germany, `Europe/Berlin`, one bank account, `defaults` locale `de` and 14 due days |
+| `->default()` | Key `default`, `is_default`, VAT id `DE123456789` |
+| `->company(string $name, string $vatId)` | Another company with its own name and VAT id |
+| `Invoice::factory()` | Draft with `InvoiceData::factory()->withLines(2)` data and a new issuer |
+| `->data(InvoiceData $data)` | Draft with the given data |
+
+The factories make the configured models (`quittio-managed.models.invoice` and `.issuer`),
+also through the factory of a subclass. Factory drafts are saved directly: they skip the
+seller check, the issuer defaults and the audit entry `drafted`. Issue them with `issue()`;
+the seller is taken from the issuer then.
+
+Useful in tests:
+
+- `Queue::fake()` keeps the render job from running (render status stays `pending`).
+  `config(['quittio-managed.queue.render_sync' => true])` renders at once.
+- `Mail::fake()` for `send()`, and a temporary local disk for `quittio-managed.disk`.
+- Fake single events (`Event::fake([InvoiceIssued::class])`). Faking all events also stops
+  the model events that write the issuer and deletion audit entries.
+- SQLite in memory works. Set `'transaction_mode' => 'IMMEDIATE'` on the test connection to
+  avoid the numbering warning.
+
+See [Testing](testing.md) for `Quittio::fake()` and the e-invoice assertions.
+
+### Testing against MySQL and PostgreSQL
+
+The package's own test suite (in the repository of `quittio/managed`) runs against SQLite by
+default and against MySQL and PostgreSQL from `tools/docker/databases`:
+
+```bash
+docker compose -f tools/docker/databases/compose.yaml up -d --wait
+QUITTIO_DB=mysql vendor/bin/pest --testsuite=managed
+QUITTIO_DB=pgsql QUITTIO_DB_TRIGGERS=1 vendor/bin/pest --testsuite=managed
+```
+
+- `QUITTIO_DB` selects `sqlite` (default, in memory), `mysql` (port 33061) or `pgsql` (port
+  54321). `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME` and `DB_PASSWORD` override the
+  connection.
+- `QUITTIO_DB_TRIGGERS=1` also installs the immutability triggers.
+- The group `concurrency` forks processes that issue invoices at the same time (needs `pcntl`
+  and MySQL or PostgreSQL).
+- The group `official` validates the archived documents with the KoSIT validator (the
+  official validator for XRechnung and EN 16931) and is skipped when it is not installed.
+
+## Known limitations
+
+- Payments, bank reconciliation, dunning runs, subscriptions, advance and final invoices,
+  self-billing, inbound invoices, Peppol transmission and DATEV exports are not part of 1.0.
+  The payment columns are maintained by your application.
+- Delivery is by mail only (`channel` `mail`). `lifecycle_status`, `registrations` and
+  `network_ids` are stored but not evaluated.
+- Partial cancellations of invoices with document level allowances or charges are not
+  supported: cancel fully and issue a new invoice.
+- Issuer profiles are protected by their model only; bulk updates of issuers bypass the
+  number space checks.
+- Without the triggers, the base query builder and raw SQL bypass the immutability rules.
+  MySQL fires no triggers on `TRUNCATE`. On MySQL, MariaDB and SQLite the triggers cover the
+  invoice columns that existed when they were created (see `ImmutabilityTriggers::refresh()`).
+- Different notations of one tax number are not unified for the number spaces.
+- Issued invoices can be deleted only after their retention period; there is no early
+  anonymisation.
+- The default cancellation and correction strategies and the one-cent VAT alignment of partial
+  cancellations are to be confirmed by a tax adviser (see the legal review in the README).
+
 ## Configuration
 
-`config/quittio-managed.php` (publish it with `--tag=quittio-managed-config`). Values are read
-when they are used, except the classes of the resolvers and the number generator (resolved
-once per process),
-the morph map, the policies and the tenancy scope (registered when the application boots).
-A value of the wrong type throws a `ConfigurationException` ("… must be a string",
-"… must be a boolean", "… must be an integer"); an empty string counts as `null` for string
-values.
+The settings of the Managed layer are in `config/quittio-managed.php`. The installer
+publishes it; otherwise publish it with `--tag=quittio-managed-config`.
+
+Values are read when they are used. Exceptions: the classes of the resolvers and the number
+generator are resolved once per process, and the morph map, the policies and the tenancy scope
+are registered when the application boots. A value of the wrong type throws a
+`ConfigurationException` ("… must be a string", "… must be a boolean", "… must be an
+integer"). An empty string counts as `null` for string values.
 
 ### Database settings
 
@@ -227,7 +2215,8 @@ The sign strategy of cancellations is configured in `config/quittio.php`, see
 | `pdf.filename` | File names in the archive (default `{title}_{number}.{ext}`) |
 | `countries` | Country packs (numbering, retention, correction policy, titles) |
 
-See [Configuration](configuration.md) for these keys.
+See [Configuration](configuration.md) for these keys. The `seller` section is not used for
+invoices of the Managed layer: issuer profiles replace it.
 
 ### Own models
 
@@ -254,20 +2243,23 @@ class Invoice extends \Quittio\Managed\Models\Invoice
 }
 ```
 
-The class must extend the package model, otherwise `ConfigurationException` ("… must be a
-subclass of …"). The package resolves every model through `Managed::issuerModel()`,
+The class must extend the package model, otherwise a `ConfigurationException` ("… must be a
+subclass of …") is thrown. The package resolves every model through `Managed::issuerModel()`,
 `Managed::invoiceModel()`, `Managed::sequenceModel()`, `Managed::relationModel()`,
-`Managed::deliveryModel()` and `Managed::auditLogModel()` (class `Quittio\Managed\Managed`);
-use them in your code as well. The morph map, the policies and the tenancy scope use the
-configured classes. Keep the query builders of the package models (`InvoiceQuery`,
-`SequenceQuery`, `AppendOnlyQuery`): the invoice model throws a `LogicException` without its
-`InvoiceQuery`. Further helpers: `Managed::table('invoices')` (table name with prefix),
+`Managed::deliveryModel()` and `Managed::auditLogModel()` (class `Quittio\Managed\Managed`).
+Use them in your code as well. The morph map, the policies and the tenancy scope use the
+configured classes.
+
+Keep the query builders of the package models (`InvoiceQuery`, `SequenceQuery`,
+`AppendOnlyQuery`): the invoice model throws a `LogicException` without its `InvoiceQuery`.
+
+Further helpers: `Managed::table('invoices')` (table name with prefix),
 `Managed::connection()` and `Managed::settings()` (typed access to the configuration).
 
 ### Own services
 
-The package binds these services as singletons; replace them in a service provider (or,
-where a key exists, in the configuration):
+The package binds these services as singletons. Replace them in a service provider, or, where
+a key exists, in the configuration:
 
 | Contract | Default | Configuration key |
 |---|---|---|
@@ -282,1557 +2274,43 @@ $this->app->singleton(ArchiveStorage::class, MyWormArchive::class);
 ```
 
 Classes from the configuration are resolved through the container and must implement the
-contract (`ConfigurationException` otherwise); only `issuer_resolver` accepts a Closure.
+contract (`ConfigurationException` otherwise). Only `issuer_resolver` accepts a Closure.
 
-## Issuer profiles
+## Console commands
 
-An issuer profile is the company that issues the invoices: every invoice belongs to exactly
-one issuer, and the issuer is always its seller.
-
-```php
-use Quittio\Core\Builder\PartyBuilder;
-use Quittio\Managed\Models\Issuer;
-
-$issuer = new Issuer;
-$issuer->setSellerParty((new PartyBuilder)
-    ->name('Muster GmbH')
-    ->vatId('DE123456789')
-    ->address('Hauptstraße 1', '12345', 'Musterstadt', 'DE')
-    ->electronicAddress('rechnung@muster.de', 'EM')
-    ->buildSeller());
-$issuer->forceFill([
-    'key' => 'default',
-    'timezone' => 'Europe/Berlin',
-    'bank_accounts' => [['iban' => 'DE02120300000000202051', 'bic' => 'BYLADEM1001', 'name' => 'Muster GmbH']],
-    'defaults' => ['locale' => 'de', 'due_days' => 14, 'currency' => 'EUR', 'format' => 'zugferd'],
-    'tax_settings' => ['small_business' => false],
-    'branding' => ['logo' => storage_path('app/logo.png'), 'colors' => ['primary' => '#0f766e']],
-    'texts' => ['de' => ['intro' => 'Vielen Dank für Ihren Auftrag.', 'payment_terms' => 'Zahlbar innerhalb von 14 Tagen.']],
-    'numbering' => ['pattern' => 'RE-{Y}-{seq:5}'],
-    'is_default' => true,
-])->save();
-```
-
-`setSellerParty()` stores the seller (see [Building invoices](building-invoices.md) for the
-`PartyBuilder`) and sets `country` from its address; the country selects the country pack.
-The logo must exist when the profile is saved (see [Branding check](#branding-check)).
-
-### Columns
-
-| Column | Type | Meaning |
+| Command | Purpose | See |
 |---|---|---|
-| `key` | string, unique | Short name; part of the sequence keys and the archive paths; cannot change once number sequences use it |
-| `seller` | JSON | The seller party (`SellerParty`, normalised); read with `sellerParty()`, write with `setSellerParty()` |
-| `country` | char(2) | Country of the seller address; selects the country pack |
-| `timezone` | string, default `UTC` | Time zone of issue dates, "today" and the retention period |
-| `number_space` | string(128) | Invoice numbers of one company, set on save (see [Number spaces](#number-spaces)) |
-| `tenant_type`, `tenant_id` | morph, nullable | Tenant of the issuer (relation `tenant()`) |
-| `bank_accounts` | JSON list | `[{iban, bic, name}, …]`; the first account goes into `builder()` |
-| `defaults` | JSON | `locale`, `currency`, `due_days`, `format`, `profile` |
-| `tax_settings` | JSON | `small_business` |
-| `texts` | JSON | Texts per locale: `intro`, `closing`, `payment_terms`, `footer_columns` |
-| `branding` | JSON | `template`, `logo`, `colors`, `font`, `sender_line`, `letter_layout`, `payment_qr` |
-| `numbering` | JSON | `pattern`, `reset`, `start`, `per_kind` (override of the configuration) |
-| `registrations` | JSON | Further VAT registrations and establishments in other countries; stored, not evaluated yet |
-| `network_ids` | JSON | Network identifiers (e.g. Peppol); stored, not evaluated yet |
-| `is_default` | bool | Chosen by the default issuer resolver |
+| `quittio:install --managed` | Publish configuration and migrations, migrate, create the first issuer | [Installation](#installation) |
+| `quittio:render {invoice}` | Render missing or failed documents of a stored invoice as a new version | [Versions and re-rendering](#versions-and-re-rendering) |
+| `quittio:verify {--from=} {--to=} {--issuer=}` | Check the archive hashes | [Integrity checks](#integrity-checks) |
+| `quittio:sequence:show {--issuer=}` | List the number sequences | [Managing sequences](#managing-sequences) |
+| `quittio:sequence:set {key} {value} {--force}` | Raise or create a number sequence | [Managing sequences](#managing-sequences) |
+| `quittio:retention:check {--delete} {--force}` | List and delete invoices past their retention period | [Retention and deletion](#retention-and-deletion) |
+| `quittio:drafts:prune {--older-than=60} {--force}` | Delete left-behind cancellation and correction drafts | [Left-behind drafts](#left-behind-drafts) |
 
-All columns except `id` are mass assignable (`Issuer::create([...])`, `fill()`); the JSON
-columns accept arrays only.
+The commands ignore the tenancy scope. See [Artisan commands](commands.md) for all
+signatures. For example, scheduled in production:
 
-### Defaults, texts and branding
+```php
+// routes/console.php
+use Illuminate\Support\Facades\Schedule;
 
-| Setting | Meaning |
+Schedule::command('quittio:verify')->daily();
+Schedule::command('quittio:drafts:prune --force')->hourly();
+Schedule::command('quittio:retention:check')->monthly();
+```
+
+### Publish tags
+
+`php artisan vendor:publish --tag=…`:
+
+| Tag | Publishes |
 |---|---|
-| `defaults.locale` | Locale of `builder()`, of the texts, the preview watermark and the mail |
-| `defaults.currency` | Currency of `builder()` |
-| `defaults.due_days` | Integer: payment terms in days; the due date is the issue date plus these days |
-| `defaults.format` | Format of new drafts (`zugferd`, `xrechnung-cii`, `xrechnung-ubl`, `cii`, `ubl`, `peppol`, `pdf`, see [Formats](formats.md)); `null` or `auto` = automatic choice when the invoice is issued |
-| `defaults.profile` | Profile of new drafts (e.g. `xrechnung`) |
-| `tax_settings.small_business` | Small business (DE: section 19 UStG): new drafts get the flag `Meta::FLAG_SMALL_BUSINESS`, the German pack then rejects charged VAT (DE-USTG-09) and the intra-community supply exemption except for new vehicles (DE-USTG-14) |
-| `texts.{locale}.intro`, `closing` | Intro and closing text of the PDF |
-| `texts.{locale}.payment_terms` | Text of the payment terms |
-| `texts.{locale}.footer_columns` | Footer columns, a list of lists of strings |
-| `branding.template` | PDF template (see [Branding check](#branding-check)) |
-| `branding.logo` | Logo: local file, data URI or public http(s) URL |
-| `branding.colors` | `primary` (default `#2741d9`), `text` (`#15171c`), `muted` (`#5f6470`), `secondary` |
-| `branding.font`, `sender_line`, `letter_layout` | Font, sender line above the address, letter layout (e.g. DIN 5008) |
-| `branding.payment_qr` | `auto` (default), `girocode`, `swiss-qr-bill` or `none` |
-
-Texts are looked up for the locale, then under the key `default`, then the first entry. See
-[Templates](templates.md) for what the presentation settings do in the PDF.
-
-### The issuer builder
-
-`$issuer->builder()` returns an `InvoiceBuilder` with the seller, the time zone, the first bank
-account (credit transfer), the payment terms (text and `due_days`), locale, currency, the
-presentation (branding and texts) and the small business flag of the issuer. Start drafts
-from it:
-
-```php
-$draft = Invoice::draft($issuer->builder()
-    ->buyer(Party::make('Kunde AG')->address('Bahnhofstraße 5', '54321', 'Beispielstadt', 'DE'))
-    ->deliveryDate('2026-09-30')
-    ->line('Beratung', netPrice: '120.00', quantity: 8, unit: UnitCode::Hour));
-```
-
-`Quittio::invoice()` and the document methods (`Quittio::quote()`, `Quittio::paymentReminder()` …) start with the current issuer in the same way (the Managed layer binds `InvoiceDefaults` to `Issuer::current()->applyTo($builder)`, see [Starting invoices](laravel.md#starting-invoices)), so `Invoice::draft(Quittio::invoice()->buyer($customer)->line(…))` is the same as starting from `Issuer::current()->builder()`. `->seller(...)` with another seller removes the issuer's values again (see [Starting invoices](laravel.md#starting-invoices)); the Managed layer still checks that the seller of a draft is its issuer.
-
-The builder copies these values into the draft. Later changes of the issuer do not change
-existing drafts, except the seller, which is taken from the profile again when the draft is
-issued. Further methods of `Issuer`:
-
-| Method | Returns |
-|---|---|
-| `Issuer::current()` | The issuer of the configured resolver |
-| `builder()` | `InvoiceBuilder` with the issuer's data (see above) |
-| `applyTo(InvoiceBuilder $builder)` | Sets the issuer's data (see above) on an existing builder and returns it; `builder()` is `applyTo(InvoiceBuilder::make())` |
-| `sellerParty()` / `setSellerParty(SellerParty $seller)` | The seller; the setter also sets `country` |
-| `presentation(?string $locale = null)` | `Presentation` from branding and texts, `null` if the issuer defines none |
-| `locale()` | `defaults.locale` or `null` |
-| `isSmallBusiness()` | `tax_settings.small_business` |
-| `applyTaxSettings(InvoiceData $data)` | The data with the small business flag, if the issuer is one |
-| `settings(string $column)` | Typed access to a JSON column (`Settings`) |
-| `invoices()` | `HasMany` of the issuer's invoices |
-| `tenant()` | `MorphTo` of the tenant |
-
-### Small business
-
-With `tax_settings.small_business`, `builder()` sets the flag `Meta::FLAG_SMALL_BUSINESS`,
-and `Invoice::draft()` sets it also on data that was not built with `builder()`. The country
-pack decides what follows: the German pack rejects invoices that charge VAT (DE-USTG-09) or
-use the intra-community supply exemption except for new vehicles (DE-USTG-14), so such a draft
-cannot be issued. Give the lines the preset `VatPreset::SmallBusiness` of the German pack (see
-[Country packs](country-packs.md)).
-
-### Branding check
-
-`branding.template` and `branding.logo` are checked when the issuer is saved, with the rules
-the rendering applies. The template is checked by the engine of the rendering and the preview
-(`BladeTemplateEngine::fromSettings()`): it must be `default`, `quittio.pdf.template`, a view
-under `quittio::templates.` (no partials), a view of `quittio.pdf.templates` (`invoices.*`
-allows every view below the prefix) or a plain PHP template of the core. The logo must be
-
-- a readable local file of at most 10 MB, given as a path (not as a `file://` URI),
-- a data URI (`data:image/…`) that decodes to at most 10 MB (base64 strictly), or
-- an http(s) URL of a public host: IP addresses must be public; host names are resolved and
-  checked when the logo is downloaded, other spellings of addresses (`2130706433`,
-  `localhost.`) are refused,
-
-without surrounding whitespace, backslashes or a leading `//`. An SVG logo must be
-self-contained (no external references such as `href="http://…"` or `url(…)`, no entity
-declarations), a raster logo at most 25 megapixels. Other values throw `InvalidIssuerProfile`:
-the logo becomes part of the invoice data, and an issued invoice whose logo cannot be rendered
-can never be archived.
-
-### Seller identity
-
-The seller of an invoice is always its issuer: a draft whose seller has another VAT id or
-tax number than the issuer is rejected (`InvalidInvoiceState`), and when a draft is issued,
-the seller (name, address, VAT id, tax number, legal information) is taken from the issuer
-profile as it is then. Payment instructions and terms stay as the draft sets them. Issued
-invoices keep their own snapshot, so later changes of the issuer never affect them.
-Identifiers are compared without spaces (also no-break and zero-width spaces), dots, slashes
-and dashes, in upper case.
-
-### Current issuer
-
-`Issuer::current()` asks the resolver configured in `quittio-managed.issuer_resolver`. The
-default resolver returns the issuer marked as default (`is_default`, the lowest id if
-several are), otherwise the only issuer if there is exactly one, otherwise it throws
-`IssuerNotFound`. `Invoice::draft()`, `HasInvoices` and the tenancy scope use the current
-issuer when none is given.
-
-```php
-use Quittio\Managed\Issuers\IssuerResolver;
-use Quittio\Managed\Managed;
-use Quittio\Managed\Models\Issuer;
-
-final class TeamIssuerResolver implements IssuerResolver
-{
-    public function resolve(): Issuer
-    {
-        $team = auth()->user()->currentTeam;
-
-        return Managed::issuerModel()::query()
-            ->where('tenant_type', $team->getMorphClass())
-            ->where('tenant_id', $team->getKey())
-            ->firstOrFail();
-    }
-}
-
-// config/quittio-managed.php
-'issuer_resolver' => App\Billing\TeamIssuerResolver::class,
-```
-
-A Closure (`'issuer_resolver' => fn () => …`) works as well; it must return an `Issuer`
-(`ConfigurationException` otherwise). Laravel cannot cache a configuration that contains a
-Closure (`config:cache`), so prefer a class in production.
-
-### Tenancy scope
-
-With `tenancy.scope`, the invoice model gets the global scope `Invoice::TENANCY_SCOPE`
-(`'quittio.issuer'`): every invoice query, including relations such as `$user->invoices()`
-and route model binding, is restricted to `issuer_id` of the current issuer, and every such
-query calls the resolver. Remove it where needed:
-
-```php
-Invoice::query()->withoutGlobalScope(Invoice::TENANCY_SCOPE)->count();
-```
-
-The jobs and commands of the package bypass the scope. It applies to invoices only, not to
-issuers, sequences, deliveries or audit entries. It also changes the number spaces of issuers
-without a tenant (see [Number spaces](#number-spaces)): decide on it before issuing invoices.
-
-### Changing and deleting issuers
-
-- Changes only affect invoices issued afterwards (drafts only through the seller, see above).
-- Creating, changing and deleting a profile is written to the audit log with the old and new
-  values (`issuer_created`, `issuer_updated`, `issuer_deleted`).
-- The `key` cannot change once number sequences use it (`NumberingException`): it is part of
-  the sequence keys, and a new key would start the numbering again.
-- The number space and the tenant cannot change once the issuer has issued invoices
-  (`NumberingException`).
-- An issuer with invoices cannot be deleted: the foreign key of `quittio_invoices.issuer_id`
-  restricts it (the database throws).
-- Saves that change the seller, the key, the number space or the tenant run in a
-  transaction under a lock of the tenant (see [Number spaces](#number-spaces)).
-
-## Customers and references
-
-Every invoice can point to two of your own models. Both are optional and polymorphic, so any
-Eloquent model works (user, team, company, order, subscription):
-
-| Reference | Meaning | Example |
-|---|---|---|
-| `billable` | who is invoiced, the customer | `User`, `Team` |
-| `invoiceable` | what is invoiced | `Order`, `Subscription` |
-
-Prepare the customer model with the `HasInvoices` trait. `ProvidesParty` supplies the buyer
-data, `HasInvoiceEmail` the delivery address (optional, otherwise the `email` attribute is
-used):
-
-```php
-use Quittio\Core\Builder\PartyBuilder;
-use Quittio\Core\Contracts\ProvidesParty;
-use Quittio\Managed\Concerns\HasInvoices;
-use Quittio\Managed\Delivery\HasInvoiceEmail;
-
-class User extends Authenticatable implements ProvidesParty, HasInvoiceEmail
-{
-    use HasInvoices;
-
-    public function fillParty(PartyBuilder $party): void
-    {
-        $party->name($this->company ?? $this->name)
-            ->vatId($this->vat_id)
-            ->address($this->street, $this->postcode, $this->city, $this->country)
-            ->electronicAddress($this->email, 'EM');
-    }
-
-    public function invoiceEmail(): ?string
-    {
-        return $this->billing_email ?? $this->email;
-    }
-}
-```
-
-```php
-// AppServiceProvider::boot()
-Relation::enforceMorphMap(['user' => User::class, 'order' => Order::class]);
-```
-
-The trait adds three methods:
-
-| Method | Returns |
-|---|---|
-| `invoices()` | `MorphMany` relation of all invoices, cancellations and corrections of the model (drafts included) |
-| `invoiceBuilder(?Issuer $issuer = null)` | `$issuer->builder()` (default: the current issuer) with the model as buyer when it implements `ProvidesParty` |
-| `draftInvoice($data, ?Issuer $issuer = null, ?Model $invoiceable = null)` | a new draft with the model as billable |
-
-`draftInvoice()` accepts a callable (it receives the builder of `invoiceBuilder()`), a
-builder, `InvoiceData` or an application model implementing `ProvidesInvoiceData`. Builders
-and data are used as they are, including their buyer; an application model becomes the
-invoiceable unless `$invoiceable` is given.
-
-```php
-$invoice = $user->draftInvoice(fn (InvoiceBuilder $b) => $b
-    ->deliveryDate('2026-10-31')
-    ->line('Pro plan October', netPrice: '29.00', unit: UnitCode::Month),
-    invoiceable: $subscription,
-)->issue();
-
-$invoice->send();                                    // to $user->invoiceEmail()
-
-$user->draftInvoice($order)->issue();                // $order implements ProvidesInvoiceData
-
-$user->invoices()->issued()->latest('issue_date')->get();
-$user->invoices()->overdue()->get();
-$user->invoices()->ofKind(Kind::Cancellation)->get();
-```
-
-Without the trait, pass the references yourself; `forBillable()` queries without a relation
-on the model:
-
-```php
-$draft = Invoice::draft($builder, $issuer, billable: $user, invoiceable: $order);
-$draft = Invoice::draftFor($order, billable: $order->user);   // $order becomes the invoiceable
-
-Invoice::query()->forBillable($user)->open()->get();
-
-$invoice->billable;                                  // the user, or null if it was deleted
-$invoice->invoiceable;
-```
-
-Laravel Cashier's `Billable` trait also has an `invoices()` method (Stripe invoices) and
-calls it internally. Using both, keep Cashier's and rename the relation of Quittio:
-
-```php
-use Billable, HasInvoices {
-    Billable::invoices insteadof HasInvoices;
-    HasInvoices::invoices as quittioInvoices;
-}
-
-$user->quittioInvoices()->open()->get();
-```
-
-Rules worth knowing:
-
-- The references only link records. What counts legally is the buyer copied into the
-  invoice data when the draft was built: when the user changes the address later, issued
-  invoices stay as they are (§ 14 UStG, GoBD). A draft keeps its buyer until you set it
-  again: `$draft->updateData(fn (InvoiceBuilder $b) => $b->buyer($user))`.
-- Cancellations, partial cancellations and corrections take `billable` and `invoiceable`
-  over from the original invoice.
-- There is no foreign key to your models. Deleting a user leaves the invoices in place
-  (they must be retained for eight years, § 14b UStG, § 147 AO); `billable` then returns
-  `null`. The buyer data in the archived files is unaffected.
-- With `tenancy.scope` the queries above are additionally restricted to the current issuer.
-
-## Drafts
-
-### Creating drafts
-
-```php
-use Quittio\Core\Builder\InvoiceBuilder;
-use Quittio\Managed\Models\Invoice;
-
-$draft = Invoice::draft($builder);                                    // current issuer
-$draft = Invoice::draft($builder, $issuer, billable: $user, invoiceable: $order);
-$draft = Invoice::draft($invoiceData, $issuer);                       // InvoiceData works too
-$draft = Invoice::draftFor($order);                 // ProvidesInvoiceData, $order becomes the invoiceable
-$draft = Invoice::draftFor($order, $issuer, billable: $order->user);
-$draft = $user->draftInvoice(fn (InvoiceBuilder $b) => $b->line(...));   // HasInvoices
-```
-
-| Method | Parameters |
-|---|---|
-| `Invoice::draft()` | `InvoiceData\|InvoiceBuilder $data, ?Issuer $issuer = null, ?Model $billable = null, ?Model $invoiceable = null` |
-| `Invoice::draftFor()` | `ProvidesInvoiceData $source, ?Issuer $issuer = null, ?Model $billable = null` |
-
-Creating a draft
-
-1. takes the given issuer or the current one,
-2. builds the data without calculating or validating it (`InvoiceBuilder::buildDraft()`, lines
-   are not yet required),
-3. rejects a seller with another VAT id or tax number than the issuer
-   (`InvalidInvoiceState`),
-4. sets the small business flag of the issuer, the format and profile of
-   `defaults.format` (`auto` = `null`) and `defaults.profile`, kind `invoice`, status `draft`
-   and `created_by` (the authenticated user, if any),
-5. stores the data without number and totals, and copies type code, currency, buyer country,
-   due date, service date, service period and locale into columns for queries,
-6. writes the audit entry `drafted` and dispatches `InvoiceDrafted` once the draft is
-   committed (at once outside a transaction).
-
-`$invoice->createdBy` and `$invoice->issuedBy` return the users who created the draft and
-issued the invoice (`MorphTo`, `null` without an authenticated user, e.g. in queued jobs).
-
-A draft holds no number, number space, sequence key or sequence value: `issue()` sets them.
-
-### Changing drafts
-
-```php
-$draft->updateData(fn (InvoiceBuilder $b) => $b->line(...)->buyerReference('PO-4711'));
-
-$draft->forceFill(['format' => 'xrechnung-cii', 'profile' => 'xrechnung'])->save();
-$draft->billable()->associate($user)->save();
-```
-
-`updateData()` starts an `InvoiceBuilder` from the current data (`InvoiceBuilder::from()`),
-passes it to the callable and stores the result; it throws `InvoiceNotDraft` for issued
-invoices. The other columns of a draft can be changed through the model (they are guarded:
-use `forceFill()`), except `kind` and `preceding_invoice_id`, which are fixed when the draft
-is created, and the number columns. Unsaved changes of the model are saved together with
-`issue()`. Draft changes are not written to the audit log.
-
-A draft keeps no totals: the invoice is calculated again when it is issued, also a draft
-started with `InvoiceBuilder::from()` on data another system rounded. Only the VAT breakdown
-of an aligned partial cancellation is kept (see
-[VAT of partial cancellations](#vat-of-partial-cancellations)).
-
-### Preview and validation
-
-```php
-return $draft->preview();                 // Responsable: PDF in the browser
-$draft->preview()->download('entwurf.pdf');
-$result = $draft->validate();             // Quittio\Core\Validation\ValidationResult
-$result->isValid();
-```
-
-`preview()` renders a PDF (always format `pdf`) with the watermark of the translation
-`quittio-managed::invoice.draft_watermark` ("ENTWURF", "DRAFT") in the locale of the draft or
-of the issuer, without a number, dated today in the issuer's time zone and without
-validation. It returns a `RenderedInvoice` of `quittio/laravel` (`pdf()`, `download()`,
-usable as response or mail attachment) and throws `InvoiceNotDraft` for issued invoices.
-
-`validate()` runs the full validation as if the draft were issued today with the next number
-(the number generator's preview, nothing is consumed), with the format, profile and locale
-of the draft. On an issued invoice it validates the frozen data with the format, profile,
-locale and country pack it was issued with. See
-[Validation](validation.md) for the result.
-
-### Deleting drafts
-
-```php
-$draft->delete();                                         // audit entry deleted_draft
-Invoice::query()->drafts()->where('created_at', '<', now()->subYear())->delete();
-```
-
-Deleting a draft leaves no gap in the numbers, since drafts hold none. A bulk delete only
-removes drafts, throws `InvoiceImmutable` if the query would reach an issued invoice and
-writes no audit entries (it runs without model events). Drafts of cancellations and
-corrections that can no longer be issued are removed by `quittio:drafts:prune` (see
-[Left-behind drafts](#left-behind-drafts)); ordinary drafts are never deleted automatically.
-
-## Issuing
-
-```php
-$invoice = $draft->issue();                 // today in the issuer's time zone
-$invoice = $draft->issue('2026-10-05');     // string, DateTimeInterface or Quittio\Core\Support\Date
-```
-
-`issue()` returns the same model, now issued. The steps:
-
-1. The invoice must be a draft (`InvoiceNotDraft`). Drafts of cancellations are issued by
-   `cancel()` and `cancelPartially()` only (`InvalidInvoiceState`), drafts of corrections
-   follow the correction strategy (see [Corrections](#corrections)).
-2. The issue date is the given date or today in the issuer's time zone. Cancellations and
-   corrections cannot be dated before the invoice they refer to, and the issuer must still be
-   the company that issued the original (same VAT id or tax number); otherwise
-   `InvalidInvoiceState`.
-3. The seller is taken from the issuer profile as it is now, the issue date is set, the
-   number generator prepares the sequence (outside the transaction), and the data is
-   calculated and fully validated with the probable number, with the format, profile and
-   locale of the draft. A format that produces neither a PDF nor an XML invoice (`html`,
-   `json`) is refused with `InvalidInvoiceState`, because the archive must hold the invoice
-   itself. Validation errors throw `Quittio\Core\Validation\ValidationException`
-   (`$e->result` holds the messages); with `quittio.validation.block_on_warnings` warnings
-   do as well. No number is used up.
-4. `InvoiceIssuing` is dispatched. A listener that throws stops the issue before a number is
-   assigned.
-5. A short transaction locks the draft (`SELECT … FOR UPDATE`) and checks again that it is a
-   draft (another process may have issued or deleted it), takes the next number, reads the
-   issuer with a shared lock, checks that no other issuer of the number space used the number
-   and freezes the invoice: number, number space, sequence key and value, status `issued`,
-   `issued_at`, issue date, totals, the calculated data snapshot, standard version, the
-   format and profile actually used, country pack, locale, render status `pending`,
-   validation status, retention period and `issued_by` (the authenticated user, if any).
-   Cancellation and archive columns are reset. The audit entry `issued` is written.
-   Deadlocks, serialisation failures and concurrent sequence changes are retried (three
-   attempts).
-6. After the commit, the documents are rendered by the job `RenderInvoiceDocuments` (or at
-   once with `queue.render_sync`), then `InvoiceIssued` is dispatched. If a listener throws,
-   the exception reaches the caller, but the invoice is issued: the model shows the committed
-   state and the job is queued.
-
-The retention period (`retention_until`) follows the rule of the country pack (DE: 8 years
-after the end of the year), counted from the year of issue, but never from a year before
-the invoice is actually issued: a backdated invoice keeps the full period.
-
-| Exception | When |
-|---|---|
-| `ValidationException` (core) | The calculated invoice is invalid (or has warnings with `block_on_warnings`) |
-| `InvoiceNotDraft` | Not a draft, or issued or deleted by another process meanwhile |
-| `InvalidInvoiceState` | Cancellation draft, date before the original, another company, issuer deleted, format without PDF or XML (`html`, `json`) |
-| `NumberingException` | Invalid pattern, number already taken (also by another issuer of the number space) |
-| `ConfigurationException` (core) | Reset not allowed by the country pack, `retention.years` too short, invalid generator |
-| `InvoiceImmutable` | The draft row was changed by another process since it was loaded |
-
-### Issuing inside your own transaction
-
-`issue()` (and `cancel()`, `cancelPartially()`, issuing a correction) can run inside a
-database transaction of your application on the Managed connection. Then
-
-- there are no retries: your transaction decides,
-- the render job and the events `InvoiceIssued`, `InvoiceCancelled` … run only when your
-  transaction commits, and an exception of a listener reaches the code that commits,
-- a rollback leaves the draft a draft and uses up no number; the model in memory still shows
-  the issued state then, so load it again.
-
-## Statuses
-
-Status, payment, delivery, rendering and validation are separate columns. Their enums are
-listed in [Enums](#enums).
-
-### Status
-
-`status` moves only forward: `draft` → `issued` → `partially_cancelled` → `cancelled`. It
-changes only through `issue()`, `cancel()`, `cancelPartially()` and the issue of a
-correction, never through `save()` or bulk updates (see [Immutability](#immutability)).
-
-- `issued`: issued and not cancelled. Cancellations and corrections are themselves `issued`.
-- `partially_cancelled`: at least one partial cancellation refers to the invoice.
-- `cancelled`: cancelled completely (by `cancel()`, by partial cancellations that together
-  cover everything, or by an issued correction). `cancelled_at` and `cancellation_reason`
-  are set then, once.
-
-`cancellations` counts the documents that cancel (part of) the invoice (relations `cancels`,
-`partially_cancels`, `replaces`).
-
-### Payment status
-
-Payments are not recorded by the package in version 1.0 (planned from version 1.1): every
-issued invoice stays `unpaid` until you change it. The payment columns stay changeable after
-issuing, through the model or in bulk:
-
-```php
-use Quittio\Managed\Enums\PaymentStatus;
-use Quittio\Managed\Models\Invoice;
-
-$invoice->forceFill([
-    'payment_status' => PaymentStatus::Paid,
-    'paid_total' => $invoice->amount_due,
-    'paid_at' => now(),
-])->save();
-
-Invoice::query()->whereIn('number', $numbers)->update(['payment_status' => 'paid', 'paid_at' => now()]);
-```
-
-| Case | Value |
-|---|---|
-| `Unpaid` | `unpaid` (default) |
-| `PartiallyPaid` | `partially_paid` |
-| `Paid` | `paid` |
-| `Overpaid` | `overpaid` |
-| `WrittenOff` | `written_off` |
-
-The package does not check these values against the amounts, writes no audit entry and
-dispatches no event for them. Amounts accept at most two decimals (`InvalidArgumentException`
-otherwise).
-
-### Open and overdue
-
-"Overdue" is not stored, it is a query:
-
-```php
-Invoice::query()->open()->get();        // issued or partially cancelled, no cancellation, unpaid or partially paid
-Invoice::query()->overdue()->get();     // open and due_date before today
-Invoice::query()->overdue(CarbonImmutable::parse('2026-12-31'))->get();
-```
-
-`overdue()` compares with today in the application's time zone, or with the given date.
-`open()` includes corrections and credit notes of kind `invoice`; filter by `type_code` if
-you need to tell them apart.
-
-### Delivery status
-
-`delivery_status` of the invoice: `not_sent`, `sent` after a successful `send()`, `failed`
-after a failed attempt (a failed attempt after a successful one keeps `sent`). Every attempt
-is a row in `quittio_deliveries` with its own state `queued`, `sent` or `failed` (see
-[Delivery](#delivery)).
-
-### Render and validation status
-
-`render_status`: `null` for drafts, `pending` after issuing, `rendering` while the documents
-are rendered, `done` once they are archived, `failed` after the last attempt failed.
-`render_attempts` counts the attempts.
-
-`validation_status`: `not_checked` for drafts, then `valid`, `warnings` or `invalid`. It is
-set from the validation when the invoice is issued and replaced by the validation of the
-archived rendering, whose report is stored with the documents.
-
-## Numbering
-
-```php
-// config/quittio-managed.php
-'numbering' => [
-    'pattern' => 'RE-{Y}-{seq:4}',          // null = country pack (DE: RE-{Y}-{seq:4})
-    'reset' => 'yearly',                    // never | yearly | monthly, within the country pack's rules
-    'start' => 1,                           // first value of every new sequence (and period)
-    'per_kind' => [
-        'cancellation' => 'ST-{Y}-{seq:4}', // own sequence, null = shared
-        'correction' => null,
-    ],
-    'generator' => null,                    // class implementing NumberGenerator
-],
-```
-
-The effective scheme of an invoice is taken per setting from the issuer's `numbering`
-column, then from the configuration, then from the country pack:
-
-```php
-$issuer->forceFill(['numbering' => [
-    'pattern' => 'B-{Y}-{seq:4}',
-    'start' => 10,
-    'per_kind' => ['cancellation' => 'BS-{Y}-{seq:4}'],
-]])->save();
-```
-
-### Placeholders
-
-| Placeholder | Replaced by |
-|---|---|
-| `{Y}` | Year of the issue date, four digits |
-| `{y}` | Year of the issue date, two digits |
-| `{m}` | Month of the issue date, two digits |
-| `{seq}` | Running number without padding |
-| `{seq:N}` | Running number with at least `N` digits (`N` has one or two digits), e.g. `{seq:4}` → `0042` |
-| `{issuer}` | Key of the issuer |
-| `{customer}` | Buyer identifier (BT-46), empty without one |
-
-Patterns are checked when they are used (issuing, `validate()`, `quittio:sequence:set`) and
-throw a `NumberingException` ("Invalid numbering pattern …") when
-
-- they contain no or more than one `{seq}` / `{seq:N}`,
-- they contain an unknown placeholder,
-- the reset is `yearly` without `{Y}` or `{y}`, or `monthly` without a year and `{m}`
-  (numbers would repeat),
-- an own sequence per kind could produce the numbers of another sequence of the issuer:
-  `RE-{Y}-{seq}` next to `RE-{Y}-{seq:4}` is rejected, and so is `RE{Y}-{seq:2}7` next to
-  `RE{Y}-7{seq:2}` (both give `RE2026-707`); `ST-{Y}-{seq:4}` is fine. The check compares
-  the patterns exactly; `{customer}` counts as any text.
-
-A reset the country pack does not allow, or a `start` below 1, throws a
-`ConfigurationException`.
-
-### Sequences and resets
-
-Every number comes from a sequence with the key `{issuer}:{sequence}:{period}`, e.g.
-`default:invoice:2026`:
-
-- `{issuer}` is the issuer key,
-- `{sequence}` is `invoice` (shared by all kinds), or `cancellation` or `correction` when
-  `per_kind` gives that kind a pattern of its own,
-- `{period}` follows from the reset and the issue date: `2026` (yearly), `2026-10` (monthly)
-  or `all` (never).
-
-A backdated invoice uses the sequence of its period: an invoice dated 2026-12-30 and issued
-in January 2027 gets the next number of `default:invoice:2026`. Resets apply to all
-sequences of an issuer alike. `start` is the first value of every new sequence, i.e. also of
-every new period; to continue the numbers of an old system once, raise the sequence with
-`quittio:sequence:set` instead.
-
-### Gapless numbers
-
-Numbers are assigned inside the issuing transaction only: a draft has none, validation errors
-and failed cancellations use none, and a rolled back transaction gives its number back.
-Deleting a draft therefore never leaves a gap. The unique indexes `(number_space, number)`,
-`(issuer_id, number)` and `(sequence_key, sequence_value)` are the last line of defence.
-
-How concurrent issues are serialised by the default generator (`SequenceNumberGenerator`):
-
-1. Before the transaction, a missing sequence row is created with `INSERT … OR IGNORE`, so
-   that concurrent first invoices of a period do not deadlock (MySQL).
-2. Inside the transaction, the row is locked (`SELECT … FOR UPDATE`), the number is formed
-   and the counter is raised with a conditional update. If another process changed it in
-   between (e.g. SQLite without an immediate transaction), the attempt fails and the
-   transaction is retried.
-3. Deadlocks, lock wait timeouts, serialisation failures (PostgreSQL `40001`, `40P01`) and
-   `database is locked` (SQLite) are retried up to three attempts with a short random pause.
-
-For SQLite in production set `'transaction_mode' => 'IMMEDIATE'` and a `busy_timeout` on the
-connection; the numbering logs a warning once per process when the mode is missing.
-
-### Number spaces
-
-Numbers are unique per company (section 14 (4) no. 4 UStG). Every issuer has a number space
-(`number_space`); issuers of one company use the same one and share their numbers: a number
-that one of them used is taken for the others. Issued invoices store the number space of
-their issuer, with the unique index `(number_space, number)` (and `(issuer_id, number)` as a
-safeguard), which holds even when two issuers of the company issue at the same moment.
-
-- **Default**, set when the issuer is created: `vat:{VAT id}`, else `tax:{tax number}`, else
-  `issuer:{key}`, with the identifiers normalised (without spaces, also no-break and
-  zero-width spaces, dots, slashes and dashes; upper case). Issuers with the same VAT id thus
-  share a number space by default. Until the issuer issues its first invoice, a default
-  follows changes of its VAT id, tax number or key; an explicit value stays.
-- **Explicit**, e.g. for several brands of one company:
-  `$brand->forceFill(['number_space' => $main->number_space])->save()`, or any name of your
-  own (at most 128 characters, no `|`, no control characters, no surrounding whitespace;
-  `InvalidIssuerProfile` otherwise).
-- **One company, one space**: within a tenant, issuers that share a VAT id or a tax number must
-  have the same number space; saving an issuer that would split a company (e.g. a brand with
-  only the tax number of the main profile, or a tax number added later to a profile whose
-  other brands use another space) throws `InvalidIssuerProfile` and names the other issuer.
-  Sharing is therefore transitive (A with VAT id and tax number, B with the tax number, C with
-  the VAT id: one space). To change the space of issuers that share an identifier, change them
-  together: `NumberSpaces::assign([$a, $b], 'muster')` (`Quittio\Managed\Support\NumberSpaces`).
-  Saves of issuers of one tenant are serialised (an advisory lock on PostgreSQL, `GET_LOCK()`
-  on MySQL with a timeout of 10 seconds, after which `InvalidIssuerProfile` asks to try
-  again), so concurrent saves cannot split a company either. The check also runs for saves
-  without model events (`saveQuietly()`, `Event::fake()`).
-- **Notations are not unified**: a German tax number in the 13-digit ELSTER format and in the
-  regional format (`12/345/67890`) are different values. If the profiles of one company use
-  different notations (or one has only the VAT id, another only the tax number), set the
-  same `number_space` explicitly.
-- **Tenants**: number spaces apply within the tenant of the issuer (`tenant_type`,
-  `tenant_id`); the invoices store them qualified by the tenant (`team:7|vat:DE123456789` for
-  `tenant_type` `team` and `tenant_id` 7, `NumberSpaces::qualified($issuer)`), so the same
-  VAT id or space name in another tenant never blocks a number, and errors never name
-  issuers of other tenants. With `tenancy.scope`, an issuer without a tenant is a tenant of
-  its own (`issuer:{id}|…`; give the issuers of one company the same tenant); without it, the
-  issuers without a tenant form one. Decide on `tenancy.scope` before issuing invoices: it
-  changes the number spaces of issuers without a tenant.
-- **Frozen**: once an issuer has issued invoices, its number space and its tenant cannot change
-  (`NumberingException`); its VAT id and tax number still can, within the rule above.
-
-With the same pattern, the second issuer of a number space cannot use a number the first one
-took (`NumberingException` naming the other issuer): give such issuers different patterns, e.g.
-with `{issuer}`, also for the sequences per kind (`numbering.per_kind` per issuer).
-
-### Managing sequences
-
-```bash
-php artisan quittio:sequence:show                               # all sequences
-php artisan quittio:sequence:show --issuer=default
-php artisan quittio:sequence:set default:invoice:2026 1043      # only increases, asks
-php artisan quittio:sequence:set default:invoice:2027 1 --force # creates a sequence ahead of time
-```
-
-`quittio:sequence:show` lists key, next value and pattern. `quittio:sequence:set` sets the
-next value of a sequence (a positive integer above the current one, after a confirmation
-unless `--force`). It only creates sequences the numbering would use: the issuer must exist,
-the sequence must be `invoice` or a kind with its own pattern, and the period must match the
-reset (`2026`, `2026-10` or `all`); the pattern comes from the configuration at that moment.
-Sequences are created automatically when the first invoice of a period is issued.
-
-The `Sequence` model never lowers a counter (also not from a stale model) and writes every
-change to the audit log (`sequence_changed`); key and pattern never change, sequences cannot
-be deleted, and bulk updates, increments, touches, upserts, deletes and `updateOrInsert()`
-of these columns throw `NumberingException`. Change a counter through the model only:
-
-```php
-$sequence = Managed::sequenceModel()::query()->where('key', 'default:invoice:2026')->sole();
-$sequence->forceFill(['next_value' => 1043])->save();     // lower values throw
-```
-
-### Own number generators
-
-Numbers from another system (e.g. an ERP) come from a class implementing
-`Quittio\Managed\Numbering\NumberGenerator`:
-
-```php
-use Quittio\Core\Data\InvoiceData;
-use Quittio\Core\Support\Date;
-use Quittio\Managed\Models\Invoice;
-use Quittio\Managed\Numbering\IssuedNumber;
-use Quittio\Managed\Numbering\NumberGenerator;
-
-final class ErpNumbers implements NumberGenerator
-{
-    // Before the issuing transaction, e.g. to create a missing counter.
-    public function prepare(Invoice $invoice, Date $issueDate, InvoiceData $data): void {}
-
-    // The probable number, used to validate the invoice; must not consume a number.
-    public function preview(Invoice $invoice, Date $issueDate, InvoiceData $data): string
-    {
-        return $this->erp->peek();
-    }
-
-    // Inside the issuing transaction; a rollback must give the number back.
-    public function next(Invoice $invoice, Date $issueDate, InvoiceData $data): IssuedNumber
-    {
-        return new IssuedNumber($this->erp->take());   // sequenceKey and sequenceValue optional
-    }
-}
-
-// config/quittio-managed.php
-'numbering' => ['generator' => App\Billing\ErpNumbers::class],
-```
-
-An own generator is responsible for unique and gapless numbers; the unique index
-`(number_space, number)` (and `(issuer_id, number)`) remains as a safeguard: a number already
-used in the number space throws `NumberingException` ("The invoice number … is already
-taken"). `IssuedNumber` takes `string $number, ?string $sequenceKey = null,
-?int $sequenceValue = null`. To change only the format, extend `SequenceNumberGenerator` and
-override its protected methods `scheme()` or `format()`.
-
-## Rendering and archive
-
-### Render job
-
-After the issuing transaction has been committed, the job
-`Quittio\Managed\Rendering\RenderInvoiceDocuments` renders and archives the documents of the
-invoice, on `queue.connection` and `queue.queue` (default queue `quittio`). It is tried
-`count(queue.backoff) + 1` times, by default after 10 s, 1 min, 5 min and 30 min again; after
-the last attempt the invoice is marked `failed`, the audit entry `render_failed` is written and
-`InvoiceRenderFailed` is dispatched. The invoice stays issued.
-
-With `queue.render_sync`, the documents are rendered in the same request, right after the
-commit and before `InvoiceIssued`. A failure is logged as an error and marks the invoice
-`failed` at once (no retries); it never undoes the issue.
-
-The documents are rendered from the frozen data snapshot with the format, profile, locale
-and country pack of the invoice. Validation runs again but does not block: its result is
-stored as the validation report and as `validation_status`.
-
-### Archive layout
-
-Documents are stored on the disk `quittio-managed.disk`, in the directory of
-`quittio-managed.path` (default `{issuer}/{Y}/{m}/{number}/v{version}`):
-
-| Placeholder | Replaced by |
-|---|---|
-| `{issuer}` | Issuer key |
-| `{Y}`, `{m}` | Year and month of the issue date |
-| `{number}` | Invoice number |
-| `{uuid}` | UUID of the invoice |
-| `{version}` | Document version (1, 2, …) |
-
-`{issuer}` and `{number}` are made safe as single path segments (characters other than
-letters, digits, `.`, `_` and `-` become `_`, so `RE/2026/1` becomes `RE_2026_1`). The
-pattern must contain `{version}` and `{number}` or `{uuid}`; otherwise archiving throws a
-`ConfigurationException` (every version, and every invoice, needs a directory of its own).
-The file names follow `quittio.pdf.filename` (default `{title}_{number}.{ext}`), e.g.
-`default/2026/10/RE-2026-0042/v1/Rechnung_RE-2026-0042.pdf`.
-
-| Format | Archived files |
-|---|---|
-| `zugferd` (`factur-x`) | PDF/A-3 and the embedded XML as its own file (byte-identical) |
-| `xrechnung-cii`, `xrechnung-ubl`, `cii`, `ubl`, `peppol` | XML |
-| `pdf` | PDF |
-
-Every version also holds `validation-report.json`, the validation result of the rendering.
-The invoice keeps `disk`, `xml_path`, `pdf_path`, the SHA-256 hashes `xml_hash` and
-`pdf_hash`, `validation_report_path` and `document_version`. Archiving writes the audit
-entry `rendered` (version, disk, files, report, hashes) and dispatches
-`InvoiceDocumentsStored`. For production, use an object store with object lock (WORM) and
-versioning.
-
-### Versions and re-rendering
-
-Files are never overwritten: writing a file that exists with other content throws an
-`ArchiveException` (identical content is accepted). Archiving an invoice again
-
-- does nothing when the files of the current version are complete and unchanged (only the
-  render status is set to `done`),
-- renders a new version when files are missing (`ArchiveIntegrityViolation` with the problem
-  `missing` is dispatched for each),
-- never replaces damaged files: a hash mismatch dispatches `ArchiveIntegrityViolation` and
-  throws an `ArchiveException`, so the files stay for the investigation.
-
-A version directory that already holds files (e.g. of a failed attempt), or whose files are
-recorded for another invoice, is skipped. Only the archiver changes the archive columns of an
-issued invoice, and only together with a higher document version.
-
-```bash
-php artisan quittio:render RE-2026-0042    # number, UUID or id; renders missing or failed documents
-```
-
-`quittio:render {invoice}` prints the problems it found and the new version, or that the
-documents are complete. Damaged files are not rendered again: the command reports the
-`ArchiveException` and fails. A number that exists for several issuers must be given as UUID; drafts
-cannot be rendered.
-
-### Archive manifest
-
-Every archive file is recorded in `quittio_archive_files` (invoice id, disk, path) before it
-is written. The manifest lets `quittio:retention:check` delete the files of all versions,
-also those of a rendering that failed halfway, and retry files it could not delete; it also
-keeps two invoices with the same archive path from writing into the same directory. The
-rows have no foreign key: they outlive their invoice until the files are gone.
-
-### Integrity checks
-
-```bash
-php artisan quittio:verify                                   # all issued invoices
-php artisan quittio:verify --from=2026-01-01 --to=2026-12-31 --issuer=default
-```
-
-`quittio:verify` checks the SHA-256 hashes of the current version of every issued invoice
-(issue date from `--from` to `--to`, optionally of one issuer key) and also reports issued
-invoices whose documents were never archived (render status `pending`, `rendering` or
-`failed`). It dispatches `ArchiveIntegrityViolation` for every problem, writes the audit
-entry `verified` (checked, violations, from, to), prints a table and exits with a failure code
-if it found problems. `send()` checks the hashes before every delivery as well.
-
-`ArchiveIntegrityViolation` carries the invoice, the path and the problem: `missing`,
-`hash mismatch` or (from `quittio:verify`) `not archived (render status: …)`; the path is `-`
-when the invoice has no archived file at all.
-
-### Reading archived documents
-
-```php
-use Illuminate\Support\Facades\Storage;
-use Quittio\Managed\Rendering\DocumentArchiver;
-
-app(DocumentArchiver::class)->assertIntact($invoice);    // ArchiveException if missing or changed
-return Storage::disk($invoice->disk)->download($invoice->pdf_path);
-
-app(DocumentArchiver::class)->problems($invoice);        // ['path' => 'missing' | 'hash mismatch']
-```
-
-| `DocumentArchiver` method | Effect |
-|---|---|
-| `archive(Invoice $invoice): bool` | Renders and archives unless the current version is complete; `false` when nothing had to be done |
-| `assertIntact(Invoice $invoice): void` | Throws `ArchiveException` (and dispatches `ArchiveIntegrityViolation`) unless the current version is complete and unchanged |
-| `problems(Invoice $invoice): array` | Missing files and hash mismatches of the current version |
-
-### Own archive storage
-
-The archive goes through `Quittio\Managed\Rendering\ArchiveStorage` (default:
-`FilesystemArchive` on Laravel disks). An own implementation must keep files write-once:
-
-| Method | Contract |
-|---|---|
-| `put(string $disk, string $path, string $contents): void` | Never overwrites: identical content is accepted, other content throws `ArchiveException` |
-| `get(string $disk, string $path): ?string` | `null` when the file is missing |
-| `exists(string $disk, string $path): bool` | |
-| `delete(string $disk, string $path): bool` | Used after the retention period |
-
-## Cancellations and corrections
-
-```php
-$cancellation = $invoice->cancel(reason: 'Doppelt berechnet');
-$cancellation = $invoice->cancel('Doppelt berechnet', '2026-10-06');   // with issue date
-
-$cancellation = $invoice->cancelPartially([
-    ['line' => '3'],                       // whole line (or what is left of it)
-    ['line' => '1', 'quantity' => 1],      // 1 of 3
-    ['line' => '2', 'amount' => '50.00'],  // amount, e.g. a price reduction
-], reason: 'Teilrücknahme');
-
-$draft = $invoice->correct();
-$draft->updateData(fn (InvoiceBuilder $b) => $b->updateLine('2', netPrice: '80.00'));
-$draft->issue();
-```
-
-The original is never changed: it only gets a new status. Every cancellation and correction is
-an invoice of its own with its own number, built from the snapshot of the original, in the
-same format, profile and locale, with the same `billable` and `invoiceable`, referring to the
-original (BG-3 and `preceding_invoice_id`).
-
-| Method | Signature | Returns |
-|---|---|---|
-| `cancel()` | `?string $reason = null, Date\|DateTimeInterface\|string\|null $issueDate = null` | The issued cancellation |
-| `cancelPartially()` | `array $lines, ?string $reason = null, Date\|DateTimeInterface\|string\|null $issueDate = null` | The issued partial cancellation |
-| `correct()` | – | A draft of kind `correction`; issue it with `issue()` |
-
-| Allowed for | `cancel()` | `cancelPartially()` | `correct()` |
-|---|---|---|---|
-| `issued` | yes | yes | yes |
-| `partially_cancelled` | yes (the remainder) | yes | no |
-| `cancelled` | no (`NothingToCancel`) | no (`NothingToCancel`) | no |
-| draft | no | no | no |
-| kind `cancellation` | no | no | no |
-| document level allowances or charges | yes | no | yes |
-
-### Full cancellation
-
-`cancel()`
-
-1. checks the original (see the table: `InvalidInvoiceState` or `NothingToCancel`) and that
-   the issuer is still the company that issued it,
-2. builds the cancellation with the core (see [Getting started](getting-started.md)): for an
-   invoice that was partially cancelled before, only what is left,
-3. creates a draft of kind `cancellation` and issues it with its own number (the steps of
-   [Issuing](#issuing)); inside the issuing transaction the original is locked and read again,
-   the remainder is checked again, the relation `cancels` is recorded, the original becomes
-   `cancelled` (with `cancelled_at`, `cancellation_reason` and a raised `cancellations`
-   counter) and the audit entry `cancelled` is written on the original,
-4. dispatches `InvoiceCancelled` after the commit.
-
-If the cancellation cannot be issued (e.g. invalid), its draft is deleted again (audit entry
-`deleted_draft`), the original model shows its stored state again and no number is used up.
-
-The cancellation document
-
-- has the type code of the sign strategy (see below) and the title of the country pack (DE:
-  "Stornorechnung"),
-- states in a note which invoice it cancels and the reason ("Stornierung der Rechnung
-  RE-2026-0042 vom 05.10.2026. Grund: Doppelt berechnet"),
-- keeps the regulatory and tax notes of the original (BT-22 with subject `REG` or `TXD`) and,
-  when it cancels everything that is left, the prepaid and rounding amounts (BT-113, BT-114),
-  so that all cancellations together reverse exactly the amount due,
-- cannot be dated before the original.
-
-### Partial cancellation
-
-`cancelPartially()` takes a list of line selections:
-
-| Selection | Cancels |
-|---|---|
-| `['line' => '3']` | The whole line, or what is left of it |
-| `['line' => '1', 'quantity' => 1]` | A quantity (int or numeric string) |
-| `['line' => '2', 'amount' => '50.00']` | An amount (string): the net amount, for a line with a price including VAT the amount including VAT |
-
-`line` is the line id (BT-126, `InvoiceLine::$id`; the builder numbers lines `'1'`, `'2'`, …
-unless you set ids). The rules:
-
-- Per line, cancelled quantities and amounts are tracked; more than invoiced cannot be
-  cancelled, also not by processes that cancel at the same time. Quantities and amounts are
-  magnitudes: negative lines (discounts, returns) are reversed with their sign.
-- After an amount cancellation, the rest of a line can only be cancelled by amount.
-- The last part of a line cancels exactly its remaining net amount (as an amount), so the net
-  amounts of all cancellations add up exactly to the original. A line whose net amount is
-  cancelled completely is closed, even if rounding left a quantity.
-- Lines with a price including VAT (gross price mode) are tracked and cancelled by their
-  amount including VAT: the last part cancels exactly the remaining gross amount, so the
-  amounts due add up exactly.
-- Partial cancellations are not possible for invoices with document level allowances or
-  charges (`InvalidArgumentException` of the core): cancel the invoice fully and issue a new
-  one.
-
-The original becomes `partially_cancelled` (relation `partially_cancels`, audit entry
-`partially_cancelled`, event `InvoicePartiallyCancelled`), or `cancelled` once the partial
-cancellations cover everything (then with `cancelled_at` and the reason of the last part,
-audit entry `cancelled`, event `InvoiceCancelled`). `cancel()` on a partially cancelled
-invoice cancels the remainder.
-
-| Error | Exception |
-|---|---|
-| Empty list | `InvalidInvoiceState` |
-| Unknown line, line already cancelled completely, more than is left, a quantity after an amount cancellation | `UnexpectedValueException` (message names the line and what is left) |
-| Document level allowances or charges | `InvalidArgumentException` |
-| Quantity or amount given as float (`2.5` instead of `'2.5'`) | `InvalidArgumentException` |
-| Another partial cancellation was issued meanwhile | `InvalidInvoiceState` ("… partially cancelled in the meantime; try again"), no number used up |
-
-### VAT of partial cancellations
-
-- VAT is calculated per document and VAT group (category and rate) and rounded there
-  (EN 16931 BR-CO-17). A partial cancellation rounds it cumulatively with the earlier
-  partial cancellations of the same original: per VAT group the target is round2(taxable
-  amount of all cancellations so far × rate), or the original's VAT (BT-117) once all lines
-  of the group are cancelled, and the cancellation carries the target minus the VAT already
-  cancelled. Three parts of 9.67, 9.67 and 9.66 net at 19 % carry 1.84, 1.83 and 1.84 = 5.51
-  VAT (rounded per document they would carry 3 × 1.84 = 5.52). In gross price mode the
-  taxable amount follows the same way from the gross amount: per VAT group round2(gross
-  amount cancelled so far / (1 + rate)), as for the original, or the original's taxable
-  amount (BT-116) once the group is closed; the rounding amount (BT-114) follows, so that the
-  amount due of every part stays the gross amount of its lines. 3 × 9.99 including 19 %
-  (25.18 net, 4.78 VAT, BT-114 0.01) are cancelled as 8.39, 8.40 and 8.39 net (per document
-  3 × 8.39 = 25.17).
-- What holds for every sequence of partial cancellations (and the rest with `cancel()`):
-  per VAT group the taxable amounts (BT-116, the taxable amount of section 17 (1) UStG) and
-  the VAT (BT-117) of all cancellations add up exactly to the original's, and with them the
-  totals and amounts due (BT-109, BT-110, BT-112, BT-114, BT-115). Every single cancellation
-  differs by at most one cent from round2(its own taxable amount × rate), and its VAT has the
-  sign of its taxable amount (0.00 on 0.00). BR-CO-17 and BR-S-09 accept up to one currency
-  unit (the official Schematron checks exactly this tolerance), so every document stays
-  valid. Such a cancellation says so in its note ("Die Umsatzsteuer ist auf die bereits
-  stornierten Teilbeträge abgestimmt.") and the validation reports the information
-  `QUITTIO-CANCELLATION-VAT-ALIGNED` instead of the warning `QUITTIO-VAT-ROUNDING`, which still
-  reports a larger difference or another sign. The VAT total in accounting currency (BT-111,
-  VAT accounting currency BT-6) is aligned the same way: round2(VAT cancelled so far ×
-  exchange rate), and the original's BT-111 with the last part.
-- The taxable amount, the VAT, the share of BT-111 and in gross price mode the gross amount
-  per VAT group of every cancellation are recorded with its relation (column `vat`); a
-  partial cancellation that another process issues in the meantime changes the VAT of the
-  next part, which is then rejected ("partially cancelled in the meantime; try again")
-  without consuming a number. A single full cancellation reverses the original exactly.
-- Drafts keep a declared VAT breakdown only for such aligned cancellations: every other
-  invoice is recalculated with Quittio's rounding when it is issued, also a draft started with
-  `InvoiceBuilder::from()` on data another system rounded.
-
-The one-cent alignment is to be confirmed by a tax adviser (see the legal review in the
-README).
-
-### Sign strategies and credit notes
-
-| Strategy (`quittio.corrections.cancellation_strategy`) | Type code | Amounts |
-|---|---|---|
-| `credit_note` (default, also of the German pack) | 381 | positive; UBL writes a `CreditNote` document |
-| `negative_invoice` | 380 | negative |
-
-The key lives in `config/quittio.php` (env `QUITTIO_CANCELLATION_STRATEGY`); `null` takes the
-country pack's default. A credit note (381 and the other credit note type codes) is
-cancelled with an invoice (380) with the same positive amounts in both strategies.
-
-Credit notes can be issued as ordinary managed invoices: set the type code in the builder
-(`->type(InvoiceTypeCode::CreditNote)`). They are cancelled with a 380 invoice and corrected
-with a credit note, with the strategy `cancel_and_reissue` only.
-
-### Cancellation ledger
-
-Relations (`quittio_invoice_relations`) point from the new document (`invoice_id`) to the
-original (`related_invoice_id`). The cancelling ones (`cancels`, `partially_cancels`,
-`replaces`) make up the cancellation ledger of the original:
-
-| Column | Content |
-|---|---|
-| `type` | `cancels`, `partially_cancels`, `corrects`, `replaces` |
-| `amount` | Cancellations: the cancelled net amount, always positive |
-| `lines` | Cancellations: per original line `line`, `quantity` (`null` for amount cancellations), `net` and, for gross price lines, `gross` |
-| `vat` | Cancellations: per VAT group `key` (e.g. `S\|19.00`), `category`, `rate`, `taxable`, `tax`, `tax_in_tax_currency`, `gross`, signed like the original |
-| `created_at` | Time of the relation |
-
-```php
-$invoice->inverseRelations;                 // cancellations and corrections of this invoice
-$cancellation->relations;                   // what this document cancels or corrects
-$cancellation->precedingInvoice;            // the original
-$relation->cancelledLines();                // decoded lines
-$relation->cancelledVat();                  // decoded VAT groups, null if not recorded
-```
-
-The service `Quittio\Managed\Corrections\CancellationLedger` computes what is left:
-
-```php
-use Quittio\Managed\Corrections\CancellationLedger;
-
-$ledger = app(CancellationLedger::class);
-foreach ($ledger->balances($invoice) as $lineId => $balance) {
-    // LineBalance: quantity, amount, remainingQuantity, remainingAmount, amountCancelled, gross
-    echo $lineId, ': ', $balance->remainingQuantity, ' / ', $balance->remainingAmount, PHP_EOL;
-}
-$ledger->isFullyCancelled($invoice);
-$ledger->remainder($invoice);               // null if nothing was cancelled, otherwise the open selections
-$ledger->count($invoice);                   // number of cancelling documents
-```
-
-| Method | Returns |
-|---|---|
-| `balances(Invoice $original)` | `LineBalance` per line id: `isOpen()`, `byAmount()`, `isUntouched()` |
-| `remainder(Invoice $original)` | Selections for the rest (`NothingToCancel` if nothing is left), `null` if untouched |
-| `isFullyCancelled(Invoice $original)` | Whether no line is open |
-| `count(Invoice $original)` | Number of cancelling relations |
-| `normalize(Invoice $original, array $requested)` | The selections checked against the remainder (whole lines become quantities or amounts) |
-| `history(Invoice $original, array $recorded)` | `CancellationHistory` of the core: VAT cancelled so far per group |
-| `record(InvoiceData $cancellation, ?array $requested)` | The `lines` entry of a relation |
-| `vat(InvoiceData $original, InvoiceData $cancellation)` | The `vat` entry of a relation |
-
-The amount of a line is its net amount, for gross price lines its gross amount (as
-magnitudes). Relations cannot be changed and are deleted only together with their invoice
-after its retention period.
-
-### Corrections
-
-`correct()` creates a draft of kind `correction` with the data of the original: no number, the
-type code 380 (a credit note keeps its credit note type code), a reference to the original
-(BG-3, number and date) and no due date (it follows from the payment terms again when the
-correction is issued). Change it with `updateData()`, preview it, then `issue()` it. Issuing
-follows `quittio-managed.correction.strategy` (env `QUITTIO_CORRECTION_STRATEGY`, `null` = the
-country pack's default, DE: `cancel_and_reissue`):
-
-| Strategy | Issuing the correction |
-|---|---|
-| `cancel_and_reissue` | Cancels the original completely (reason from the translation `quittio-managed::invoice.correction_reason`, "Rechnungskorrektur."), then issues the correction as a new invoice with the relation `corrects`. Events `InvoiceCancelled` and `InvoiceCorrected`; two numbers are used. |
-| `corrected_invoice` | Issues the correction with type code 384 and the title of the country pack (DE: "Rechnungskorrektur"), relation `replaces`; the original becomes `cancelled` with the reason `quittio-managed::invoice.replaced_by` ("Ersetzt durch Rechnung RE-2026-0043."). Event `InvoiceCorrected` (no `InvoiceCancelled`). |
-
-Both steps run in one transaction: either both documents exist or none (an invalid correction
-also rolls back the cancellation). The audit entry `corrected` (correction number and
-relation type) is written on the original.
-
-- Only `issued` invoices can be corrected, not cancellations and not partially cancelled ones
-  (`InvalidInvoiceState`): cancel the remainder with `cancel()` and issue a new invoice.
-- A credit note is corrected with a credit note and only with `cancel_and_reissue`;
-  `corrected_invoice` throws `InvalidInvoiceState` for credit notes, because 384 is a corrected
-  invoice.
-- An unknown strategy throws `ConfigurationException`. The strategy is checked when the draft
-  is created and again when it is issued.
-- The correction cannot be dated before the original, and the issuer must still be the company
-  that issued it.
-- Corrections can themselves be cancelled, partially cancelled and corrected.
-- A correction draft whose original was cancelled, partially cancelled or replaced meanwhile
-  can no longer be issued; `quittio:drafts:prune` deletes it.
-
-The default strategy is to be confirmed by a tax adviser (see the legal review in the README).
-
-### Left-behind drafts
-
-A draft of a cancellation exists only while `cancel()` or `cancelPartially()` issues it,
-and a correction draft can only be issued while its original can be corrected.
-
-```bash
-php artisan quittio:drafts:prune                     # asks
-php artisan quittio:drafts:prune --older-than=120 --force
-```
-
-`quittio:drafts:prune` deletes cancellation drafts older than `--older-than` minutes (default
-60, left behind e.g. by a crash) and correction drafts whose original can no longer be
-corrected (cancelled, partially cancelled or replaced meanwhile, or deleted). A draft that has
-been issued meanwhile is never deleted; every deletion writes `deleted_draft` to the audit
-log.
-
-### Self-billing
-
-Self-billing (the buyer issues the invoice, "Gutschrift" in the sense of the UStG) is not part
-of version 1.0: the seller of every managed invoice is its issuer. The core keeps self-billed
-documents self-billed when it cancels them (type codes 389 and 261).
-
-## Delivery
-
-```php
-$delivery = $invoice->send();                                    // address from the billable or the buyer
-$delivery = $invoice->send('buchhaltung@kunde.de', ['chef@kunde.de']);
-```
-
-`send(?string $to = null, array $cc = [])` returns the `Delivery` row. It
-
-1. refuses drafts (`InvalidInvoiceState`); cancelled invoices, cancellations and corrections
-   can be sent,
-2. renders and archives the documents first if the render status is not `done` (in the
-   request, so it can throw),
-3. checks the hashes of the archived files: missing or damaged files dispatch
-   `ArchiveIntegrityViolation` and throw an `ArchiveException`; nothing is sent and no
-   delivery is logged,
-4. takes the recipient from `$to` or the recipient resolver (`NoRecipient` if there is none),
-5. attaches the archived PDF (ZUGFeRD, PDF), otherwise the archived XML (XRechnung, CII, UBL,
-   Peppol); with `delivery.mail.xrechnung_visualization` a PDF visualisation of an XML-only
-   invoice is rendered from the snapshot and attached as well (it is not archived),
-6. logs the attempt in `quittio_deliveries` (status `queued`) and sends the mail at once
-   with the default mailer (`sendNow()`, also an own Mailable that implements `ShouldQueue`),
-   to `$to`, with `$cc` and a blind copy to `delivery.mail.bcc_archive`,
-7. on success: delivery `sent` with `message_id` (`null` when the mailer returns no message,
-   e.g. with `Mail::fake()`) and `sent_at`; invoice `delivery_status` `sent`, `sent_at` and
-   `channel` `mail`; audit entry `sent`; event `InvoiceSent`,
-8. on failure: delivery `failed` with the error message; invoice `delivery_status` `failed`
-   (unless it was sent before); audit entry `delivery_failed`; event `InvoiceDeliveryFailed`;
-   the exception is rethrown.
-
-Every call is a new attempt and a new row; `$invoice->deliveries` lists them. `send()` sends
-synchronously: to send in the background, dispatch an own job that calls `send()`.
-
-### Recipients
-
-The recipient comes from `delivery.recipient_resolver`. The default
-(`DefaultRecipientResolver`) takes the first valid address of
-
-1. `invoiceEmail()` of the billable, when it implements
-   `Quittio\Managed\Delivery\HasInvoiceEmail`,
-2. the `email` attribute of the billable,
-3. the buyer's contact e-mail (BT-58) in the invoice data,
-4. the buyer's electronic address (BT-49) with scheme `EM`.
-
-```php
-use Quittio\Managed\Delivery\RecipientResolver;
-use Quittio\Managed\Models\Invoice;
-
-final class AccountingRecipient implements RecipientResolver
-{
-    public function resolve(Invoice $invoice): ?string
-    {
-        return $invoice->billable?->accounting_email;
-    }
-}
-```
-
-### Mail content
-
-The default Mailable `Quittio\Managed\Delivery\InvoiceMail` uses the locale of the invoice
-(else of the issuer, else `en`), a subject and text by kind, the due date line (not for
-cancellations and invoices without due date) and the seller's name below the closing. The texts
-are translations of the namespace `quittio-managed` (publish them with
-`--tag=quittio-managed-lang`, the Markdown view with `--tag=quittio-managed-views`):
-
-| Key | German default |
-|---|---|
-| `mail.subject.invoice` | `Rechnung :number von :seller` |
-| `mail.subject.correction` | `Rechnungskorrektur :number von :seller` |
-| `mail.subject.cancellation` | `Stornorechnung :number von :seller` |
-| `mail.greeting` | `Guten Tag,` |
-| `mail.body.invoice` | `anbei erhalten Sie die Rechnung :number über :amount.` |
-| `mail.body.correction` | `anbei erhalten Sie die Rechnung :number über :amount. Sie korrigiert eine frühere Rechnung.` |
-| `mail.body.cancellation` | `anbei erhalten Sie die Stornorechnung :number.` |
-| `mail.due` | `Bitte überweisen Sie den Betrag bis zum :due_date.` |
-| `mail.closing` | `Mit freundlichen Grüßen` |
-| `invoice.draft_watermark` | `ENTWURF` (preview) |
-| `invoice.correction_reason` | `Rechnungskorrektur.` (reason of the cancellation of `cancel_and_reissue`) |
-| `invoice.replaced_by` | `Ersetzt durch Rechnung :number.` (reason with `corrected_invoice`) |
-
-Placeholders: `:number`, `:seller`, `:amount` (amount due, formatted for the locale) and
-`:due_date`. English translations are included.
-
-An own Mailable is configured in `delivery.mail.mailable`. It is built by the container with
-the named arguments `invoice` (the `Invoice`) and `files` (list of `Illuminate\Mail\Attachment`
-with the archived documents); return the files from `attachments()`:
-
-```php
-use Illuminate\Mail\Mailables\Content;
-use Quittio\Managed\Delivery\InvoiceMail;
-
-final class BrandedInvoiceMail extends InvoiceMail
-{
-    public function content(): Content
-    {
-        return new Content(markdown: 'mail.invoice', with: ['invoice' => $this->invoice]);
-    }
-}
-```
-
-`send()` sends it at once even if it implements `ShouldQueue`, so that the delivery log holds
-the result of the transport; to send in the background, dispatch an own job that calls
-`send()`.
-
-## Audit log
-
-`quittio_audit_logs` is append-only. Every entry has an action, a subject (the invoice,
-issuer or sequence, `null` for `verified`), a JSON payload, the causer (the authenticated user
-of the default guard, any Eloquent model) and, for HTTP requests, IP address and user agent
-(at most 255 characters); console commands and queue jobs record neither.
-
-| Action | Subject | Payload |
-|---|---|---|
-| `drafted` | invoice | `kind`, `preceding` (number of the original) |
-| `issued` | invoice | `number`, `sequence_key`, `issue_date`, `gross_total` |
-| `rendered` | invoice | `version`, `disk`, `files`, `report`, `hashes` |
-| `render_failed` | invoice | `error` |
-| `sent` | invoice | `channel`, `delivery` (id), `attachments` |
-| `delivery_failed` | invoice | `channel`, `delivery` (id) |
-| `cancelled` | original | `cancellation` (number), `reason`, `net`, `lines` |
-| `partially_cancelled` | original | `cancellation` (number), `reason`, `net`, `lines` |
-| `corrected` | original | `correction` (number), `type` (`corrects` or `replaces`) |
-| `deleted_draft` | invoice | `number`, `retention_until` |
-| `deleted` | invoice | `number`, `retention_until` |
-| `sequence_changed` | sequence | `key`, `from`, `to` |
-| `issuer_created` | issuer | `key`, `changes` (per column `old` `null`, `new`) |
-| `issuer_updated` | issuer | `key`, `changes` (per changed column `old`, `new`) |
-| `issuer_deleted` | issuer | `key`, `changes` (per column `old`, `new` `null`) |
-| `verified` | – | `checked`, `violations`, `from`, `to` |
-
-```php
-$invoice->auditLogs()->orderBy('id')->get();
-AuditLog::query()->where('action', 'issued')->where('causer_id', $user->id)->get();
-$entry->causer;     // MorphTo
-$entry->subject;    // MorphTo
-```
-
-Not logged: changes of drafts (`updateData()`, `save()`), previews and validations, bulk
-deletes of drafts, payment, legal hold and retention changes, archive integrity violations
-outside `quittio:verify` (they are events) and read access. Recipients and other customer
-data are not part of the entries: `sent` and `delivery_failed` refer to the delivery row,
-which is deleted with the invoice (see [Personal data](#personal-data)).
-
-`audit.enabled => false` switches the log off completely. An own implementation of
-`Quittio\Managed\Audit\Auditor` (`record(?Model $subject, string $action, array $payload = []):
-?AuditLog`) can be bound in the container, e.g. to write to another store as well.
-
-## Authorisation
-
-With `policies.register`, `InvoicePolicy` and `IssuerPolicy` are registered for the
-configured invoice and issuer models. The package does not check them itself: call them in
-your controllers (`$this->authorize('issue', $invoice)`, `Gate::authorize()`, `@can`). Every
-ability needs an authenticated user; it combines the state of the record with an optional gate
-named `quittio.{ability}`. Without such a gate, every authenticated user is allowed.
-
-| Policy ability | Allowed when | Gate |
-|---|---|---|
-| `viewAny` (invoice class) | always | `quittio.viewAny` |
-| `view` | always | `quittio.view` |
-| `createDraft` (invoice class) | always | `quittio.createDraft` |
-| `updateDraft` | the invoice is a draft | `quittio.updateDraft` |
-| `deleteDraft` | the invoice is a draft | `quittio.deleteDraft` |
-| `issue` | a draft that is not a cancellation draft | `quittio.issue` |
-| `cancel` (also for partial cancellations) | issued or partially cancelled, no cancellation | `quittio.cancel` |
-| `correct` | issued (not partially cancelled), no cancellation | `quittio.correct` |
-| `send` | issued (any status but draft) | `quittio.send` |
-| `viewAuditLog` | always | `quittio.viewAuditLog` |
-| `viewAny`, `view` (issuer) | always | `quittio.manageIssuers` |
-| `manageIssuers` | always | `quittio.manageIssuers` |
-| `manageSequences` | always | `quittio.manageSequences` |
-
-```php
-Gate::define('quittio.issue', fn (User $user, Invoice $invoice) => $user->isAccountant());
-Gate::define('quittio.manageSequences', fn (User $user) => $user->isAdmin());
-
-$user->can('createDraft', Managed::invoiceModel());
-$user->can('manageSequences', Managed::issuerModel());
-```
-
-Gates receive the user and, for record abilities, the invoice or issuer (`manageIssuers` and
-`manageSequences` receive the issuer or `null`).
-
-## Immutability
-
-Issued invoices are protected on three levels: the model (`ImmutableInvoiceGuard`), its query
-builder (`InvoiceQuery`) and, recommended for production, database triggers. Violations
-throw `InvoiceImmutable` (model and query builder) or a database error (triggers).
-
-### What can still change
-
-After issuing, the model only lets these columns change; everything else throws
-`InvoiceImmutable` ("… is issued and immutable; these attributes cannot be changed: …"):
-
-| Columns | Rule |
-|---|---|
-| `payment_status`, `paid_total`, `paid_at` | Free (see [Payment status](#payment-status)) |
-| `delivery_status`, `sent_at`, `channel`, `lifecycle_status` | Free |
-| `render_status`, `render_attempts` | Free |
-| `legal_hold` | `true`, `false`, `1`, `0`, `"1"` or `"0"` only |
-| `retention_until` | Can only be extended |
-| `status` | Forward only, and only through `issue()`, `cancel()`, `cancelPartially()` and the issue of a correction |
-| `cancelled_at`, `cancellation_reason` | Written once, together with the status `cancelled` |
-| `cancellations` | Rises with every cancelling document, up to the number of their relations; the status becomes (partially) cancelled only together with such a rise |
-| `document_version`, `disk`, `xml_path`, `pdf_path`, `xml_hash`, `pdf_hash`, `validation_status`, `validation_report_path` | Archiver only, together with a higher document version |
-| `updated_at` | Free |
-
-Columns you add to `quittio_invoices` yourself are frozen after issuing as well. Invoices
-are inserted as drafts only. Drafts hold no number, number space, sequence key or sequence
-value (`issue()` sets them) and keep their kind and the invoice they refer to
-(`kind`, `preceding_invoice_id`). Issued invoices can only be deleted one by one after the
-retention period (plus two days, see [Retention and deletion](#retention-and-deletion)) and
-never under legal hold.
-
-### Optimistic concurrency
-
-A save or delete only applies while the row still has the status (and the other stored
-values) the model was loaded with: a stale model, e.g. a draft that another process issued
-meanwhile, or a model whose original values were changed, throws `InvoiceImmutable` ("… was
-changed (e.g. issued or cancelled) by another process since it was loaded; load it again")
-and changes nothing. Partly loaded models (`select('id')`) are checked against the stored
-row. Load the invoice again in that case.
-
-### Bulk queries
-
-The query builder applies the same rules to bulk operations:
-
-- bulk updates, touches and increments of frozen columns only reach drafts, also with
-  `orWhere()` and with qualified column names (`quittio_invoices.status`) or other letter
-  cases;
-- on issued invoices, bulk updates may change payment, delivery and rendering columns, set
-  `legal_hold` (`true`, `1` or `"1"`; other values than these and `false`, `0`, `"0"`
-  throw) and extend `retention_until` (rows whose period would shrink are left out); the
-  status never changes in bulk (it throws), and a legal hold is only released through the
-  model;
-- bulk updates and inserts cannot set `number`, `number_space`, `sequence_key`,
-  `sequence_value`, `kind` or `preceding_invoice_id`;
-- upserts may only change the bulk columns and insert drafts only; inserts create drafts
-  only; bulk deletes, `forceDelete()` and `truncate()` throw if they would reach an issued
-  invoice;
-- `updateOrInsert()`, `updateFrom()`, `insertUsing()` and `insertOrIgnoreUsing()` are not
-  available.
-
-### Append-only tables
-
-The audit log and the invoice relations are append-only in the same way: updates, upserts,
-increments, touches and deletes through the model or its query builder throw; relations are
-only deleted together with their invoice after its retention period. Number sequences only
-change through the `Sequence` model (see [Managing sequences](#managing-sequences)).
-
-### Database triggers
-
-Only the base query builder (`toBase()`, `getQuery()`, `DB::table()`) and raw SQL bypass the
-rules above. The database triggers, recommended for production, enforce them against direct
-queries as well (MySQL/MariaDB, PostgreSQL, SQLite):
-
-```bash
-php artisan vendor:publish --tag=quittio-managed-triggers
-php artisan migrate
-```
-
-- issued invoices: frozen columns, forward-only status that only becomes (partially)
-  cancelled together with a rise of the `cancellations` counter, which cannot exceed the
-  number of cancelling relations, write-once cancellation columns (only together with the
-  status `cancelled`), a retention period that can only be extended, archive columns only
-  with a higher document version, deletes only two days after the retention period in the
-  database clock and never under legal hold;
-- drafts: inserted and kept without number, number space and sequence value, fixed kind and
-  original, issued only with a number, a number space and a retention period and without
-  cancellation columns;
-- the audit log: no updates, no deletes;
-- the invoice relations: no updates, deletes only once their invoice is past its retention
-  period;
-- the number sequences: no lower counter, no new key or pattern, no deletes;
-- PostgreSQL only: none of these tables can be truncated.
-
-The triggers raise errors such as `quittio: issued invoice is immutable`, `quittio: audit log
-is append-only`, `quittio: invoice relations are immutable` and `quittio: number sequences only
-increase`. On MySQL with binary logging, creating triggers needs the `TRIGGER` privilege and
-`log_bin_trust_function_creators` (or `SUPER`). Unlike the model, the triggers do not limit
-releasing a legal hold or which code changes the status.
-
-Frozen are all columns of an issued invoice but those of
-[What can still change](#what-can-still-change). On PostgreSQL the trigger compares the whole
-row without them, so columns you add to `quittio_invoices` later are frozen as well. On MySQL,
-MariaDB and SQLite the trigger lists the columns that exist when it is created: recreate it
-in the migration that adds columns, with `ImmutabilityTriggers::refresh()`
-(`Quittio\Managed\Immutability`):
-
-```php
-Schema::table('quittio_invoices', function (Blueprint $table): void {
-    $table->string('erp_reference')->nullable();
-});
-ImmutabilityTriggers::refresh();
-```
-
-`refresh()` recreates only the check of invoice updates, with the columns the table has now,
-and returns `false` without doing anything when the triggers are not installed. On SQLite and
-PostgreSQL it runs in one transaction; MySQL commits each statement, so between dropping and
-creating the update trigger (milliseconds) direct updates are not checked: run it with the
-migrations, not under load. On PostgreSQL it is not needed for new columns; it replaces the
-trigger function, which switches triggers installed with an earlier version (a column list) to
-the comparison of the whole row.
-
-### What is not prevented
-
-- MySQL fires no triggers on `TRUNCATE`: the foreign keys keep invoices and relations from
-  being truncated, but the audit log and the sequences are not protected. Give the database
-  user of the application no `DROP` privilege on the `quittio_` tables (`TRUNCATE` needs it)
-  and run migrations with a separate user.
-- Without the triggers, the base query builder and raw SQL can change anything.
-- Issuer profiles are protected by their model only: change number spaces, tenants, keys and
-  seller identifiers with model saves (`$issuer->save()`, `NumberSpaces::assign()`). Bulk
-  updates of issuers through the query builder or raw SQL bypass the freeze and the
-  consistency check; the unique index on number space and number still prevents duplicate
-  numbers within a space.
-- Deliveries are ordinary rows without protection.
-- The archived files are protected by the archive (write-once) and the hashes; a disk without
-  object lock cannot keep an administrator from deleting them, `quittio:verify` detects it.
-
-## Retention and deletion
-
-`retention_until` is set when the invoice is issued: the rule of the country pack (DE: 8 years
-after the end of the year of issue, section 14b UStG, section 147 AO; without a pack 10 years),
-counted from the later of the issue date and the day it is actually issued. `retention.years`
-can only lengthen it. The period can be extended per invoice, and an invoice can be put on
-legal hold:
-
-```php
-$invoice->forceFill(['retention_until' => '2040-12-31'])->save();   // only later dates
-$invoice->forceFill(['legal_hold' => true])->save();                // also in bulk
-$invoice->forceFill(['legal_hold' => false])->save();               // release: model only
-```
-
-The period ends with `retention_until` in the issuer's time zone; the command, the model and
-the triggers compare with their own clock and count an invoice as past its period two days
-later (`retain until 2034-12-31` → from 2035-01-03), when it has ended in every time zone (time
-zones differ by up to 26 hours).
-
-```bash
-php artisan quittio:retention:check              # list, dispatch RetentionExpired
-php artisan quittio:retention:check --delete     # delete, asks for confirmation
-php artisan quittio:retention:check --delete --force
-```
-
-`quittio:retention:check` lists the issued invoices past their retention period that are not
-on legal hold and dispatches `RetentionExpired` for each of them, before anything is
-deleted. With `--delete`, it deletes invoices by group: an invoice together with all
-invoices connected to it through cancellations, partial cancellations, corrections and
-replacements (transitively), and only when every one of them is past its retention period
-and none is on legal hold; otherwise the whole group is kept and the command says which
-invoice keeps it. The rows of a group (invoices, relations, deliveries with recipients and
-errors, and drafts that refer to one of the invoices) are deleted in one transaction with
-audit entries (`deleted`, `deleted_draft`), then all archived files of all document versions
-from the manifest. A file that cannot be deleted stays recorded: the next run reports it
-(`… archived file(s) of deleted invoices could not be deleted yet`) and, with `--delete`,
-tries again. With `--delete`, the command fails (exit code 1, `Not everything could be
-deleted: …`) when a group or an archived file could not be deleted, after it has dealt with
-the others; groups kept for a legal hold or a retention period are no failure. Schedule the
-command (e.g. monthly) to keep the archive clean.
-
-Delete issued invoices through this command: a single `$invoice->delete()` after the retention
-period is allowed by the model, but fails on the foreign keys while relations or
-cancellations refer to the invoice, and it leaves deliveries and archived files behind.
-
-### Personal data
-
-The audit log is append-only and stays after the retention period (GDPR Art. 17 and GoBD), so
-it holds no recipients or other data of the customers. `sent` and `delivery_failed` refer to
-the delivery (`delivery`: id of the row in `quittio_deliveries`), which is deleted with the
-invoice; the invoice data itself is in the invoice row and the archived files. The audit log
-keeps the causer, IP address and user agent of the users who acted, and the changes of issuer
-profiles (the company's own master data). There is no function to anonymise issued invoices
-before the end of their retention period.
+| `quittio-managed-config` | `config/quittio-managed.php` |
+| `quittio-managed-migrations` | the migrations |
+| `quittio-managed-triggers` | the immutability triggers (recommended, see [Database triggers](#database-triggers)) |
+| `quittio-managed-views` | the mail view (`resources/views/vendor/quittio-managed`) |
+| `quittio-managed-lang` | the translations (`lang/vendor/quittio-managed`) |
 
 ## Events
 
@@ -1840,7 +2318,7 @@ All events are in the namespace `Quittio\Managed\Events` and have public readonl
 
 | Event | Dispatched | Properties |
 |---|---|---|
-| `InvoiceDrafted` | A draft was created (also drafts of cancellations and corrections), after the commit when it was created inside a transaction: the cancellation draft of a correction that rolls back is not announced | `invoice` |
+| `InvoiceDrafted` | A draft was created (also drafts of cancellations and corrections); after the commit when it was created inside a transaction, so the cancellation draft of a correction that rolls back is not announced | `invoice` |
 | `InvoiceIssuing` | A draft is about to be issued: validated, no number yet; a listener that throws stops the issue. Not followed by `InvoiceIssued` when the issue fails afterwards | `invoice` |
 | `InvoiceIssued` | After the issuing transaction was committed and the render job was queued (or the documents rendered) | `invoice` |
 | `InvoiceDocumentsStored` | A new document version was rendered and archived | `invoice` |
@@ -1891,6 +2369,9 @@ Other exceptions you may meet:
 | `Illuminate\Database\QueryException` | Foreign keys (e.g. deleting an issuer with invoices) and the triggers |
 
 ```php
+use Quittio\Core\Validation\ValidationException;
+use Quittio\Managed\Exceptions\ManagedException;
+
 try {
     $invoice = $draft->issue();
 } catch (ValidationException $e) {
@@ -1900,10 +2381,27 @@ try {
 }
 ```
 
+For common errors and their fixes, see also [Troubleshooting](troubleshooting.md).
+
 ## Models and enums
 
 All models extend `Quittio\Managed\Models\Model`, which takes table prefix and connection from
 the configuration.
+
+### Tables
+
+| Table | Model | Content |
+|---|---|---|
+| `quittio_issuers` | `Issuer` | Issuer profiles |
+| `quittio_sequences` | `Sequence` | Number sequences |
+| `quittio_invoices` | `Invoice` | Drafts and issued invoices, cancellations and corrections |
+| `quittio_invoice_relations` | `InvoiceRelation` | `cancels`, `partially_cancels`, `corrects`, `replaces` |
+| `quittio_deliveries` | `Delivery` | Delivery attempts |
+| `quittio_audit_logs` | `AuditLog` | Audit log |
+| `quittio_archive_files` | – | Manifest of every archived file (no model, see [Archive manifest](#archive-manifest)) |
+
+The names use the default prefix `quittio_` (`table_prefix`, see
+[Database settings](#database-settings)).
 
 ### Invoice
 
@@ -1913,7 +2411,7 @@ the configuration.
 | `issuer_id` | Issuer |
 | `billable_type`, `billable_id`, `invoiceable_type`, `invoiceable_id` | References to your models |
 | `kind` | `Kind`: `invoice`, `cancellation`, `correction` |
-| `type_code` | Type code (UNTDID 1001), e.g. `380`, `381`, `384` |
+| `type_code` | Document type code (BT-3, UNTDID 1001), e.g. `380` invoice, `381` credit note, `384` corrected invoice |
 | `status`, `payment_status`, `delivery_status` | See [Statuses](#statuses) |
 | `format`, `profile` | Draft: chosen (or `null` for the automatic choice); issued: used |
 | `country_pack` | Country pack the invoice was issued under |
@@ -1996,104 +2494,3 @@ Namespace `Quittio\Managed\Enums`:
 | `RenderStatus` | `Pending` (`pending`), `Rendering` (`rendering`), `Done` (`done`), `Failed` (`failed`) | – |
 | `ValidationStatus` | `Valid` (`valid`), `Warnings` (`warnings`), `Invalid` (`invalid`), `NotChecked` (`not_checked`) | `ValidationStatus::of(ValidationResult $result)` |
 | `RelationType` | `Cancels` (`cancels`), `PartiallyCancels` (`partially_cancels`), `Corrects` (`corrects`), `Replaces` (`replaces`) | `RelationType::cancelling()`: the values of the cancelling relations |
-
-## Console commands
-
-| Command | Purpose | See |
-|---|---|---|
-| `quittio:install --managed` | Publish configuration and migrations, migrate, create the first issuer | [Installation](#installation) |
-| `quittio:render {invoice}` | Render missing or failed documents of a stored invoice as a new version | [Versions and re-rendering](#versions-and-re-rendering) |
-| `quittio:verify {--from=} {--to=} {--issuer=}` | Check the archive hashes | [Integrity checks](#integrity-checks) |
-| `quittio:sequence:show {--issuer=}` | List the number sequences | [Managing sequences](#managing-sequences) |
-| `quittio:sequence:set {key} {value} {--force}` | Raise or create a number sequence | [Managing sequences](#managing-sequences) |
-| `quittio:retention:check {--delete} {--force}` | List and delete invoices past their retention period | [Retention and deletion](#retention-and-deletion) |
-| `quittio:drafts:prune {--older-than=60} {--force}` | Delete left-behind cancellation and correction drafts | [Left-behind drafts](#left-behind-drafts) |
-
-The commands ignore the tenancy scope. See [Artisan commands](commands.md) for all signatures.
-For example, scheduled in production:
-
-```php
-// routes/console.php
-Schedule::command('quittio:verify')->daily();
-Schedule::command('quittio:drafts:prune --force')->hourly();
-Schedule::command('quittio:retention:check')->monthly();
-```
-
-## Testing
-
-### Factories
-
-```php
-use Quittio\Core\Data\InvoiceData;
-use Quittio\Managed\Models\Invoice;
-use Quittio\Managed\Models\Issuer;
-
-$issuer = Issuer::factory()->default()->create();                 // key default, Muster GmbH, DE123456789
-$other = Issuer::factory()->company('Andere AG', 'DE111111111')->create(['key' => 'other']);
-
-$draft = Invoice::factory()->for($issuer)->create();              // draft with two sample lines
-$draft = Invoice::factory()->data(InvoiceData::factory()->reverseCharge()->make())->create();
-$invoice = Invoice::factory()->create()->issue('2026-10-05');
-```
-
-| Factory | Definition and states |
-|---|---|
-| `Issuer::factory()` | Random key, Muster GmbH with a random VAT id (a company of its own), Germany, `Europe/Berlin`, one bank account, `defaults` locale `de` and 14 due days |
-| `->default()` | Key `default`, `is_default`, VAT id `DE123456789` |
-| `->company(string $name, string $vatId)` | Another company with its own name and VAT id |
-| `Invoice::factory()` | Draft with `InvoiceData::factory()->withLines(2)` data and a new issuer |
-| `->data(InvoiceData $data)` | Draft with the given data |
-
-The factories make the configured models (`quittio-managed.models.invoice` and `.issuer`),
-also through the factory of a subclass. Factory drafts are saved directly: they skip the
-seller check, the issuer defaults and the audit entry `drafted`. Issue them with `issue()`; the seller is taken from the issuer then.
-
-Useful in tests:
-
-- `Queue::fake()` keeps the render job from running (render status stays `pending`);
-  `config(['quittio-managed.queue.render_sync' => true])` renders at once.
-- `Mail::fake()` for `send()`, a temporary local disk for `quittio-managed.disk`.
-- Fake single events (`Event::fake([InvoiceIssued::class])`): faking all events also stops the
-  model events that write the issuer and deletion audit entries.
-- SQLite in memory works; set `'transaction_mode' => 'IMMEDIATE'` on the test connection to
-  avoid the numbering warning.
-
-See [Testing](testing.md) for `Quittio::fake()` and the e-invoice assertions.
-
-### Testing against MySQL and PostgreSQL
-
-The package's own test suite (in the repository of `quittio/managed`) runs against SQLite by
-default and against MySQL and PostgreSQL from `tools/docker/databases`:
-
-```bash
-docker compose -f tools/docker/databases/compose.yaml up -d --wait
-QUITTIO_DB=mysql vendor/bin/pest --testsuite=managed
-QUITTIO_DB=pgsql QUITTIO_DB_TRIGGERS=1 vendor/bin/pest --testsuite=managed
-```
-
-`QUITTIO_DB` selects `sqlite` (default, in memory), `mysql` (port 33061) or `pgsql` (port
-54321); `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME` and `DB_PASSWORD` override the
-connection. `QUITTIO_DB_TRIGGERS=1` also installs the immutability triggers. The group
-`concurrency` forks processes that issue invoices at the same time (needs `pcntl` and MySQL or
-PostgreSQL); the group `official` validates the archived documents with the KoSIT validator
-and is skipped when it is not installed.
-
-## Known limitations
-
-- Payments, bank reconciliation, dunning runs, subscriptions, advance and final invoices,
-  self-billing, inbound invoices, Peppol transmission and DATEV exports are not part of 1.0;
-  the payment columns are maintained by your application.
-- Delivery is by mail only (`channel` `mail`); `lifecycle_status`, `registrations` and
-  `network_ids` are stored but not evaluated.
-- Partial cancellations of invoices with document level allowances or charges are not
-  supported: cancel fully and issue a new invoice.
-- Issuer profiles are protected by their model only; bulk updates of issuers bypass the
-  number space checks.
-- Without the triggers, the base query builder and raw SQL bypass the immutability rules;
-  MySQL fires no triggers on `TRUNCATE`; on MySQL, MariaDB and SQLite the triggers cover the
-  invoice columns that existed when they were created (see `ImmutabilityTriggers::refresh()`).
-- Different notations of one tax number are not unified for the number spaces.
-- Issued invoices can be deleted only after their retention period; there is no early
-  anonymisation.
-- The default cancellation and correction strategies and the one-cent VAT alignment of partial
-  cancellations are to be confirmed by a tax adviser (see the legal review in the README).

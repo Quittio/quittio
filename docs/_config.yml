@@ -72,33 +72,37 @@ defaults:
     values: { title: Home, nav_order: 1, render_with_liquid: false }
   - scope: { path: "getting-started.md" }
     values: { title: Getting started, nav_order: 2, render_with_liquid: false }
+  - scope: { path: "concepts.md" }
+    values: { title: E-invoicing basics, nav_order: 3, render_with_liquid: false }
   - scope: { path: "examples.md" }
-    values: { title: Examples, nav_order: 3, render_with_liquid: false }
+    values: { title: Examples, nav_order: 4, render_with_liquid: false }
   - scope: { path: "building-invoices.md" }
-    values: { title: Building invoices, nav_order: 4, render_with_liquid: false }
+    values: { title: Building invoices, nav_order: 5, render_with_liquid: false }
   - scope: { path: "formats.md" }
-    values: { title: Formats and profiles, nav_order: 5, render_with_liquid: false }
+    values: { title: Formats and profiles, nav_order: 6, render_with_liquid: false }
   - scope: { path: "validation.md" }
-    values: { title: Validation, nav_order: 6, render_with_liquid: false }
+    values: { title: Validation, nav_order: 7, render_with_liquid: false }
   - scope: { path: "templates.md" }
-    values: { title: Templates and design, nav_order: 7, render_with_liquid: false }
+    values: { title: Templates and design, nav_order: 8, render_with_liquid: false }
   - scope: { path: "documents.md" }
-    values: { title: Quotes and other documents, nav_order: 8, render_with_liquid: false }
+    values: { title: Quotes and other documents, nav_order: 9, render_with_liquid: false }
   - scope: { path: "reading.md" }
-    values: { title: Reading incoming invoices, nav_order: 9, render_with_liquid: false }
+    values: { title: Reading incoming invoices, nav_order: 10, render_with_liquid: false }
   - scope: { path: "laravel.md" }
-    values: { title: Laravel integration, nav_order: 10, render_with_liquid: false }
+    values: { title: Laravel integration, nav_order: 11, render_with_liquid: false }
   - scope: { path: "configuration.md" }
-    values: { title: Configuration, nav_order: 11, render_with_liquid: false }
-  - scope: { path: "country-packs.md" }
-    values: { title: Country packs, nav_order: 12, render_with_liquid: false }
-  - scope: { path: "managed.md" }
-    values: { title: Managed layer, nav_order: 13, render_with_liquid: false }
+    values: { title: Configuration, nav_order: 12, render_with_liquid: false }
+  - scope: { path: "commands.md" }
+    values: { title: Artisan commands, nav_order: 13, render_with_liquid: false }
   - scope: { path: "testing.md" }
     values: { title: Testing, nav_order: 14, render_with_liquid: false }
-  - scope: { path: "commands.md" }
-    values: { title: Artisan commands, nav_order: 15, render_with_liquid: false }
+  - scope: { path: "country-packs.md" }
+    values: { title: Country packs, nav_order: 15, render_with_liquid: false }
+  - scope: { path: "managed.md" }
+    values: { title: Managed layer, nav_order: 16, render_with_liquid: false }
+  - scope: { path: "troubleshooting.md" }
+    values: { title: Troubleshooting, nav_order: 17, render_with_liquid: false }
   - scope: { path: "field-reference.md" }
-    values: { title: Field reference, nav_order: 16, render_with_liquid: false }
+    values: { title: Field reference, nav_order: 18, render_with_liquid: false }
   - scope: { path: "ai.md" }
-    values: { title: AI assistants, nav_order: 17, render_with_liquid: false }
+    values: { title: AI assistants, nav_order: 19, render_with_liquid: false }

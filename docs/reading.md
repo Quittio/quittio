@@ -1,26 +1,66 @@
 # Reading incoming invoices
 
+This page is about e-invoices you receive, for example from suppliers. Quittio reads XML files (CII and UBL, including XRechnung and Peppol) and PDFs with embedded XML (ZUGFeRD, Factur-X). It returns their content in the same data model that you use to build invoices, so you can take the values into your accounting.
+
+If these formats are new to you, see [Formats](concepts.md#formats), [Syntaxes](concepts.md#syntaxes-cii-and-ubl) and [Profiles](concepts.md#profiles) in the E-invoicing basics; field numbers such as BT-24 are explained in [EN 16931 and business terms](concepts.md#en-16931-and-business-terms).
+
+## Reading a file
+
 ```php
 use Quittio\Laravel\Facades\Quittio;
 
-$read = Quittio::read($request->getContent());   // bytes of an XML (CII, UBL) or a PDF with embedded XML
-$read = Quittio::readFile('/path/to/invoice.pdf');
+$read = Quittio::read($request->file('invoice')->get());   // content of an uploaded XML or PDF
+$read = Quittio::readFile('/path/to/invoice.pdf');          // or a local file
 
-$read->data;                 // InvoiceData as stated in the document
-$read->declaredTotals;       // totals as stated in the document
-$read->findings;             // problems found while reading, e.g. QUITTIO-DECLARED-TOTALS
-$read->profile;              // detected profile key, e.g. "xrechnung"
-$read->embeddedFilename;     // factur-x.xml, xrechnung.xml, zugferd-invoice.xml … for PDFs
+$invoice = $read->data;          // InvoiceData as stated in the document
+$invoice->number;                // e.g. "RE-2026-0101"
+$invoice->seller->name;          // the supplier
+$invoice->totals?->amountDue;    // amount due as stated in the document
+
+$read->profile;                  // detected profile key, e.g. "en16931" or "xrechnung"
+$read->findings;                 // problems found while reading, e.g. QUITTIO-DECLARED-TOTALS
+$read->declaredTotals;           // totals as stated in the document
+$read->embeddedFilename;         // for PDFs: factur-x.xml, xrechnung.xml, zugferd-invoice.xml …
 ```
 
-`read()` always treats its argument as the content of the document, never as a file name, so request bodies and uploads can be passed directly. `readFile()` reads a local file: it rejects paths with null bytes, missing or unreadable files and files larger than the larger of the XML and PDF limits (`UnreadableInvoiceException`). Without Laravel both methods exist on `Quittio\Core\Quittio` and use the limits of its configuration ([limits](#limits-and-security)).
+You get back a `ReadResult` ([The result](#the-result)):
 
-Reading never validates the whole document; check `$read->findings`, or use `Quittio::validateFile($content)` / `validatePath($path)`, which read the file and run all configured validation levels on it ([validation](validation.md#incoming-files)), before booking an invoice.
+- `data` is an `InvoiceData` with the values as stated in the document. Amounts are never corrected. Totals that do not match the lines are reported as finding `QUITTIO-DECLARED-TOTALS` ([Declared amounts](#declared-amounts)).
+- `findings` lists problems found while reading, e.g. a missing issue date ([Findings](#findings)).
+- `profile` is the profile detected from the document, e.g. `xrechnung`.
+
+`read()` always treats its argument as the content of the document, never as a file name. You can pass request bodies (`$request->getContent()`) and uploads directly.
+
+`readFile()` reads a local file. It rejects paths with null bytes, missing or unreadable files, and files larger than the larger of the XML and PDF limits (`UnreadableInvoiceException`).
+
+Without Laravel, both methods exist on `Quittio\Core\Quittio` and use the limits of its configuration ([Limits and security](#limits-and-security)). A file that is no supported e-invoice throws an exception ([Errors](#errors)).
+
+## Checking an incoming invoice
+
+Reading never validates the whole document. Before you book an invoice, check `$read->findings`, or validate the file:
+
+```php
+use Quittio\Laravel\Facades\Quittio;
+
+$report = Quittio::validateFile($content);   // content of an XML or PDF
+$report = Quittio::validatePath($path);      // or a local file
+
+if (! $report->isValid()) {
+    // reject the invoice, e.g. show $report->errors()
+}
+```
+
+`validateFile()` and `validatePath()` read the file and run all configured validation levels on it ([Incoming files](validation.md#incoming-files)). A complete controller that validates an upload and extracts the values for accounting is in [Incoming e-invoices](examples.md#incoming-e-invoices).
+
+## On the command line
 
 ```bash
 php artisan quittio:read invoice.pdf          # number, date, type, syntax and profile, parties, lines, totals, findings
 php artisan quittio:read invoice.xml --json   # InvoiceData as JSON
+php artisan quittio:validate invoice.pdf      # validation report
 ```
+
+See [quittio:read](commands.md#quittioread) and [quittio:validate](commands.md#quittiovalidate).
 
 ## Supported documents
 
@@ -30,9 +70,28 @@ php artisan quittio:read invoice.xml --json   # InvoiceData as JSON
 | UBL XML | root `Invoice` or `CreditNote` in the UBL 2.1 namespaces | `ubl` | EN 16931, XRechnung UBL including the extension, Peppol BIS Billing 3.0 |
 | PDF | content starts with `%PDF` (leading whitespace allowed) | of the embedded XML | ZUGFeRD 2.x / Factur-X, XRechnung embedded in a PDF |
 
-Everything else fails: ZUGFeRD 1.0 (`urn:ferd:CrossIndustryDocument:invoice:1p0`) does not conform to EN 16931 and is rejected with a clear message, other roots with "Unknown invoice format", PDFs without embedded invoice with "The PDF does not contain an embedded e-invoice".
+Everything else fails:
 
-The profile is detected from the specification identifier (BT-24, `GuidelineSpecifiedDocumentContextParameter` or `cbc:CustomizationID`) by exact comparison with the installed profiles, for EN 16931:2017 and EN 16931:2026 identifiers; country pack profiles such as XRechnung count once the pack is registered. An unknown identifier leaves `profile` `null` and is reported as information (`QUITTIO-READER-UNKNOWN-PROFILE`). An identifier starting with `urn:cen.eu:en16931:2026` sets the standard version of the data to EN 16931:2026.
+- ZUGFeRD 1.0 (`urn:ferd:CrossIndustryDocument:invoice:1p0`) does not conform to EN 16931 and is rejected with a clear message.
+- Other root elements fail with "Unknown invoice format".
+- PDFs without embedded invoice fail with "The PDF does not contain an embedded e-invoice".
+
+The profile is detected from the specification identifier (BT-24). In CII it is `GuidelineSpecifiedDocumentContextParameter`, in UBL `cbc:CustomizationID`. Quittio compares it exactly with the identifiers of the installed profiles, for EN 16931:2017 and EN 16931:2026. Country pack profiles such as XRechnung count once the pack is registered.
+
+- An unknown identifier leaves `profile` `null` and is reported as information (`QUITTIO-READER-UNKNOWN-PROFILE`).
+- An identifier starting with `urn:cen.eu:en16931:2026` sets the standard version of the data to EN 16931:2026.
+
+## Errors
+
+The reader throws an exception only when it cannot read the document at all:
+
+| Exception | When |
+|---|---|
+| `Quittio\Core\Xml\UnsafeXmlException` | The XML is too large, not well-formed, has a DOCTYPE, an unsupported encoding or exceeds a tag limit |
+| `Quittio\Core\Pdf\PdfException` | The PDF is too large, encrypted, malformed, exceeds a structure or decompression limit or uses an unsupported stream filter |
+| `Quittio\Core\Reading\UnreadableInvoiceException` | Unknown format, ZUGFeRD 1.0, a PDF without embedded invoice, a file that does not exist, is not readable or is too large |
+
+All three implement `Quittio\Core\Exceptions\QuittioException`. `validateFile()` and `validatePath()` throw the same exceptions. Everything the reader can read becomes a finding instead.
 
 ## The result
 
@@ -46,26 +105,36 @@ The profile is detected from the specification identifier (BT-24, `GuidelineSpec
 | `profile` | key of the detected profile (`en16931`, `extended`, `xrechnung`, `peppol` …) or `null` |
 | `declaredTotals` | `Totals` as stated (BT-106 to BT-115), `null` if the document has no monetary summation |
 | `declaredVatBreakdown` | `list<VatBreakdown>` as stated (BG-23) |
-| `findings` | `list<ValidationMessage>` (see below) |
+| `findings` | `list<ValidationMessage>` (see [Findings](#findings)) |
 | `xml` | the XML that was read (for a PDF: the embedded XML) |
 | `raw` | the input: the PDF bytes, or the XML |
 | `embeddedFilename` | name of the embedded file for PDFs, otherwise `null` |
 
-`hasFindings()` tells whether there are findings. Extended data (Factur-X EXTENDED, sub lines from `ParentLineID` or `cac:SubInvoiceLine`, XRechnung third party payments) is read into the same data model as when building invoices ([field reference](field-reference.md)).
+`hasFindings()` tells whether there are findings. Extended data is read into the same data model as when building invoices ([field reference](field-reference.md)): Factur-X EXTENDED, sub lines from `ParentLineID` or `cac:SubInvoiceLine`, and XRechnung third party payments.
 
 ### Declared amounts
 
-Totals are never corrected silently. The reader keeps the amounts as stated, recalculates a copy from the lines and reports every difference of a line net amount (BT-131), BT-106, BT-109, BT-110, BT-112 or BT-115 as `QUITTIO-DECLARED-TOTALS` (warning, level L3). Documents without lines (Factur-X MINIMUM, BASIC WL) are not recalculated. MINIMUM does not transmit BT-106; it is derived from BT-109, BT-107 and BT-108 (`QUITTIO-READER-DERIVED`).
+Totals are never corrected silently. The reader keeps the amounts as stated and recalculates a copy from the lines. Every difference is reported as `QUITTIO-DECLARED-TOTALS` (warning, level L3). It compares:
 
-EN 16931 carries the exemption reason (BT-120, BT-121) only on the VAT breakdown; the reader copies it back to the lines, allowances and charges of the VAT group, so a recalculation keeps it.
+- the net amount of every line (BT-131),
+- the sum of line net amounts (BT-106), the total without VAT (BT-109), the VAT total (BT-110), the total with VAT (BT-112) and the amount due (BT-115).
 
-The reader stamps a fingerprint of the amount inputs into the meta data (`$read->data->meta->amountsFingerprint()`). As long as lines, prices, allowances, charges, VAT breakdown and currency are unchanged, `InvoiceBuilder::from($read->data)` and cancellations of the read invoice keep declared line net amounts within 0.02 of quantity × price ± allowances and charges and declared VAT amounts less than one currency unit from the recalculation, e.g. when another system rounded per line ([building invoices](building-invoices.md)). Data changed before (e.g. with `with()`) no longer matches the fingerprint and is recalculated completely. `Quittio::make($read->data)` recalculates everything.
+Documents without lines (Factur-X MINIMUM, BASIC WL) are not recalculated. MINIMUM does not transmit BT-106; it is derived from BT-109, BT-107 and BT-108 (`QUITTIO-READER-DERIVED`).
 
-The price base quantity (BT-149, BT-150) is read from the net price, or from the gross price if only the gross price states it. If both state different base quantities (CII), the gross price and discount are converted to the base quantity of the net price; with different units they are kept as stated and a warning is reported.
+EN 16931 carries the VAT exemption reason (BT-120, BT-121) only on the VAT breakdown. The reader copies it back to the lines, allowances and charges of the VAT group, so a recalculation keeps it.
+
+A read invoice can be the start of a builder (`InvoiceBuilder::from($read->data)`) or be cancelled ([Building invoices](building-invoices.md)). To keep its declared amounts there, the reader stamps a fingerprint of the amount inputs into the meta data (`$read->data->meta->amountsFingerprint()`). As long as lines, prices, allowances, charges, VAT breakdown and currency are unchanged, `InvoiceBuilder::from($read->data)` and cancellations of the read invoice keep:
+
+- declared line net amounts within 0.02 of quantity × price ± allowances and charges,
+- declared VAT amounts less than one currency unit from the recalculation, e.g. when another system rounded per line.
+
+Data changed before (e.g. with `with()`) no longer matches the fingerprint and is recalculated completely. `Quittio::make($read->data)` recalculates everything.
+
+The price base quantity (BT-149, BT-150) is read from the net price, or from the gross price if only the gross price states it. If both state different base quantities (CII), the gross price and discount are converted to the base quantity of the net price. With different units they are kept as stated, and a warning is reported.
 
 ## Findings
 
-The reader is tolerant: it reads as much of the document as possible and reports problems as findings instead of failing. Findings have level L1 unless noted. Errors mean that values are missing or could not be read as stated:
+The reader is tolerant: it reads as much of the document as possible and reports problems as findings instead of failing. Codes starting with `BR-` are the EN 16931 rules that the problem breaks ([Rules and validation](concepts.md#rules-and-validation)). Findings have level L1 unless noted. Errors mean that values are missing or could not be read as stated:
 
 | Code | Severity | Meaning |
 |---|---|---|
@@ -100,11 +169,21 @@ Unknown codes are errors in `validateFile()`, where the code list rules (`BR-CL-
 
 ## PDF
 
-Embedded files are found in the associated files (`/AF`) of the document catalog and in the name tree (`/Names /EmbeddedFiles`), also in PDFs with cross-reference streams, object streams, hybrid files and incremental updates; damaged cross-reference data is rebuilt by scanning the file. The file is chosen in this order: a known file name (`factur-x.xml`, `xrechnung.xml`, `zugferd-invoice.xml`, `ZUGFeRD-invoice.xml`, case-insensitive) before any other `.xml` file; among those, files referenced from `/AF` before files only in the name tree; then the order of the known names and of the document. Up to three further candidates with a known name are compared with the chosen file; different content is reported (`QUITTIO-READER-PDF-CANDIDATES`).
+A ZUGFeRD or Factur-X PDF carries the invoice XML as embedded file ([Embedded files](formats.md#embedded-files)). The reader finds embedded files in the associated files (`/AF`) of the document catalog and in the name tree (`/Names /EmbeddedFiles`). This works also in PDFs with cross-reference streams, object streams, hybrid files and incremental updates. Damaged cross-reference data is rebuilt by scanning the file.
+
+The file is chosen in this order:
+
+1. A known file name (`factur-x.xml`, `xrechnung.xml`, `zugferd-invoice.xml`, `ZUGFeRD-invoice.xml`, case-insensitive) before any other `.xml` file.
+2. Among those, files referenced from `/AF` before files only in the name tree.
+3. Then the order of the known names and of the document.
+
+Up to three further candidates with a known name are compared with the chosen file; different content is reported (`QUITTIO-READER-PDF-CANDIDATES`).
 
 Encrypted PDFs cannot be read. Streams must use `FlateDecode` (with PNG or TIFF predictors) or no filter.
 
 ## Limits and security
+
+Incoming files come from outside, so the reader limits what it accepts:
 
 | Protection | Limit |
 |---|---|
@@ -119,17 +198,7 @@ Encrypted PDFs cannot be read. Streams must use `FlateDecode` (with PNG or TIFF 
 | Sub lines | hierarchies deeper than 32 levels are flattened (CII) |
 | File names | embedded file names and attachment file names are never used as paths: directory parts and control and format characters (e.g. a right-to-left override) are removed, `.`, `..` and empty names are rejected |
 
-Untrusted values are shortened in messages, and the currency of amounts is compared in PHP, never inside an XPath expression.
-
-## Errors
-
-| Exception | When |
-|---|---|
-| `Quittio\Core\Xml\UnsafeXmlException` | The XML is too large, not well-formed, has a DOCTYPE, an unsupported encoding or exceeds a tag limit |
-| `Quittio\Core\Pdf\PdfException` | The PDF is too large, encrypted, malformed, exceeds a structure or decompression limit or uses an unsupported stream filter |
-| `Quittio\Core\Reading\UnreadableInvoiceException` | Unknown format, ZUGFeRD 1.0, a PDF without embedded invoice, a file that does not exist, is not readable or is too large |
-
-All three implement `Quittio\Core\Exceptions\QuittioException`. `validateFile()` and `validatePath()` throw the same exceptions; everything the reader can read becomes a finding instead.
+Untrusted values are shortened in messages, and the currency of amounts is compared in PHP, never inside an XPath expression. The configuration keys are described in [Reader](configuration.md#reader).
 
 ## Own readers
 
@@ -148,4 +217,13 @@ $reader = new InvoiceReader(
 $read = $reader->withReader(new MyFormatReader)->readFile('/path/to/invoice.xml');
 ```
 
-A reader for another XML format implements `FormatReader` (`canRead(DOMDocument $document): bool`, `read(DOMDocument $document, string $xml): ReadResult`); `withReader()` returns a copy with the reader added after the default ones. Country packs provide readers for national formats with `CountryPack::readers()` (new instances on every call, readers keep the state of one document): `Quittio::read()`, `readFile()`, `validateFile()` and `validatePath()` try them after the CII and UBL readers, for every registered pack. The XSD driver (L4) knows only CII and UBL and reports other root elements (`XSD-UNKNOWN-ROOT`); add a validator for a national format with `withValidator()`. A PDF extractor implements `EmbeddedXmlExtractor::extract(string $pdf): ?array` (file name and XML) or `DiagnosingXmlExtractor::extractFile(string $pdf): ?ExtractedXml` (`filename`, `xml`, `relationship`, `findings`). `PdfEmbeddedFileExtractor::names($pdf)` lists the names of all embedded files.
+A reader for another XML format implements `FormatReader` (`canRead(DOMDocument $document): bool`, `read(DOMDocument $document, string $xml): ReadResult`). `withReader()` returns a copy with the reader added after the default ones.
+
+Country packs provide readers for national formats with `CountryPack::readers()`. It returns new instances on every call, because readers keep the state of one document. `Quittio::read()`, `readFile()`, `validateFile()` and `validatePath()` try them after the CII and UBL readers, for every registered pack. The XSD driver (L4) knows only CII and UBL and reports other root elements (`XSD-UNKNOWN-ROOT`); add a validator for a national format with `withValidator()`.
+
+A PDF extractor implements one of two interfaces:
+
+- `EmbeddedXmlExtractor::extract(string $pdf): ?array` returns file name and XML,
+- `DiagnosingXmlExtractor::extractFile(string $pdf): ?ExtractedXml` returns `filename`, `xml`, `relationship` and `findings`.
+
+`PdfEmbeddedFileExtractor::names($pdf)` lists the names of all embedded files.
