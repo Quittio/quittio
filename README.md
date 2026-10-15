@@ -11,7 +11,7 @@ E-invoicing for Laravel. Quittio creates, validates, reads and renders electroni
 
 **Documentation: [docs.quittio.dev](https://docs.quittio.dev)**
 
-> **Status:** version 0.1.0 in preparation, not released yet. Implemented: data model, calculation, validation L1–L7, CII/UBL writers and readers, ZUGFeRD/Factur-X PDF/A-3, XRechnung, Peppol BIS, Laravel integration and the country pack Germany. The Managed layer (issuer profiles, drafts, gapless numbering, archive, cancellations, corrections, mail delivery, audit log) is available as the separate commercial package `quittio/managed`. APIs may still change, and the legal wording is under review (see [Legal review](#legal-review)).
+> **Status:** version 0.1, the first release. Implemented: data model, calculation, validation L1–L7, CII/UBL writers and readers, ZUGFeRD/Factur-X PDF/A-3, XRechnung, Peppol BIS, Laravel integration and the country pack Germany. The Managed layer (issuer profiles, drafts, gapless numbering, archive, cancellations, corrections, mail delivery, audit log) is available as the separate commercial package `quittio/managed`. APIs may still change until version 1.0, and the legal wording is under review (see [Legal review](#legal-review)).
 
 ## Packages
 
@@ -117,7 +117,7 @@ php tools/docs/generate.php        # JSON schema and field reference after model
 
 ## Legal review
 
-Quittio is not released yet. The legal wording, legal references and defaults of the country pack Germany and the Managed layer are being reviewed by a tax adviser and may change before the first stable release. Under review:
+The legal wording, legal references and defaults of the country pack Germany and the Managed layer are being reviewed by a tax adviser and may change before version 1.0. Under review:
 
 - **Cancellations:** type code 381 with positive amounts by default, configurable (`corrections.cancellation_strategy`). The VAT of partial cancellations is rounded cumulatively, so that all of them together reverse exactly the VAT of the original; a single part may differ by one cent from taxable amount × rate (within BR-CO-17, noted on the document).
 - **Corrections:** cancel and reissue by default, corrected invoice 384 configurable (`quittio-managed.correction.strategy`).

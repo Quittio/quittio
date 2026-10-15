@@ -751,7 +751,7 @@ A pack must be registered before Quittio can use it. The German pack registers i
 
 Laravel finds packs in three places. All of them are instantiated through the container, so constructors may use dependency injection:
 
-1. **Composer metadata.** Every installed package and the root `composer.json` of your application may declare packs. `quittio/country-de` declares itself this way, so `composer require quittio/country-de` (or the meta package `quittio/quittio`) is all you need. Classes that do not exist are skipped.
+1. **Composer metadata.** Every installed package and the root `composer.json` of your application may declare packs. `quittio/country-de` declares itself this way, so `composer require quittio/country-de` (or `quittio/quittio`, which contains it) is all you need. Classes that do not exist are skipped.
 
    ```json
    "extra": { "quittio": { "country-packs": ["Acme\\CountryAT\\CountryAT"] } }

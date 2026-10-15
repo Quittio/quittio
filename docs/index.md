@@ -11,7 +11,7 @@ E-invoicing for Laravel. Quittio creates, validates, reads and renders electroni
 
 Germany is the first market; everything country-specific (VAT rates, legal texts, XRechnung) lives in country packs, so the core stays country-neutral.
 
-> **Status:** version 0.1.0 in preparation. Not released yet; APIs may still change, and the legal wording of the country packs must be confirmed by a tax adviser.
+> **Status:** version 0.1, the first release. APIs may still change until version 1.0, and the legal wording of the country packs must be confirmed by a tax adviser.
 
 ## Packages
 

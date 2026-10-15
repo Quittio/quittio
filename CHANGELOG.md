@@ -4,8 +4,27 @@ All notable changes to this project are documented in this file. The format foll
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-10-15
+
+First release.
+
 ### Added
 
+- Monorepo `quittio/quittio` (the complete package) with the read-only splits `quittio/core`, `quittio/laravel` and `quittio/country-de`.
+- EN 16931 data model with mapping attributes (BT, cardinality, profile level, CII and UBL paths), builders, JSON conversion, generated JSON schema and field reference.
+- Calculation according to EN 16931 including document allowances split by VAT rate, gross prices, foreign currency and third party payments.
+- Profiles MINIMUM, BASIC WL, BASIC, EN 16931, EXTENDED, Peppol BIS 3; XRechnung 3.0 and the XRechnung extension in the country pack Germany.
+- Validation levels L1 to L7: PHP rules (EN 16931, Peppol, BR-DE, UStG), XSD, KoSIT validator (daemon and CLI), veraPDF (CLI and Docker), plausibility checks.
+- CII and UBL writers and readers with protection against XXE, entity expansion and oversized input; PDF reader for embedded invoices with decompression limits.
+- ZUGFeRD/Factur-X PDF/A-3b with mPDF, XMP metadata and associated files; post processing of foreign PDFs; EPC GiroCode.
+- View model with formatted and raw values, mandatory field guard, plain PHP and Blade default templates with partials, DIN 5008 letter layouts.
+- Format resolver, entry point `Quittio\Core\Quittio` and Laravel facade with several formats per call, storage, downloads, mail attachments, queue, events, preview route and Artisan commands.
+- Quotes, order confirmations, delivery notes, proforma invoices, payment reminders and account statements.
+- Country pack Germany: tax presets, UStG rules, format rules, legal texts, BMF error classes, numbering, retention, dunning law with base rate table, correction policy, builder helpers.
+- Testing helpers: fake, assertions, invoice factory, sample scenarios, visual regression (identical baselines on macOS and the Linux CI image).
+- `quittio:schemas:download` compiles the Peppol BIS Billing 3.0 rules; KoSIT configuration accepts several scenario sets.
+- Base rates up to 1 July 2026; small business invoices according to section 34a UStDV.
+- Full cancellations (`Quittio::cancellation()`) with configurable sign strategy: type code 381 with positive amounts (default) or 380 with negative amounts (`corrections.cancellation_strategy`).
 - `Quittio::prepare()` / `PendingInvoice::prepare()`: calculation, format and profile choice and validation without rendering.
 - `InvoiceBuilder::updateLine()`, `removeLine()` and `InvoiceLine::withNetPrice()`.
 - Complete reference documentation: new pages Building invoices, Laravel integration and Configuration; every builder method, config key (both packages), command, event, exception, tax preset and rule is documented, the Managed layer page covers models, numbering, archive, immutability, delivery, audit log, authorisation and retention in full.
@@ -120,24 +139,5 @@ All notable changes to this project are documented in this file. The format foll
 - `pdf.paper` and the VIES verification (`validation.drivers.vies.enabled`) take effect; file names of XML-only formats no longer contain a raw translation key.
 - Watermarks (draft and preview PDFs) were never printed: mPDF needs `showWatermarkText`, and PDF/A forbids their transparency. Watermarked PDFs without embedded XML are now rendered without PDF/A.
 
-## [0.1.0] - Unreleased
-
-First release.
-
-### Added
-
-- Monorepo `quittio/quittio` (the complete package) with the read-only splits `quittio/core`, `quittio/laravel` and `quittio/country-de`.
-- EN 16931 data model with mapping attributes (BT, cardinality, profile level, CII and UBL paths), builders, JSON conversion, generated JSON schema and field reference.
-- Calculation according to EN 16931 including document allowances split by VAT rate, gross prices, foreign currency and third party payments.
-- Profiles MINIMUM, BASIC WL, BASIC, EN 16931, EXTENDED, Peppol BIS 3; XRechnung 3.0 and the XRechnung extension in the country pack Germany.
-- Validation levels L1 to L7: PHP rules (EN 16931, Peppol, BR-DE, UStG), XSD, KoSIT validator (daemon and CLI), veraPDF (CLI and Docker), plausibility checks.
-- CII and UBL writers and readers with protection against XXE, entity expansion and oversized input; PDF reader for embedded invoices with decompression limits.
-- ZUGFeRD/Factur-X PDF/A-3b with mPDF, XMP metadata and associated files; post processing of foreign PDFs; EPC GiroCode.
-- View model with formatted and raw values, mandatory field guard, plain PHP and Blade default templates with partials, DIN 5008 letter layouts.
-- Format resolver, entry point `Quittio\Core\Quittio` and Laravel facade with several formats per call, storage, downloads, mail attachments, queue, events, preview route and Artisan commands.
-- Quotes, order confirmations, delivery notes, proforma invoices, payment reminders and account statements.
-- Country pack Germany: tax presets, UStG rules, format rules, legal texts, BMF error classes, numbering, retention, dunning law with base rate table, correction policy, builder helpers.
-- Testing helpers: fake, assertions, invoice factory, sample scenarios, visual regression (identical baselines on macOS and the Linux CI image).
-- `quittio:schemas:download` compiles the Peppol BIS Billing 3.0 rules; KoSIT configuration accepts several scenario sets.
-- Base rates up to 1 July 2026; small business invoices according to section 34a UStDV.
-- Full cancellations (`Quittio::cancellation()`) with configurable sign strategy: type code 381 with positive amounts (default) or 380 with negative amounts (`corrections.cancellation_strategy`).
+[Unreleased]: https://github.com/Quittio/quittio/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/Quittio/quittio/releases/tag/v0.1.0
