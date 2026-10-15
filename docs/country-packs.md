@@ -265,6 +265,14 @@ German law allows a simplified invoice for small amounts (section 33 UStDV). `->
 
 The notes and their texts are listed in [Legal texts](#legal-texts).
 
+Macros are invisible to IDEs and static analysis. The pack ships a stub with their signatures, `stubs/InvoiceBuilder.stub.php`; it is never loaded at runtime. Add it to PHPStan (`vendor/quittio/quittio/packages/country-de/stubs/…` with the complete package):
+
+```yaml
+parameters:
+    stubFiles:
+        - vendor/quittio/country-de/stubs/InvoiceBuilder.stub.php
+```
+
 - The `$locale` parameter selects the language of the note. It is independent of the invoice locale.
 - A locale with a region uses the text of its language (`en_GB` → English). Locales without a text of the pack get the German text (`LegalTexts::text()`).
 - Notes with subject `REG` (regulatory information) are listed in the PDF's legal notes (`legalNotes`). Notes with subject `PMT` (payment information) appear with the other notes.

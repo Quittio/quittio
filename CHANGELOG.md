@@ -6,6 +6,7 @@ All notable changes to this project are documented in this file. The format foll
 
 ### Added
 
+- `quittio/country-de` ships `stubs/InvoiceBuilder.stub.php`, which describes its builder macros (`smallAmount()`, `selfBilled()`, `deductAdvance()`, …) for IDEs and PHPStan.
 - Tests: generated round trips through CII and UBL, fuzzing of the XML, PDF and array input, and tests for formats, mapping, serialisation, the PDF parser, mail attachments, a second boot and the escaping of the Blade templates.
 - Documentation: [Versioning and compatibility](docs/compatibility.md) with the backwards compatibility promise; `ARCHITECTURE.md`, decision records in `docs/adr/`, `RELEASING.md`, a reworked `CONTRIBUTING.md`, an FAQ page; issue and pull request templates, `CODEOWNERS` and response times in `SECURITY.md`. Classes outside the public API (`XPathReader`, `XmlBuilder`, `Pdf\Parsing`, `CarryOver`, `ConfigMapper`, the command and preview classes, …) are marked `@internal`.
 - Documents (quotes, reminders, …) dispatch `DocumentRendering` and `DocumentRendered` in Laravel; `PendingDocument` has `option()` (core and Laravel), `data()`, `options()` and is `Macroable` (Laravel).
