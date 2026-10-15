@@ -372,6 +372,10 @@ return [
 
         // Queue name. Workers must listen on it: php artisan queue:work --queue=quittio,default
         'queue' => 'quittio',
+
+        // Inside a database transaction the job is dispatched after the commit (and not at
+        // all after a rollback); false = at once.
+        'after_commit' => true,
     ],
 
     /*

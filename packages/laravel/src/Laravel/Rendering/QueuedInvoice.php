@@ -33,6 +33,11 @@ final readonly class QueuedInvoice
         $job = new RenderInvoice(json_encode($this->data->toSnapshot(), JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), $this->options, $disk, $path);
         $job->onConnection(is_string($connection) ? $connection : null);
         $job->onQueue(is_string($queue) ? $queue : null);
+        // Inside a database transaction: dispatch only after the commit, so that a rollback does
+        // not leave a rendered invoice behind.
+        if ($config->get('quittio.queue.after_commit', true) !== false) {
+            $job->afterCommit();
+        }
 
         $container->make(Dispatcher::class)->dispatch($job);
 

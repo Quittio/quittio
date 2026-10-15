@@ -399,12 +399,14 @@ $job = Quittio::make($invoice)->queue('redis', 'invoices')->save();
 | Detail | Behaviour |
 |---|---|
 | Connection, queue | Arguments of `queue()`, else `quittio.queue.connection` and `quittio.queue.queue`. The default queue is `quittio`: start a worker with `--queue=quittio,…`. |
-| Payload | The invoice as versioned JSON snapshot (`invoice`), the `RenderOptions` of the call (`options`), `disk` and `path` (public properties) |
-| Execution | `handle()` renders with the stored options (events included) and calls `save($disk, $path)`. A `null` disk is resolved when the job runs. |
-| Retries | `$tries = 3` |
-| Upgrades | Snapshots of older data model versions are migrated by `quittio.snapshots.upcasters` ([Snapshots](configuration.md#snapshots)); `data()` returns the restored invoice |
+| Payload | The invoice as versioned JSON snapshot (`invoice`), the `RenderOptions` of the call as versioned JSON (`options`, see `RenderOptions::toArray()`; `renderOptions()` restores them), `disk` and `path` (public properties). A profile object travels by its key; options must be scalars, `null` or arrays of them. |
+| Dispatch | Inside a database transaction after the commit, and not at all after a rollback (`quittio.queue.after_commit`, default `true`) |
+| Execution | `handle()` renders with the stored options (events included), calls `save($disk, $path)` and dispatches `QueuedInvoiceStored`. A `null` disk is resolved when the job runs. |
+| Retries | `$tries = 3` with 10 and 60 seconds between the attempts, for errors that may pass (a disk that is not reachable, a KoSIT daemon that restarts). Errors that another attempt cannot fix fail the job at once: validation errors, invalid or unreadable data, configuration errors (`RenderInvoice::PERMANENT_ERRORS`). |
+| Failure | `failed()` dispatches `QueuedInvoiceFailed` with the job and the exception |
+| Upgrades | Snapshots of older data model versions are migrated by `quittio.snapshots.upcasters` ([Snapshots](configuration.md#snapshots)); `data()` returns the restored invoice. Jobs queued by Quittio 0.1.0 (options as PHP object) still run. |
 
-A validation error makes the job fail like any exception. The job returns nothing; listen for `InvoiceRendered` if you need the result. With the `sync` connection the job runs immediately.
+With the `sync` connection the job runs immediately.
 
 ## Events
 
@@ -416,6 +418,8 @@ Events let you react to rendering, e.g. to log every invoice or to store its has
 | `InvoiceValidated` | After all formats were rendered, before `InvoiceRendered`, when the run validated and validation did not block it: in mode `error` and in mode `warn`; not in mode `off` (nothing was validated) | `invoice` (calculated `InvoiceData`), `result` (`ValidationResult` of the main format; in mode `warn` it may contain errors, so check `isValid()`) |
 | `InvoiceValidationFailed` | When validation blocked the run (mode `error`); the `ValidationException` is thrown afterwards | `invoice` (`InvoiceData` as passed), `result` (`ValidationResult`) |
 | `InvoiceRendered` | After all requested formats were produced | `result` (`Quittio\Laravel\Rendering\RenderedInvoice`) |
+| `QueuedInvoiceStored` | After a queued `RenderInvoice` job stored the main output, after `InvoiceRendered` | `result` (`RenderedInvoice`), `disk` (of the job, `null` = configured disk), `path` (the stored path) |
+| `QueuedInvoiceFailed` | When a queued `RenderInvoice` job failed for good (last attempt, or at once for errors another attempt cannot fix) | `job` (`RenderInvoice`; `$job->data()` returns the invoice), `exception` |
 | `MandatoryFieldMissing` | When the template omitted mandatory values ([Mandatory field guard](validation.md#mandatory-field-guard)), in the guard modes `exception` (before the exception is thrown) and `log` | `invoice` (calculated `InvoiceData`), `fields` (list of `Quittio\Core\Countries\MandatoryField` with `accessKey`, `description`, `legalBasis`) |
 
 No events are dispatched for documents, `check()`, `prepare()`, reading or validating files, or while `Quittio::fake()` is active.

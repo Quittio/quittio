@@ -367,6 +367,7 @@ Published files of earlier versions may contain a `networks` section (mail, Pepp
 | `storage.disk` | string | `env('QUITTIO_DISK', 'local')` | Filesystem disk (`config/filesystems.php`, e.g. `local` or `s3`) of `->save()` on rendered results and of queued renders without a disk. Empty = the default disk. The archive of the Managed layer uses `quittio-managed.disk`. |
 | `queue.connection` | string\|null | `null` | Queue connection of `->queue()`. `null` = the default connection. |
 | `queue.queue` | string\|null | `'quittio'` | Queue name of `->queue()`. Workers must listen on it: `php artisan queue:work --queue=quittio,default`. |
+| `queue.after_commit` | bool | `true` | Inside a database transaction the job is dispatched after the commit, and not at all after a rollback. `false` = at once. |
 | `preview.enabled` | bool\|null | `env('QUITTIO_PREVIEW', null)` | `true` = register the browser preview of the sample invoices, `false` = never. `null` = only in the `local` environment. Never registered while routes are cached (`route:cache`). |
 | `preview.path` | string | `'_quittio/preview'` | URL prefix of the preview |
 | `preview.middleware` | list | `['web']` | Middleware of the preview routes, e.g. `['web', 'auth']` when you enable it outside `local` |

@@ -6,11 +6,13 @@ All notable changes to this project are documented in this file. The format foll
 
 ### Added
 
+- Events `QueuedInvoiceStored` (a queued job stored the file, with disk and path) and `QueuedInvoiceFailed` (a queued job failed for good).
 - `Quittio\Core\Quittio::resetState()` forgets the process-wide state (translator bridge, default snapshot upcasters, application default VAT, base rates of the German pack); extensions register their own state with `onResetState()`. The test trait `InteractsWithQuittio` calls it after each test.
 
 ### Changed
 
 - README and documentation mark the Managed layer `quittio/managed` as not released yet.
+- Queued `RenderInvoice` jobs store the render options as versioned JSON (`RenderOptions::toArray()`/`fromArray()`) instead of a PHP-serialised object, so an update of Quittio no longer breaks jobs in the queue; jobs queued by 0.1.0 still run. Errors that another attempt cannot fix (validation, invalid data, configuration) fail the job at once instead of three times; other errors are retried after 10 and 60 seconds. Inside a database transaction the job is dispatched after the commit (`quittio.queue.after_commit`).
 - Every exception that Quittio throws implements `QuittioException`: invalid arguments and runtime errors are now `Quittio\Core\Exceptions\InvalidArgumentException`, `RuntimeException` or `LogicException`, which extend the PHP classes of the same name, so existing `catch` blocks keep working.
 - The Laravel manager builds a new core when the `quittio` configuration changes, so `Quittio::flush()` is no longer needed after `config()->set()`. Under Octane it reads the configuration of the current request instead of the application that created the singleton; so does the default VAT of lines without VAT.
 
