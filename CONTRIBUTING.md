@@ -24,19 +24,34 @@ composer install
 ## Tests
 
 ```bash
-composer test                                      # all tests; tests whose tools are missing are skipped
-vendor/bin/pest --exclude-group=official,visual    # what the CI test matrix runs
-composer test:core                                 # one package: test:core, test:laravel, test:country-de
+composer test            # all tests; tests whose tools are missing are skipped
+composer test:fast       # what the CI test matrix runs: without the groups official and visual
+composer test:core       # one package: test:core, test:laravel, test:country-de
+composer ci              # lint, static analysis and test:fast, as CI runs them
+composer test:coverage   # line coverage (pcov or Xdebug) → build/coverage/clover.xml
+composer test:mutation   # mutation testing of Calculation, Validation/Rules, Xml and the German rules
 ```
+
+`tests/Monorepo` holds the tests that need the whole repository (the documentation, the sources of all packages). Every package also runs on its own, as in its split repository: `composer install && composer test` in `packages/<name>`.
+
+What the package tests still need from elsewhere:
+
+| Package | Needs | Why |
+|---|---|---|
+| `core` | `quittio/country-de` (require-dev) | `CancellationVatAlignmentTest` checks cancellations with German VAT presets |
+| `laravel` | `quittio/country-de` (require-dev) | the test application registers the German pack and a German seller |
+| `country-de` | the helper `Official` of the core tests | official validation tests; the split repository uses a stand-in (`tests/Standalone`) that skips them |
+| all | `tools/validators`, the downloaded test suites | the group `official`; skipped without them |
+| `core`, `laravel` | `docs/`, `resources/boost` of the monorepo | the field reference and Boost copy checks; skipped outside the monorepo |
 
 Two groups need more than PHP:
 
 - **`official`** checks generated invoices with the official validators. Download them first, then run the group:
 
   ```bash
-  tools/schemas/download.sh          # KoSIT validator, XRechnung configuration, Peppol rules → tools/validators
-  tools/fixtures/download.sh         # XRechnung test suite → packages/country-de/tests/Fixtures/xrechnung-testsuite
-  vendor/bin/pest --group=official
+  composer test:official             # downloads, then runs the group:
+                                     #   tools/schemas/download.sh  KoSIT validator, XRechnung configuration, Peppol rules → tools/validators
+                                     #   tools/fixtures/download.sh XRechnung test suite → packages/country-de/tests/Fixtures/xrechnung-testsuite
   tools/validate-fixtures.sh         # every example invoice through KoSIT, the PDFs through veraPDF
   ```
 
@@ -45,7 +60,7 @@ Two groups need more than PHP:
 - **`visual`** renders the sample invoices, rasterises the first page with `pdftoppm` and compares it with the baselines in `packages/laravel/tests/Visual/__snapshots__`:
 
   ```bash
-  vendor/bin/pest --group=visual
+  composer test:visual
   ```
 
   A failing comparison leaves `<scenario>.actual.png` next to the baseline (ignored by Git; CI uploads it as the artifact `visual-diff`). A missing baseline fails the test. When a design change is intended, delete the affected baselines and write them again with the flag `QUITTIO_UPDATE_BASELINES=1` (ignored on CI):
@@ -70,8 +85,8 @@ Two groups need more than PHP:
 
 | Change | Regenerate with |
 |---|---|
-| Data model (fields, attributes `#[Bt]`, `#[Cardinality]`, `#[Cii]`, `#[Ubl]` …) | `php tools/docs/generate.php` (`packages/core/resources/schema/invoice.schema.json` and `docs/field-reference.md`) |
-| Code lists after a new XRechnung configuration | `tools/schemas/download.sh`, then `php tools/codelists/update.php` (`packages/core/resources/codelists`) |
+| Data model (fields, attributes `#[Bt]`, `#[Cardinality]`, `#[Cii]`, `#[Ubl]` …) | `composer docs:generate` (`packages/core/resources/schema/invoice.schema.json` and `docs/field-reference.md`) |
+| Code lists after a new XRechnung configuration | `tools/schemas/download.sh`, then `composer codelists:update` (`packages/core/resources/codelists`) |
 
 Commit the regenerated files together with the change.
 
@@ -95,7 +110,7 @@ cd docs && bundle install && bundle exec jekyll serve
 ```
 
 - A new page needs an entry in `defaults` of `docs/_config.yml` (title and navigation order); `docs/_worker/build.mjs` fails without it.
-- PHP code blocks in `docs/*.md` and the README must import every class they use (`DocsCodeBlocksTest`). The code of `docs/examples.md` is executed (`DocsExamplesTest`).
+- PHP code blocks in `docs/*.md` and the README must parse and import every class they use (`tests/Monorepo/DocsCodeBlocksTest.php`; fragments such as builder chains, configuration excerpts and class members are recognised). The code of `docs/examples.md` is executed (`tests/Monorepo/DocsExamplesTest.php`).
 - Contributor documents (this file, `ARCHITECTURE.md`, `RELEASING.md`, `docs/adr`) are not part of the website.
 
 ## Rules
@@ -116,6 +131,8 @@ composer lint        # Pint; `composer format` fixes the style
 composer analyse     # PHPStan, level max, no baseline
 composer test
 ```
+
+`composer ci` runs lint, analysis and the fast tests in one go.
 
 - One topic per pull request, with tests for every fix and feature. A bug fix comes with a test that fails without it.
 - Add an entry to `CHANGELOG.md` under `[Unreleased]`, in the section that fits (Added, Changed, Fixed, Security …).
