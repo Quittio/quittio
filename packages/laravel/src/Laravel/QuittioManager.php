@@ -27,15 +27,18 @@ use Quittio\Core\Documents\DocumentBuilder;
 use Quittio\Core\Documents\DocumentData;
 use Quittio\Core\Exceptions\ConfigurationException;
 use Quittio\Core\Exceptions\InvalidArgumentException;
+use Quittio\Core\Exceptions\InvalidInvoiceData;
 use Quittio\Core\Formats\DefaultFormatResolver;
 use Quittio\Core\Formats\FormatRegistry;
 use Quittio\Core\Formats\FormatResolver;
+use Quittio\Core\Pdf\PdfException;
 use Quittio\Core\Pdf\PdfRenderer;
 use Quittio\Core\Pdf\Qr\PaymentQrGenerator;
 use Quittio\Core\Pdf\Renderers\MpdfRenderer;
 use Quittio\Core\Profiles\ProfileRegistry;
 use Quittio\Core\Quittio;
 use Quittio\Core\Reading\ReadResult;
+use Quittio\Core\Reading\UnreadableInvoiceException;
 use Quittio\Core\Rendering\PreparedInvoice;
 use Quittio\Core\Rendering\RenderOptions;
 use Quittio\Core\Support\Date;
@@ -47,6 +50,7 @@ use Quittio\Core\Validation\Plausibility\ViesVerifier;
 use Quittio\Core\Validation\ValidationDriver;
 use Quittio\Core\Validation\ValidationException;
 use Quittio\Core\Validation\ValidationResult;
+use Quittio\Core\Xml\UnsafeXmlException;
 use Quittio\Core\Xml\XmlSerializer;
 use Quittio\Laravel\Builder\RenderableDocumentBuilder;
 use Quittio\Laravel\Builder\RenderableInvoiceBuilder;
@@ -94,6 +98,12 @@ class QuittioManager
         protected readonly ContainerContract $app,
     ) {}
 
+    /**
+     * Starts a render call: format(), profile(), locale() … and render() or queue(). A builder is
+     * built and a model converted (ProvidesInvoiceData) at once.
+     *
+     * @throws InvalidInvoiceData when a builder misses an essential part (see InvoiceBuilder::build())
+     */
     public function make(InvoiceData|ProvidesInvoiceData|InvoiceBuilder $data): PendingInvoice
     {
         $invoice = match (true) {
@@ -131,21 +141,33 @@ class QuittioManager
         return RenderableInvoiceBuilder::make()->applyDefaults(static fn (InvoiceBuilder $builder) => $defaults->apply($builder));
     }
 
+    /**
+     * A new quote with the seller and its defaults (config/quittio.php or the current issuer).
+     */
     public function quote(): RenderableDocumentBuilder
     {
         return $this->withDefaults(RenderableDocumentBuilder::quote());
     }
 
+    /**
+     * A new order confirmation with the seller and its defaults.
+     */
     public function orderConfirmation(): RenderableDocumentBuilder
     {
         return $this->withDefaults(RenderableDocumentBuilder::orderConfirmation());
     }
 
+    /**
+     * A new delivery note with the seller and its defaults.
+     */
     public function deliveryNote(): RenderableDocumentBuilder
     {
         return $this->withDefaults(RenderableDocumentBuilder::deliveryNote());
     }
 
+    /**
+     * A new proforma invoice with the seller and its defaults.
+     */
     public function proforma(): RenderableDocumentBuilder
     {
         return $this->withDefaults(RenderableDocumentBuilder::proforma());
@@ -159,36 +181,83 @@ class QuittioManager
         return $this->withDefaults(RenderableDocumentBuilder::paymentReminder($level));
     }
 
+    /**
+     * A new account statement with the seller and its defaults.
+     */
     public function accountStatement(): RenderableDocumentBuilder
     {
         return $this->withDefaults(RenderableDocumentBuilder::accountStatement());
     }
 
+    /**
+     * Starts the render call of a document; a builder is built at once.
+     *
+     * @throws InvalidInvoiceData when a builder misses the seller, the buyer or a line's essentials
+     */
     public function document(DocumentData|DocumentBuilder $document): PendingDocument
     {
         return new PendingDocument($this, $document instanceof DocumentBuilder ? $document->build() : $document);
     }
 
+    /**
+     * Reads an incoming XML or PDF e-invoice from its content (bytes), never from a path.
+     *
+     * @throws UnsafeXmlException when the XML is too large, not well-formed or not allowed
+     * @throws PdfException when the PDF is too large, encrypted, malformed or exceeds a limit
+     * @throws UnreadableInvoiceException for an unknown format, ZUGFeRD 1.0 or a PDF without an embedded invoice
+     */
     public function read(string $content): ReadResult
     {
         return $this->core()->read($content);
     }
 
+    /**
+     * Reads an incoming XML or PDF e-invoice from a file.
+     *
+     * @throws UnsafeXmlException when the XML is too large, not well-formed or not allowed
+     * @throws PdfException when the PDF is too large, encrypted, malformed or exceeds a limit
+     * @throws UnreadableInvoiceException for an unknown format, ZUGFeRD 1.0 or a PDF without an embedded invoice
+     *         (or a file that cannot be read)
+     */
     public function readFile(string $path): ReadResult
     {
         return $this->core()->readFile($path);
     }
 
+    /**
+     * Reads and validates an incoming e-invoice (content, never a path) with all configured
+     * levels.
+     *
+     * @throws UnsafeXmlException when the XML is too large, not well-formed or not allowed
+     * @throws PdfException when the PDF is too large, encrypted, malformed or exceeds a limit
+     * @throws UnreadableInvoiceException for an unknown format, ZUGFeRD 1.0 or a PDF without an embedded invoice
+     */
     public function validateFile(string $content): ValidationResult
     {
         return $this->core()->validateFile($content);
     }
 
+    /**
+     * Reads and validates an incoming e-invoice from a file with all configured levels.
+     *
+     * @throws UnsafeXmlException when the XML is too large, not well-formed or not allowed
+     * @throws PdfException when the PDF is too large, encrypted, malformed or exceeds a limit
+     * @throws UnreadableInvoiceException for an unknown format, ZUGFeRD 1.0 or a PDF without an embedded invoice
+     *         (or a file that cannot be read)
+     */
     public function validatePath(string $path): ValidationResult
     {
         return $this->core()->validatePath($path);
     }
 
+    /**
+     * The render run behind PendingInvoice::render(), with the events InvoiceRendering,
+     * InvoiceValidated (not in the mode "off") or InvoiceValidationFailed, and InvoiceRendered.
+     *
+     * @throws ValidationException when validation finds errors in the mode "error"
+     * @throws ConfigurationException for an unknown format or an unsupported profile; see
+     *         Quittio\Core\Quittio::render() for the other exceptions of a run
+     */
     public function renderInvoice(InvoiceData $invoice, RenderOptions $options): RenderedInvoice
     {
         $events = $this->container()->make(Dispatcher::class);
@@ -221,16 +290,32 @@ class QuittioManager
         return $job;
     }
 
+    /**
+     * Validates like a render run, without template and PDF, and returns the result; see
+     * Quittio\Core\Quittio::check().
+     *
+     * @throws ConfigurationException for an unknown format or an unsupported profile
+     */
     public function check(InvoiceData $invoice, RenderOptions $options): ValidationResult
     {
         return $this->core()->check($invoice, $options);
     }
 
+    /**
+     * Calculates and validates without rendering, whatever the validation mode; see
+     * Quittio\Core\Quittio::prepare().
+     *
+     * @throws ConfigurationException for an unknown format or an unsupported profile
+     */
     public function prepare(InvoiceData $invoice, RenderOptions $options): PreparedInvoice
     {
         return $this->core()->prepare($invoice, $options);
     }
 
+    /**
+     * The render run behind PendingDocument::render(), with the events DocumentRendering and
+     * DocumentRendered.
+     */
     public function renderDocument(DocumentData $document, RenderOptions $options): RenderedDocument
     {
         $events = $this->container()->make(Dispatcher::class);
@@ -259,6 +344,10 @@ class QuittioManager
         return $this;
     }
 
+    /**
+     * Registers a country pack; it wins over discovered and configured packs with the same
+     * code. The next call builds the core again (the default country depends on the packs).
+     */
     public function registerCountry(CountryPack $pack): static
     {
         $this->countryPacks[] = $pack;
@@ -282,21 +371,33 @@ class QuittioManager
         return (new CountryDefaultVat($this->countries(), $preset))($sellerCountry, $smallBusiness);
     }
 
+    /**
+     * The country packs of the core.
+     */
     public function countries(): CountryRegistry
     {
         return $this->core()->countries();
     }
 
+    /**
+     * The profiles of the core, those of the country packs included.
+     */
     public function profiles(): ProfileRegistry
     {
         return $this->core()->profiles();
     }
 
+    /**
+     * The output formats of the core.
+     */
     public function formats(): FormatRegistry
     {
         return $this->core()->formats();
     }
 
+    /**
+     * Typed read access to config('quittio').
+     */
     public function settings(): Settings
     {
         return new Settings($this->values());

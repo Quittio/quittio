@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace Quittio\Laravel\Rendering;
 
 use Illuminate\Support\Traits\Macroable;
+use Quittio\Core\Calculation\CalculationException;
 use Quittio\Core\Data\Presentation\Presentation;
 use Quittio\Core\Documents\DocumentData;
+use Quittio\Core\Pdf\PdfException;
 use Quittio\Core\Rendering\RenderOptions;
 use Quittio\Laravel\QuittioManager;
 
@@ -35,6 +37,9 @@ final class PendingDocument
         private readonly DocumentData $data,
     ) {}
 
+    /**
+     * Template of this call; the same selection rules as for invoices.
+     */
     public function template(string $template): static
     {
         $this->template = $template;
@@ -42,6 +47,9 @@ final class PendingDocument
         return $this;
     }
 
+    /**
+     * Locale of this call; wins over the document locale and the configuration.
+     */
     public function locale(string $locale): static
     {
         $this->locale = $locale;
@@ -49,6 +57,9 @@ final class PendingDocument
         return $this;
     }
 
+    /**
+     * Leading country pack of this call (ISO 3166-1 alpha-2), instead of the seller's country.
+     */
     public function country(string $country): static
     {
         $this->country = strtoupper($country);
@@ -56,6 +67,9 @@ final class PendingDocument
         return $this;
     }
 
+    /**
+     * Design defaults of this call; the document's own presentation wins.
+     */
     public function presentation(Presentation $presentation): static
     {
         $this->presentation = $presentation;
@@ -63,6 +77,9 @@ final class PendingDocument
         return $this;
     }
 
+    /**
+     * Renders the template only, without PDF (format "html").
+     */
     public function htmlOnly(): static
     {
         $this->pdf = false;
@@ -80,11 +97,17 @@ final class PendingDocument
         return $this;
     }
 
+    /**
+     * The document of this call, as passed (not calculated).
+     */
     public function data(): DocumentData
     {
         return $this->data;
     }
 
+    /**
+     * The options collected so far, as passed to the render run.
+     */
     public function options(): RenderOptions
     {
         return new RenderOptions(
@@ -97,6 +120,13 @@ final class PendingDocument
         );
     }
 
+    /**
+     * Calculates and renders the document with the events DocumentRendering and
+     * DocumentRendered, see Quittio::renderDocument().
+     *
+     * @throws CalculationException when the document cannot be calculated
+     * @throws PdfException when the PDF cannot be rendered
+     */
     public function render(): RenderedDocument
     {
         return $this->manager->renderDocument($this->data, $this->options());
