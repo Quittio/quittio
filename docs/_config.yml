@@ -112,3 +112,8 @@ defaults:
     values: { title: Field reference, nav_order: 20, render_with_liquid: false }
   - scope: { path: "ai.md" }
     values: { title: AI assistants, nav_order: 21, render_with_liquid: false }
+  # Legal pages (German law): linked in the footer, not in the navigation or the search.
+  - scope: { path: "impressum.md" }
+    values: { title: Impressum, nav_order: 90, nav_exclude: true, search_exclude: true, render_with_liquid: false }
+  - scope: { path: "datenschutz.md" }
+    values: { title: Datenschutzerklärung, nav_order: 91, nav_exclude: true, search_exclude: true, render_with_liquid: false }
