@@ -8,6 +8,10 @@ All notable changes to this project are documented in this file. The format foll
 
 - README and documentation mark the Managed layer `quittio/managed` as not released yet.
 
+### Security
+
+- Decimal strings are only accepted in plain notation (`Decimal::of()`, builders, `InvoiceData::fromArray()`/`fromJson()`, snapshots): an exponent such as `1e999999999` was expanded to a billion digits and exhausted the memory. Other notations throw a `NumberFormatException` (a `HydrationException` for array and JSON input).
+
 ### Fixed
 
 - The CII and UBL readers accept every `xs:boolean` spelling of `ChargeIndicator` (`1`/`0`, surrounding white space). Before, such document allowances and charges were dropped and line charges were read as allowances; a missing or invalid indicator is now reported as `QUITTIO-READER-CHARGE-INDICATOR`. The documented CII and UBL paths of BG-20 and BG-21 are valid XPath.

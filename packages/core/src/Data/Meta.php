@@ -8,6 +8,7 @@ use Brick\Math\BigDecimal;
 use Quittio\Core\Data\Concerns\Immutable;
 use Quittio\Core\Mapping\Attributes as Q;
 use Quittio\Core\Support\Date;
+use Quittio\Core\Support\Decimal;
 
 /**
  * Package-internal metadata: locale, time zone, exchange rate, free data for templates and flags for country packs.
@@ -103,7 +104,7 @@ final readonly class Meta
     {
         $value = $this->prefixed(self::VAT_IN_TAX_CURRENCY_PREFIX);
 
-        return $value === null || ! is_numeric($value) ? null : BigDecimal::of($value);
+        return $value === null || ! Decimal::isPlain($value) ? null : BigDecimal::of($value);
     }
 
     public function withDeclaredVatInTaxCurrency(?BigDecimal $amount): self

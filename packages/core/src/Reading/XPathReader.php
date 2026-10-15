@@ -17,6 +17,7 @@ use Quittio\Core\Codes\CodeList;
 use Quittio\Core\Codes\RawCode;
 use Quittio\Core\Support\Amount;
 use Quittio\Core\Support\Date;
+use Quittio\Core\Support\Decimal;
 use Quittio\Core\Validation\Severity;
 use Quittio\Core\Validation\ValidationLevel;
 use Quittio\Core\Validation\ValidationMessage;
@@ -219,7 +220,7 @@ abstract class XPathReader
 
         // xs:decimal only: no exponents (1e9999999 would expand to millions of digits), no
         // thousands separators, a bounded number of digits.
-        if (strlen($value) > self::MAX_NUMBER_LENGTH || preg_match('/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/', $value) !== 1) {
+        if (strlen($value) > self::MAX_NUMBER_LENGTH || ! Decimal::isPlain($value)) {
             $this->finding('QUITTIO-READER-NUMBER', sprintf('The number "%s" (%s) is not a valid decimal number and was not read.', self::excerpt($value), $bt), $bt, Severity::Error);
 
             return null;

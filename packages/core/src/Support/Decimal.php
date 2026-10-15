@@ -6,6 +6,7 @@ namespace Quittio\Core\Support;
 
 use Brick\Math\BigDecimal;
 use Brick\Math\BigNumber;
+use Brick\Math\Exception\NumberFormatException;
 use Brick\Math\RoundingMode;
 use InvalidArgumentException;
 
@@ -15,7 +16,16 @@ use InvalidArgumentException;
 final class Decimal
 {
     /**
-     * @param  BigNumber|int|float|string  $value  floats are rejected, see rejectFloat()
+     * Plain decimal notation (xs:decimal): optional sign, digits and decimal point. No exponent, so
+     * that "1e999999999" cannot expand to a billion digits, and no thousands separators.
+     */
+    public const string PLAIN_PATTERN = '/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/';
+
+    /**
+     * @param  BigNumber|int|float|string  $value  floats are rejected, see rejectFloat(); strings must
+     *                                             use plain decimal notation, see PLAIN_PATTERN
+     *
+     * @throws NumberFormatException for strings in another notation
      */
     public static function of(mixed $value): BigDecimal
     {
@@ -23,11 +33,31 @@ final class Decimal
             throw self::floatGiven($value);
         }
 
-        if ($value instanceof BigNumber || is_int($value) || is_string($value)) {
-            return BigDecimal::of($value instanceof BigNumber ? $value : trim((string) $value));
+        if ($value instanceof BigNumber || is_int($value)) {
+            return BigDecimal::of($value);
+        }
+
+        if (is_string($value)) {
+            $value = trim($value);
+            if (! self::isPlain($value)) {
+                throw new NumberFormatException(sprintf(
+                    'The value "%s" is not a decimal number in plain notation such as \'19.99\' (no exponent, no thousands separators).',
+                    mb_strlen($value) > 64 ? mb_substr($value, 0, 64).'…' : $value,
+                ));
+            }
+
+            return BigDecimal::of($value);
         }
 
         throw new InvalidArgumentException(sprintf('Unsupported decimal value of type %s.', get_debug_type($value)));
+    }
+
+    /**
+     * Whether a string is a decimal number in plain notation, see PLAIN_PATTERN.
+     */
+    public static function isPlain(string $value): bool
+    {
+        return preg_match(self::PLAIN_PATTERN, $value) === 1;
     }
 
     public static function ofNullable(BigNumber|int|float|string|null $value): ?BigDecimal
