@@ -16,6 +16,8 @@
 /testbench.yaml export-ignore
 /.editorconfig export-ignore
 /CONTRIBUTING.md export-ignore
+/ARCHITECTURE.md export-ignore
+/RELEASING.md export-ignore
 /SECURITY.md export-ignore
 
 # Third-party schemas are kept byte for byte as published.
