@@ -137,7 +137,7 @@ Country rules come first, but they decide only what the country prescribes (in G
 
 To replace the whole choice, write a resolver. It implements `Quittio\Core\Formats\FormatResolver` (`resolve(InvoiceData $invoice, ResolvedCountries $countries): FormatChoice`) and returns a `FormatChoice(string $format, ?string $profile = null, ?string $reason = null)`. A `null` profile uses the default profile of the format. Register it:
 
-- without Laravel with `Quittio::create(formatResolver: …)` or `$quittio->withFormatResolver(…)`,
+- without Laravel with `Quittio::create(formatResolver: …)` or `$quittio->setFormatResolver(…)`,
 - in Laravel with `Quittio::extend('format_resolver', 'mine', fn ($app, array $config) => new MyResolver)` and `format_resolver.driver = 'mine'`.
 
 A country pack contributes its domestic and buyer rules through `formatRules()`. This is a list of `Quittio\Core\Formats\FormatRule` (`resolve(InvoiceData $invoice): ?FormatChoice`, `null` if the rule does not apply). The first rule that returns a choice wins ([Country packs](country-packs.md)).
@@ -210,7 +210,7 @@ A profile implements `Quittio\Core\Profiles\Profile`. `AbstractProfile` provides
 
 Register a format with `$quittio->formats()->register(new OutputFormat(string $key, ?Syntax $syntax = null, bool $pdf = false, bool $embedsXml = false, ?string $defaultProfile = null, array $profiles = [], bool $html = false, bool $json = false))` and an alias with `alias(string $alias, string $key)`. An empty `$profiles` allows every profile of the syntax.
 
-XML is written by one `XmlSerializer` per syntax (`syntax(): Syntax`, `serialize(InvoiceData $invoice, Profile $profile, SerializationOptions $options = new SerializationOptions): string`). `$quittio->withSerializer(…)` replaces the CII or UBL writer, in Laravel `Quittio::extend('serializer', …)`.
+XML is written by one `XmlSerializer` per syntax (`syntax(): Syntax`, `serialize(InvoiceData $invoice, Profile $profile, SerializationOptions $options = new SerializationOptions): string`). `$quittio->addSerializer(…)` replaces the CII or UBL writer, in Laravel `Quittio::extend('serializer', …)`.
 
 ## ZUGFeRD and Factur-X
 

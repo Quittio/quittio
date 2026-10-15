@@ -46,7 +46,7 @@ function round3ForeignXRechnung(string $syntax): InvoiceData
 
 it('cancels an XRechnung with foreign rounding exactly and passes KoSIT', function (string $strategy, string $format) {
     $original = round3ForeignXRechnung(str_ends_with($format, 'ubl') ? 'ubl' : 'cii');
-    $result = Quittio::create([], [new CountryDE])->withValidator(Official::kosit())
+    $result = Quittio::create([], [new CountryDE])->addValidator(Official::kosit())
         ->make(Cancellation::of($original, 'ST-2026-0100', $strategy))->format($format)->render();
     $totals = $result->data()->totals;
     $sign = $strategy === 'negative_invoice' ? '-' : '';

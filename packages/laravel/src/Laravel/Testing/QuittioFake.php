@@ -157,6 +157,6 @@ final class QuittioFake extends QuittioManager
 
     private function planner(): Quittio
     {
-        return $this->planner ??= $this->build()->withoutValidators();
+        return $this->planner ??= $this->build()->clearValidators();
     }
 }

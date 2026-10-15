@@ -923,7 +923,7 @@ final class ViewModelFactory
             $mode === Presentation::PAYMENT_QR_AUTO => $this->context->paymentQr ?? $this->countryPaymentQr(),
             $mode === Presentation::PAYMENT_QR_GIROCODE => new EpcGiroCodeGenerator,
             default => $this->context->paymentQr ?? throw new ConfigurationException(sprintf(
-                'The payment QR code type "%s" needs a generator, and Quittio ships none. Register one with withPaymentQrGenerator() (Laravel: quittio.pdf.payment_qr.generator), or use the type "auto", "girocode" or "none".',
+                'The payment QR code type "%s" needs a generator, and Quittio ships none. Register one with setPaymentQrGenerator() (Laravel: quittio.pdf.payment_qr.generator), or use the type "auto", "girocode" or "none".',
                 $mode,
             )),
         };

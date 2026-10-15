@@ -247,9 +247,9 @@ The default templates print a QR code next to the bank details that banking apps
 
 | `paymentQr` | Generator |
 |---|---|
-| `auto` (default) | A registered generator (`withPaymentQrGenerator()`, Laravel `pdf.payment_qr.generator`). Otherwise what the country pack names in `CountryDefaults::$paymentQr`: `none` prints no code; for other values the country pack's generator (`paymentQr()`), otherwise the EPC GiroCode for `girocode` (the default, also without country pack) and no code for other types |
+| `auto` (default) | A registered generator (`setPaymentQrGenerator()`, Laravel `pdf.payment_qr.generator`). Otherwise what the country pack names in `CountryDefaults::$paymentQr`: `none` prints no code; for other values the country pack's generator (`paymentQr()`), otherwise the EPC GiroCode for `girocode` (the default, also without country pack) and no code for other types |
 | `girocode` | EPC GiroCode, the European QR code for SEPA credit transfers |
-| `swiss-qr-bill` | The generator registered with `withPaymentQrGenerator()` (Laravel: `pdf.payment_qr.generator`). Quittio ships no generator for the Swiss QR bill; without one, the render run fails with a `ConfigurationException` |
+| `swiss-qr-bill` | The generator registered with `setPaymentQrGenerator()` (Laravel: `pdf.payment_qr.generator`). Quittio ships no generator for the Swiss QR bill; without one, the render run fails with a `ConfigurationException` |
 | `none` | No code |
 
 No code is printed on refunds (credit notes, negative invoices) and on self-billed invoices.
@@ -437,7 +437,7 @@ mPDF supports only part of CSS. Follow these rules:
 
 ### Other template engines
 
-Other engines (Twig …) implement `Quittio\Core\Templates\TemplateEngine::render(string $template, InvoiceViewModel $invoice, array $data = []): string`. Pass them to `Quittio::create(templates: …)` or `$quittio->withTemplateEngine(…)`.
+Other engines (Twig …) implement `Quittio\Core\Templates\TemplateEngine::render(string $template, InvoiceViewModel $invoice, array $data = []): string`. Pass them to `Quittio::create(templates: …)` or `$quittio->setTemplateEngine(…)`.
 
 ## PDF renderers
 
@@ -461,7 +461,7 @@ Quittio::extend('renderer', 'browsershot', fn ($app, array $config) => new Callb
 // config/quittio.php: 'pdf' => ['renderer' => 'browsershot', 'renderers' => ['browsershot' => [...]]]
 ```
 
-The factory receives the container and `pdf.renderers.{name}`. Without Laravel, pass the renderer to `Quittio::create(renderer: …)` or `$quittio->withRenderer(…)`.
+The factory receives the container and `pdf.renderers.{name}`. Without Laravel, pass the renderer to `Quittio::create(renderer: …)` or `$quittio->setRenderer(…)`.
 
 A renderer implements `PdfRenderer` with `render(RenderRequest $request): string` and `supportsEmbedding(): bool`:
 

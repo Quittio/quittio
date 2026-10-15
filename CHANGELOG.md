@@ -13,6 +13,10 @@ All notable changes to this project are documented in this file. The format foll
 - README and documentation mark the Managed layer `quittio/managed` as not released yet.
 - The Laravel manager builds a new core when the `quittio` configuration changes, so `Quittio::flush()` is no longer needed after `config()->set()`. Under Octane it reads the configuration of the current request instead of the application that created the singleton; so does the default VAT of lines without VAT.
 
+### Deprecated
+
+- The methods of `Quittio\Core\Quittio` that change the instance are named after what they do: `addSerializer()`, `addValidator()`, `clearValidators()`, `setRenderer()`, `setTemplateEngine()`, `setPaymentQrGenerator()` and `setFormatResolver()`. The `with…()` names, which elsewhere in Quittio return a changed copy, remain as deprecated aliases until 1.0.
+
 ### Security
 
 - `quittio:schemas:download` checks the KoSIT validator, the XRechnung configuration, the Peppol rules and SchXslt against pinned SHA-256 checksums before it unpacks or runs them; so do the download scripts in `tools/`.

@@ -366,16 +366,16 @@ class QuittioManager
             if (! $instance instanceof PaymentQrGenerator) {
                 throw new ConfigurationException(sprintf('quittio.pdf.payment_qr.generator: %s does not implement %s.', $generator, PaymentQrGenerator::class));
             }
-            $quittio->withPaymentQrGenerator($instance);
+            $quittio->setPaymentQrGenerator($instance);
         }
 
         foreach ($this->extensions['serializer'] as $name => $factory) {
-            $quittio->withSerializer($this->instance('serializer', $name, $factory($this->container(), $settings->array('serializers.'.$name)), XmlSerializer::class));
+            $quittio->addSerializer($this->instance('serializer', $name, $factory($this->container(), $settings->array('serializers.'.$name)), XmlSerializer::class));
         }
         foreach ($levels as $level) {
             $factory = $this->extensions['validator'][$level] ?? null;
             if ($factory !== null) {
-                $quittio->withValidator($this->instance('validator', $level, $factory($this->container(), $settings->array('validation.drivers.'.$level)), ValidationDriver::class));
+                $quittio->addValidator($this->instance('validator', $level, $factory($this->container(), $settings->array('validation.drivers.'.$level)), ValidationDriver::class));
             }
         }
 
@@ -418,9 +418,9 @@ class QuittioManager
         $verifier = $verifier instanceof VatIdVerifier ? $verifier : new ViesVerifier($vies->int('timeout', 5), $vies->int('cache_ttl', 86400));
 
         $validators = $quittio->validators();
-        $quittio->withoutValidators();
+        $quittio->clearValidators();
         foreach ($validators as $driver) {
-            $quittio->withValidator($driver instanceof PhpRulesDriver ? $driver->withVatIdVerifier($verifier) : $driver);
+            $quittio->addValidator($driver instanceof PhpRulesDriver ? $driver->withVatIdVerifier($verifier) : $driver);
         }
     }
 

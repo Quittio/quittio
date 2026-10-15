@@ -62,7 +62,7 @@ it('renders ZUGFeRD with the Blade template', function () {
 it('shows the same content as the plain PHP template', function (string $scenario) {
     $invoice = Scenarios::make($scenario)->build();
     $blade = Quittio::make($invoice)->format('html')->validate(false)->render()->html();
-    $php = Quittio::core()->withTemplateEngine(new PhpTemplateEngine)->render($invoice, new RenderOptions(formats: ['html'], validation: 'warn'))->html();
+    $php = Quittio::core()->setTemplateEngine(new PhpTemplateEngine)->render($invoice, new RenderOptions(formats: ['html'], validation: 'warn'))->html();
     $text = static fn (string $html): string => trim((string) preg_replace('/\s+/u', ' ', html_entity_decode(strip_tags((string) preg_replace(['#<style.*?</style>#s', '#<(br|/div|/p|/td)[^>]*>#'], ['', ' '], $html)))));
 
     expect($text($blade))->toBe($text($php));

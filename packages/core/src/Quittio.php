@@ -123,7 +123,7 @@ final class Quittio
     ) {
         $this->formatResolver = $formatResolver ?? new DefaultFormatResolver($config->profile ?? self::DEFAULT_PROFILE, $config->autoUpgradeProfile);
         $this->countryResolver = $countryResolver ?? new DefaultCountryResolver($countries, $config->country);
-        $this->withSerializer(new CiiWriter)->withSerializer(new UblWriter);
+        $this->addSerializer(new CiiWriter)->addSerializer(new UblWriter);
     }
 
     /**
@@ -187,13 +187,13 @@ final class Quittio
 
         $levels = $config->validationLevels;
         $phpLevels = array_values(array_filter($levels, static fn (ValidationLevel $l): bool => in_array($l, [ValidationLevel::L1, ValidationLevel::L2, ValidationLevel::L3, ValidationLevel::L7], true)));
-        $quittio->withValidator(new PhpRulesDriver(levels: $phpLevels));
+        $quittio->addValidator(new PhpRulesDriver(levels: $phpLevels));
         if (in_array(ValidationLevel::L4, $levels, true)) {
-            $quittio->withValidator(new XsdValidator);
+            $quittio->addValidator(new XsdValidator);
         }
         if ($config->kosit !== null) {
             $k = $config->kosit;
-            $quittio->withValidator(new KositValidator(
+            $quittio->addValidator(new KositValidator(
                 mode: $k['mode'] ?? KositValidator::MODE_DAEMON,
                 url: $k['url'] ?? 'http://127.0.0.1:8081',
                 jar: $k['jar'] ?? null,
@@ -205,7 +205,7 @@ final class Quittio
         }
         if ($config->veraPdf !== null) {
             $v = $config->veraPdf;
-            $quittio->withValidator(new VeraPdfValidator(
+            $quittio->addValidator(new VeraPdfValidator(
                 mode: $v['mode'] ?? VeraPdfValidator::MODE_DOCKER,
                 binary: $v['binary'] ?? 'verapdf',
                 image: $v['image'] ?? 'verapdf/cli',
@@ -464,35 +464,51 @@ final class Quittio
         return $this;
     }
 
-    public function withSerializer(XmlSerializer $serializer): self
+    /**
+     * Writes the XML of the serializer's syntax with $serializer from now on (replaces the
+     * serializer of that syntax). Changes this instance.
+     */
+    public function addSerializer(XmlSerializer $serializer): self
     {
         $this->serializers[$serializer->syntax()->value] = $serializer;
 
         return $this;
     }
 
-    public function withValidator(ValidationDriver $driver): self
+    /**
+     * Runs $driver in every validation after the drivers added before. Changes this instance.
+     */
+    public function addValidator(ValidationDriver $driver): self
     {
         $this->validators[] = $driver;
 
         return $this;
     }
 
-    public function withoutValidators(): self
+    /**
+     * Removes every validation driver, e.g. before adding a custom set. Changes this instance.
+     */
+    public function clearValidators(): self
     {
         $this->validators = [];
 
         return $this;
     }
 
-    public function withRenderer(PdfRenderer $renderer): self
+    /**
+     * Renders PDFs with $renderer from now on. Changes this instance.
+     */
+    public function setRenderer(PdfRenderer $renderer): self
     {
         $this->renderer = $renderer;
 
         return $this;
     }
 
-    public function withTemplateEngine(TemplateEngine $templates): self
+    /**
+     * Renders the templates with $templates from now on. Changes this instance.
+     */
+    public function setTemplateEngine(TemplateEngine $templates): self
     {
         $this->templates = $templates;
 
@@ -501,20 +517,80 @@ final class Quittio
 
     /**
      * Payment QR code generator for the type "auto" (before the country pack's) and the type
-     * "swiss-qr-bill", for which Quittio ships no generator; null removes it.
+     * "swiss-qr-bill", for which Quittio ships no generator; null removes it. Changes this
+     * instance.
      */
-    public function withPaymentQrGenerator(?PaymentQrGenerator $generator): self
+    public function setPaymentQrGenerator(?PaymentQrGenerator $generator): self
     {
         $this->paymentQr = $generator;
 
         return $this;
     }
 
-    public function withFormatResolver(FormatResolver $resolver): self
+    /**
+     * Chooses formats and profiles with $resolver from now on. Changes this instance.
+     */
+    public function setFormatResolver(FormatResolver $resolver): self
     {
         $this->formatResolver = $resolver;
 
         return $this;
+    }
+
+    /**
+     * @deprecated use addSerializer(); like it, it changes this instance
+     */
+    public function withSerializer(XmlSerializer $serializer): self
+    {
+        return $this->addSerializer($serializer);
+    }
+
+    /**
+     * @deprecated use addValidator(); like it, it changes this instance
+     */
+    public function withValidator(ValidationDriver $driver): self
+    {
+        return $this->addValidator($driver);
+    }
+
+    /**
+     * @deprecated use clearValidators(); like it, it changes this instance
+     */
+    public function withoutValidators(): self
+    {
+        return $this->clearValidators();
+    }
+
+    /**
+     * @deprecated use setRenderer(); like it, it changes this instance
+     */
+    public function withRenderer(PdfRenderer $renderer): self
+    {
+        return $this->setRenderer($renderer);
+    }
+
+    /**
+     * @deprecated use setTemplateEngine(); like it, it changes this instance
+     */
+    public function withTemplateEngine(TemplateEngine $templates): self
+    {
+        return $this->setTemplateEngine($templates);
+    }
+
+    /**
+     * @deprecated use setPaymentQrGenerator(); like it, it changes this instance
+     */
+    public function withPaymentQrGenerator(?PaymentQrGenerator $generator): self
+    {
+        return $this->setPaymentQrGenerator($generator);
+    }
+
+    /**
+     * @deprecated use setFormatResolver(); like it, it changes this instance
+     */
+    public function withFormatResolver(FormatResolver $resolver): self
+    {
+        return $this->setFormatResolver($resolver);
     }
 
     public function config(): Config

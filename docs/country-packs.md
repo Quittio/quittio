@@ -968,7 +968,7 @@ Every method of `Quittio\Core\Countries\CountryPack`, its default in `AbstractCo
 | `retention()` | [`RetentionRule`](#retentionrule) | `new RetentionRule(10)` | Managed retention |
 | `dunningLaw()` | [`DunningLaw`](#dunninglaw) | `new DunningLaw` | informational; not read by Quittio in this release |
 | `correctionPolicy()` | [`CorrectionPolicy`](#correctionpolicy) | `new CorrectionPolicy` | `Quittio::cancellation()`, Managed corrections |
-| `paymentQr()` | `?PaymentQrGenerator` | `null` | payment QR code of the QR mode `auto`, after a generator registered with `withPaymentQrGenerator()` and unless `CountryDefaults::$paymentQr` is `none`; null falls back to the EPC GiroCode for `girocode` (see [`CountryDefaults`](#countrydefaults)) |
+| `paymentQr()` | `?PaymentQrGenerator` | `null` | payment QR code of the QR mode `auto`, after a generator registered with `setPaymentQrGenerator()` and unless `CountryDefaults::$paymentQr` is `none`; null falls back to the EPC GiroCode for `girocode` (see [`CountryDefaults`](#countrydefaults)) |
 | `addressFormatter()` | `AddressFormatter` | `InternationalAddressFormatter` | address lines of the view model |
 | `letterLayouts()` | `array<string, LetterLayout>` | `['free' => LetterLayout::free()]` | position of the address field and marks |
 | `exporters()` | `list<Exporter>` | `[]` | declared for accounting exports of the Managed layer (`Exporter::key()`); not read in this release |
@@ -986,7 +986,7 @@ Every method of `Quittio\Core\Countries\CountryPack`, its default in `AbstractCo
 | `letterLayout` | `free` | Key of `letterLayouts()` used when the presentation sets none (`pdf.layout`). |
 | `currency`, `profile` | `EUR`, `en16931` | Shown by `quittio:countries`; not applied to invoices. |
 | `timezone`, `requiredLocales` | `UTC`, `[]` | Informational metadata for applications; not applied by the core. Set the time zone of dates with `->timezone()` on the builder. |
-| `paymentQr` | `girocode` | What the QR mode `auto` prints when no generator is registered with `withPaymentQrGenerator()`: `girocode` = the pack's `paymentQr()` generator, otherwise the EPC GiroCode; `none` = no code; another type (e.g. `swiss-qr-bill`) = the pack's generator, otherwise no code. See [Templates: payment QR codes](templates.md#payment-qr-codes). |
+| `paymentQr` | `girocode` | What the QR mode `auto` prints when no generator is registered with `setPaymentQrGenerator()`: `girocode` = the pack's `paymentQr()` generator, otherwise the EPC GiroCode; `none` = no code; another type (e.g. `swiss-qr-bill`) = the pack's generator, otherwise no code. See [Templates: payment QR codes](templates.md#payment-qr-codes). |
 | `vatPreset`, `smallBusinessVatPreset` | `null`, `null` | Keys of presets of `taxPresets()` for invoice lines without VAT treatment: the usual rate, and the rate of small business invoices (`Meta::FLAG_SMALL_BUSINESS`). Used by `CountryDefaultVat` for the seller's country ([Default VAT](building-invoices.md#default-vat)). Germany: `de.standard_19` and `de.small_business`. |
 
 ### CorrectionPolicy

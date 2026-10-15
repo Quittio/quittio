@@ -57,7 +57,7 @@ it('refuses the Swiss QR bill without a generator instead of leaving the code ou
 })->throws(ConfigurationException::class, 'needs a generator');
 
 it('uses a registered payment QR generator', function () {
-    $html = Quittio::create()->withPaymentQrGenerator(new FixedQrGenerator)->make(swissInvoice())->format('html')->render()->html();
+    $html = Quittio::create()->setPaymentQrGenerator(new FixedQrGenerator)->make(swissInvoice())->format('html')->render()->html();
 
     expect($html)->toContain('data:image/png;base64');
 });

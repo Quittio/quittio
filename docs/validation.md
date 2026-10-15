@@ -477,9 +477,9 @@ use Quittio\Core\Validation\Drivers\PhpRulesDriver;
 use Quittio\Core\Validation\Plausibility\ViesVerifier;
 
 $drivers = $quittio->validators();
-$quittio->withoutValidators();
+$quittio->clearValidators();
 foreach ($drivers as $driver) {
-    $quittio->withValidator($driver instanceof PhpRulesDriver ? $driver->withVatIdVerifier(new ViesVerifier(timeout: 5, cacheTtl: 86400)) : $driver);
+    $quittio->addValidator($driver instanceof PhpRulesDriver ? $driver->withVatIdVerifier(new ViesVerifier(timeout: 5, cacheTtl: 86400)) : $driver);
 }
 ```
 
@@ -537,7 +537,7 @@ Quittio::extend('validator', 'acme', fn ($app, array $config) => new AcmeRules);
 // config/quittio.php: 'levels' => ['php', 'xsd', 'acme']
 ```
 
-Without Laravel: `$quittio->withValidator(new AcmeRules)`.
+Without Laravel: `$quittio->addValidator(new AcmeRules)`.
 
 The message of `ACME-PO` is looked up as `acme::rules.ACME-PO.message`, otherwise the fallback text is used. Register the catalog in Laravel with `loadTranslationsFrom(…, 'acme')`, in the core with `Translations::translator()->addPath($dir, 'acme')`.
 

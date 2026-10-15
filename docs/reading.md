@@ -219,7 +219,7 @@ $read = $reader->withReader(new MyFormatReader)->readFile('/path/to/invoice.xml'
 
 A reader for another XML format implements `FormatReader` (`canRead(DOMDocument $document): bool`, `read(DOMDocument $document, string $xml): ReadResult`). `withReader()` returns a copy with the reader added after the default ones.
 
-Country packs provide readers for national formats with `CountryPack::readers()`. It returns new instances on every call, because readers keep the state of one document. `Quittio::read()`, `readFile()`, `validateFile()` and `validatePath()` try them after the CII and UBL readers, for every registered pack. The XSD driver (L4) knows only CII and UBL and reports other root elements (`XSD-UNKNOWN-ROOT`); add a validator for a national format with `withValidator()`.
+Country packs provide readers for national formats with `CountryPack::readers()`. It returns new instances on every call, because readers keep the state of one document. `Quittio::read()`, `readFile()`, `validateFile()` and `validatePath()` try them after the CII and UBL readers, for every registered pack. The XSD driver (L4) knows only CII and UBL and reports other root elements (`XSD-UNKNOWN-ROOT`); add a validator for a national format with `addValidator()`.
 
 A PDF extractor implements one of two interfaces:
 

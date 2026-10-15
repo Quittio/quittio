@@ -44,7 +44,7 @@ it('reports German rules while rendering', function () {
 });
 
 it('passes the official KoSIT validation for rendered XRechnung', function (string $format) {
-    $quittio = germany()->withValidator(Official::kosit());
+    $quittio = germany()->addValidator(Official::kosit());
     $result = $quittio->make(Scenarios::make('mixed-vat')->buyerReference('04011000-12345-03'))->format($format)->render();
 
     expect($result->validation()->levels)->toContain(ValidationLevel::L5)
@@ -61,7 +61,7 @@ it('titles cancellations as Stornorechnung', function () {
 });
 
 it('passes the official KoSIT validation for both cancellation strategies', function (string $strategy, string $format) {
-    $quittio = germany()->withValidator(Official::kosit());
+    $quittio = germany()->addValidator(Official::kosit());
     $original = $quittio->make(Scenarios::make('mixed-vat')->buyerReference('04011000-12345-03'))->format('cii')->render()->data();
     $result = $quittio->make($quittio->cancellation($original, 'ST-2026-0002', 'Test', $strategy))->format($format)->render();
 
@@ -84,7 +84,7 @@ it('issues photovoltaic invoices at the zero rate without an exemption reason (s
 it('passes the official KoSIT validation for every German tax preset', function (Closure $preset, string $format) {
     $builder = Scenarios::base()->buyerReference('04011000-12345-03');
     $preset($builder);
-    $result = germany()->withValidator(Official::kosit())->make($builder)->format($format)->render();
+    $result = germany()->addValidator(Official::kosit())->make($builder)->format($format)->render();
 
     expect($result->validation()->levels)->toContain(ValidationLevel::L5)
         ->and($result->validation()->errors())->toBe([]);
