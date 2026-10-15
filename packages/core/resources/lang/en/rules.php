@@ -389,6 +389,10 @@ return [
     'QUITTIO-THIRD-PARTY-PAYMENTS' => [
         'message' => 'Third party payments (BG-DEX-09) can only be transmitted in an XRechnung UBL invoice (XRechnung extension). In CII, in credit notes and in other profiles the amount due (BT-115) would contradict BR-CO-16. Use XRechnung UBL with an invoice type code (cancellations: strategy negative_invoice) or invoice the amounts as lines.',
     ],
+    'QUITTIO-CREDIT-NOTE-DUE-DATE' => [
+        'message' => 'A UBL credit note transmits the payment due date (BT-9) only with payment instructions (BG-16); the due date :value is left out.',
+        'hint' => 'Add payment instructions with ->payment(), or rely on the payment terms (BT-20).',
+    ],
     'QUITTIO-VAT-ROUNDING' => [
         'message' => 'The VAT amount of category :category (:rate %) differs from taxable amount × rate by :value. The official rules tolerate this, but the amount is not rounded commercially.',
     ],

@@ -160,7 +160,7 @@ Paths use the property names of `InvoiceData`; `[]` marks lists. "Level" is the 
 | `taxCurrency` | BT-6 | 0..1 | BASIC WL | `ram:ApplicableHeaderTradeSettlement/ram:TaxCurrencyCode` | `cbc:TaxCurrencyCode` |  |
 | `taxPointDate` | BT-7 | 0..1 | BASIC WL | `ram:ApplicableTradeTax/ram:TaxPointDate` | `cbc:TaxPointDate` |  |
 | `taxPointDateCode` | BT-8 | 0..1 | BASIC WL | `ram:ApplicableTradeTax/ram:DueDateTypeCode` | `cac:InvoicePeriod/cbc:DescriptionCode` |  |
-| `dueDate` | BT-9 | 0..1 | BASIC WL | `ram:SpecifiedTradePaymentTerms/ram:DueDateDateTime` | `cbc:DueDate` |  |
+| `dueDate` | BT-9 | 0..1 | BASIC WL | `ram:SpecifiedTradePaymentTerms/ram:DueDateDateTime` | `cbc:DueDate (CreditNote: cac:PaymentMeans/cbc:PaymentDueDate)` |  |
 | `buyerReference` | BT-10 | 0..1 | MINIMUM | `ram:ApplicableHeaderTradeAgreement/ram:BuyerReference` | `cbc:BuyerReference` | required in xrechnung |
 | `projectReference` | BT-11 | 0..1 | EN 16931 | `ram:ApplicableHeaderTradeAgreement/ram:SpecifiedProcuringProject` | `cac:ProjectReference/cbc:ID` |  |
 | `projectReference.id` |  |  |  |  |  |  |

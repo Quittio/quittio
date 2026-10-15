@@ -83,7 +83,7 @@ final readonly class InvoiceData
         public ?Date $taxPointDate = null,
         #[Q\Bt('BT-8'), Q\Cardinality('0..1'), Q\Level(ProfileLevel::BasicWl), Q\Cii('ram:ApplicableTradeTax/ram:DueDateTypeCode'), Q\Ubl('cac:InvoicePeriod/cbc:DescriptionCode')]
         public TaxPointDateCode|RawCode|null $taxPointDateCode = null,
-        #[Q\Bt('BT-9'), Q\Cardinality('0..1'), Q\Level(ProfileLevel::BasicWl), Q\Cii('ram:SpecifiedTradePaymentTerms/ram:DueDateDateTime'), Q\Ubl('cbc:DueDate')]
+        #[Q\Bt('BT-9'), Q\Cardinality('0..1'), Q\Level(ProfileLevel::BasicWl), Q\Cii('ram:SpecifiedTradePaymentTerms/ram:DueDateDateTime'), Q\Ubl('cbc:DueDate (CreditNote: cac:PaymentMeans/cbc:PaymentDueDate)')]
         public ?Date $dueDate = null,
         #[Q\Bt('BT-10'), Q\Cardinality('0..1'), Q\Level(ProfileLevel::Minimum), Q\RequiredIn('xrechnung'), Q\Cii('ram:ApplicableHeaderTradeAgreement/ram:BuyerReference'), Q\Ubl('cbc:BuyerReference')]
         public ?string $buyerReference = null,

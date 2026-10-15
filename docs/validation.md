@@ -148,7 +148,7 @@ Some rules read options. Set them per call with `->option()`, without Laravel al
 | `max_decimals` | `QUITTIO-PRECISION`: more decimals in quantity or net price are a warning | `4` |
 | `attachment_max_bytes` | `QUITTIO-ATTACHMENT-SIZE`: limit per attached document | 10 MB |
 | `attachments_max_total_bytes` | `QUITTIO-ATTACHMENT-SIZE`: limit of all attachments | 15 MB |
-| `syntax` | Syntax of the XML that will be written (`Quittio\Core\Profiles\Syntax`); set by the run for every format with XML, used by `QUITTIO-THIRD-PARTY-PAYMENTS`, `BR-DEX-15` and `DE-XRECHNUNG-EXT-01` | from the format |
+| `syntax` | Syntax of the XML that will be written (`Quittio\Core\Profiles\Syntax`); set by the run for every format with XML, used by `QUITTIO-THIRD-PARTY-PAYMENTS`, `QUITTIO-CREDIT-NOTE-DUE-DATE`, `BR-DEX-15` and `DE-XRECHNUNG-EXT-01` | from the format |
 
 ## Validation levels
 
@@ -433,6 +433,7 @@ All EN 16931, code list, VAT category and Peppol rules report errors unless note
 | `QUITTIO-EXEMPTION-CONFLICT` | warning | Lines of one VAT group with different exemption reason codes: the code (BT-121) is omitted, the texts are joined |
 | `QUITTIO-DECLARED-AMOUNTS` | warning | Declared amounts of an existing document were outside the tolerance and recalculated |
 | `QUITTIO-THIRD-PARTY-PAYMENTS` | error | Third party payments (BG-DEX-09) outside an XRechnung UBL invoice of the extension |
+| `QUITTIO-CREDIT-NOTE-DUE-DATE` | warning | UBL credit note with a due date (BT-9) but without payment instructions (BG-16): the UBL binding has no place for the date there, it is left out |
 | `QUITTIO-VAT-ROUNDING` | warning | VAT amount differs from taxable amount × rate within the tolerance of BR-CO-17 |
 | `QUITTIO-CANCELLATION-VAT-ALIGNED` | info | VAT of a partial cancellation aligned with the earlier ones (cumulative rounding) |
 | `QUITTIO-LINE-ROUNDING` | warning | Declared line net amount differs from quantity × price ± allowances and charges |

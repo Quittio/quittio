@@ -111,6 +111,15 @@ final class QuittioRules
                     $report->error('BG-DEX-09', 'xrechnungExtension.thirdPartyPayments');
                 }
             }),
+            // The UBL binding of EN 16931 has no cbc:DueDate in a CreditNote; BT-9 goes into
+            // cac:PaymentMeans, which needs a payment means code (BT-81).
+            $r('QUITTIO-CREDIT-NOTE-DUE-DATE', 'A UBL credit note transmits the payment due date (BT-9) only with payment instructions (BG-16); the due date :value is left out.', function (InvoiceData $i, RuleReporter $report): void {
+                $profile = $report->context()->profile;
+                $syntax = $report->context()->option('syntax') ?? ($profile->syntaxes() === [Syntax::Ubl] ? Syntax::Ubl : null);
+                if ($syntax === Syntax::Ubl && $i->isCreditNote() && $i->dueDate !== null && $i->paymentInstructions === null) {
+                    $report->warning('BT-9', 'dueDate', ['value' => $i->dueDate->toIsoString()]);
+                }
+            }),
             // Also for a partial cancellation aligned with the earlier ones when its VAT differs by more
             // than 0.01 or has the sign of neither its taxable amount nor zero.
             $r('QUITTIO-VAT-ROUNDING', 'The VAT amount of category :category (:rate %) differs from taxable amount × rate by :value. The official rules tolerate this, but the amount is not rounded commercially.', function (InvoiceData $i, RuleReporter $report): void {

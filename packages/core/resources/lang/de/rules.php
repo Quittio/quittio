@@ -389,6 +389,10 @@ return [
     'QUITTIO-THIRD-PARTY-PAYMENTS' => [
         'message' => 'Zahlungen an Dritte (BG-DEX-09) können nur in einer XRechnung-UBL-Rechnung (XRechnung-Extension) übermittelt werden. In CII, in Gutschriften (Credit Notes) und in anderen Profilen widerspräche der Zahlbetrag (BT-115) BR-CO-16. Verwenden Sie XRechnung UBL mit einem Rechnungstyp (Stornos: Strategie negative_invoice) oder rechnen Sie die Beträge als Positionen ab.',
     ],
+    'QUITTIO-CREDIT-NOTE-DUE-DATE' => [
+        'message' => 'Eine UBL-Gutschrift überträgt das Fälligkeitsdatum (BT-9) nur zusammen mit Zahlungsanweisungen (BG-16); das Fälligkeitsdatum :value entfällt.',
+        'hint' => 'Geben Sie Zahlungsanweisungen mit ->payment() an oder nennen Sie die Fälligkeit in den Zahlungsbedingungen (BT-20).',
+    ],
     'QUITTIO-VAT-ROUNDING' => [
         'message' => 'Der Steuerbetrag der Kategorie :category (:rate %) weicht um :value von Bemessungsgrundlage × Steuersatz ab. Die offiziellen Regeln tolerieren das, kaufmännisch gerundet ist der Betrag aber nicht.',
     ],
