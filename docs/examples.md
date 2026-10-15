@@ -180,7 +180,7 @@ $result = Quittio::invoice()
 $result->data()->totals->amountDue;                    // EUR 760.00, no VAT
 ```
 
-- `seller.small_business` makes `Quittio::invoice()` flag the invoice as small business invoice (`Meta::FLAG_SMALL_BUSINESS`): lines without `vat()` get `VatPreset::SmallBusiness`, and the German pack rejects VAT on the invoice (`DE-USTG-09`). Only an invoice started with `InvoiceBuilder::make()` and an own seller needs `->flag(Meta::FLAG_SMALL_BUSINESS)`.
+- `seller.small_business` makes `Quittio::invoice()` flag the invoice as small business invoice (`Meta::FLAG_SMALL_BUSINESS`): lines without `vat()` get `VatPreset::SmallBusiness`, and the German pack rejects VAT on the invoice (`DE-USTG-09`). Only an invoice with another seller than the configured one needs `->flag(Meta::FLAG_SMALL_BUSINESS)`.
 - Every line carries the exemption text "Steuerfreie Leistung nach § 19 Abs. 1 UStG (Steuerbefreiung für Kleinunternehmer)." in PDF and XML.
 - Invoices of a small business need no service date (section 34a UStDV), but the tax number or VAT identifier ([Small businesses](country-packs.md#small-businesses)).
 - Without a VAT identifier, EN 16931 needs a seller identifier (BT-29, `seller.identifiers`) or a register number (BT-30, `seller.legal_registration`), otherwise rendering fails with `BR-CO-26`; here the tax number serves as identifier.
@@ -282,16 +282,15 @@ $partial->data()->totals->grossTotal;                  // EUR 1130.50
 
 ### Self-billing
 
-With self-billing the buyer issues the invoice, e.g. the commission statement for a sales agent. The supplier stays the seller (BG-4) and you are the buyer, so the example sets both parties itself:
+With self-billing the buyer issues the invoice, e.g. the commission statement for a sales agent. The supplier stays the seller (BG-4) and you are the buyer. `->seller()` replaces the seller of the configuration, and with it its bank account and small business setting; the payment goes to the supplier's account:
 
 ```php
-use Quittio\Core\Builder\InvoiceBuilder;
 use Quittio\Core\Builder\Party;
 use Quittio\Core\Enums\PaymentMeansCode;
 use Quittio\Core\Enums\UnitCode;
 use Quittio\Laravel\Facades\Quittio;
 
-$invoice = InvoiceBuilder::make()
+$result = Quittio::invoice()
     ->selfBilled()                                       // type code 389 and the note "Gutschrift"
     ->number('GS-2026-0012')
     ->issueDate('2026-10-05')
@@ -304,14 +303,13 @@ $invoice = InvoiceBuilder::make()
         ->address('Hauptstraße 1', '12345', 'Musterstadt', 'DE'))
     ->line('Commission September 2026', netPrice: '840.00', unit: UnitCode::LumpSum)
     ->payment(PaymentMeansCode::SepaCreditTransfer, iban: 'DE89370400440532013000', accountName: 'Jonas Schreiber')
-    ->build();
+    ->render();
 
-$result = Quittio::make($invoice)->render();
 $result->filename();                                   // Gutschrift_GS-2026-0012.pdf
 ```
 
 - `selfBilled()` sets type code 389 and the note "Gutschrift"; the PDF is titled "Gutschrift" ([Self-billing](country-packs.md#self-billing-gutschrift)).
-- The payment goes to the supplier's account. "Gutschrift" is used only for self-billing; cancellations are titled "Stornorechnung".
+- "Gutschrift" is used only for self-billing; cancellations are titled "Stornorechnung".
 
 ## Customers abroad
 

@@ -205,6 +205,8 @@ Cancellations take over the notes with subject `REG` and `TXD` of the original.
 | `SellerParty`, `BuyerParty` | A finished party, e.g. `Seller::fromConfig()` in Laravel; it replaces the party set before. |
 | A callable that receives a `PartyBuilder` | Continues the party set before, also a `SellerParty` or `BuyerParty` (e.g. from `Quittio::invoice()` in Laravel or from `InvoiceBuilder::from()`), so single values can be changed. |
 
+A builder started with the defaults of a seller (`applyDefaults(callable $apply)`, which `Quittio::invoice()` uses for the seller of the configuration or the Managed issuer) remembers what they set. Replacing the seller with another one removes those values again (bank account, small business flag and the other defaults of that seller), except the values set on the builder by the caller; a callable keeps them ([Starting invoices](laravel.md#starting-invoices)).
+
 ```php
 use Quittio\Core\Builder\Party;
 

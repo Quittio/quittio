@@ -376,7 +376,7 @@ $draft = Invoice::draft($issuer->builder()
     ->line('Beratung', netPrice: '120.00', quantity: 8, unit: UnitCode::Hour, vat: VatPreset::Standard19));
 ```
 
-`Quittio::invoice()` and the document methods (`Quittio::quote()`, `Quittio::paymentReminder()` …) start with the current issuer in the same way (the Managed layer binds `InvoiceDefaults` to `Issuer::current()->applyTo($builder)`, see [Starting invoices](laravel.md#starting-invoices)), so `Invoice::draft(Quittio::invoice()->buyer($customer)->line(…))` is the same as starting from `Issuer::current()->builder()`.
+`Quittio::invoice()` and the document methods (`Quittio::quote()`, `Quittio::paymentReminder()` …) start with the current issuer in the same way (the Managed layer binds `InvoiceDefaults` to `Issuer::current()->applyTo($builder)`, see [Starting invoices](laravel.md#starting-invoices)), so `Invoice::draft(Quittio::invoice()->buyer($customer)->line(…))` is the same as starting from `Issuer::current()->builder()`. `->seller(...)` with another seller removes the issuer's values again (see [Starting invoices](laravel.md#starting-invoices)); the Managed layer still checks that the seller of a draft is its issuer.
 
 The builder copies these values into the draft. Later changes of the issuer do not change
 existing drafts, except the seller, which is taken from the profile again when the draft is

@@ -117,6 +117,21 @@ Documents start the same way, with the seller and bank account of the configurat
 | `Quittio::paymentReminder(int $level = 0)` | Payment reminder (level 0) or reminder (level 1, 2 …) |
 | `Quittio::accountStatement()` | Account statement |
 
+**Another seller.** The bank account and the small business setting belong to the seller of the configuration. `->seller(...)` with another seller (`Party::make()`, a `SellerParty` or a model) therefore removes everything the configuration set for its seller: the bank account and the small business flag, with the Managed layer also the issuer's payment terms, design, locale, time zone and currency. What you set on the builder yourself stays, also when it was set before `->seller()`. A callable changes the configured seller instead and keeps its values:
+
+```php
+use Quittio\Core\Builder\Party;
+use Quittio\Core\Data\Meta;
+use Quittio\Core\Enums\PaymentMeansCode;
+
+Quittio::invoice()
+    ->seller(Party::make('Lisa Klein')->taxNumber('21/815/08150')->identifier('21/815/08150')->address('Gartenstraße 7', '12345', 'Musterstadt', 'DE'))
+    ->payment(PaymentMeansCode::SepaCreditTransfer, iban: 'DE89370400440532013000')   // Lisa's account
+    ->flag(Meta::FLAG_SMALL_BUSINESS);                                              // if she is a small business
+
+Quittio::invoice()->seller(fn ($s) => $s->contact('Max Muster'));                     // same seller, same defaults
+```
+
 The seller comes from the binding of `Quittio\Laravel\Contracts\InvoiceDefaults` (`apply(InvoiceBuilder $builder): void`, for documents applied to their invoice builder). The default `ConfigInvoiceDefaults` calls `Seller::apply()` ([Seller from the configuration](#seller-from-the-configuration)); the Managed layer binds the current issuer. Bind your own class to take the seller from elsewhere, e.g. from the current tenant:
 
 ```php

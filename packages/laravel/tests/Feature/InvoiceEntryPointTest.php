@@ -81,3 +81,24 @@ it('takes the seller from the bound InvoiceDefaults, also with the fake', functi
 
     expect($fake->rendered()[0]->data()->seller->name)->toBe('Issuer GmbH');
 });
+
+it('gives another seller nothing of the seller of the configuration', function () {
+    config()->set('quittio.seller.small_business', true);
+
+    $invoice = Quittio::invoice()
+        ->seller(Party::make('Lisa Klein')->taxNumber('21/815/08150')->identifier('21/815/08150')->address('Gartenstraße 7', '12345', 'Musterstadt', 'DE'))
+        ->buyer(Party::make('Kunde AG')->address('Weg 1', '54321', 'Beispielstadt', 'DE'))
+        ->line('Consulting', netPrice: '80.00')
+        ->build();
+    $quote = Quittio::quote()
+        ->seller(Party::make('Lisa Klein')->address('Gartenstraße 7', '12345', 'Musterstadt', 'DE'))
+        ->buyer(Party::make('Kunde AG')->address('Weg 1', '54321', 'Beispielstadt', 'DE'))
+        ->line('Consulting', netPrice: '80.00')
+        ->build();
+
+    expect($invoice->seller->name)->toBe('Lisa Klein')
+        ->and($invoice->paymentInstructions)->toBeNull()
+        ->and($invoice->meta->hasFlag(Meta::FLAG_SMALL_BUSINESS))->toBeFalse()
+        ->and($invoice->lines[0]->vat->presetKey)->toBe('de.standard_19')
+        ->and($quote->paymentInstructions)->toBeNull();
+});

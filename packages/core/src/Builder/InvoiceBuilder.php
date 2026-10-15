@@ -67,6 +67,8 @@ use Quittio\Core\Support\Date;
 use Quittio\Core\Support\Decimal;
 use Quittio\Core\Support\Macroable;
 use Quittio\Core\Tax\TaxPreset;
+use ReflectionClass;
+use Throwable;
 
 /**
  * Fluent builder for InvoiceData.
@@ -146,6 +148,12 @@ class InvoiceBuilder
 
     /** VAT treatment of lines that set none, see defaultVat(). */
     private ?LineBuilder $defaultVat = null;
+
+    /** @var array{0: self, 1: self}|null the builder before and after applyDefaults(), see seller() */
+    private ?array $defaults = null;
+
+    /** @var array<string, true> flags set with flag() after applyDefaults() */
+    private array $explicitFlags = [];
 
     /** @var (Closure(?string, bool): ?TaxPreset)|TaxPreset|null see useDefaultVat() */
     private static Closure|TaxPreset|null $applicationVat = null;
@@ -449,15 +457,26 @@ class InvoiceBuilder
     }
 
     /**
-     * The seller (BG-4): a SellerParty, a PartyBuilder (Party::make()) or an application model
-     * (ProvidesParty) replace the seller set before; a callable receives the builder of the
-     * seller set before and changes it.
+     * The seller (BG-4).
+     *
+     * A SellerParty, a PartyBuilder (Party::make()) or an application model (ProvidesParty)
+     * replaces the seller set before. If the builder was started with the defaults of a seller
+     * (applyDefaults(), e.g. Quittio::invoice() with the seller of config/quittio.php or the
+     * current Managed issuer), another seller gets nothing of them: everything they set is
+     * removed again, i.e. the bank account and the small business flag, for a Managed issuer
+     * also payment terms, presentation, locale, time zone and currency. Values the caller set
+     * on the builder stay, also when they were set before seller().
+     *
+     * A callable receives the builder of the seller set before and changes it, e.g.
+     * ->seller(fn ($s) => $s->contact('Max Muster')); the seller stays the same, and so do its
+     * defaults.
      *
      * @param  SellerParty|PartyBuilder|ProvidesParty|callable(PartyBuilder): mixed  $seller
      */
     public function seller(SellerParty|PartyBuilder|ProvidesParty|callable $seller): static
     {
         if ($seller instanceof SellerParty || $seller instanceof PartyBuilder || $seller instanceof ProvidesParty) {
+            $this->removeDefaults();
             $this->seller = $seller instanceof SellerParty ? $seller : self::partyBuilder($seller);
 
             return $this;
@@ -982,6 +1001,9 @@ class InvoiceBuilder
     public function flag(string $flag, bool $enabled = true): static
     {
         $this->meta = $this->meta->withFlag($flag, $enabled);
+        if ($this->defaults !== null) {
+            $this->explicitFlags[$flag] = true;
+        }
 
         return $this;
     }
@@ -996,6 +1018,31 @@ class InvoiceBuilder
     public function standard(StandardVersion $version): static
     {
         $this->standardVersion = $version;
+
+        return $this;
+    }
+
+    /**
+     * Applies the defaults of a seller, e.g. the seller of config/quittio.php with its bank
+     * account and small business flag (Quittio::invoice()) or a Managed issuer. The builder
+     * remembers what they set: seller() with another seller removes it again.
+     *
+     * @param  callable(static): mixed  $apply
+     */
+    public function applyDefaults(callable $apply): static
+    {
+        $before = clone $this;
+        $apply($this);
+        // Builders of the state are copied as well: a callable may change them in place later.
+        $after = clone $this;
+        foreach ((new ReflectionClass(self::class))->getProperties() as $property) {
+            $value = $property->isStatic() ? null : $property->getValue($after);
+            if ($value instanceof PartyBuilder || $value instanceof PaymentTermsBuilder || $value instanceof LineBuilder) {
+                $property->setValue($after, clone $value);
+            }
+        }
+        $this->defaults = [$before, $after];
+        $this->explicitFlags = [];
 
         return $this;
     }
@@ -1083,6 +1130,74 @@ class InvoiceBuilder
         }
 
         return $default instanceof TaxPreset ? (new LineBuilder)->vat($default) : null;
+    }
+
+    /**
+     * Removes what applyDefaults() set and the caller did not change since (see seller()).
+     * Builders in the state are compared by content, values by identity.
+     */
+    private function removeDefaults(): void
+    {
+        if ($this->defaults === null) {
+            return;
+        }
+        [$before, $after] = $this->defaults;
+        $this->defaults = null;
+        foreach ((new ReflectionClass(self::class))->getProperties() as $property) {
+            if ($property->isStatic() || in_array($property->getName(), ['seller', 'defaults', 'explicitFlags'], true)) {
+                continue;
+            }
+            $old = $property->getValue($before);
+            $default = $property->getValue($after);
+            $current = $property->getValue($this);
+            if ($old === $default) {
+                continue;
+            }
+            $builder = $current instanceof PartyBuilder || $current instanceof PaymentTermsBuilder || $current instanceof LineBuilder;
+            if ($old instanceof Meta && $default instanceof Meta && $current instanceof Meta) {
+                $property->setValue($this, $this->metaWithoutDefaults($old, $default, $current));
+            } elseif ($builder ? self::sameContent($current, $default) : $current === $default) {
+                $property->setValue($this, $old);
+            }
+        }
+        $this->explicitFlags = [];
+    }
+
+    /**
+     * Whether a builder of the state still has the content of its copy; builders that cannot
+     * be serialized count as changed.
+     */
+    private static function sameContent(mixed $current, mixed $copy): bool
+    {
+        try {
+            return serialize($current) === serialize($copy);
+        } catch (Throwable) {
+            return false;
+        }
+    }
+
+    /**
+     * The meta data without the values and flags of the defaults, field by field, so that a
+     * locale or flag the caller set stays.
+     */
+    private function metaWithoutDefaults(Meta $old, Meta $default, Meta $current): Meta
+    {
+        $before = get_object_vars($old);
+        $now = get_object_vars($current);
+        $changes = [];
+        foreach (get_object_vars($default) as $name => $value) {
+            if (is_string($name) && $name !== 'flags' && $value !== $before[$name] && $now[$name] === $value) {
+                $changes[$name] = $before[$name];
+            }
+        }
+        $meta = $current->with($changes);
+        foreach (array_diff($default->flags, $old->flags) as $flag) {
+            if (! isset($this->explicitFlags[$flag])) {
+                $meta = $meta->withFlag($flag, false);
+            }
+        }
+
+        return $meta;
     }
 
     /**

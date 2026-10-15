@@ -117,10 +117,10 @@ class QuittioManager
      */
     public function invoice(): RenderableInvoiceBuilder
     {
-        $builder = RenderableInvoiceBuilder::make();
-        $this->app->make(InvoiceDefaults::class)->apply($builder);
+        $defaults = $this->app->make(InvoiceDefaults::class);
 
-        return $builder;
+        // applyDefaults(): ->seller() with another seller removes these values again.
+        return RenderableInvoiceBuilder::make()->applyDefaults(static fn (InvoiceBuilder $builder) => $defaults->apply($builder));
     }
 
     public function quote(): RenderableDocumentBuilder
@@ -285,7 +285,7 @@ class QuittioManager
     private function withDefaults(RenderableDocumentBuilder $builder): RenderableDocumentBuilder
     {
         $defaults = $this->app->make(InvoiceDefaults::class);
-        $builder->tap(static fn (InvoiceBuilder $invoice) => $defaults->apply($invoice));
+        $builder->tap(static fn (InvoiceBuilder $invoice) => $invoice->applyDefaults(static fn (InvoiceBuilder $builder) => $defaults->apply($builder)));
 
         return $builder;
     }

@@ -11,6 +11,7 @@ use Quittio\Core\Contracts\ProvidesInvoiceLine;
 use Quittio\Core\Contracts\ProvidesParty;
 use Quittio\Core\Data\Meta;
 use Quittio\Core\Documents\DocumentBuilder;
+use Quittio\Core\Enums\PaymentMeansCode;
 use Quittio\Core\Enums\UnitCode;
 use Quittio\Core\Enums\VatCategory;
 use Quittio\Core\Exceptions\InvalidInvoiceData;
@@ -215,4 +216,49 @@ it('adds named lines to documents', function () {
         ->and($quote->options('3')->alternativeTo)->toBe('1')
         ->and($note->lines[0]->vat->category)->toBe(VatCategory::NotSubjectToVat)
         ->and($note->options('1')->serialNumbers)->toBe(['SN-1001', 'SN-1002']);
+});
+
+it('removes the defaults of a seller when another seller is set', function () {
+    $defaults = fn (InvoiceBuilder $b) => $b
+        ->seller(Party::make('Muster GmbH')->vatId('DE123456789')->address('Hauptstraße 1', '12345', 'Musterstadt', 'DE'))
+        ->creditTransfer('DE02120300000000202051', 'BYLADEM1001', 'Muster GmbH')
+        ->flag(Meta::FLAG_SMALL_BUSINESS)
+        ->timezone('Europe/Berlin')
+        ->paymentTerms('Zahlbar ohne Abzug.');
+    $lisa = Party::make('Lisa Klein')->taxNumber('21/815/08150')->identifier('21/815/08150')->address('Gartenstraße 7', '12345', 'Musterstadt', 'DE');
+    $build = fn (InvoiceBuilder $b) => $b->buyer(Party::make('Kunde AG')->address('Weg 1', '54321', 'Beispielstadt', 'DE'))
+        ->line('Logo', netPrice: '650.00', vat: VatCategory::StandardRate)
+        ->build();
+
+    $other = $build(InvoiceBuilder::make()->applyDefaults($defaults)->locale('en')->seller($lisa));
+    $own = $build(InvoiceBuilder::make()->applyDefaults($defaults)
+        ->payment(PaymentMeansCode::SepaCreditTransfer, iban: 'DE89370400440532013000')   // set before seller(): stays
+        ->seller($lisa)
+        ->flag(Meta::FLAG_SMALL_BUSINESS));
+    $same = $build(InvoiceBuilder::make()->applyDefaults($defaults)->seller(fn (PartyBuilder $s) => $s->contact('Max Muster')));
+
+    expect($other->seller->name)->toBe('Lisa Klein')
+        ->and($other->paymentInstructions)->toBeNull()
+        ->and($other->paymentTerms)->toBeNull()
+        ->and($other->meta->hasFlag(Meta::FLAG_SMALL_BUSINESS))->toBeFalse()
+        ->and($other->meta->timezone)->toBeNull()
+        ->and($other->meta->locale)->toBe('en')                                  // set by the caller
+        ->and($own->paymentInstructions?->primaryCreditTransfer()?->accountId)->toBe('DE89370400440532013000')
+        ->and($own->meta->hasFlag(Meta::FLAG_SMALL_BUSINESS))->toBeTrue()
+        ->and($same->seller->name)->toBe('Muster GmbH')
+        ->and($same->seller->contact?->name)->toBe('Max Muster')
+        ->and($same->paymentInstructions?->primaryCreditTransfer()?->accountId)->toBe('DE02120300000000202051')
+        ->and($same->meta->hasFlag(Meta::FLAG_SMALL_BUSINESS))->toBeTrue();
+});
+
+it('keeps default values the caller changed in place', function () {
+    $invoice = InvoiceBuilder::make()
+        ->applyDefaults(fn (InvoiceBuilder $b) => $b->paymentTerms('Zahlbar ohne Abzug.'))
+        ->paymentTerms(fn ($t) => $t->dueInDays(30))                    // continues the default terms
+        ->seller(Party::make('Lisa Klein')->vatId('DE123456789')->address('Gartenstraße 7', '12345', 'Musterstadt', 'DE'))
+        ->buyer(Party::make('Kunde AG')->address('Weg 1', '54321', 'Beispielstadt', 'DE'))
+        ->line('Logo', netPrice: '650.00', vat: VatCategory::StandardRate)
+        ->build();
+
+    expect($invoice->paymentTerms?->dueDays)->toBe(30);
 });
