@@ -1,8 +1,9 @@
 name: Docs
 
 # Builds the documentation website from docs/ (Jekyll, then llms.txt, the Markdown pages and the
-# MCP index with _worker/build.mjs) and deploys it to Cloudflare as a Worker with static assets
-# and the MCP server under /mcp (docs/wrangler.jsonc).
+# MCP index with _worker/build.mjs), tests the MCP server, checks the links and anchors of the
+# built site, and deploys it to Cloudflare as a Worker with static assets and the MCP server under
+# /mcp (docs/wrangler.jsonc). Pull requests run every step except the deployment.
 # Repository secrets: CLOUDFLARE_API_TOKEN (token template "Edit Cloudflare Workers") and
 # CLOUDFLARE_ACCOUNT_ID. Repository variable: DOCS_URL, the address of the website
 # (e.g. https://docs.quittio.dev), used for absolute links such as the preview image.
@@ -13,17 +14,24 @@ on:
     paths:
       - 'docs/**'
       - '.github/workflows/docs.yml'
+  pull_request:
+    paths:
+      - 'docs/**'
+      - '.github/workflows/docs.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: docs
-  cancel-in-progress: false
+  # Deployments run one after the other and are never cancelled; checks of a pull request are
+  # replaced by the next push to it.
+  group: docs-${{ github.event_name == 'pull_request' && github.ref || 'deploy' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  deploy:
+  build:
+    name: ${{ github.event_name == 'pull_request' && 'check' || 'deploy' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     defaults:
@@ -61,7 +69,17 @@ jobs:
         env:
           DOCS_URL: ${{ vars.DOCS_URL }}
       - run: node --test _worker/index.test.mjs
-      - run: npx --yes wrangler@4.145.0 deploy
+      # Links and anchors between the pages of the built site; external links are not checked, so
+      # that the build does not depend on other websites.
+      - uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
+        with:
+          workingDirectory: docs/_site
+          args: --offline --include-fragments --root-dir ${{ github.workspace }}/docs/_site --no-progress './**/*.html'
+          jobSummary: true
+          # Outside of _site, which is deployed.
+          output: ${{ runner.temp }}/lychee.md
+      - if: github.event_name != 'pull_request'
+        run: npx --yes wrangler@4.145.0 deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
