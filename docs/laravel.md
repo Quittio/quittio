@@ -576,7 +576,17 @@ Query parameters of `show`:
 
 Unknown scenarios, other or missing templates and invalid locales return 404, so no request can name a file or an arbitrary view.
 
-The preview renders the [sample scenarios](testing.md#scenarios) with the configured design, validation mode `warn` and a watermark ("PREVIEW", in German "VORSCHAU"). The locale defaults to the scenario's locale. The routes are not registered while routes are cached (`php artisan route:cache`). If you enable them outside `local`, protect them with middleware such as `['web', 'auth']`. On the command line, use `php artisan quittio:preview` (see [Artisan commands](commands.md#quittiopreview)).
+The preview renders the [sample scenarios](testing.md#scenarios) with the configured design, validation mode `warn` and a watermark ("PREVIEW", in German "VORSCHAU"). The locale defaults to the scenario's locale. The routes are not registered while routes are cached (`php artisan route:cache`). Requests are limited to `quittio.preview.throttle` (default 30 per minute; `null` = no limit).
+
+Outside the `local` environment every request is refused with 403 unless the gate `viewQuittioPreview` allows it. Define it, like Telescope's gate, in a service provider of your application:
+
+```php
+use Illuminate\Support\Facades\Gate;
+
+Gate::define('viewQuittioPreview', fn (User $user) => $user->is_admin);
+```
+
+Add `auth` to `quittio.preview.middleware` (`['web', 'auth']`), so that guests are sent to the login instead of getting 403. On the command line, use `php artisan quittio:preview` (see [Artisan commands](commands.md#quittiopreview)).
 
 `Quittio\Laravel\Support\Preview` is the service behind route and command:
 

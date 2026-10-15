@@ -2,14 +2,10 @@
 
 declare(strict_types=1);
 
+use Illuminate\Auth\GenericUser;
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Support\Facades\Gate;
 use Quittio\Laravel\Http\PreviewController;
-use Quittio\Laravel\QuittioServiceProvider;
-
-function enablePreview(): void
-{
-    config()->set('quittio.preview.enabled', true);
-    app()->getProvider(QuittioServiceProvider::class)?->registerPreviewRoutes();
-}
 
 it('lists the scenarios', function () {
     enablePreview();
@@ -90,4 +86,26 @@ it('previews with the configured design', function () {
     Quittio\Laravel\Facades\Quittio::flush();
 
     $this->get('/_quittio/preview/simple')->assertOk()->assertSee('#abcdef')->assertSee('Configured intro')->assertSee('VORSCHAU');
+});
+
+it('needs the gate viewQuittioPreview outside the local environment', function () {
+    config()->set('quittio.preview.enabled', true);
+    registerPreviewRoutes();
+
+    $this->get('/_quittio/preview')->assertForbidden();
+
+    Gate::define('viewQuittioPreview', fn (?Authenticatable $user = null): bool => $user?->getAuthIdentifier() === 1);
+    $this->get('/_quittio/preview')->assertForbidden();
+    $this->actingAs(new GenericUser(['id' => 1]))->get('/_quittio/preview')->assertOk();
+});
+
+it('limits the rate of preview requests', function () {
+    enablePreview();
+    config()->set('quittio.preview.throttle', '2,1');
+    app('router')->setRoutes(new Illuminate\Routing\RouteCollection);
+    registerPreviewRoutes();
+
+    $this->get('/_quittio/preview')->assertOk();
+    $this->get('/_quittio/preview')->assertOk();
+    $this->get('/_quittio/preview')->assertTooManyRequests();
 });

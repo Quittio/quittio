@@ -393,6 +393,11 @@ return [
         'path' => '_quittio/preview',
 
         // Middleware of the preview routes, e.g. ['web', 'auth'] outside the local environment.
+        // Outside the local environment the gate "viewQuittioPreview" must allow the request:
+        // Gate::define('viewQuittioPreview', fn (User $user) => $user->isAdmin());
         'middleware' => ['web'],
+
+        // Rate limit of the preview (renders PDFs): "attempts,minutes"; null = none.
+        'throttle' => '30,1',
     ],
 ];

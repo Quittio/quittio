@@ -370,7 +370,8 @@ Published files of earlier versions may contain a `networks` section (mail, Pepp
 | `queue.after_commit` | bool | `true` | Inside a database transaction the job is dispatched after the commit, and not at all after a rollback. `false` = at once. |
 | `preview.enabled` | bool\|null | `env('QUITTIO_PREVIEW', null)` | `true` = register the browser preview of the sample invoices, `false` = never. `null` = only in the `local` environment. Never registered while routes are cached (`route:cache`). |
 | `preview.path` | string | `'_quittio/preview'` | URL prefix of the preview |
-| `preview.middleware` | list | `['web']` | Middleware of the preview routes, e.g. `['web', 'auth']` when you enable it outside `local` |
+| `preview.middleware` | list | `['web']` | Middleware of the preview routes, e.g. `['web', 'auth']` when you enable it outside `local`. Outside `local` the gate `viewQuittioPreview` must also allow the request ([Preview route](laravel.md#preview-route)). |
+| `preview.throttle` | string\|null | `'30,1'` | Rate limit of the preview as `attempts,minutes` (Laravel's `throttle` middleware); `null` = none |
 
 See [Saving, downloading and mailing](laravel.md#saving-downloading-and-mailing), [Queueing](laravel.md#queueing) and [Preview route](laravel.md#preview-route).
 

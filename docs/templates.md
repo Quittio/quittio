@@ -311,7 +311,7 @@ Country names come from `ext-intl`.
 
 The preview route `/_quittio/preview` lists the sample scenarios (`simple`, `many-lines`, `long-texts`, `mixed-vat`, `reverse-charge`, `intra-eu`, `export`, `cancellation`, `sub-lines`, `foreign-currency`, `b2c-gross`, `allowances`, `attachments`, `peppol`). It shows them as HTML or, with `?format=pdf`, as PDF, with a "PREVIEW" watermark, the configured design and validation in mode `warn` (errors are reported, not thrown).
 
-- The route exists in the local environment, or with `quittio.preview.enabled = true`. Its path is `quittio.preview.path`, its middleware `quittio.preview.middleware`. It is not registered while routes are cached.
+- The route exists in the local environment, or with `quittio.preview.enabled = true`; outside `local` the gate `viewQuittioPreview` must allow the request ([Preview route](laravel.md#preview-route)). Its path is `quittio.preview.path`, its middleware `quittio.preview.middleware`. It is not registered while routes are cached.
 - `?template=` accepts the views that rendering accepts ([Selecting a template](#selecting-a-template)): `default`, the configured `pdf.template`, the views under `quittio::templates.` and the views of `pdf.templates`, never partials; the view must exist.
 - `?locale=` accepts a locale code.
 - Other values return 404.

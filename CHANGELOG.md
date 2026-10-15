@@ -24,6 +24,7 @@ All notable changes to this project are documented in this file. The format foll
 
 - `quittio:schemas:download` checks the KoSIT validator, the XRechnung configuration, the Peppol rules and SchXslt against pinned SHA-256 checksums before it unpacks or runs them; so do the download scripts in `tools/`.
 - Decimal strings are only accepted in plain notation (`Decimal::of()`, builders, `InvoiceData::fromArray()`/`fromJson()`, snapshots): an exponent such as `1e999999999` was expanded to a billion digits and exhausted the memory. Other notations throw a `NumberFormatException` (a `HydrationException` for array and JSON input).
+- The preview route refuses requests outside the `local` environment unless the gate `viewQuittioPreview` allows them; before, `QUITTIO_PREVIEW=true` made it public behind the `web` middleware only. Requests are limited to 30 per minute (`quittio.preview.throttle`). `QuittioServiceProvider::registerPreviewRoutes()` is no longer public.
 
 ### Fixed
 

@@ -7,7 +7,6 @@ use Quittio\Core\Enums\UnitCode;
 use Quittio\Core\Testing\Scenarios;
 use Quittio\Country\DE\Tax\VatPreset;
 use Quittio\Laravel\Facades\Quittio;
-use Quittio\Laravel\QuittioServiceProvider;
 use Quittio\Laravel\Support\Preview;
 
 it('renders line groups with subtotals to PDF with the Blade template', function () {
@@ -42,8 +41,7 @@ it('hides the direct debit notice on refunds and self-billed invoices in the Bla
 ]);
 
 it('does not preview partials as templates', function () {
-    config()->set('quittio.preview.enabled', true);
-    app()->getProvider(QuittioServiceProvider::class)?->registerPreviewRoutes();
+    enablePreview();
 
     expect(app(Preview::class)->allowsTemplate('quittio::templates.default.layout'))->toBeTrue()
         ->and(app(Preview::class)->allowsTemplate('quittio::templates.default.partials.lines'))->toBeFalse();
