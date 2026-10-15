@@ -51,6 +51,7 @@
         "orchestra/testbench": "^11.0",
         "pestphp/pest": "^4.7 || ^5.0",
         "phpstan/phpstan": "^2.1",
+        "phpstan/phpstan-deprecation-rules": "^2.0",
         "phpstan/phpstan-strict-rules": "^2.0",
         "spatie/pest-plugin-snapshots": "^2.2"
     },

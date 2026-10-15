@@ -1,6 +1,7 @@
 includes:
     - vendor/larastan/larastan/extension.neon
     - vendor/phpstan/phpstan-strict-rules/rules.neon
+    - vendor/phpstan/phpstan-deprecation-rules/rules.neon
 
 parameters:
     level: max
@@ -8,6 +9,9 @@ parameters:
         - packages/core/src
         - packages/country-de/src
         - packages/laravel/src
+        - tools/validate-fixtures.php
+        - tools/docs/generate.php
+        - tools/codelists/update.php
     tmpDir: .phpstan.cache
     treatPhpDocTypesAsCertain: false
     strictRules:
