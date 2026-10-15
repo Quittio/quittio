@@ -55,3 +55,66 @@ it('imports every class a documentation example uses', function () {
 
     expect(array_keys($missing))->toBe([]);
 });
+
+/**
+ * Blocks that mix a fragment with complete code (a config excerpt followed by a call, a trait
+ * conflict resolution followed by a call) and parse in no single wrapping; found by a snippet.
+ */
+const DOCS_MIXED_BLOCKS = [
+    'laravel.md' => ["'templates' => ['invoices.*', 'mytheme::*']"],
+    'managed.md' => ['class TeamIssuerResolver', 'HasInvoices::invoices as quittioInvoices', 'class ErpNumbers'],
+];
+
+/**
+ * Ways to read a block: as a file, as a configuration excerpt (array items), as class members
+ * and as the continuation of a builder chain (lines that start with "->").
+ *
+ * @return list<string>
+ */
+function docsParseCandidates(string $code): array
+{
+    $code = (string) preg_replace('/^<\?php\s*/', '', $code);
+    preg_match('/\A((?:\s*(?:use [^;{]+;|\/\/[^\n]*)\n)*)(.*)\z/s', $code, $parts);
+    [$imports, $body] = [$parts[1] ?? '', $parts[2] ?? $code];
+    $chain = (string) preg_replace('/^(\s*)->/m', '$1$builder->', $body, 1);
+
+    return [
+        "<?php\n".$code,
+        "<?php\n".$imports."\$fragment = [\n".$body."\n];",
+        "<?php\n".$imports."final class Fragment\n{\n".$body."\n}",
+        "<?php\n".$imports.rtrim($chain)."\n;",
+    ];
+}
+
+it('has only PHP code blocks that parse', function () {
+    $invalid = [];
+    foreach (docsCodeBlocks() as $block) {
+        $mixed = array_filter(DOCS_MIXED_BLOCKS[$block['file']] ?? [], static fn (string $snippet): bool => str_contains($block['code'], $snippet));
+        if ($mixed !== []) {
+            continue;
+        }
+        $parses = array_filter(docsParseCandidates($block['code']), static function (string $source): bool {
+            try {
+                token_get_all($source, TOKEN_PARSE);
+
+                return true;
+            } catch (ParseError) {
+                return false;
+            }
+        });
+        if ($parses === []) {
+            $invalid[] = "{$block['file']}:{$block['line']}";
+        }
+    }
+
+    expect($invalid)->toBe([]);
+});
+
+it('keeps the list of mixed blocks current', function () {
+    $code = implode("\n", array_column(docsCodeBlocks(), 'code'));
+    foreach (DOCS_MIXED_BLOCKS as $file => $snippets) {
+        foreach ($snippets as $snippet) {
+            expect(str_contains($code, $snippet))->toBeTrue("{$file}: {$snippet}");
+        }
+    }
+});
