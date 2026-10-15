@@ -192,9 +192,13 @@ The command reads the file and validates it with the configured levels plus `kos
 - The cached core of the application is not changed.
 - With `fail_on_unavailable` set to `false`, a validator that cannot be reached or started is reported as a warning (`KOSIT-UNAVAILABLE`, `VERAPDF-UNAVAILABLE`) and does not fail the command.
 
-The report shows invoice number, syntax, profile, the checked levels and a table of findings (severity, level, code, business term, message and hint). `--json` prints `{"valid": …, "levels": […], "messages": [{severity, code, message, level, bt, path, hint, xpath}], "profile": …}`.
+The report shows invoice number, syntax, profile, the checked levels and a table of findings (severity, level, code, business term, message and hint). `--json` prints `{"valid": …, "levels": […], "messages": [{severity, code, message, level, bt, path, hint, xpath}], "profile": …, "expectedProfile": …, "profileMismatch": …}`; when the file cannot be checked, it prints `{"valid": false, "error": "…"}`.
 
-Exit code `0` when the file has no errors and, with `--profile`, has the expected profile; warnings do not fail. A missing or unreadable file, a file that cannot be read as e-invoice, errors and a profile mismatch exit with `1`.
+| Exit code | Meaning |
+|---|---|
+| `0` | The file has no errors and, with `--profile`, has the expected profile; warnings do not fail |
+| `1` | The file has errors or another profile than `--profile` |
+| `2` | The file could not be checked: missing or unreadable, not readable as e-invoice, or an unknown `--profile` |
 
 ### quittio:read
 

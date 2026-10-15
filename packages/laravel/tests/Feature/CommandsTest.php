@@ -66,7 +66,30 @@ it('validates files', function () {
         ->assertSuccessful();
     $this->artisan('quittio:validate', ['file' => $dir.'/valid.pdf', '--profile' => 'xrechnung'])->assertFailed();
     $this->artisan('quittio:validate', ['file' => $dir.'/invalid.xml'])->assertFailed();
-    $this->artisan('quittio:validate', ['file' => $dir.'/missing.xml'])->assertFailed();
+    $this->artisan('quittio:validate', ['file' => $dir.'/missing.xml'])->assertExitCode(2);
+});
+
+it('tells files that cannot be validated from invalid files', function () {
+    $dir = tempDirectory();
+    file_put_contents($dir.'/valid.pdf', Quittio::make(Scenarios::make('simple')->build())->format('zugferd')->render()->pdf());
+    file_put_contents($dir.'/text.xml', '<note>no invoice</note>');
+
+    $this->artisan('quittio:validate', ['file' => $dir.'/valid.pdf', '--profile' => 'unknown-profile'])
+        ->expectsOutputToContain('unknown-profile')
+        ->assertExitCode(2);
+    $this->artisan('quittio:validate', ['file' => $dir.'/text.xml'])->assertExitCode(2);
+    $this->artisan('quittio:validate', ['file' => $dir.'/missing.xml', '--json' => true])
+        ->expectsOutputToContain('"error": "The file')
+        ->assertExitCode(2);
+});
+
+it('reports the expected profile in JSON', function () {
+    $dir = tempDirectory();
+    file_put_contents($dir.'/valid.pdf', Quittio::make(Scenarios::make('simple')->build())->format('zugferd')->render()->pdf());
+
+    $this->artisan('quittio:validate', ['file' => $dir.'/valid.pdf', '--profile' => 'xrechnung', '--json' => true])
+        ->expectsOutputToContain('"expectedProfile": "xrechnung",'.PHP_EOL.'    "profileMismatch": true')
+        ->assertFailed();
 });
 
 it('validates with all configured settings of the KoSIT and veraPDF drivers', function () {

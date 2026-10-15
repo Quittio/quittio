@@ -19,6 +19,7 @@ All notable changes to this project are documented in this file. The format foll
 - A percentage document allowance or charge without base amount whose VAT category and rate matched no invoice line became 0.00 silently (data from JSON, readers or `with()`); the calculator now throws a `CalculationException`. Drafts without any lines still calculate with a zero base.
 - Reading an invoice and the check for declared amounts no longer turn errors such as a `TypeError` of a custom `TotalsCalculator` into the warning `QUITTIO-READER-RECALCULATION`; only exceptions are reported.
 - The post-processing of PDFs from renderers that cannot embed (PDF/A and XML) uses the configured `temp_dir` instead of the system temporary directory.
+- `quittio:validate`: an unknown `--profile` printed a stack trace; files that cannot be checked (missing, not an e-invoice, unknown profile) now exit with `2` instead of `1`, so scripts can tell them from invalid files; with `--json` such errors are printed as `{"valid": false, "error": …}` and the result names `expectedProfile` and `profileMismatch`.
 - The CII and UBL readers accept every `xs:boolean` spelling of `ChargeIndicator` (`1`/`0`, surrounding white space). Before, such document allowances and charges were dropped and line charges were read as allowances; a missing or invalid indicator is now reported as `QUITTIO-READER-CHARGE-INDICATOR`. The documented CII and UBL paths of BG-20 and BG-21 are valid XPath.
 
 ## [0.1.0] - 2026-10-15

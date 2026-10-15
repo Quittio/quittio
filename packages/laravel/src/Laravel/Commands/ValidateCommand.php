@@ -22,30 +22,35 @@ final class ValidateCommand extends QuittioCommand
 
     public function handle(QuittioManager $quittio): int
     {
-        $content = $this->readFile((string) $this->stringArgument('file'));
-        if ($content === null) {
-            return self::FAILURE;
+        $path = (string) $this->stringArgument('file');
+        $content = is_file($path) && is_readable($path) ? file_get_contents($path) : false;
+        if ($content === false) {
+            return $this->cannotValidate(sprintf('The file "%s" does not exist or is not readable.', $path));
         }
 
         $levels = array_values(array_filter(['kosit', 'verapdf'], $this->flag(...)));
+        $expected = $this->stringOption('profile');
 
         try {
             // The drivers get all their settings of validation.drivers.*, as in a render run;
             // the cached core of the application is not changed.
             $core = $levels === [] ? $quittio->core() : $quittio->coreWithLevels($levels);
+            $expectedProfile = $expected === null ? null : $core->profiles()->get($expected)->key();
             $result = $core->validateFile($content);
             $read = $core->read($content);
         } catch (Throwable $e) {
-            $this->components->error($e->getMessage());
-
-            return self::FAILURE;
+            return $this->cannotValidate($e->getMessage());
         }
 
-        $expected = $this->stringOption('profile');
-        $profileMismatch = $expected !== null && $core->profiles()->get($expected)->key() !== $read->profile;
+        $profileMismatch = $expectedProfile !== null && $expectedProfile !== $read->profile;
 
         if ($this->flag('json')) {
-            $this->line((string) json_encode([...$result->toArray(), 'profile' => $read->profile], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+            $this->json([
+                ...$result->toArray(),
+                'profile' => $read->profile,
+                'expectedProfile' => $expectedProfile,
+                'profileMismatch' => $profileMismatch,
+            ]);
         } else {
             $this->components->twoColumnDetail('Invoice', $read->data->number);
             $this->components->twoColumnDetail('Syntax', strtoupper($read->syntax));
@@ -53,11 +58,34 @@ final class ValidateCommand extends QuittioCommand
             $this->components->twoColumnDetail('Levels', implode(', ', array_map(static fn ($l): string => $l->value, $result->levels)));
             $this->printValidation($result);
             if ($profileMismatch) {
-                $this->components->error(sprintf('Expected profile "%s", found "%s".', $expected, $read->profile ?? 'unknown'));
+                $this->components->error(sprintf('Expected profile "%s", found "%s".', $expectedProfile, $read->profile ?? 'unknown'));
             }
             $result->isValid() ? $this->components->info('The file is valid.') : $this->components->error('The file is not valid.');
         }
 
         return $result->isValid() && ! $profileMismatch ? self::SUCCESS : self::FAILURE;
+    }
+
+    /**
+     * The file could not be checked at all (missing, not an e-invoice, unknown profile): exit code 2,
+     * so that scripts can tell it from an invalid file (1).
+     */
+    private function cannotValidate(string $message): int
+    {
+        if ($this->flag('json')) {
+            $this->json(['valid' => false, 'error' => $message]);
+        } else {
+            $this->components->error($message);
+        }
+
+        return self::INVALID;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function json(array $data): void
+    {
+        $this->line((string) json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
     }
 }
