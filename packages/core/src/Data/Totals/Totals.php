@@ -29,9 +29,9 @@ final readonly class Totals
         public ?Money $allowanceSum = null,
         #[Q\Bt('BT-108'), Q\Cardinality('0..1'), Q\Level(ProfileLevel::BasicWl), Q\Computed, Q\Cii('ram:ChargeTotalAmount'), Q\Ubl('cac:LegalMonetaryTotal/cbc:ChargeTotalAmount')]
         public ?Money $chargeSum = null,
-        #[Q\Bt('BT-110'), Q\Cardinality('0..1'), Q\Level(ProfileLevel::Minimum), Q\Computed, Q\Cii('ram:TaxTotalAmount[@currencyID=BT-5]'), Q\Ubl('cac:TaxTotal/cbc:TaxAmount')]
+        #[Q\Bt('BT-110'), Q\Cardinality('0..1'), Q\Level(ProfileLevel::Minimum), Q\Computed, Q\Cii('ram:TaxTotalAmount (currencyID = BT-5)'), Q\Ubl('cac:TaxTotal/cbc:TaxAmount')]
         public ?Money $vatTotal = null,
-        #[Q\Bt('BT-111'), Q\Cardinality('0..1'), Q\Level(ProfileLevel::BasicWl), Q\Computed, Q\TaxCurrency, Q\Cii('ram:TaxTotalAmount[@currencyID=BT-6]'), Q\Ubl('cac:TaxTotal/cbc:TaxAmount')]
+        #[Q\Bt('BT-111'), Q\Cardinality('0..1'), Q\Level(ProfileLevel::BasicWl), Q\Computed, Q\TaxCurrency, Q\Cii('ram:TaxTotalAmount (currencyID = BT-6)'), Q\Ubl('cac:TaxTotal/cbc:TaxAmount')]
         public ?Money $vatTotalInTaxCurrency = null,
         #[Q\Bt('BT-113'), Q\Cardinality('0..1'), Q\Level(ProfileLevel::BasicWl), Q\Cii('ram:TotalPrepaidAmount'), Q\Ubl('cac:LegalMonetaryTotal/cbc:PrepaidAmount')]
         public ?Money $prepaidAmount = null,

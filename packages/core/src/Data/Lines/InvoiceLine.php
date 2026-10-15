@@ -37,9 +37,9 @@ final readonly class InvoiceLine
     public function __construct(
         #[Q\Bt('BT-126'), Q\Cardinality('1'), Q\Level(ProfileLevel::Basic), Q\Cii('ram:AssociatedDocumentLineDocument/ram:LineID'), Q\Ubl('cbc:ID')]
         public string $id,
-        #[Q\Bt('BT-129'), Q\Cardinality('1'), Q\Level(ProfileLevel::Basic), Q\Cii('ram:SpecifiedLineTradeDelivery/ram:BilledQuantity'), Q\Ubl('cbc:InvoicedQuantity')]
+        #[Q\Bt('BT-129'), Q\Cardinality('1'), Q\Level(ProfileLevel::Basic), Q\Cii('ram:SpecifiedLineTradeDelivery/ram:BilledQuantity'), Q\Ubl('cbc:InvoicedQuantity | cbc:CreditedQuantity')]
         public BigDecimal $quantity,
-        #[Q\Bt('BT-130'), Q\Cardinality('1'), Q\Level(ProfileLevel::Basic), Q\Cii('ram:SpecifiedLineTradeDelivery/ram:BilledQuantity/@unitCode'), Q\Ubl('cbc:InvoicedQuantity/@unitCode')]
+        #[Q\Bt('BT-130'), Q\Cardinality('1'), Q\Level(ProfileLevel::Basic), Q\Cii('ram:SpecifiedLineTradeDelivery/ram:BilledQuantity/@unitCode'), Q\Ubl('cbc:InvoicedQuantity/@unitCode | cbc:CreditedQuantity/@unitCode')]
         public UnitCode|RawCode $unit,
         #[Q\Bt('BG-29'), Q\Cardinality('1'), Q\Level(ProfileLevel::Basic), Q\Cii('ram:SpecifiedLineTradeAgreement'), Q\Ubl('cac:Price')]
         public Price $price,

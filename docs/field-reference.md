@@ -65,8 +65,8 @@ Paths use the property names of `InvoiceData`; `[]` marks lists. "Level" is the 
 | `buyer.isConsumer` |  |  |  |  |  | internal |
 | `lines[]` | BG-25 | 1..n | BASIC | `rsm:SupplyChainTradeTransaction/ram:IncludedSupplyChainTradeLineItem` | `cac:InvoiceLine \| cac:CreditNoteLine` |  |
 | `lines[].id` | BT-126 | 1 | BASIC | `ram:AssociatedDocumentLineDocument/ram:LineID` | `cbc:ID` |  |
-| `lines[].quantity` | BT-129 | 1 | BASIC | `ram:SpecifiedLineTradeDelivery/ram:BilledQuantity` | `cbc:InvoicedQuantity` |  |
-| `lines[].unit` | BT-130 | 1 | BASIC | `ram:SpecifiedLineTradeDelivery/ram:BilledQuantity/@unitCode` | `cbc:InvoicedQuantity/@unitCode` |  |
+| `lines[].quantity` | BT-129 | 1 | BASIC | `ram:SpecifiedLineTradeDelivery/ram:BilledQuantity` | `cbc:InvoicedQuantity \| cbc:CreditedQuantity` |  |
+| `lines[].unit` | BT-130 | 1 | BASIC | `ram:SpecifiedLineTradeDelivery/ram:BilledQuantity/@unitCode` | `cbc:InvoicedQuantity/@unitCode \| cbc:CreditedQuantity/@unitCode` |  |
 | `lines[].price` | BG-29 | 1 | BASIC | `ram:SpecifiedLineTradeAgreement` | `cac:Price` |  |
 | `lines[].price.netPrice` | BT-146 | 1 | BASIC | `ram:NetPriceProductTradePrice/ram:ChargeAmount` | `cac:Price/cbc:PriceAmount` |  |
 | `lines[].price.discount` | BT-147 | 0..1 | BASIC | `ram:GrossPriceProductTradePrice/ram:AppliedTradeAllowanceCharge/ram:ActualAmount` | `cac:Price/cac:AllowanceCharge/cbc:Amount` |  |
@@ -271,8 +271,8 @@ Paths use the property names of `InvoiceData`; `[]` marks lists. "Level" is the 
 | `totals.amountDue` | BT-115 | 1 | MINIMUM | `ram:DuePayableAmount` | `cac:LegalMonetaryTotal/cbc:PayableAmount` | calculated |
 | `totals.allowanceSum` | BT-107 | 0..1 | BASIC WL | `ram:AllowanceTotalAmount` | `cac:LegalMonetaryTotal/cbc:AllowanceTotalAmount` | calculated |
 | `totals.chargeSum` | BT-108 | 0..1 | BASIC WL | `ram:ChargeTotalAmount` | `cac:LegalMonetaryTotal/cbc:ChargeTotalAmount` | calculated |
-| `totals.vatTotal` | BT-110 | 0..1 | MINIMUM | `ram:TaxTotalAmount[@currencyID=BT-5]` | `cac:TaxTotal/cbc:TaxAmount` | calculated |
-| `totals.vatTotalInTaxCurrency` | BT-111 | 0..1 | BASIC WL | `ram:TaxTotalAmount[@currencyID=BT-6]` | `cac:TaxTotal/cbc:TaxAmount` | calculated |
+| `totals.vatTotal` | BT-110 | 0..1 | MINIMUM | `ram:TaxTotalAmount (currencyID = BT-5)` | `cac:TaxTotal/cbc:TaxAmount` | calculated |
+| `totals.vatTotalInTaxCurrency` | BT-111 | 0..1 | BASIC WL | `ram:TaxTotalAmount (currencyID = BT-6)` | `cac:TaxTotal/cbc:TaxAmount` | calculated |
 | `totals.prepaidAmount` | BT-113 | 0..1 | BASIC WL | `ram:TotalPrepaidAmount` | `cac:LegalMonetaryTotal/cbc:PrepaidAmount` |  |
 | `totals.roundingAmount` | BT-114 | 0..1 | BASIC WL | `ram:RoundingAmount` | `cac:LegalMonetaryTotal/cbc:PayableRoundingAmount` |  |
 | `vatBreakdown[]` | BG-23 | 1..n | BASIC WL | `ram:ApplicableTradeTax` | `cac:TaxTotal/cac:TaxSubtotal` | calculated |

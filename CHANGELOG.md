@@ -36,6 +36,7 @@ All notable changes to this project are documented in this file. The format foll
 
 ### Fixed
 
+- The field reference documents the UBL credit note path of BT-129 and BT-130 (`cbc:CreditedQuantity`) and no longer shows pseudo-XPath for BT-110 and BT-111. A test now evaluates every documented CII and UBL path against the XML of the sample invoices and of the official XRechnung test suite.
 - A custom `TotalsCalculator` was bypassed by the VAT alignment of partial cancellations; `Cancellation::of()` and `DeclaredAmounts::needed()` accept the calculator, and `Quittio::cancellation()` passes its own.
 - Texts with control characters (e.g. a vertical tab copied from a spreadsheet cell) or invalid UTF-8 produced XML that was not well-formed and was rejected by every receiver. The new rule `QUITTIO-INVALID-CHARACTERS` names the field, and the CII and UBL writers refuse such data with an `InvalidInvoiceData` exception.
 - A UBL credit note without payment instructions (BG-16) left out its due date (BT-9) silently: the UBL binding transmits it only in `cac:PaymentMeans`. The new warning `QUITTIO-CREDIT-NOTE-DUE-DATE` points this out; the field reference names the credit note path.
