@@ -68,7 +68,7 @@ These rules apply to every method on this page.
 **Numbers are strings.** Amounts, prices, quantities, percentages and rates are strings (`'95.00'`), integers or `Brick\Math` numbers. Floats are rejected with an `InvalidArgumentException` ("Floats are not accepted …"), with or without `declare(strict_types=1)`, because most decimal values have no exact float representation.
 
 - Methods typed `BigDecimal|int|float|string` accept a float only to reject it. Without `float` in the signature, PHP would turn `19.99` into `19` in files without strict types.
-- Parameters typed `string`, such as the amounts of `prepaid()` and `allowance()`, receive a float as its string form.
+- Parameters typed `string`, such as the amount of `allowance()`, receive a float as its string form.
 
 **Amounts have at most two decimals.** Allowance, charge, prepaid and rounding amounts and the base amounts of cash discounts have at most two decimals, in every currency. More decimals throw an `InvalidArgumentException`. Prices, quantities, percentages and rates keep any precision.
 
@@ -622,9 +622,9 @@ A cash discount is an agreed reduction of the price, so it must be part of the X
 
 | Method | BT | Description |
 |---|---|---|
-| `prepaid(string $amount)` | BT-113 | Amount already paid, e.g. received advance payments; replaces an earlier value. |
-| `addPrepaid(string $amount)` | BT-113 | Adds to the amount already paid, e.g. one of several advance payments. |
-| `rounding(string $amount)` | BT-114 | Rounding amount, e.g. cash rounding to 0.05. Never use it to fix wrong totals. |
+| `prepaid(BigDecimal\|int\|string $amount)` | BT-113 | Amount already paid, e.g. received advance payments; replaces an earlier value. |
+| `addPrepaid(BigDecimal\|int\|string $amount)` | BT-113 | Adds to the amount already paid, e.g. one of several advance payments. |
+| `rounding(BigDecimal\|int\|string $amount)` | BT-114 | Rounding amount, e.g. cash rounding to 0.05. Never use it to fix wrong totals. |
 
 The amount due is BT-115 = gross total − BT-113 + BT-114. For final invoices, the German pack offers `deductAdvance($advanceInvoice)`: it references the advance invoice and adds its gross amount to BT-113 ([Builder macros](country-packs.md#builder-macros)).
 
@@ -808,8 +808,8 @@ use Quittio\Country\DE\Tax\VatPreset;
 |---|---|
 | `allowance(VatCategory $category, BigDecimal\|int\|string\|null $rate, ?string $amount = null, ?string $percent = null, ?string $reason = null, AllowanceReasonCode\|RawCode\|string\|null $reasonCode = null, ?string $baseAmount = null, ?string $exemptionReason = null, VatExemptionReasonCode\|RawCode\|string\|null $exemptionReasonCode = null)` | Document level allowance (BG-20: BT-92 to BT-98) for one VAT category and rate. |
 | `charge(VatCategory $category, BigDecimal\|int\|string\|null $rate, ?string $amount = null, ?string $percent = null, ?string $reason = null, ChargeReasonCode\|RawCode\|string\|null $reasonCode = null, ?string $baseAmount = null, ?string $exemptionReason = null, VatExemptionReasonCode\|RawCode\|string\|null $exemptionReasonCode = null)` | Document level charge (BG-21: BT-99 to BT-105). |
-| `discountPercent(string $percent, ?string $reason = null, AllowanceReasonCode\|RawCode\|string\|null $reasonCode = AllowanceReasonCode::Discount)` | Percentage discount on all lines, split into one allowance per VAT group. |
-| `discountAmount(string $amount, ?string $reason = null, AllowanceReasonCode\|RawCode\|string\|null $reasonCode = AllowanceReasonCode::Discount)` | Absolute discount, distributed over the VAT groups in proportion to their line sums. |
+| `discountPercent(BigDecimal\|int\|string $percent, ?string $reason = null, AllowanceReasonCode\|RawCode\|string\|null $reasonCode = AllowanceReasonCode::Discount)` | Percentage discount on all lines, split into one allowance per VAT group. |
+| `discountAmount(BigDecimal\|int\|string $amount, ?string $reason = null, AllowanceReasonCode\|RawCode\|string\|null $reasonCode = AllowanceReasonCode::Discount)` | Absolute discount, distributed over the VAT groups in proportion to their line sums. |
 
 A document level allowance or charge belongs to exactly one VAT group, given by category and rate. Without a base amount, the base is the sum of the line net amounts of its VAT group; the calculator writes it to BT-93/BT-100. Its exemption reason is used for the VAT breakdown as described in [Exemption reasons in the VAT breakdown](#exemption-reasons-in-the-vat-breakdown).
 

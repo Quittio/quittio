@@ -284,7 +284,7 @@ Dates accept `Date`, `DateTimeInterface` or a string; amounts are strings.
 | `alternativeLine(string $alternativeTo, string\|InvoiceLine\|LineBuilder\|array\|callable $line, …)` | Alternative to the line with the identifier `$alternativeTo` (BT-126; lines are numbered `1`, `2`, … unless set with `LineBuilder::id()`); shown, not in the totals |
 | `serialisedLine(string\|InvoiceLine\|LineBuilder\|array\|callable $line, array $serialNumbers, …)` | Delivery note line with serial numbers |
 | `note(string $content, ?NoteSubjectCode $subject = null)` | Note |
-| `discountPercent(string $percent, ?string $reason = null)`, `discountAmount(string $amount, ?string $reason = null)` | Document discount, on the lines that count towards the totals |
+| `discountPercent(BigDecimal\|int\|string $percent, ?string $reason = null, $reasonCode = AllowanceReasonCode::Discount)`, `discountAmount(BigDecimal\|int\|string $amount, ?string $reason = null, $reasonCode = AllowanceReasonCode::Discount)` | Document discount, on the lines that count towards the totals |
 | `dueInDays(int $days)`, `cashDiscount(int $days, string $percent, ?string $baseAmount = null)` | Payment target and cash discount ([Payment terms](building-invoices.md#payment-terms)) |
 | `paymentTerms(PaymentTerms\|string\|callable $terms)` | Payment terms as text or object |
 | `creditTransfer(string $iban, ?string $bic = null, ?string $accountName = null)` | Bank account |
@@ -295,11 +295,11 @@ Dates accept `Date`, `DateTimeInterface` or a string; amounts are strings.
 | `deliverTo(?string $recipientName, ?Address $address = null)` | Deliver-to party |
 | `package(Package $package)` | Package of a delivery note |
 | `openItem(string $invoiceNumber, $invoiceDate, string $amount, $dueDate = null, ?string $paid = null, ?string $description = null)` | Invoice of a reminder or statement |
-| `fee(string $description, string $amount)` | Reminder fee |
+| `fee(string $description, BigDecimal\|int\|string $amount)` | Reminder fee |
 | `interest(string $base, BigDecimal\|string $ratePercent, $from, $until, ?string $description = null, ?int $dayCount = InterestCharge::ACTUAL_ACTUAL)` | Default interest of a reminder |
 | `deadline($date)` | Payment deadline of a reminder |
 | `statementPeriod($start, $end)` | Period of an account statement |
-| `openingBalance(string $amount)` | Opening balance of an account statement |
+| `openingBalance(BigDecimal\|int\|string $amount)` | Opening balance of an account statement |
 | `presentation(Presentation\|array\|callable $presentation)` | Design of this document ([Templates](templates.md#presentation)) |
 | `locale(string $locale)` | Locale |
 | `custom(string $key, mixed $value)` | Custom value (`meta.custom` in the view model) |

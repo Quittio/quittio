@@ -798,11 +798,11 @@ class InvoiceBuilder
     /**
      * Percentage discount on all lines. Split into one allowance per VAT group.
      */
-    public function discountPercent(string $percent, ?string $reason = null, AllowanceReasonCode|RawCode|string|null $reasonCode = AllowanceReasonCode::Discount): static
+    public function discountPercent(BigDecimal|int|float|string $percent, ?string $reason = null, AllowanceReasonCode|RawCode|string|null $reasonCode = AllowanceReasonCode::Discount): static
     {
         $this->splitAllowanceCharges[] = [
             'charge' => false,
-            'percent' => $percent,
+            'percent' => (string) Decimal::rejectFloat($percent),
             'amount' => null,
             'reason' => $reason,
             'code' => is_string($reasonCode) ? (AllowanceReasonCode::tryFrom($reasonCode) ?? new RawCode($reasonCode)) : $reasonCode,
@@ -814,12 +814,12 @@ class InvoiceBuilder
     /**
      * Absolute discount distributed over all VAT groups in proportion to their line totals.
      */
-    public function discountAmount(string $amount, ?string $reason = null, AllowanceReasonCode|RawCode|string|null $reasonCode = AllowanceReasonCode::Discount): static
+    public function discountAmount(BigDecimal|int|float|string $amount, ?string $reason = null, AllowanceReasonCode|RawCode|string|null $reasonCode = AllowanceReasonCode::Discount): static
     {
         $this->splitAllowanceCharges[] = [
             'charge' => false,
             'percent' => null,
-            'amount' => $amount,
+            'amount' => (string) Decimal::rejectFloat($amount),
             'reason' => $reason,
             'code' => is_string($reasonCode) ? (AllowanceReasonCode::tryFrom($reasonCode) ?? new RawCode($reasonCode)) : $reasonCode,
         ];
@@ -964,9 +964,9 @@ class InvoiceBuilder
     /**
      * Amount already paid (BT-113), e.g. received advance payments.
      */
-    public function prepaid(string $amount): static
+    public function prepaid(BigDecimal|int|float|string $amount): static
     {
-        $this->prepaid = $amount;
+        $this->prepaid = (string) Decimal::rejectFloat($amount);
 
         return $this;
     }
@@ -974,9 +974,9 @@ class InvoiceBuilder
     /**
      * Adds to the amount already paid (BT-113), e.g. one of several advance payments.
      */
-    public function addPrepaid(string $amount): static
+    public function addPrepaid(BigDecimal|int|float|string $amount): static
     {
-        $this->prepaid = (string) Decimal::of($this->prepaid ?? '0')->plus(Decimal::of($amount));
+        $this->prepaid = (string) Decimal::of($this->prepaid ?? '0')->plus(Decimal::of(Decimal::rejectFloat($amount)));
 
         return $this;
     }
@@ -984,9 +984,9 @@ class InvoiceBuilder
     /**
      * Rounding amount (BT-114), e.g. cash rounding. Never use it to fix wrong totals.
      */
-    public function rounding(string $amount): static
+    public function rounding(BigDecimal|int|float|string $amount): static
     {
-        $this->rounding = $amount;
+        $this->rounding = (string) Decimal::rejectFloat($amount);
 
         return $this;
     }

@@ -6,6 +6,7 @@ use Brick\Math\BigDecimal;
 use Brick\Money\Money;
 use Quittio\Core\Builder\InvoiceBuilder;
 use Quittio\Core\Calculation\En16931Calculator;
+use Quittio\Core\Codes\RawCode;
 use Quittio\Core\Documents\DocumentBuilder;
 use Quittio\Core\Documents\DocumentCalculator;
 use Quittio\Core\Documents\DocumentData;
@@ -15,6 +16,7 @@ use Quittio\Core\Documents\DunningFee;
 use Quittio\Core\Documents\InterestCharge;
 use Quittio\Core\Documents\OpenItem;
 use Quittio\Core\Documents\Package;
+use Quittio\Core\Enums\NoteSubjectCode;
 use Quittio\Core\Enums\VatCategory;
 use Quittio\Core\Support\Amount;
 use Quittio\Core\Support\Date;
@@ -244,3 +246,26 @@ it('names the document type in the view model instead of the type code of the in
     'reminder' => [fn () => documentParties(DocumentBuilder::paymentReminder(2))->openItem('INV-42', '2026-08-01', '1190.00')->build(), 'Payment reminder'],
     'statement' => [fn () => documentParties(DocumentBuilder::accountStatement())->statementPeriod('2026-09-01', '2026-09-30')->openItem('INV-42', '2026-09-20', '1190.00')->build(), 'Account statement'],
 ]);
+
+it('accepts amounts as BigDecimal, int or string like the invoice builder', function () {
+    $reminder = documentParties(DocumentBuilder::paymentReminder(1))
+        ->openItem('INV-42', '2026-08-01', '100.00', '2026-08-15')
+        ->fee('Reminder fee', BigDecimal::of('2.50'))
+        ->fee('Postage', 1)
+        ->build();
+    $statement = documentParties(DocumentBuilder::accountStatement())
+        ->statementPeriod('2026-09-01', '2026-09-30')
+        ->openingBalance(BigDecimal::of('100.00'))
+        ->build();
+    $quote = documentParties(DocumentBuilder::quote())
+        ->line(documentLine('Beratung', 1, '100.00'))
+        ->discountAmount(10, 'Treuerabatt', 'loyalty')
+        ->note('Hinweis', 'AAI')
+        ->build();
+
+    expect($reminder->dunning?->total('EUR')->getAmount()->toString())->toBe('103.50')
+        ->and($statement->statement?->balance('EUR')->getAmount()->toString())->toBe('100.00')
+        ->and($quote->allowances[0]->reasonCode)->toEqual(new RawCode('loyalty'))
+        ->and($quote->notes[0]->subjectCode)->toBe(NoteSubjectCode::from('AAI'))
+        ->and(fn () => DocumentBuilder::quote()->fee('Fee', 2.5))->toThrow(InvalidArgumentException::class);
+});

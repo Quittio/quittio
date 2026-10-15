@@ -229,3 +229,11 @@ it('gives macros access to the builder state on subclasses', function () {
 
     expect($subclass::make()->currency('USD')->currencyForTest())->toBe('USD');
 });
+
+it('accepts amounts as BigDecimal, int or string and rejects floats', function () {
+    $data = (new En16931Calculator)->calculate(Invoices::simple()->prepaid(Brick\Math\BigDecimal::of('10.00'))->addPrepaid(5)->rounding('0.01')->discountAmount(1)->build());
+
+    expect($data->totals?->prepaidAmount?->getAmount()->toString())->toBe('15.00')
+        ->and($data->totals?->roundingAmount?->getAmount()->toString())->toBe('0.01')
+        ->and(fn () => Invoices::simple()->prepaid(1.5))->toThrow(InvalidArgumentException::class);
+});

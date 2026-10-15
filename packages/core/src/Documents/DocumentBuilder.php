@@ -21,6 +21,7 @@ use Quittio\Core\Data\Party\BuyerParty;
 use Quittio\Core\Data\Party\SellerParty;
 use Quittio\Core\Data\Payment\PaymentTerms;
 use Quittio\Core\Data\Presentation\Presentation;
+use Quittio\Core\Enums\AllowanceReasonCode;
 use Quittio\Core\Enums\NoteSubjectCode;
 use Quittio\Core\Enums\UnitCode;
 use Quittio\Core\Enums\VatCategory;
@@ -273,23 +274,23 @@ class DocumentBuilder
         return $this;
     }
 
-    public function note(string $content, ?NoteSubjectCode $subject = null): static
+    public function note(string $content, NoteSubjectCode|RawCode|string|null $subject = null): static
     {
         $this->invoice->note($content, $subject);
 
         return $this;
     }
 
-    public function discountPercent(string $percent, ?string $reason = null): static
+    public function discountPercent(BigDecimal|int|float|string $percent, ?string $reason = null, AllowanceReasonCode|RawCode|string|null $reasonCode = AllowanceReasonCode::Discount): static
     {
-        $this->invoice->discountPercent($percent, $reason);
+        $this->invoice->discountPercent($percent, $reason, $reasonCode);
 
         return $this;
     }
 
-    public function discountAmount(string $amount, ?string $reason = null): static
+    public function discountAmount(BigDecimal|int|float|string $amount, ?string $reason = null, AllowanceReasonCode|RawCode|string|null $reasonCode = AllowanceReasonCode::Discount): static
     {
-        $this->invoice->discountAmount($amount, $reason);
+        $this->invoice->discountAmount($amount, $reason, $reasonCode);
 
         return $this;
     }
@@ -411,9 +412,9 @@ class DocumentBuilder
         return $this;
     }
 
-    public function fee(string $description, string $amount): static
+    public function fee(string $description, BigDecimal|int|float|string $amount): static
     {
-        $this->fees[] = ['description' => $description, 'amount' => $amount];
+        $this->fees[] = ['description' => $description, 'amount' => (string) Decimal::rejectFloat($amount)];
 
         return $this;
     }
@@ -451,9 +452,9 @@ class DocumentBuilder
         return $this;
     }
 
-    public function openingBalance(string $amount): static
+    public function openingBalance(BigDecimal|int|float|string $amount): static
     {
-        $this->openingBalance = $amount;
+        $this->openingBalance = (string) Decimal::rejectFloat($amount);
 
         return $this;
     }
