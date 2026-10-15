@@ -7,8 +7,8 @@ itself and has to keep them. Read [Getting started](getting-started.md) first: t
 layer uses the same invoice builder. Terms such as e-invoice, format and profile are explained
 in [E-invoicing basics](concepts.md).
 
-`quittio/managed` is commercially licensed and distributed separately from the open source
-packages.
+> **Status:** `quittio/managed` is not released yet. This page describes the package as it
+> will ship: commercially licensed and distributed separately from the open source packages.
 
 ## What Managed adds
 
@@ -77,6 +77,8 @@ draft ──issue()──▶ issued ──cancelPartially()──▶ partially_c
 ```
 
 ## Installation
+
+These steps apply once `quittio/managed` is released.
 
 ```bash
 composer require quittio/managed

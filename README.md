@@ -11,7 +11,7 @@ E-invoicing for Laravel. Quittio creates, validates, reads and renders electroni
 
 **Documentation: [docs.quittio.dev](https://docs.quittio.dev)**
 
-> **Status:** version 0.1, the first release. Implemented: data model, calculation, validation L1–L7, CII/UBL writers and readers, ZUGFeRD/Factur-X PDF/A-3, XRechnung, Peppol BIS, Laravel integration and the country pack Germany. The Managed layer (issuer profiles, drafts, gapless numbering, archive, cancellations, corrections, mail delivery, audit log) is available as the separate commercial package `quittio/managed`. APIs may still change until version 1.0, and the legal wording is under review (see [Legal review](#legal-review)).
+> **Status:** version 0.1, the first release. Implemented: data model, calculation, validation L1–L7, CII/UBL writers and readers, ZUGFeRD/Factur-X PDF/A-3, XRechnung, Peppol BIS, Laravel integration and the country pack Germany. The Managed layer (issuer profiles, drafts, gapless numbering, archive, cancellations, corrections, mail delivery, audit log) will follow as the separate commercial package `quittio/managed`; it is not released yet. APIs may still change until version 1.0, and the legal wording is under review (see [Legal review](#legal-review)).
 
 ## Packages
 
@@ -23,7 +23,7 @@ All open source packages are developed in this repository under [`packages/`](pa
 | `quittio/laravel` | [`packages/laravel`](packages/laravel) → [Quittio/laravel](https://github.com/Quittio/laravel) | Laravel integration: facade, configuration, Blade templates, commands, testing helpers. |
 | `quittio/country-de` | [`packages/country-de`](packages/country-de) → [Quittio/country-de](https://github.com/Quittio/country-de) | Country pack for Germany: UStG mandatory fields, tax presets, XRechnung profiles and BR-DE rules, DIN 5008 letter layouts. |
 | `quittio/quittio` | this repository | Everything in one package: core, Laravel integration and the country pack Germany. |
-| `quittio/managed` | commercial, see [Managed layer](docs/managed.md) | Managed layer (commercial licence): issuer profiles, drafts, gapless numbering, archive with hashes, cancellations and corrections, mail delivery, audit log, retention. |
+| `quittio/managed` | commercial, not released yet, see [Managed layer](docs/managed.md) | Managed layer (commercial licence): issuer profiles, drafts, gapless numbering, archive with hashes, cancellations and corrections, mail delivery, audit log, retention. |
 
 ## Requirements
 
@@ -133,4 +133,4 @@ The legal wording, legal references and defaults of the country pack Germany and
 
 ## Licence
 
-`quittio/core`, `quittio/laravel`, `quittio/country-de` and `quittio/quittio` are released under the MIT licence, see [LICENSE](LICENSE). The Managed layer `quittio/managed` is a separate package under a commercial licence.
+`quittio/core`, `quittio/laravel`, `quittio/country-de` and `quittio/quittio` are released under the MIT licence, see [LICENSE](LICENSE). The Managed layer `quittio/managed` will be a separate package under a commercial licence; it is not released yet.

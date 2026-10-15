@@ -4,6 +4,10 @@ All notable changes to this project are documented in this file. The format foll
 
 ## [Unreleased]
 
+### Changed
+
+- README and documentation mark the Managed layer `quittio/managed` as not released yet.
+
 ## [0.1.0] - 2026-10-15
 
 First release.

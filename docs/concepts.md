@@ -108,7 +108,7 @@ config/quittio.php ──► Quittio::invoice() ──► …->line(…)->buyer(
 3. **Rendering:** `render()` calculates totals and VAT, chooses format and profile, validates, writes the XML and renders the PDF from a template ([Templates and design](templates.md)). You never calculate totals yourself.
 4. **Result:** a `RenderedInvoice` with the PDF, the XML, a file name and the validation result, which you save, download or mail ([Laravel integration](laravel.md)).
 
-Everything country-specific, such as German VAT rates, legal texts, XRechnung and the DIN 5008 letter layout, comes from a **country pack** ([Country packs](country-packs.md)); `quittio/quittio` includes the one for Germany. The optional **Managed layer** adds gapless numbering, an archive, cancellations and corrections as stored records ([Managed layer](managed.md)).
+Everything country-specific, such as German VAT rates, legal texts, XRechnung and the DIN 5008 letter layout, comes from a **country pack** ([Country packs](country-packs.md)); `quittio/quittio` includes the one for Germany. The optional **Managed layer** (not released yet) adds gapless numbering, an archive, cancellations and corrections as stored records ([Managed layer](managed.md)).
 
 ## German terms
 
