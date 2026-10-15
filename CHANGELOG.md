@@ -8,6 +8,7 @@ All notable changes to this project are documented in this file. The format foll
 
 - Documentation: [Versioning and compatibility](docs/compatibility.md) with the backwards compatibility promise; `ARCHITECTURE.md`, decision records in `docs/adr/`, `RELEASING.md`, a reworked `CONTRIBUTING.md`, an FAQ page; issue and pull request templates, `CODEOWNERS` and response times in `SECURITY.md`. Classes outside the public API (`XPathReader`, `XmlBuilder`, `Pdf\Parsing`, `CarryOver`, `ConfigMapper`, the command and preview classes, …) are marked `@internal`.
 - Documents (quotes, reminders, …) dispatch `DocumentRendering` and `DocumentRendered` in Laravel; `PendingDocument` has `option()` (core and Laravel), `data()`, `options()` and is `Macroable` (Laravel).
+- `Quittio::setPostProcessor()` replaces the PDF/A and XML embedding for renderers that cannot embed. Profiles describe their embedded XML with the capability `DescribesEmbeddedXml` (XMP description and `fx:Version`) instead of the file name deciding it.
 - `QuittioFake` dispatches the events of a real run (`InvoiceRendering`, `InvoiceValidated`, `InvoiceRendered`) and records queued invoices: `assertQueued()`, `assertNothingQueued()`, `queued()`. Its decisions follow configuration changes without `Quittio::flush()`.
 - Events `QueuedInvoiceStored` (a queued job stored the file, with disk and path) and `QueuedInvoiceFailed` (a queued job failed for good).
 - `Quittio\Core\Quittio::resetState()` forgets the process-wide state (translator bridge, default snapshot upcasters, application default VAT, base rates of the German pack); extensions register their own state with `onResetState()`. The test trait `InteractsWithQuittio` calls it after each test.
@@ -35,6 +36,7 @@ All notable changes to this project are documented in this file. The format foll
 
 ### Fixed
 
+- A custom `TotalsCalculator` was bypassed by the VAT alignment of partial cancellations; `Cancellation::of()` and `DeclaredAmounts::needed()` accept the calculator, and `Quittio::cancellation()` passes its own.
 - Texts with control characters (e.g. a vertical tab copied from a spreadsheet cell) or invalid UTF-8 produced XML that was not well-formed and was rejected by every receiver. The new rule `QUITTIO-INVALID-CHARACTERS` names the field, and the CII and UBL writers refuse such data with an `InvalidInvoiceData` exception.
 - A UBL credit note without payment instructions (BG-16) left out its due date (BT-9) silently: the UBL binding transmits it only in `cac:PaymentMeans`. The new warning `QUITTIO-CREDIT-NOTE-DUE-DATE` points this out; the field reference names the credit note path.
 - A percentage document allowance or charge without base amount whose VAT category and rate matched no invoice line became 0.00 silently (data from JSON, readers or `with()`); the calculator now throws a `CalculationException`. Drafts without any lines still calculate with a zero base.

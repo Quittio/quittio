@@ -34,9 +34,11 @@ use Quittio\Core\Pdf\PdfEmbeddedFileExtractor;
 use Quittio\Core\Pdf\PdfException;
 use Quittio\Core\Pdf\PdfRenderer;
 use Quittio\Core\Pdf\PostProcessing\MpdfPostProcessor;
+use Quittio\Core\Pdf\PostProcessing\PdfPostProcessor;
 use Quittio\Core\Pdf\Qr\PaymentQrGenerator;
 use Quittio\Core\Pdf\Renderers\MpdfRenderer;
 use Quittio\Core\Pdf\RenderRequest;
+use Quittio\Core\Profiles\Capabilities\DescribesEmbeddedXml;
 use Quittio\Core\Profiles\Profile;
 use Quittio\Core\Profiles\ProfileLevel;
 use Quittio\Core\Profiles\ProfileRegistry;
@@ -104,6 +106,9 @@ final class Quittio
 
     /** @var (Closure(InvoiceData, list<MandatoryField>): void)|null */
     private ?Closure $mandatoryFieldListener = null;
+
+    /** PDF/A and XML embedding for renderers that cannot embed; null = MpdfPostProcessor. */
+    private ?PdfPostProcessor $postProcessor = null;
 
     /** @var array<string, Closure(): void> see onResetState() */
     private static array $stateResetters = [];
@@ -246,6 +251,7 @@ final class Quittio
         $locale = $original->meta->locale ?? $this->config->locale ?? $pack->defaults()->locale;
 
         return Cancellation::of(
+            calculator: $this->calculator,
             original: $original,
             number: $number,
             strategy: $strategy ?? $this->config->cancellationStrategy ?? $policy->cancellationStrategy,
@@ -538,6 +544,18 @@ final class Quittio
     }
 
     /**
+     * Adds PDF/A and the embedded XML to the PDFs of renderers that cannot do it themselves
+     * (PdfRenderer::supportsEmbedding()); null = MpdfPostProcessor with the configured temp_dir.
+     * Changes this instance.
+     */
+    public function setPostProcessor(?PdfPostProcessor $postProcessor): self
+    {
+        $this->postProcessor = $postProcessor;
+
+        return $this;
+    }
+
+    /**
      * @deprecated use addSerializer(); like it, it changes this instance
      */
     public function withSerializer(XmlSerializer $serializer): self
@@ -754,8 +772,8 @@ final class Quittio
                     filename: $filename,
                     relationship: $profile->afRelationship() ?? 'Alternative',
                     conformanceLevel: $profile->xmpConformanceLevel(),
-                    description: $filename === 'xrechnung.xml' ? 'XRechnung Invoice' : 'Factur-X/ZUGFeRD Invoice',
-                    version: self::xmpVersion($profile),
+                    description: $profile instanceof DescribesEmbeddedXml ? $profile->xmpDescription() : 'Factur-X/ZUGFeRD Invoice',
+                    version: $profile instanceof DescribesEmbeddedXml ? $profile->xmpVersion() : '1.0',
                 );
                 $pdf = $this->renderPdf(new RenderRequest(
                     html: $html,
@@ -817,7 +835,7 @@ final class Quittio
             throw new PdfException(sprintf('The PDF renderer %s did not return a PDF.', $this->renderer::class));
         }
 
-        return (new MpdfPostProcessor($this->config->tempDir))->process($pdf, $request->embedded, $request->title, $request->author);
+        return ($this->postProcessor ?? new MpdfPostProcessor($this->config->tempDir))->process($pdf, $request->embedded, $request->title, $request->author);
     }
 
     /**
@@ -872,19 +890,6 @@ final class Quittio
         $explicit = $options->options['paper'] ?? $this->config->options['paper'] ?? null;
 
         return is_string($explicit) && $explicit !== '' ? $explicit : $pack->defaults()->paper;
-    }
-
-    /**
-     * fx:Version of the XMP metadata: "1.0" for the Factur-X profiles, the XRechnung version
-     * (e.g. "3.0") for the ZUGFeRD conformance level XRECHNUNG.
-     */
-    private static function xmpVersion(Profile $profile): string
-    {
-        if ($profile->xmpConformanceLevel() === 'XRECHNUNG' && preg_match('/xrechnung_(\d+\.\d+)/', $profile->specificationId(), $match) === 1) {
-            return $match[1];
-        }
-
-        return '1.0';
     }
 
     /**

@@ -46,14 +46,14 @@ final class DeclaredAmounts
      * (BT-111) exactly, e.g. because another system rounded per line or a partial cancellation
      * aligns its VAT with earlier ones. Data calculated by Quittio never needs declared amounts.
      */
-    public static function needed(InvoiceData $data): bool
+    public static function needed(InvoiceData $data, TotalsCalculator $calculator = new En16931Calculator): bool
     {
         if (! self::hasAmounts($data)) {
             return false;
         }
 
         try {
-            $calculated = (new En16931Calculator)->calculate($data->with([
+            $calculated = $calculator->calculate($data->with([
                 'meta' => $data->meta->withFlag(Meta::FLAG_DECLARED_AMOUNTS, false)->withAmountsFingerprint(null),
             ]));
         } catch (Exception) {

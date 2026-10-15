@@ -202,6 +202,7 @@ Profiles can implement marker interfaces in `Quittio\Core\Profiles\Capabilities`
 |---|---|---|
 | `RequiresVatBreakdownRate` | The VAT breakdown always carries a rate, 0 for category O, outside the scope of VAT (BR-DE-14). | `xrechnung`, `xrechnung-extension` |
 | `StructuredCashDiscountText` | Cash discounts are written to the payment terms (BT-20) in the XRechnung notation `#SKONTO#TAGE=…#PROZENT=…#` ([Payment terms](building-invoices.md#payment-terms)). | `xrechnung`, `xrechnung-extension` |
+| `DescribesEmbeddedXml` | `xmpDescription()` and `xmpVersion()` replace the XMP metadata of the embedded XML (`Factur-X/ZUGFeRD Invoice`, `fx:Version` `1.0`), e.g. `XRechnung Invoice` and `3.0`. | `xrechnung`, `xrechnung-extension` |
 | `ExtendsCodeLists` | `additionalCodes(string $codeList)` adds codes to an official code list for the validation. | `xrechnung-extension` (identifier schemes `XR01` to `XR03` for the code lists ICD and EAS, the schemes of party identifiers and electronic addresses) |
 
 ### Own profiles and formats

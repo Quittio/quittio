@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Quittio\Country\DE\Profiles\XRechnung;
 
 use Quittio\Core\Profiles\AbstractProfile;
+use Quittio\Core\Profiles\Capabilities\DescribesEmbeddedXml;
 use Quittio\Core\Profiles\Capabilities\RequiresVatBreakdownRate;
 use Quittio\Core\Profiles\Capabilities\StructuredCashDiscountText;
 use Quittio\Core\Profiles\PeppolBis3;
@@ -18,7 +19,7 @@ use Quittio\Country\DE\Rules\XRechnungRules;
  *
  * Embedded in a ZUGFeRD PDF it uses the file name xrechnung.xml and the conformance level XRECHNUNG.
  */
-class XRechnung30 extends AbstractProfile implements RequiresVatBreakdownRate, StructuredCashDiscountText
+class XRechnung30 extends AbstractProfile implements DescribesEmbeddedXml, RequiresVatBreakdownRate, StructuredCashDiscountText
 {
     public const string SPECIFICATION_ID = 'urn:cen.eu:en16931:2017#compliant#urn:xeinkauf.de:kosit:xrechnung_3.0';
 
@@ -55,6 +56,19 @@ class XRechnung30 extends AbstractProfile implements RequiresVatBreakdownRate, S
     public function xmpConformanceLevel(): ?string
     {
         return 'XRECHNUNG';
+    }
+
+    public function xmpDescription(): string
+    {
+        return 'XRechnung Invoice';
+    }
+
+    /**
+     * The XRechnung version as fx:Version, as ZUGFeRD 2.x prescribes for the level XRECHNUNG.
+     */
+    public function xmpVersion(): string
+    {
+        return '3.0';
     }
 
     public function requiredBusinessTerms(): array

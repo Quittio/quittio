@@ -12,6 +12,7 @@ use Quittio\Core\Calculation\DeclaredAmounts;
 use Quittio\Core\Calculation\En16931Calculator;
 use Quittio\Core\Calculation\GrossPriceConverter;
 use Quittio\Core\Calculation\LineCalculator;
+use Quittio\Core\Calculation\TotalsCalculator;
 use Quittio\Core\Countries\CorrectionPolicy;
 use Quittio\Core\Data\AllowanceCharge\DocumentAllowanceCharge;
 use Quittio\Core\Data\AllowanceCharge\LineAllowanceCharge;
@@ -89,6 +90,7 @@ final class Cancellation
      * @param  CancellationHistory|null  $history  partial cancellations: what the earlier partial cancellations of
      *         the original cancelled per VAT group, and which groups this one closes, for the cumulative rounding
      *         of the VAT (see CancellationHistory); without it the VAT is rounded per document
+     * @param  TotalsCalculator  $calculator  calculator of the VAT alignment with $history, e.g. the one of the Quittio instance
      *
      * @throws InvalidArgumentException e.g. for a history that does not fit the original
      */
@@ -103,6 +105,7 @@ final class Cancellation
         ?array $lines = null,
         ?CorrectionPolicy $policy = null,
         ?CancellationHistory $history = null,
+        TotalsCalculator $calculator = new En16931Calculator,
     ): InvoiceBuilder {
         if (! in_array($strategy, self::STRATEGIES, true)) {
             throw new InvalidArgumentException(sprintf('Unknown cancellation strategy "%s". Use %s.', $strategy, implode(' or ', self::STRATEGIES)));
@@ -180,7 +183,7 @@ final class Cancellation
 
         // Amounts of a stale original are recalculated completely: nothing to align them with.
         if ($lines !== null && $history !== null && ! DeclaredAmounts::isStale($original)) {
-            $cancellation = self::alignVat($original, $cancellation, $history, $note.' '.$translator->get('quittio::labels.cancellation_vat_aligned', [], $locale).$reasonNote);
+            $cancellation = self::alignVat($original, $cancellation, $history, $calculator, $note.' '.$translator->get('quittio::labels.cancellation_vat_aligned', [], $locale).$reasonNote);
         }
 
         return InvoiceBuilder::from($cancellation);
@@ -194,7 +197,7 @@ final class Cancellation
      * 0.01, the net amount of gross price lines within 0.01). $alignedNote replaces the cancellation
      * note if a VAT amount differs from round2(taxable amount × rate).
      */
-    private static function alignVat(InvoiceData $original, InvoiceData $cancellation, CancellationHistory $history, string $alignedNote): InvoiceData
+    private static function alignVat(InvoiceData $original, InvoiceData $cancellation, CancellationHistory $history, TotalsCalculator $calculator, string $alignedNote): InvoiceData
     {
         // Gross price mode: the net amounts follow from the gross amounts cancelled so far per VAT
         // group (CancellationHistory::align()), the calculator distributes them over the lines;
@@ -206,7 +209,7 @@ final class Cancellation
 
         // The taxable amounts as the calculator gets them for the cancelled lines (e.g. scaled
         // allowances): a declared VAT breakdown is kept only for these.
-        $calculated = (new En16931Calculator)->calculate(InvoiceBuilder::from($cancellation)->build());
+        $calculated = $calculator->calculate(InvoiceBuilder::from($cancellation)->build());
         $aligned = $history->align($original, $calculated);
         $history->assertFits($original, $calculated, $aligned['breakdown']);
 
