@@ -57,6 +57,7 @@ use Quittio\Core\Enums\MimeType;
 use Quittio\Core\Enums\NoteSubjectCode;
 use Quittio\Core\Enums\PaymentMeansCode;
 use Quittio\Core\Enums\TaxPointDateCode;
+use Quittio\Core\Enums\UnitCode;
 use Quittio\Core\Enums\VatCategory;
 use Quittio\Core\Enums\VatExemptionReasonCode;
 use Quittio\Core\Exceptions\InvalidInvoiceData;
@@ -799,22 +800,38 @@ class InvoiceBuilder
     }
 
     /**
-     * Adds a line (BG-25): a LineBuilder (Line::make()), an array with the keys of
-     * LineBuilder::ARRAY_KEYS, an application model (ProvidesInvoiceLine), a callable that
+     * Adds a line (BG-25): a name with the common values (->line('Consulting', netPrice: '120.00',
+     * quantity: 4, unit: UnitCode::Hour)), a LineBuilder (Line::make()), an array with the keys
+     * of LineBuilder::ARRAY_KEYS, an application model (ProvidesInvoiceLine), a callable that
      * receives a new LineBuilder, or a finished InvoiceLine.
      *
-     * @param  InvoiceLine|LineBuilder|ProvidesInvoiceLine|array<array-key, mixed>|callable(LineBuilder): mixed  $line
+     * @param  InvoiceLine|LineBuilder|ProvidesInvoiceLine|array<array-key, mixed>|callable(LineBuilder): mixed|string  $line
      */
-    public function line(InvoiceLine|LineBuilder|ProvidesInvoiceLine|array|callable $line): static
-    {
+    public function line(
+        InvoiceLine|LineBuilder|ProvidesInvoiceLine|array|callable|string $line,
+        BigDecimal|int|float|string|null $netPrice = null,
+        BigDecimal|int|float|string|null $quantity = null,
+        UnitCode|RawCode|string|null $unit = null,
+        TaxPreset|VatCategory|null $vat = null,
+        ?string $description = null,
+        BigDecimal|int|float|string|null $priceInclVat = null,
+    ): static {
         $this->linesChanged = true;
-        $this->lines[] = $line instanceof InvoiceLine ? $line : Line::from($line);
+        if (! $line instanceof InvoiceLine) {
+            $this->lines[] = Line::from($line, $netPrice, $quantity, $unit, $vat, $description, $priceInclVat);
+
+            return $this;
+        }
+        if ($netPrice !== null || $quantity !== null || $unit !== null || $vat !== null || $description !== null || $priceInclVat !== null) {
+            throw new InvalidArgumentException('An InvoiceLine is taken as it is; change it with InvoiceLine::with() or, after from(), with updateLine().');
+        }
+        $this->lines[] = $line;
 
         return $this;
     }
 
     /**
-     * @param  iterable<InvoiceLine|LineBuilder|ProvidesInvoiceLine|array<array-key, mixed>|callable(LineBuilder): mixed>  $lines
+     * @param  iterable<InvoiceLine|LineBuilder|ProvidesInvoiceLine|array<array-key, mixed>|callable(LineBuilder): mixed|string>  $lines
      */
     public function lines(iterable $lines): static
     {

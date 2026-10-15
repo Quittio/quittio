@@ -403,13 +403,21 @@ final class LineBuilder
 
     /**
      * Adds a sub line (profile EXTENDED or XRechnung extension), in the forms of
-     * InvoiceBuilder::line(): Line::make(), an array, a model or a callable.
+     * InvoiceBuilder::line(): a name with the common values, Line::make(), an array, a model or
+     * a callable.
      *
-     * @param  LineBuilder|ProvidesInvoiceLine|array<array-key, mixed>|callable(LineBuilder): mixed  $line
+     * @param  LineBuilder|ProvidesInvoiceLine|array<array-key, mixed>|callable(LineBuilder): mixed|string  $line
      */
-    public function subLine(self|ProvidesInvoiceLine|array|callable $line): self
-    {
-        $this->subLines[] = Line::from($line);
+    public function subLine(
+        self|ProvidesInvoiceLine|array|callable|string $line,
+        BigDecimal|int|float|string|null $netPrice = null,
+        BigDecimal|int|float|string|null $quantity = null,
+        UnitCode|RawCode|string|null $unit = null,
+        TaxPreset|VatCategory|null $vat = null,
+        ?string $description = null,
+        BigDecimal|int|float|string|null $priceInclVat = null,
+    ): self {
+        $this->subLines[] = Line::from($line, $netPrice, $quantity, $unit, $vat, $description, $priceInclVat);
 
         return $this;
     }

@@ -44,7 +44,6 @@ All open source packages are developed in this repository under [`packages/`](pa
 ## Quick example
 
 ```php
-use Quittio\Core\Builder\Line;
 use Quittio\Core\Builder\Party;
 use Quittio\Core\Enums\UnitCode;
 use Quittio\Laravel\Facades\Quittio;
@@ -55,7 +54,7 @@ $result = Quittio::invoice()                                     // seller and b
     ->buyer(Party::make('Kunde AG')                               // or a model: ->buyer($customer)
         ->vatId('DE987654321')
         ->address('Bahnhofstraße 5', '54321', 'Beispielstadt', 'DE'))
-    ->line(Line::make('Web development')->quantity(24, UnitCode::Hour)->netPrice('95.00'))
+    ->line('Web development', netPrice: '95.00', quantity: 24, unit: UnitCode::Hour)
     ->line(['name' => 'Hosting', 'netPrice' => '49.00'])          // quantity 1, VAT 19 % by default
     ->paymentTerms(fn ($t) => $t->dueInDays(14))
     ->render();                                                   // ZUGFeRD: PDF/A-3 with embedded XML

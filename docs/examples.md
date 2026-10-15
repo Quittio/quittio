@@ -15,7 +15,7 @@ The examples use the Laravel facade and this seller in `config/quittio.php` ([Se
 ],
 ```
 
-`Quittio::invoice()` starts an invoice with this seller and its bank account, and `->render()` at the end of the chain renders it ([Starting invoices](laravel.md#starting-invoices)); `Quittio::quote()`, `Quittio::paymentReminder()` and the other document methods work the same way. `invoices` and `documents` are filesystem disks of your application. Lines are written as `Line::make()` or as arrays, parties as `Party::make()` or as your own model ([Lines](building-invoices.md#lines), [Seller and buyer](building-invoices.md#seller-and-buyer)). A line without `quantity()` has the quantity 1, and a line without `vat()` gets 19 %, the standard rate of the German seller ([Default VAT](building-invoices.md#default-vat)); the examples set VAT only where it differs. Without Laravel, the same builder works with the core instance ([Without Laravel](#without-laravel)).
+`Quittio::invoice()` starts an invoice with this seller and its bank account, and `->render()` at the end of the chain renders it ([Starting invoices](laravel.md#starting-invoices)); `Quittio::quote()`, `Quittio::paymentReminder()` and the other document methods work the same way. `invoices` and `documents` are filesystem disks of your application. A line is its name with named values (`->line('Hosting', netPrice: '49.00')`), `Line::make()` when it needs further values, or an array; parties are `Party::make()` or your own model ([Lines](building-invoices.md#lines), [Seller and buyer](building-invoices.md#seller-and-buyer)). A line without `quantity()` has the quantity 1, and a line without `vat()` gets 19 %, the standard rate of the German seller ([Default VAT](building-invoices.md#default-vat)); the examples set VAT only where it differs. Without Laravel, the same builder works with the core instance ([Without Laravel](#without-laravel)).
 
 | Example | Shows |
 |---|---|
@@ -47,7 +47,6 @@ The examples use the Laravel facade and this seller in `config/quittio.php` ([Se
 A monthly invoice for hours and hosting to a German business. The service period replaces a delivery date, and the cash discount becomes part of the payment terms.
 
 ```php
-use Quittio\Core\Builder\Line;
 use Quittio\Core\Builder\Party;
 use Quittio\Core\Enums\UnitCode;
 use Quittio\Laravel\Facades\Quittio;
@@ -61,11 +60,9 @@ $result = Quittio::invoice()
         ->vatId('DE987654321')
         ->address('Bahnhofstraße 5', '54321', 'Beispielstadt', 'DE')
         ->electronicAddress('ap@kunde.de', 'EM'))
-    ->line(Line::make('Software development')
-        ->description('Customer portal, sprints 5 and 6')
-        ->quantity('62.5', UnitCode::Hour)
-        ->netPrice('95.00'))
-    ->line(Line::make('Hosting')->unit(UnitCode::Month)->netPrice('49.00'))
+    ->line('Software development', netPrice: '95.00', quantity: '62.5', unit: UnitCode::Hour,
+        description: 'Customer portal, sprints 5 and 6')
+    ->line('Hosting', netPrice: '49.00', unit: UnitCode::Month)
     ->paymentTerms(fn ($t) => $t->dueInDays(30)->cashDiscount(days: 10, percent: '2.00'))
     ->render();                                          // ZUGFeRD, profile EN 16931
 
@@ -119,7 +116,6 @@ foreach ($result->data()->vatBreakdown as $row) {
 Shops show prices including VAT. With `priceInclVat()` the calculator derives the net prices, so that the invoice total is exactly the amount the customer paid:
 
 ```php
-use Quittio\Core\Builder\Line;
 use Quittio\Core\Builder\Party;
 use Quittio\Core\Enums\PaymentMeansCode;
 use Quittio\Laravel\Facades\Quittio;
@@ -131,9 +127,9 @@ $result = Quittio::invoice()
     ->buyer(Party::make('Erika Mustermann')
         ->address('Lindenweg 3', '10115', 'Berlin', 'DE')
         ->consumer())                                    // B2C: PDF without XML
-    ->line(Line::make('T-shirt "Quittio"')->quantity(3)->priceInclVat('19.99'))
-    ->line(Line::make('Shipping')->priceInclVat('4.90'))
-    ->line(Line::make('Voucher WELCOME5')->quantity(-1)->priceInclVat('5.00'))
+    ->line('T-shirt "Quittio"', priceInclVat: '19.99', quantity: 3)
+    ->line('Shipping', priceInclVat: '4.90')
+    ->line('Voucher WELCOME5', priceInclVat: '5.00', quantity: -1)
     ->payment(PaymentMeansCode::OnlinePaymentService, meansText: 'PayPal')
     ->prepaid('59.87')                                   // paid at checkout
     ->render();
@@ -153,7 +149,6 @@ A small business under section 19 UStG charges no VAT. This seller has a tax num
 
 ```php
 use Quittio\Core\Builder\InvoiceBuilder;
-use Quittio\Core\Builder\Line;
 use Quittio\Core\Builder\Party;
 use Quittio\Core\Data\Meta;
 use Quittio\Core\Enums\PaymentMeansCode;
@@ -170,8 +165,8 @@ $invoice = InvoiceBuilder::make()
     ->number('2026-017')
     ->issueDate('2026-10-07')
     ->buyer(Party::make('Café Sonnenschein GmbH')->address('Am Markt 3', '12345', 'Musterstadt', 'DE'))
-    ->line(Line::make('Logo design')->unit(UnitCode::LumpSum)->netPrice('650.00'))
-    ->line(Line::make('Business card layout')->quantity(2, UnitCode::Hour)->netPrice('55.00'))
+    ->line('Logo design', netPrice: '650.00', unit: UnitCode::LumpSum)
+    ->line('Business card layout', netPrice: '55.00', quantity: 2, unit: UnitCode::Hour)
     ->payment(PaymentMeansCode::SepaCreditTransfer, iban: 'DE89370400440532013000', accountName: 'Lisa Klein')
     ->paymentTerms(fn ($t) => $t->dueInDays(14))
     ->build();
@@ -190,7 +185,6 @@ $result->data()->totals->amountDue;                    // EUR 760.00, no VAT
 German public authorities receive XRechnung. The Leitweg-ID from the order goes into the buyer reference (BT-10), and the automatic choice then selects XRechnung by itself:
 
 ```php
-use Quittio\Core\Builder\Line;
 use Quittio\Core\Builder\Party;
 use Quittio\Core\Enums\UnitCode;
 use Quittio\Laravel\Facades\Quittio;
@@ -203,7 +197,7 @@ $result = Quittio::invoice()
     ->buyer(Party::make('Stadt Beispielstadt, Hauptamt')
         ->address('Rathausplatz 1', '54321', 'Beispielstadt', 'DE')
         ->electronicAddress('04011000-12345-03', '0204'))
-    ->line(Line::make('Website maintenance')->quantity(8, UnitCode::Hour)->netPrice('85.00'))
+    ->line('Website maintenance', netPrice: '85.00', quantity: 8, unit: UnitCode::Hour)
     ->paymentTerms(fn ($t) => $t->dueInDays(30))
     ->render(['xrechnung-cii', 'pdf']);
 
@@ -220,7 +214,6 @@ $result->as('pdf')->save('invoices', '2026/');         // 2026/Rechnung_RE-2026-
 An advance payment invoice when the order is placed, and the final invoice after completion:
 
 ```php
-use Quittio\Core\Builder\Line;
 use Quittio\Core\Builder\Party;
 use Quittio\Core\Enums\InvoiceTypeCode;
 use Quittio\Core\Enums\UnitCode;
@@ -237,7 +230,7 @@ $advance = Quittio::invoice()
     ->issueDate('2026-09-01')
     ->invoicingPeriod('2026-09-01', '2026-10-31')        // planned period of the service
     ->buyer($customer)
-    ->line(Line::make('Website relaunch, advance payment')->unit(UnitCode::LumpSum)->netPrice('1000.00'))
+    ->line('Website relaunch, advance payment', netPrice: '1000.00', unit: UnitCode::LumpSum)
     ->paymentTerms(fn ($t) => $t->dueInDays(14))
     ->render();
 
@@ -247,7 +240,7 @@ $final = Quittio::invoice()
     ->issueDate('2026-10-14')
     ->deliveryDate('2026-10-10')
     ->buyer($customer)
-    ->line(Line::make('Website relaunch')->unit(UnitCode::LumpSum)->netPrice('3000.00'))
+    ->line('Website relaunch', netPrice: '3000.00', unit: UnitCode::LumpSum)
     ->deductAdvance($advance->data())
     ->paymentTerms(fn ($t) => $t->dueInDays(14))
     ->render();
@@ -288,7 +281,6 @@ With self-billing the buyer issues the invoice, e.g. the commission statement fo
 
 ```php
 use Quittio\Core\Builder\InvoiceBuilder;
-use Quittio\Core\Builder\Line;
 use Quittio\Core\Builder\Party;
 use Quittio\Core\Enums\PaymentMeansCode;
 use Quittio\Core\Enums\UnitCode;
@@ -305,7 +297,7 @@ $invoice = InvoiceBuilder::make()
     ->buyer(Party::make('Muster GmbH')                   // you: you issue the document
         ->vatId('DE123456789')
         ->address('Hauptstraße 1', '12345', 'Musterstadt', 'DE'))
-    ->line(Line::make('Commission September 2026')->unit(UnitCode::LumpSum)->netPrice('840.00'))
+    ->line('Commission September 2026', netPrice: '840.00', unit: UnitCode::LumpSum)
     ->payment(PaymentMeansCode::SepaCreditTransfer, iban: 'DE89370400440532013000', accountName: 'Jonas Schreiber')
     ->build();
 
@@ -323,7 +315,6 @@ $result->filename();                                   // Gutschrift_GS-2026-001
 IT consulting for a business in Belgium, where the customer owes the VAT (reverse charge). Belgian businesses receive e-invoices through Peppol, so the example writes Peppol BIS Billing 3.0:
 
 ```php
-use Quittio\Core\Builder\Line;
 use Quittio\Core\Builder\Party;
 use Quittio\Core\Enums\UnitCode;
 use Quittio\Country\DE\Tax\VatPreset;
@@ -341,7 +332,7 @@ $result = Quittio::invoice()
         ->address('Rue de la Loi 16', '1000', 'Brussels', 'BE')
         ->electronicAddress('0123456749', '0208'))
     ->defaultVat(VatPreset::ReverseChargeEu)             // for every line of this invoice
-    ->line(Line::make('IT consulting')->quantity(16, UnitCode::Hour)->netPrice('110.00'))
+    ->line('IT consulting', netPrice: '110.00', quantity: 16, unit: UnitCode::Hour)
     ->paymentTerms(fn ($t) => $t->dueInDays(14))
     ->render('peppol');
 
@@ -373,14 +364,13 @@ $result = Quittio::invoice()
         ->vatId('ATU12345675')
         ->address('Mariahilfer Straße 1', '1060', 'Wien', 'AT'))
     ->deliverTo('Kunde Handels GmbH, Lager', Address::make('Industriestraße 4', '4020', 'Linz', 'AT'))
-    ->line(Line::make('Industrial pump')
-        ->sellerId('P-200')
-        ->quantity(2, UnitCode::Piece)
-        ->netPrice('1450.00')
-        ->vat(VatPreset::IntraCommunitySupply))
+    ->line(Line::make('Industrial pump', netPrice: '1450.00', quantity: 2, unit: UnitCode::Piece, vat: VatPreset::IntraCommunitySupply)
+        ->sellerId('P-200')                              // further values on the line builder
+        ->originCountry('DE'))
     ->render();
 ```
 
+- `Line::make()` takes the same named values as `line()` and allows further ones, here the item number and the country of origin.
 - `VatPreset::IntraCommunitySupply` sets VAT category K with 0 % and the text "Steuerfreie innergemeinschaftliche Lieferung (§ 4 Nr. 1b i. V. m. § 6a UStG)".
 - EN 16931 requires the buyer's VAT identifier, the delivery date and the country of the deliver-to address for category K (`BR-IC-02`, `BR-IC-11`, `BR-IC-12`). The German pack warns after the 15th of the following month (`DE-USTG-15`).
 - The automatic choice renders ZUGFeRD ([Reverse charge, intra-community supplies and VAT identifiers](country-packs.md#reverse-charge-intra-community-supplies-and-vat-identifiers)).
@@ -390,7 +380,6 @@ $result = Quittio::invoice()
 A device sold to a customer in the United States, invoiced in US dollars:
 
 ```php
-use Quittio\Core\Builder\Line;
 use Quittio\Core\Builder\Party;
 use Quittio\Core\Enums\PaymentMeansCode;
 use Quittio\Core\Enums\UnitCode;
@@ -403,7 +392,7 @@ $result = Quittio::invoice()
     ->deliveryDate('2026-10-12')
     ->currency('USD')
     ->buyer(Party::make('Customer Inc.')->address('1 Main Street', '10001', 'New York', 'US'))
-    ->line(Line::make('Measuring device')->unit(UnitCode::Piece)->netPrice('2400.00')->vat(VatPreset::Export))
+    ->line('Measuring device', netPrice: '2400.00', unit: UnitCode::Piece, vat: VatPreset::Export)
     ->payment(PaymentMeansCode::CreditTransfer, iban: 'DE02120300000000202051', bic: 'BYLADEM1001')
     ->locale('en')
     ->render();
@@ -418,7 +407,6 @@ $result = Quittio::invoice()
 An invoice in a foreign currency with German VAT also states the VAT in euro:
 
 ```php
-use Quittio\Core\Builder\Line;
 use Quittio\Core\Builder\Party;
 use Quittio\Core\Enums\PaymentMeansCode;
 use Quittio\Laravel\Facades\Quittio;
@@ -432,7 +420,7 @@ $result = Quittio::invoice()
     ->buyer(Party::make('Kunde AG')
         ->vatId('DE987654321')
         ->address('Bahnhofstraße 5', '54321', 'Beispielstadt', 'DE'))
-    ->line(Line::make('Software licence')->quantity(5)->netPrice('399.00'))
+    ->line('Software licence', netPrice: '399.00', quantity: 5)
     ->payment(PaymentMeansCode::CreditTransfer, iban: 'DE02120300000000202051', bic: 'BYLADEM1001')
     ->render();
 
@@ -551,7 +539,6 @@ Drafts need no Managed layer: a draft is invoice data that you keep until you is
 
 ```php
 use Quittio\Core\Builder\InvoiceBuilder;
-use Quittio\Core\Builder\Line;
 use Quittio\Core\Builder\Party;
 use Quittio\Core\Data\InvoiceData;
 use Quittio\Core\Data\Lines\InvoiceLine;
@@ -561,7 +548,7 @@ use Quittio\Laravel\Facades\Quittio;
 // Create a draft and keep it as JSON, e.g. in a column of your model
 $draft = Quittio::invoice()
     ->buyer(Party::make('Kunde AG')->vatId('DE987654321')->address('Bahnhofstraße 5', '54321', 'Beispielstadt', 'DE'))
-    ->line(Line::make('Consulting')->quantity(10, UnitCode::Hour)->netPrice('120.00'))
+    ->line('Consulting', netPrice: '120.00', quantity: 10, unit: UnitCode::Hour)
     ->build();
 $json = $draft->toJson();
 
@@ -636,7 +623,6 @@ it('builds a valid e-invoice for an order', function () {
 
 ```php
 use Quittio\Core\Builder\InvoiceBuilder;
-use Quittio\Core\Builder\Line;
 use Quittio\Core\Builder\Party;
 use Quittio\Core\Enums\UnitCode;
 use Quittio\Laravel\Facades\Quittio;
@@ -646,8 +632,8 @@ $quote = Quittio::quote()
     ->issueDate('2026-10-01')
     ->validUntil('2026-10-31')
     ->buyer(Party::make('Kunde AG')->vatId('DE987654321')->address('Bahnhofstraße 5', '54321', 'Beispielstadt', 'DE'))
-    ->line(Line::make('Workshop "E-invoicing"')->unit(UnitCode::Day)->netPrice('1200.00'))
-    ->optionalLine(Line::make('Follow-up session')->quantity(4, UnitCode::Hour)->netPrice('120.00'));
+    ->line('Workshop "E-invoicing"', netPrice: '1200.00', unit: UnitCode::Day)
+    ->optionalLine('Follow-up session', netPrice: '120.00', quantity: 4, unit: UnitCode::Hour);
 
 $quote->render()->save('documents', 'quotes/');        // quotes/Angebot_AN-2026-0031.pdf
 
@@ -738,7 +724,6 @@ For the ZUGFeRD invoice of the first example, `$booking` is:
 The design of a single invoice:
 
 ```php
-use Quittio\Core\Builder\Line;
 use Quittio\Core\Builder\Party;
 use Quittio\Core\Data\Presentation\Colors;
 use Quittio\Core\Data\Presentation\Presentation;
@@ -748,7 +733,7 @@ $result = Quittio::invoice()
     ->number('RE-2026-0150')
     ->deliveryDate('2026-10-14')
     ->buyer(Party::make('Kunde AG')->vatId('DE987654321')->address('Bahnhofstraße 5', '54321', 'Beispielstadt', 'DE'))
-    ->line(Line::make('Consulting')->quantity(4, 'HUR')->netPrice('120.00'))
+    ->line('Consulting', netPrice: '120.00', quantity: 4, unit: 'HUR')
     ->presentation(new Presentation(
         logo: storage_path('app/logo.png'),
         colors: new Colors(primary: '#0f766e'),
@@ -775,7 +760,6 @@ A plain PHP script with `quittio/core` and `quittio/country-de`:
 require __DIR__.'/vendor/autoload.php';
 
 use Quittio\Core\Builder\InvoiceBuilder;
-use Quittio\Core\Builder\Line;
 use Quittio\Core\Builder\Party;
 use Quittio\Core\Enums\PaymentMeansCode;
 use Quittio\Core\Enums\UnitCode;
@@ -792,7 +776,7 @@ $invoice = InvoiceBuilder::make()
     ->deliveryDate('2026-10-14')
     ->seller(Party::make('Muster GmbH')->vatId('DE123456789')->address('Hauptstraße 1', '12345', 'Musterstadt', 'DE'))
     ->buyer(Party::make('Kunde AG')->vatId('DE987654321')->address('Bahnhofstraße 5', '54321', 'Beispielstadt', 'DE'))
-    ->line(Line::make('Consulting')->quantity(4, UnitCode::Hour)->netPrice('120.00'))
+    ->line('Consulting', netPrice: '120.00', quantity: 4, unit: UnitCode::Hour)
     ->payment(PaymentMeansCode::SepaCreditTransfer, iban: 'DE02120300000000202051')
     ->paymentTerms(fn ($t) => $t->dueInDays(14))
     ->build();

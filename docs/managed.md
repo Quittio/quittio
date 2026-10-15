@@ -373,7 +373,7 @@ from it:
 $draft = Invoice::draft($issuer->builder()
     ->buyer(Party::make('Kunde AG')->address('Bahnhofstraße 5', '54321', 'Beispielstadt', 'DE'))
     ->deliveryDate('2026-09-30')
-    ->line(Line::make('Beratung')->quantity(8, UnitCode::Hour)->netPrice('120.00')->vat(VatPreset::Standard19)));
+    ->line('Beratung', netPrice: '120.00', quantity: 8, unit: UnitCode::Hour, vat: VatPreset::Standard19));
 ```
 
 `Quittio::invoice()` and the document methods (`Quittio::quote()`, `Quittio::paymentReminder()` …) start with the current issuer in the same way (the Managed layer binds `InvoiceDefaults` to `Issuer::current()->applyTo($builder)`, see [Starting invoices](laravel.md#starting-invoices)), so `Invoice::draft(Quittio::invoice()->buyer($customer)->line(…))` is the same as starting from `Issuer::current()->builder()`.
@@ -558,8 +558,7 @@ invoiceable unless `$invoiceable` is given.
 ```php
 $invoice = $user->draftInvoice(fn (InvoiceBuilder $b) => $b
     ->deliveryDate('2026-10-31')
-    ->line(Line::make('Pro plan October')
-        ->quantity(1, UnitCode::Month)->netPrice('29.00')->vat(VatPreset::Standard19)),
+    ->line('Pro plan October', netPrice: '29.00', unit: UnitCode::Month, vat: VatPreset::Standard19),
     invoiceable: $subscription,
 )->issue();
 

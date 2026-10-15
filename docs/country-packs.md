@@ -386,8 +386,8 @@ Messages come from the catalog key `{namespace}::rules.{code}` with the entries 
 ```php
 use Quittio\Country\DE\Tax\VatPreset;
 
-->line(Line::make('Webentwicklung')->quantity(24, UnitCode::Hour)->netPrice('95.00')->vat(VatPreset::Standard19))
-->line(Line::make('Heilbehandlung')->quantity(1, UnitCode::Piece)->netPrice('90.00')->vat(VatPreset::exempt('§ 4 Nr. 14 UStG', 'VATEX-EU-132-1C')))
+->line('Webentwicklung', netPrice: '95.00', quantity: 24, unit: UnitCode::Hour, vat: VatPreset::Standard19)
+->line('Heilbehandlung', netPrice: '90.00', unit: UnitCode::Piece, vat: VatPreset::exempt('§ 4 Nr. 14 UStG', 'VATEX-EU-132-1C'))
 ```
 
 | Case | Key | Category | Rate | Code (BT-121) | Use |
@@ -603,7 +603,7 @@ $advance = (new En16931Calculator)->calculate($advanceInvoice);   // or $rendere
 
 $final = InvoiceBuilder::make()
     // number, dates, parties, payment …
-    ->line(Line::make('Website')->quantity(1, UnitCode::Piece)->netPrice('3000.00')->vat(VatPreset::Standard19))
+    ->line('Website', netPrice: '3000.00', unit: UnitCode::Piece, vat: VatPreset::Standard19)
     ->deductAdvance($advance);
 ```
 
@@ -642,7 +642,7 @@ With an advance invoice RE-2026-0040 of 1,000.00 EUR net plus 19 % VAT, the fina
 use Quittio\Laravel\Facades\Quittio;
 
 $builder = Quittio::invoice()                      // quittio.seller.small_business = true
-    ->line(Line::make('Beratung')->quantity(1, UnitCode::Hour)->netPrice('80.00'));   // VatPreset::SmallBusiness by default
+    ->line('Beratung', netPrice: '80.00', unit: UnitCode::Hour);   // VatPreset::SmallBusiness by default
 ```
 
 ### Reverse charge, intra-community supplies and VAT identifiers

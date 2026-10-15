@@ -91,14 +91,13 @@ Quittio::make($invoice)->forPublicBuyer()->render();
 `Quittio::invoice()` starts an invoice: an `InvoiceBuilder` ([Building invoices](building-invoices.md)) with the seller, its first bank account and the small business setting of `config/quittio.php` ([Seller](configuration.md#seller)). It ends with `->build()` (the `InvoiceData`) or with `->render()`:
 
 ```php
-use Quittio\Core\Builder\Line;
 use Quittio\Laravel\Facades\Quittio;
 
 $result = Quittio::invoice()
     ->number('RE-2026-0042')
     ->deliveryDate('2026-09-30')
     ->buyer($customer)                                       // implements ProvidesParty
-    ->line(Line::make('Web development')->quantity(24, 'HUR')->netPrice('95.00'))
+    ->line('Web development', netPrice: '95.00', quantity: 24, unit: 'HUR')
     ->render();                                              // automatic choice
 
 ->render('xrechnung-cii')                                    // one format
@@ -396,12 +395,11 @@ then `defaults.locale`, then the country pack. Details:
 ## Documents
 
 ```php
-use Quittio\Core\Builder\Line;
 use Quittio\Core\Builder\Party;
 
 $quote = Quittio::quote()->number('AN-2026-0007')->issueDate('2026-10-01')
     ->buyer(Party::make('Kunde AG')->address('Weg 1', '54321', 'Beispielstadt', 'DE'))
-    ->line(Line::make('Beratung')->quantity(2, 'HUR')->netPrice('100.00'));
+    ->line('Beratung', netPrice: '100.00', quantity: 2, unit: 'HUR');
 
 return Quittio::document($quote)->locale('de')->render()->download();
 ```

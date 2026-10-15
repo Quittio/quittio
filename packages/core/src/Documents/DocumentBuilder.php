@@ -22,6 +22,7 @@ use Quittio\Core\Data\Party\SellerParty;
 use Quittio\Core\Data\Payment\PaymentTerms;
 use Quittio\Core\Data\Presentation\Presentation;
 use Quittio\Core\Enums\NoteSubjectCode;
+use Quittio\Core\Enums\UnitCode;
 use Quittio\Core\Enums\VatCategory;
 use Quittio\Core\Enums\VatExemptionReasonCode;
 use Quittio\Core\Support\Amount;
@@ -160,13 +161,25 @@ class DocumentBuilder
     }
 
     /**
-     * @param  InvoiceLine|LineBuilder|ProvidesInvoiceLine|array<array-key, mixed>|callable(LineBuilder): mixed  $line
+     * A line in the forms of InvoiceBuilder::line(), e.g. ->line('Consulting', netPrice: '120.00').
+     *
+     * @param  InvoiceLine|LineBuilder|ProvidesInvoiceLine|array<array-key, mixed>|callable(LineBuilder): mixed|string  $line
      */
-    public function line(InvoiceLine|LineBuilder|ProvidesInvoiceLine|array|callable $line, ?DocumentLineOptions $options = null): static
-    {
-        if ($this->type === DocumentType::DeliveryNote && ! $line instanceof InvoiceLine && ! $line instanceof ProvidesInvoiceLine) {
+    public function line(
+        InvoiceLine|LineBuilder|ProvidesInvoiceLine|array|callable|string $line,
+        BigDecimal|int|float|string|null $netPrice = null,
+        BigDecimal|int|float|string|null $quantity = null,
+        UnitCode|RawCode|string|null $unit = null,
+        TaxPreset|VatCategory|null $vat = null,
+        ?string $description = null,
+        BigDecimal|int|float|string|null $priceInclVat = null,
+        ?DocumentLineOptions $options = null,
+    ): static {
+        if (! $line instanceof InvoiceLine) {
+            $line = Line::from($line, $netPrice, $quantity, $unit, $vat, $description, $priceInclVat);
+        }
+        if ($this->type === DocumentType::DeliveryNote && $line instanceof LineBuilder) {
             // Delivery notes carry no prices: defaults keep the line valid for the calculator.
-            $line = Line::from($line);
             if (! $line->hasPrice()) {
                 $line->netPrice(0);
             }
@@ -185,7 +198,7 @@ class DocumentBuilder
     }
 
     /**
-     * @param  iterable<InvoiceLine|LineBuilder|ProvidesInvoiceLine|array<array-key, mixed>|callable(LineBuilder): mixed>  $lines
+     * @param  iterable<InvoiceLine|LineBuilder|ProvidesInvoiceLine|array<array-key, mixed>|callable(LineBuilder): mixed|string>  $lines
      */
     public function lines(iterable $lines): static
     {
@@ -199,32 +212,55 @@ class DocumentBuilder
     /**
      * Optional quote line, shown with its price but not included in the totals.
      *
-     * @param  InvoiceLine|LineBuilder|array<array-key, mixed>|callable(LineBuilder): mixed  $line
+     * @param  InvoiceLine|LineBuilder|array<array-key, mixed>|callable(LineBuilder): mixed|string  $line
      */
-    public function optionalLine(InvoiceLine|LineBuilder|array|callable $line): static
-    {
-        return $this->line($line, new DocumentLineOptions(optional: true));
+    public function optionalLine(
+        InvoiceLine|LineBuilder|array|callable|string $line,
+        BigDecimal|int|float|string|null $netPrice = null,
+        BigDecimal|int|float|string|null $quantity = null,
+        UnitCode|RawCode|string|null $unit = null,
+        TaxPreset|VatCategory|null $vat = null,
+        ?string $description = null,
+        BigDecimal|int|float|string|null $priceInclVat = null,
+    ): static {
+        return $this->line($line, $netPrice, $quantity, $unit, $vat, $description, $priceInclVat, new DocumentLineOptions(optional: true));
     }
 
     /**
      * Alternative to another line, shown but not included in the totals.
      *
-     * @param  InvoiceLine|LineBuilder|array<array-key, mixed>|callable(LineBuilder): mixed  $line
+     * @param  InvoiceLine|LineBuilder|array<array-key, mixed>|callable(LineBuilder): mixed|string  $line
      */
-    public function alternativeLine(string $alternativeTo, InvoiceLine|LineBuilder|array|callable $line): static
-    {
-        return $this->line($line, new DocumentLineOptions(alternativeTo: $alternativeTo));
+    public function alternativeLine(
+        string $alternativeTo,
+        InvoiceLine|LineBuilder|array|callable|string $line,
+        BigDecimal|int|float|string|null $netPrice = null,
+        BigDecimal|int|float|string|null $quantity = null,
+        UnitCode|RawCode|string|null $unit = null,
+        TaxPreset|VatCategory|null $vat = null,
+        ?string $description = null,
+        BigDecimal|int|float|string|null $priceInclVat = null,
+    ): static {
+        return $this->line($line, $netPrice, $quantity, $unit, $vat, $description, $priceInclVat, new DocumentLineOptions(alternativeTo: $alternativeTo));
     }
 
     /**
      * Delivery note line with serial numbers.
      *
-     * @param  InvoiceLine|LineBuilder|array<array-key, mixed>|callable(LineBuilder): mixed  $line
+     * @param  InvoiceLine|LineBuilder|array<array-key, mixed>|callable(LineBuilder): mixed|string  $line
      * @param  list<string>  $serialNumbers
      */
-    public function serialisedLine(InvoiceLine|LineBuilder|array|callable $line, array $serialNumbers): static
-    {
-        return $this->line($line, new DocumentLineOptions(serialNumbers: $serialNumbers));
+    public function serialisedLine(
+        InvoiceLine|LineBuilder|array|callable|string $line,
+        array $serialNumbers,
+        BigDecimal|int|float|string|null $netPrice = null,
+        BigDecimal|int|float|string|null $quantity = null,
+        UnitCode|RawCode|string|null $unit = null,
+        TaxPreset|VatCategory|null $vat = null,
+        ?string $description = null,
+        BigDecimal|int|float|string|null $priceInclVat = null,
+    ): static {
+        return $this->line($line, $netPrice, $quantity, $unit, $vat, $description, $priceInclVat, new DocumentLineOptions(serialNumbers: $serialNumbers));
     }
 
     /**

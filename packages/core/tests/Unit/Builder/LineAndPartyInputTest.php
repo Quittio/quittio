@@ -160,3 +160,59 @@ it('accepts arrays, builders and models in documents, with the delivery note def
         ->and($quote->lines[1]->vat->rate?->toString())->toBe('19')
         ->and($quote->lines[2]->item->name)->toBe('Cable');
 });
+
+it('adds lines from a name and named values', function () {
+    $invoice = Invoices::base()
+        ->defaultVat(VatCategory::StandardRate, '19')
+        ->line('Development', netPrice: '95.00', quantity: 24, unit: UnitCode::Hour, description: 'Sprint 5')
+        ->line('Hosting', '49.00')
+        ->line('Book', netPrice: '39.00', vat: reducedPreset())
+        ->line('date', netPrice: '1.00')                                // a string is always a name, never a callable
+        ->line(Line::make('Workstation')->subLine('Monitor', netPrice: '250.00', quantity: 2))
+        ->build();
+
+    expect($invoice->lines[0]->quantity->toString())->toBe('24')
+        ->and($invoice->lines[0]->unit)->toBe(UnitCode::Hour)
+        ->and($invoice->lines[0]->item->description)->toBe('Sprint 5')
+        ->and($invoice->lines[1]->price->netPrice?->toString())->toBe('49.00')
+        ->and($invoice->lines[1]->quantity->toString())->toBe('1')
+        ->and($invoice->lines[2]->vat->presetKey)->toBe('test.reduced_7')
+        ->and($invoice->lines[3]->item->name)->toBe('date')
+        ->and($invoice->lines[4]->subLines[0]->quantity->toString())->toBe('2');
+
+    $gross = Invoices::base()->defaultVat(VatCategory::StandardRate, '19')->line('T-shirt', priceInclVat: '19.99', quantity: 3)->build();
+    expect($gross->lines[0]->price->priceInclVat?->toString())->toBe('19.99');
+});
+
+it('accepts the named values only with a name', function () {
+    $line = Invoices::simple()->build()->lines[0];
+
+    expect(fn () => Invoices::base()->line(Line::make('Consulting'), netPrice: '1.00'))
+        ->toThrow(InvalidArgumentException::class, 'can only be given with the name of a line')
+        ->and(fn () => Invoices::base()->line($line, quantity: 2))
+        ->toThrow(InvalidArgumentException::class, 'An InvoiceLine is taken as it is');
+});
+
+it('adds named lines to documents', function () {
+    $quote = DocumentBuilder::quote()
+        ->number('AN-1')
+        ->seller(Party::make('Muster GmbH')->address('Hauptstraße 1', '12345', 'Musterstadt', 'DE'))
+        ->buyer(Party::make('Kunde AG')->address('Weg 1', '54321', 'Beispielstadt', 'DE'))
+        ->defaultVat(VatCategory::StandardRate, '19')
+        ->line('Consulting', netPrice: '120.00', quantity: 10, unit: UnitCode::Hour)
+        ->optionalLine('Training', netPrice: '800.00', unit: UnitCode::Day)
+        ->alternativeLine('1', 'Senior consulting', netPrice: '150.00', quantity: 10, unit: UnitCode::Hour)
+        ->build();
+    $note = DocumentBuilder::deliveryNote()
+        ->number('LS-1')
+        ->seller(Party::make('Muster GmbH')->address('Hauptstraße 1', '12345', 'Musterstadt', 'DE'))
+        ->buyer(Party::make('Kunde AG')->address('Weg 1', '54321', 'Beispielstadt', 'DE'))
+        ->serialisedLine('Router', ['SN-1001', 'SN-1002'], quantity: 2)
+        ->build();
+
+    expect($quote->lines)->toHaveCount(3)
+        ->and($quote->options('2')->optional)->toBeTrue()
+        ->and($quote->options('3')->alternativeTo)->toBe('1')
+        ->and($note->lines[0]->vat->category)->toBe(VatCategory::NotSubjectToVat)
+        ->and($note->options('1')->serialNumbers)->toBe(['SN-1001', 'SN-1002']);
+});

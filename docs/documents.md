@@ -16,7 +16,6 @@ In Laravel, `Quittio::quote()`, `Quittio::orderConfirmation()`, `Quittio::delive
 `DocumentBuilder::make(DocumentType $type)` creates a builder for any type (reminders then have level 0). `DocumentType` has `showsPrices()` (`false` for delivery notes), `hasLineTotals()` (quotes, order confirmations, proformas) and `labelKey()` (`document_{value}`).
 
 ```php
-use Quittio\Core\Builder\Line;
 use Quittio\Core\Builder\Party;
 use Quittio\Laravel\Facades\Quittio;
 
@@ -25,9 +24,9 @@ $quote = Quittio::quote()
     ->issueDate('2026-10-06')
     ->buyer(Party::make('Kunde AG')->address('Weg 1', '54321', 'Beispielstadt', 'DE'))
     ->validUntil('2026-10-31')
-    ->line(Line::make('Consulting')->quantity(10, 'HUR')->netPrice('120.00'))
-    ->optionalLine(Line::make('Training')->quantity(1, 'DAY')->netPrice('800.00'))
-    ->alternativeLine('1', Line::make('Senior consulting')->quantity(10, 'HUR')->netPrice('150.00'))
+    ->line('Consulting', netPrice: '120.00', quantity: 10, unit: 'HUR')
+    ->optionalLine('Training', netPrice: '800.00', unit: 'DAY')
+    ->alternativeLine('1', 'Senior consulting', netPrice: '150.00', quantity: 10, unit: 'HUR')
     ->build();
 
 Quittio::document($quote)->locale('de')->render()->download();
@@ -94,7 +93,7 @@ $note = Quittio::deliveryNote()
     ->buyer($buyer)
     ->reference('AB-2026-0003')
     ->deliveryDate('2026-10-02')
-    ->serialisedLine(Line::make('Router')->quantity(2, 'C62'), ['SN-1001', 'SN-1002'])
+    ->serialisedLine('Router', ['SN-1001', 'SN-1002'], quantity: 2, unit: 'C62')
     ->line(['name' => 'Cable', 'quantity' => [5, 'MTR']])
     ->package(new Package('P1', type: 'Box', weightKg: BigDecimal::of('2.5'), dimensions: '30 × 20 × 10 cm', trackingNumber: '00340434161094042557'))
     ->build();

@@ -24,7 +24,6 @@ php artisan quittio:preview --scenario=simple
 `InvoiceBuilder` creates the immutable `InvoiceData` (EN 16931 model). Totals and the VAT breakdown are calculated when rendering; never pass them in.
 
 ```php
-use Quittio\Core\Builder\Line;
 use Quittio\Core\Builder\Party;
 use Quittio\Core\Enums\UnitCode;
 use Quittio\Country\DE\Tax\VatPreset;
@@ -39,17 +38,15 @@ $invoice = Quittio::invoice()                          // seller and bank accoun
         ->vatId('DE987654321')
         ->address('Bahnhofstraße 5', '54321', 'Beispielstadt', 'DE')
         ->electronicAddress('ap@kunde.de', 'EM'))
-    ->line(Line::make('Web development')
-        ->description('Customer portal, sprint 3')       // plain text (Markdown with pdf.markdown)
-        ->quantity(24, UnitCode::Hour)
-        ->netPrice('95.00'))                             // 19 %: the default VAT
-    ->line(['name' => 'Hosting', 'quantity' => [1, UnitCode::Month], 'netPrice' => '49.00'])
-    ->line(Line::make('Handbook of VAT law')->netPrice('39.00')->vat(VatPreset::Reduced7))
+    ->line('Web development', netPrice: '95.00', quantity: 24, unit: UnitCode::Hour,
+        description: 'Customer portal, sprint 3')        // 19 %: the default VAT
+    ->line('Hosting', netPrice: '49.00', unit: UnitCode::Month)
+    ->line('Handbook of VAT law', netPrice: '39.00', vat: VatPreset::Reduced7)
     ->paymentTerms(fn ($t) => $t->dueInDays(14)->cashDiscount(days: 7, percent: '2.00'))
     ->build();
 ```
 
-`Quittio::invoice()` starts an `InvoiceBuilder` with the seller, the first bank account and the small business setting of `config/quittio.php`; `build()` returns the data, `render()` instead renders it right away ([Rendering](#rendering)). Lines are a `Line::make()` builder, an array whose keys are the builder's methods, a model or a callable ([Lines](building-invoices.md#lines)). Without `quantity()` a line has the quantity 1. Without `vat()` it gets the default VAT: `quittio.defaults.vat`, otherwise the standard rate of the seller's country (Germany: 19 %; small businesses: the small business exemption), see [Default VAT](building-invoices.md#default-vat).
+`Quittio::invoice()` starts an `InvoiceBuilder` with the seller, the first bank account and the small business setting of `config/quittio.php`; `build()` returns the data, `render()` instead renders it right away ([Rendering](#rendering)). A line is its name with named values: `netPrice` (without VAT) or `priceInclVat`, `quantity` (default 1), `unit`, `vat` and `description`. For further values (item number, line allowance, period) use `Line::make('…', netPrice: '…')->…`; arrays, models and callables work as well ([Lines](building-invoices.md#lines)). Without `vat()` it gets the default VAT: `quittio.defaults.vat`, otherwise the standard rate of the seller's country (Germany: 19 %; small businesses: the small business exemption), see [Default VAT](building-invoices.md#default-vat).
 
 Amounts and quantities are strings (or `Brick\Math` values) to avoid floating point errors; floats are rejected with an `InvalidArgumentException`. Rounding follows EN 16931 (half up, two decimals for amounts, VAT per VAT group). References, notes, further parties, allowances and charges, payment means such as direct debit, attachments, gross prices and all other options are described in [Building invoices](building-invoices.md); the German tax presets (`VatPreset::Standard19`, `Reduced7`, `ReverseChargeEu` …) in [Tax presets](country-packs.md#tax-presets).
 
@@ -86,8 +83,8 @@ The invoice keeps a copy of these values; changing the model later does not chan
 Instead of `build()`, end the chain with `render()`: without argument in the automatically chosen format, otherwise in the given format or formats.
 
 ```php
-$result = Quittio::invoice()->buyer($user)->line(Line::make('Consulting')->netPrice('120.00'))->render();
-$result = Quittio::invoice()->buyer($user)->line(Line::make('Consulting')->netPrice('120.00'))->render('xrechnung-cii');
+$result = Quittio::invoice()->buyer($user)->line('Consulting', netPrice: '120.00')->render();
+$result = Quittio::invoice()->buyer($user)->line('Consulting', netPrice: '120.00')->render('xrechnung-cii');
 ```
 
 For data you built before, or for more options (profile, locale, template, queue):

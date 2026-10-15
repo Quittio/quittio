@@ -4,7 +4,6 @@
 
 ```php
 use Quittio\Core\Builder\InvoiceBuilder;
-use Quittio\Core\Builder\Line;
 use Quittio\Core\Builder\Party;
 use Quittio\Core\Builder\PaymentTermsBuilder;
 use Quittio\Core\Enums\PaymentMeansCode;
@@ -25,10 +24,7 @@ $invoice = InvoiceBuilder::make()
         ->vatId('DE987654321')
         ->address('Bahnhofstraße 5', '54321', 'Beispielstadt', 'DE')
         ->electronicAddress('ap@kunde.de', 'EM'))
-    ->line(Line::make('Web development')
-        ->quantity(24, UnitCode::Hour)
-        ->netPrice('95.00')
-        ->vat(VatPreset::Standard19))
+    ->line('Web development', netPrice: '95.00', quantity: 24, unit: UnitCode::Hour, vat: VatPreset::Standard19)
     ->payment(PaymentMeansCode::SepaCreditTransfer, iban: 'DE02120300000000202051', remittanceInformation: 'RE-2026-0042')
     ->paymentTerms(fn (PaymentTermsBuilder $t) => $t->dueInDays(14)->cashDiscount(days: 7, percent: '2.00'))
     ->build();
@@ -277,11 +273,14 @@ A line can be given as:
 
 | Form | Example |
 |---|---|
-| `Line::make(string $name)` (`Quittio\Core\Builder\Line`), a `LineBuilder` with the name set | `->line(Line::make('Web development')->quantity(24, UnitCode::Hour)->netPrice('95.00'))` |
+| The name, with the common values as named arguments | `->line('Web development', netPrice: '95.00', quantity: 24, unit: UnitCode::Hour)` |
+| `Line::make()` (`Quittio\Core\Builder\Line`), a `LineBuilder` with the same arguments, for everything else | `->line(Line::make('Web development', netPrice: '95.00')->sellerId('WD-1')->allowance(percent: '10', reason: 'Framework agreement'))` |
 | An array whose keys are methods of the `LineBuilder` | `->line(['name' => 'Hosting', 'quantity' => [1, UnitCode::Month], 'netPrice' => '49.00'])` |
 | An application model implementing `ProvidesInvoiceLine` ([Application models](#application-models)) | `->lines($order->items)` |
-| A callable that receives a new `LineBuilder` | `->line(Line::make('Travel expenses')->netPrice('120.00'))` |
+| A callable that receives a new `LineBuilder` | `->line(fn (LineBuilder $l) => $l->name('Travel expenses')->netPrice('120.00'))` |
 | A finished `InvoiceLine`, taken as it is | `->line($invoice->lines[0])` |
+
+The named arguments of `line()` and `Line::make()` are `netPrice` (BT-146, the price without VAT), `priceInclVat` (the price including VAT, [gross price mode](#gross-price-mode)), `quantity` (default 1), `unit`, `vat` (a preset or a category without rate; default the [default VAT](#default-vat)) and `description`; they are allowed only together with a name. A string is always the name of the line, never a callable.
 
 A `LineBuilder` is copied when it is added, so the same builder can serve as template for further lines. In an array, each key names a method (`LineBuilder::ARRAY_KEYS`: `id`, `name`, `description`, `note`, `quantity`, `unit`, `netPrice`, `listPrice`, `priceInclVat`, `vat`, `period`, `allowance`, `charge`, `sellerId`, `buyerId`, `standardId`, `classification`, `originCountry`, `attribute`, `orderLineReference`, `buyerAccountingReference`, `objectId`, `group`, `highlight`, `showGrossPrice`) and the value is its argument; an array value holds the arguments as list or by name (`'quantity' => [4, UnitCode::Hour]`, `'allowance' => ['percent' => '10', 'reason' => 'Early bird']`). Null values are skipped, so database rows with empty columns can be passed; an unknown key throws an `InvalidArgumentException`. `Line::fromArray($array)` and `LineBuilder::fill($array)` do the same for a builder.
 
@@ -289,7 +288,7 @@ A `LineBuilder` is copied when it is added, so the same builder can serve as tem
 use Quittio\Core\Builder\Line;
 
 $builder->lines([
-    Line::make('Web development')->quantity(24, UnitCode::Hour)->netPrice('95.00'),
+    Line::make('Web development', netPrice: '95.00', quantity: 24, unit: UnitCode::Hour),
     ['name' => 'Hosting', 'quantity' => [1, UnitCode::Month], 'netPrice' => '49.00'],
     ['name' => 'Book', 'netPrice' => '39.00', 'vat' => VatPreset::Reduced7],
 ]);
@@ -305,7 +304,7 @@ use Quittio\Core\Data\Lines\InvoiceLine;
 $changed = InvoiceBuilder::from($draft)
     ->updateLine('2', fn (InvoiceLine $line) => $line->withNetPrice('80.00')->with(['note' => 'Price adjusted']))
     ->removeLine('3')
-    ->line(Line::make('Travel expenses')->quantity(1)->netPrice('120.00')->vat(VatPreset::Standard19))
+    ->line('Travel expenses', netPrice: '120.00', vat: VatPreset::Standard19)
     ->build();
 ```
 
@@ -381,9 +380,9 @@ Shops and B2C invoices often work with prices including VAT. With `priceInclVat(
 ```php
 InvoiceBuilder::make()
     // ...
-    ->line(Line::make('T-shirt')->quantity(3)->priceInclVat('19.99')->vat(VatPreset::Standard19))
-    ->line(Line::make('Shipping')->quantity(1)->priceInclVat('4.90')->vat(VatPreset::Standard19))
-    ->line(Line::make('Voucher')->quantity(-1)->priceInclVat('5.00')->vat(VatPreset::Standard19))
+    ->line('T-shirt', priceInclVat: '19.99', quantity: 3, vat: VatPreset::Standard19)
+    ->line('Shipping', priceInclVat: '4.90', vat: VatPreset::Standard19)
+    ->line('Voucher', priceInclVat: '5.00', quantity: -1, vat: VatPreset::Standard19)
     ->build();
 ```
 
@@ -393,8 +392,8 @@ Restrictions: all lines of the invoice use `priceInclVat()`; gross price lines h
 
 ```php
 ->line(Line::make('Workstation')->vat(VatPreset::Standard19)
-    ->subLine(Line::make('Computer')->quantity(1)->netPrice('900.00')->vat(VatPreset::Standard19))
-    ->subLine(Line::make('Monitor')->quantity(2)->netPrice('250.00')->vat(VatPreset::Standard19)))
+    ->subLine('Computer', netPrice: '900.00', vat: VatPreset::Standard19)
+    ->subLine('Monitor', netPrice: '250.00', quantity: 2, vat: VatPreset::Standard19))
 ```
 
 A parent line without quantity has the quantity 1; without own price it takes the sum of its sub lines as price. Sub lines exist only in the profiles EXTENDED (CII, with parent line identifier and line status `GROUP`/`DETAIL`) and XRechnung extension (UBL only, `->format('xrechnung-ubl')->profile('xrechnung-extension')`). The automatic choice upgrades ZUGFeRD and CII to EXTENDED ([Formats and profiles](formats.md#automatic-choice)); other profiles reject sub lines (`QUITTIO-PROFILE-SUBLINES`).
@@ -433,8 +432,8 @@ InvoiceBuilder::useDefaultVat(new CountryDefaultVat($quittio->countries()));   /
 
 $invoice = InvoiceBuilder::make()
     // ...
-    ->line(Line::make('Web development')->quantity(24, UnitCode::Hour)->netPrice('95.00'))   // 19 %
-    ->line(Line::make('Book')->netPrice('39.00')->vat(VatPreset::Reduced7))                   // 7 %
+    ->line('Web development', netPrice: '95.00', quantity: 24, unit: UnitCode::Hour)   // 19 %
+    ->line('Book', netPrice: '39.00', vat: VatPreset::Reduced7)                         // 7 %
     ->build();
 ```
 
@@ -481,7 +480,7 @@ $exempt = CustomTaxPreset::make('acme.exempt_132', VatCategory::Exempt, '0', 'VA
     'en' => 'Exempt according to Art. 132 VAT Directive',
 ]);
 
-->line(Line::make('Course')->quantity(1)->netPrice('300.00')->vat($exempt))
+->line('Course', netPrice: '300.00', vat: $exempt)
 ```
 
 ## Document level allowances and charges
