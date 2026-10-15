@@ -114,6 +114,8 @@ The default resolver chooses `peppol` only with a lookup, a closure that receive
 ```php
 use Quittio\Core\Data\Party\BuyerParty;
 use Quittio\Core\Formats\DefaultFormatResolver;
+use Quittio\Core\Quittio;
+use Quittio\Country\DE\CountryDE;
 
 $quittio = Quittio::create($config, [new CountryDE], formatResolver: new DefaultFormatResolver(
     defaultProfile: 'en16931',

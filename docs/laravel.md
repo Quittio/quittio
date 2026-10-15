@@ -76,6 +76,7 @@ singleton.
 `QuittioManager` and `PendingInvoice` are macroable:
 
 ```php
+use Quittio\Laravel\Facades\Quittio;
 use Quittio\Laravel\Rendering\PendingInvoice;
 
 PendingInvoice::macro('forPublicBuyer', function () {
@@ -123,6 +124,7 @@ Documents start the same way, with the seller and bank account of the configurat
 use Quittio\Core\Builder\Party;
 use Quittio\Core\Data\Meta;
 use Quittio\Core\Enums\PaymentMeansCode;
+use Quittio\Laravel\Facades\Quittio;
 
 Quittio::invoice()
     ->seller(Party::make('Lisa Klein')->taxNumber('21/815/08150')->identifier('21/815/08150')->address('Gartenstraße 7', '12345', 'Musterstadt', 'DE'))
@@ -214,6 +216,7 @@ throws `Quittio\Core\Validation\ValidationException`; its `result` property hold
 
 ```php
 use Quittio\Core\Validation\ValidationException;
+use Quittio\Laravel\Facades\Quittio;
 
 try {
     $result = Quittio::make($invoice)->format('xrechnung-cii')->render();
@@ -330,6 +333,7 @@ layer). For a local path without a disk use `$result->core()->save('/var/invoice
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
+use Quittio\Laravel\Facades\Quittio;
 use Quittio\Laravel\Rendering\RenderedInvoice;
 
 final class InvoiceMail extends Mailable
@@ -411,6 +415,7 @@ then `defaults.locale`, then the country pack. Details:
 
 ```php
 use Quittio\Core\Builder\Party;
+use Quittio\Laravel\Facades\Quittio;
 
 $quote = Quittio::quote()->number('AN-2026-0007')->issueDate('2026-10-01')
     ->buyer(Party::make('Kunde AG')->address('Weg 1', '54321', 'Beispielstadt', 'DE'))
@@ -616,6 +621,7 @@ forgets the built core, so call it in the `boot()` method of a service provider.
 ```php
 use Illuminate\Contracts\Container\Container;
 use Quittio\Core\Pdf\Renderers\CallbackRenderer;
+use Quittio\Laravel\Facades\Quittio;
 
 public function boot(): void
 {
@@ -642,6 +648,7 @@ The default format resolver chooses `peppol` only with a lookup (see
 `BuyerParty` and returns whether the buyer is reachable via Peppol:
 
 ```php
+use Illuminate\Support\Facades\Cache;
 use Quittio\Core\Data\Party\BuyerParty;
 
 final class PeppolDirectoryLookup

@@ -86,8 +86,9 @@ Order confirmations reference the quote with `reference('AN-2026-0007', '2026-10
 Delivery notes print quantities without prices or totals. Lines given as builder, array or callable get the net price 0 and VAT category O (not subject to VAT) unless they set a price or VAT, so they need only name, quantity and unit. `InvoiceLine` objects and `ProvidesInvoiceLine` models are taken as they are.
 
 ```php
-use Quittio\Core\Documents\Package;
 use Brick\Math\BigDecimal;
+use Quittio\Core\Documents\Package;
+use Quittio\Laravel\Facades\Quittio;
 
 $note = Quittio::deliveryNote()
     ->number('LS-2026-0012')
@@ -104,7 +105,7 @@ $note = Quittio::deliveryNote()
 
 ## Proforma invoices
 
-A proforma is not an invoice for tax purposes. Build it with `DocumentBuilder::proforma()`: it is rendered like an invoice (prices, totals, payment terms, bank details and QR code) with the title "Proforma invoice" and the notice "This proforma invoice is not an invoice for tax purposes." among the legal notes, and never carries e-invoice XML. An invoice with type code 325 (`InvoiceTypeCode::ProformaInvoice`) in the invoice pipeline fails validation with `QUITTIO-PROFORMA`, because e-invoice XML with VAT amounts would be booked as an invoice.
+A proforma is not an invoice for tax purposes. Build it with `Quittio::proforma()` (Laravel) or `DocumentBuilder::proforma()`: it is rendered like an invoice (prices, totals, payment terms, bank details and QR code) with the title "Proforma invoice" and the notice "This proforma invoice is not an invoice for tax purposes." among the legal notes, and never carries e-invoice XML. An invoice with type code 325 (`InvoiceTypeCode::ProformaInvoice`) in the invoice pipeline fails validation with `QUITTIO-PROFORMA`, because e-invoice XML with VAT amounts would be booked as an invoice.
 
 ## Payment reminders
 

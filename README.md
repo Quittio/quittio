@@ -55,7 +55,7 @@ $result = Quittio::invoice()                                     // seller and b
         ->vatId('DE987654321')
         ->address('Bahnhofstraße 5', '54321', 'Beispielstadt', 'DE'))
     ->line('Web development', netPrice: '95.00', quantity: 24, unit: UnitCode::Hour)
-    ->line(['name' => 'Hosting', 'netPrice' => '49.00'])          // quantity 1, VAT 19 % by default
+    ->line('Hosting', netPrice: '49.00')                          // quantity 1, VAT 19 % by default
     ->dueInDays(14)
     ->render();                                                   // ZUGFeRD: PDF/A-3 with embedded XML
 

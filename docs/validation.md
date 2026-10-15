@@ -76,7 +76,7 @@ A render run validates in three stages, per requested format:
 2. **xml** (L4, L5) on the generated XML, for formats with XML (and for `pdf` with embedded XML for consumers, `b2c_embed_xml`);
 3. **pdf** (L6) on the rendered PDF.
 
-The validation context holds the profile of the format, the country packs (the seller's pack first, the buyer's pack for cross-border invoices), the locale of the run (messages are written in it) and the options. Formats without XML (`pdf`, `html`, `json`) are no e-invoices: L2 (profile field matrix) is skipped for them. With several formats (`->formats([...])`) every format is validated with its own profile and syntax.
+The validation context holds the profile of the format, the country packs (the seller's pack first, the buyer's pack for cross-border invoices), the locale of the run (the language of the invoice, which rules use for its texts), the language of the messages ([Messages and translations](#messages-and-translations)) and the options. Formats without XML (`pdf`, `html`, `json`) are no e-invoices: L2 (profile field matrix) is skipped for them. With several formats (`->formats([...])`) every format is validated with its own profile and syntax.
 
 In mode `error`, the run stops after the first stage that has errors (or warnings with `block_on_warnings`): data errors throw before XML is written, XML errors before the PDF is rendered. A driver runs only if it supports the subject: XML drivers need XML, veraPDF needs a PDF.
 
@@ -95,6 +95,7 @@ In mode `error`, a blocking result throws `Quittio\Core\Validation\ValidationExc
 
 ```php
 use Quittio\Core\Validation\ValidationException;
+use Quittio\Laravel\Facades\Quittio;
 
 try {
     $rendered = Quittio::make($invoice)->format('xrechnung-cii')->render();
@@ -197,7 +198,7 @@ All EN 16931, code list, VAT category and Peppol rules report errors unless note
 | `QUITTIO-GENERIC-COUNTRY` | warning | No country pack for the seller's country: only EN 16931 is checked |
 | `QUITTIO-PROFILE-NOT-EINVOICE` | warning | Profile that is no EN 16931 e-invoice (MINIMUM, BASIC WL) |
 | `QUITTIO-STANDARD-VERSION` | error | The profile does not support the EN 16931 version of the invoice |
-| `QUITTIO-PROFORMA` | error | Type code 325 in the invoice pipeline; use `DocumentBuilder::proforma()` ([documents](documents.md#proforma-invoices)) |
+| `QUITTIO-PROFORMA` | error | Type code 325 in the invoice pipeline; use `Quittio::proforma()` or `DocumentBuilder::proforma()` ([documents](documents.md#proforma-invoices)) |
 
 ### Plausibility (L7)
 

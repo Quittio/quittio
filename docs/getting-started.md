@@ -57,6 +57,7 @@ Your own models can provide invoice data through three contracts in `Quittio\Cor
 ```php
 use Quittio\Core\Builder\PartyBuilder;
 use Quittio\Core\Contracts\ProvidesParty;
+use Quittio\Laravel\Facades\Quittio;
 
 class User extends Authenticatable implements ProvidesParty
 {

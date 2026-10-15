@@ -614,6 +614,7 @@ Rules worth knowing:
 ### Creating drafts
 
 ```php
+use Quittio\Core\Builder\InvoiceBuilder;
 use Quittio\Managed\Models\Invoice;
 
 $draft = Invoice::draft($builder);                                    // current issuer
@@ -797,6 +798,7 @@ issuing, through the model or in bulk:
 
 ```php
 use Quittio\Managed\Enums\PaymentStatus;
+use Quittio\Managed\Models\Invoice;
 
 $invoice->forceFill([
     'payment_status' => PaymentStatus::Paid,

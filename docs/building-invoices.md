@@ -97,7 +97,7 @@ The specification identifier (BT-24) itself is not part of the data; it comes fr
 | `PrepaymentInvoice` | 386 | Advance payment invoice. |
 | `PartialConstructionInvoice`, `PartialFinalConstructionInvoice`, `FinalConstructionInvoice` | 875, 876, 877 | Construction invoices. |
 | `DebitNote` | 383 | Debit note. |
-| `ProformaInvoice` | 325 | Rejected in the invoice pipeline (`QUITTIO-PROFORMA`); use `DocumentBuilder::proforma()` ([Proforma invoices](documents.md#proforma-invoices)). |
+| `ProformaInvoice` | 325 | Rejected in the invoice pipeline (`QUITTIO-PROFORMA`); use `Quittio::proforma()` in Laravel or `DocumentBuilder::proforma()` ([Proforma invoices](documents.md#proforma-invoices)). |
 
 Further cases: `RequestForPayment` (71), `DebitNoteGoodsServices` (80), `CreditNoteGoodsServices` (81), `MeteredServicesInvoice` (82), `CreditNoteFinancialAdjustment` (83), `DebitNoteFinancialAdjustment` (84), `TaxNotification` (102), `InvoicingDataSheet` (130), `DirectPaymentValuation` (202), `ProvisionalPaymentValuation` (203), `PaymentValuation` (204), `InterimApplicationForPayment` (211), `FinalPaymentRequest` (218), `PaymentRequestForCompletedUnits` (219), `ConsolidatedCreditNote` (262), `PriceVariationInvoice` (295), `CreditNoteForPriceVariation` (296), `DelcredereCreditNote` (308), `CommercialInvoiceWithPackingList` (331), `CommissionNote` (382), `ConsolidatedInvoice` (385), `HireInvoice` (387), `TaxInvoice` (388), `DelcredereInvoice` (390), `FactoredInvoice` (393), `LeaseInvoice` (394), `ConsignmentInvoice` (395), `FactoredCreditNote` (396), `OcrPaymentCreditNote` (420), `DebitAdvice` (456), `ReversalOfDebit` (457), `ReversalOfCredit` (458), `ForwardersCreditNote` (532), `ForwardersInvoiceDiscrepancyReport` (553), `InsurersInvoice` (575), `ForwardersInvoice` (623), `PortChargesDocument` (633), `InvoiceInformationForAccounting` (751), `FreightInvoice` (780), `ClaimNotification` (817), `ConsularInvoice` (870), `CustomsInvoice` (935).
 
@@ -106,6 +106,7 @@ Further cases: `RequestForPayment` (71), `DebitNoteGoodsServices` (80), `CreditN
 ### Credit notes, corrected invoices and self-billing
 
 ```php
+use Quittio\Core\Builder\InvoiceBuilder;
 use Quittio\Core\Enums\InvoiceTypeCode;
 
 // Credit note: positive amounts, type code 381, reference to the invoice
@@ -206,7 +207,10 @@ Cancellations take over the notes with subject `REG` and `TXD` of the original.
 A builder started with the defaults of a seller (`applyDefaults(callable $apply)`, which `Quittio::invoice()` uses for the seller of the configuration or the Managed issuer) remembers what they set. Replacing the seller with another one removes those values again (bank account, small business flag and the other defaults of that seller), except the values set on the builder by the caller; a callable keeps them ([Starting invoices](laravel.md#starting-invoices)).
 
 ```php
+use Quittio\Core\Builder\InvoiceBuilder;
 use Quittio\Core\Builder\Party;
+use Quittio\Core\Builder\PartyBuilder;
+use Quittio\Laravel\Facades\Quittio;
 
 Quittio::invoice()                                                 // seller from config/quittio.php
     ->seller(fn (PartyBuilder $s) => $s->contact('Erika Muster', '+49 123 4567', 'erika@muster.de'))
@@ -286,6 +290,8 @@ A `LineBuilder` is copied when it is added, so the same builder can serve as tem
 
 ```php
 use Quittio\Core\Builder\Line;
+use Quittio\Core\Enums\UnitCode;
+use Quittio\Country\DE\Tax\VatPreset;
 
 $builder->lines([
     Line::make('Web development', netPrice: '95.00', quantity: 24, unit: UnitCode::Hour),
@@ -299,7 +305,9 @@ Without `quantity()` a line has the quantity 1; without `vat()` it takes the [de
 `updateLine()` and `removeLine()` work on lines that already exist as `InvoiceLine`: lines of data passed to `InvoiceBuilder::from()` and lines added as `InvoiceLine`. Lines added in the other forms are built only in `build()`, so they cannot be changed or removed by identifier. An unknown identifier throws an `InvalidArgumentException`.
 
 ```php
+use Quittio\Core\Builder\InvoiceBuilder;
 use Quittio\Core\Data\Lines\InvoiceLine;
+use Quittio\Country\DE\Tax\VatPreset;
 
 $changed = InvoiceBuilder::from($draft)
     ->updateLine('2', netPrice: '80.00', description: 'Price adjusted')
@@ -354,12 +362,10 @@ Line identifiers: a line without `id()` gets its position (1, 2, 3 …), skippin
 ### Prices
 
 ```php
-->line(Line::make('Paper A4')->quantity(5000, 'H87')
-    ->netPrice('12.50', baseQuantity: 1000)                  // 12.50 per 1000 sheets: 62.50
-    ->vat(VatPreset::Standard19))
-->line(Line::make('Monitor')->quantity(2)
-    ->listPrice('299.00', discount: '30.00')                 // net price 269.00
-    ->vat(VatPreset::Standard19))
+->line(Line::make('Paper A4', quantity: 5000, unit: 'H87', vat: VatPreset::Standard19)
+    ->netPrice('12.50', baseQuantity: 1000))                 // 12.50 per 1000 sheets: 62.50
+->line(Line::make('Monitor', quantity: 2, vat: VatPreset::Standard19)
+    ->listPrice('299.00', discount: '30.00'))                // net price 269.00
 ```
 
 The line amount before allowances and charges is round2(quantity × net price / base quantity). Prices must not be negative (BR-27); returns and discounts use a negative quantity.
@@ -369,14 +375,14 @@ The line amount before allowances and charges is round2(quantity × net price / 
 A line allowance or charge has an amount, or a percentage of a base amount. Without a base amount the base is the line amount before allowances and charges (quantity × price); the calculator writes it to BT-137/BT-142. EN 16931 requires a reason text or a reason code (`AllowanceReasonCode` and `ChargeReasonCode`, see [Document level allowances and charges](#document-level-allowances-and-charges)).
 
 ```php
-->line(Line::make('Seminar')->quantity(3)->netPrice('400.00')->vat(VatPreset::Standard19)
+->line(Line::make('Seminar', netPrice: '400.00', quantity: 3, vat: VatPreset::Standard19)
     ->allowance(percent: '10', reason: 'Early bird')       // 120.00 of 1200.00
     ->charge('25.00', reason: 'Materials', reasonCode: 'ABK'))
 ```
 
 ### Gross price mode
 
-Shops and B2C invoices often work with prices including VAT. With `priceInclVat()` on every line, the calculator derives net prices so that the customer pays exactly the gross amount ([Gross price conversion](#gross-price-conversion)):
+Shops and B2C invoices often work with prices including VAT. With `priceInclVat` on every line, the calculator derives net prices so that the customer pays exactly the gross amount ([Gross price conversion](#gross-price-conversion)):
 
 ```php
 InvoiceBuilder::make()
@@ -392,7 +398,7 @@ Restrictions: all lines of the invoice use `priceInclVat()`; gross price lines h
 ### Sub lines
 
 ```php
-->line(Line::make('Workstation')->vat(VatPreset::Standard19)
+->line(Line::make('Workstation', vat: VatPreset::Standard19)
     ->subLine('Computer', netPrice: '900.00', vat: VatPreset::Standard19)
     ->subLine('Monitor', netPrice: '250.00', quantity: 2, vat: VatPreset::Standard19))
 ```
@@ -406,6 +412,7 @@ Every line has a VAT category (BT-151) and, except for category O, a rate (BT-15
 ```php
 use Quittio\Core\Enums\VatCategory;
 use Quittio\Core\Enums\VatExemptionReasonCode;
+use Quittio\Country\DE\Tax\VatPreset;
 
 ->vat(VatPreset::Standard19)                                         // preset of the German pack
 ->vat(VatCategory::StandardRate, '19')
@@ -426,7 +433,10 @@ Lines (and sub lines) without `vat()` take the default VAT of the invoice when i
 `Quittio\Core\Tax\CountryDefaultVat` is such a callable: `new CountryDefaultVat(CountryRegistry $countries, ?TaxPreset $preset = null)` returns `$preset`, otherwise the standard preset of the seller's country pack (`CountryDefaults::$vatPreset`, Germany `de.standard_19`); for small business invoices it returns the small business preset of the pack (`CountryDefaults::$smallBusinessVatPreset`, Germany `de.small_business`), otherwise `$preset`. The Laravel integration installs it with the preset of `quittio.defaults.vat` ([Configuration](configuration.md#defaults)), so in Laravel lines without `vat()` get 19 % for a German seller.
 
 ```php
+use Quittio\Core\Builder\InvoiceBuilder;
+use Quittio\Core\Enums\UnitCode;
 use Quittio\Core\Tax\CountryDefaultVat;
+use Quittio\Country\DE\Tax\VatPreset;
 
 // Without Laravel, once at start-up
 InvoiceBuilder::useDefaultVat(new CountryDefaultVat($quittio->countries()));   // or a preset: VatPreset::Standard19
@@ -474,6 +484,7 @@ $preset = $quittio->countries()->get('DE')?->taxPresets()->get('de.standard_19')
 The German presets (`VatPreset::Standard19`, `Reduced7`, `SmallBusiness`, `ReverseChargeEu`, `VatPreset::exempt('§ 4 Nr. 14 UStG')` …) are listed in [Tax presets](country-packs.md#tax-presets); [Presets of your pack](country-packs.md#presets-of-your-pack) shows how a pack provides its own. Own presets are created with `CustomTaxPreset::make(string $key, VatCategory $category, BigDecimal|int|string|null $rate = null, VatExemptionReasonCode|RawCode|string|null $code = null, array|string|null $reason = null)`, the reason as text or as array of texts per locale (fallback `en`):
 
 ```php
+use Quittio\Core\Enums\VatCategory;
 use Quittio\Core\Tax\CustomTaxPreset;
 
 $exempt = CustomTaxPreset::make('acme.exempt_132', VatCategory::Exempt, '0', 'VATEX-EU-132', [
@@ -497,6 +508,7 @@ An allowance or charge has an amount, or a percentage of a base amount; without 
 
 ```php
 use Quittio\Core\Enums\ChargeReasonCode;
+use Quittio\Core\Enums\VatCategory;
 
 ->charge(VatCategory::StandardRate, '19', amount: '9.90', reason: 'Shipping', reasonCode: ChargeReasonCode::Freight)
 ->allowance(VatCategory::StandardRate, '19', percent: '5', reason: 'Loyalty discount')
@@ -631,6 +643,7 @@ use Quittio\Core\Enums\MimeType;
 use Quittio\Core\Data\Extensions\ExtendedData;
 use Quittio\Core\Data\Extensions\ExtendedParty;
 use Quittio\Core\Data\Extensions\Installment;
+use Quittio\Core\Data\Party\Address;
 use Quittio\Core\Support\Amount;
 use Quittio\Core\Support\Date;
 
@@ -662,7 +675,7 @@ use Quittio\Core\Support\Date;
 
 ->presentation(['introText' => 'Thank you for your order.', 'showGrossPrices' => true])
 ->group('hardware', 'Hardware')
-->line(Line::make('Notebook')->quantity(1)->netPrice('1200.00')->vat(VatPreset::Standard19)->group('hardware'))
+->line(Line::make('Notebook', netPrice: '1200.00', vat: VatPreset::Standard19)->group('hardware'))
 ```
 
 The flags `declared_amounts`, `declared_amounts_recalculated`, `cancellation_vat_aligned` and those with the prefixes `amounts_fingerprint:` and `declared_vat_in_tax_currency:` are set by Quittio itself ([Declared amounts](#declared-amounts)); do not set them.
@@ -678,8 +691,12 @@ Application models can provide invoice data through three contracts in `Quittio\
 | `ProvidesInvoiceData` | `toInvoiceData(): InvoiceData` | `Quittio::make($model)` (core and Laravel), `Invoice::draftFor($model)` and `HasInvoices::draftInvoice()` in the [Managed layer](managed.md) |
 
 ```php
+use Quittio\Core\Builder\LineBuilder;
 use Quittio\Core\Contracts\ProvidesInvoiceData;
 use Quittio\Core\Contracts\ProvidesInvoiceLine;
+use Quittio\Core\Enums\UnitCode;
+use Quittio\Country\DE\Tax\VatPreset;
+use Quittio\Laravel\Facades\Quittio;
 
 class OrderItem extends Model implements ProvidesInvoiceLine
 {
@@ -807,6 +824,7 @@ A cancellation is a new invoice with its own number that reverses an issued invo
 
 ```php
 use Quittio\Core\Support\Date;
+use Quittio\Laravel\Facades\Quittio;
 
 $builder = $quittio->cancellation($original, 'ST-2026-0001', reason: 'Charged twice');   // core instance
 $builder = Quittio::cancellation($original, 'ST-2026-0001', reason: 'Charged twice');    // Laravel facade

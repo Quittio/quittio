@@ -281,14 +281,17 @@ Open items (`dunning.openItems[]`, `statement.items[]`) have `invoiceNumber`, `i
 Line-level hints are `LinePresentation` (`groupId`, `highlight`, `showGrossPrice`); the builder sets them with `LineBuilder::group($groupId)`, `highlight()` and `showGrossPrice(?bool $show = true)` (prints the price including VAT of this line, or with `false` not, whatever `showGrossPrices` says; `null` follows the presentation).
 
 ```php
+use Quittio\Core\Builder\Line;
 use Quittio\Core\Data\Presentation\Colors;
 use Quittio\Core\Data\Presentation\Presentation;
+use Quittio\Country\DE\Tax\VatPreset;
+use Quittio\Laravel\Facades\Quittio;
 
-$invoice = InvoiceBuilder::make()
+$invoice = Quittio::invoice()
     // ...
     ->presentation(['logo' => storage_path('app/logo.png'), 'introText' => 'Thank you for your order.'])
     ->group('hardware', 'Hardware')                                     // line group with subtotal
-    ->line(Line::make('Router')->quantity(2, 'C62')->netPrice('89.00')->vat(VatPreset::Standard19)->group('hardware'))
+    ->line(Line::make('Router', netPrice: '89.00', quantity: 2)->group('hardware'))
     ->build();
 
 Quittio::make($invoice)
@@ -392,6 +395,7 @@ Values are formatted by `IntlFormatter` from their exact decimal value: amounts 
 ```php
 use Quittio\Core\Pdf\Renderers\CallbackRenderer;
 use Quittio\Core\Pdf\RenderRequest;
+use Quittio\Laravel\Facades\Quittio;
 use Spatie\Browsershot\Browsershot;
 
 Quittio::extend('renderer', 'browsershot', fn ($app, array $config) => new CallbackRenderer(

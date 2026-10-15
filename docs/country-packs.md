@@ -384,6 +384,7 @@ Messages come from the catalog key `{namespace}::rules.{code}` with the entries 
 `Quittio\Country\DE\Tax\VatPreset` is a string-backed enum implementing `TaxPreset`. Apply it per line:
 
 ```php
+use Quittio\Core\Enums\UnitCode;
 use Quittio\Country\DE\Tax\VatPreset;
 
 ->line('Webentwicklung', netPrice: '95.00', quantity: 24, unit: UnitCode::Hour, vat: VatPreset::Standard19)
@@ -597,7 +598,10 @@ The `$locale` parameter selects the text; it is independent of the invoice local
 A final invoice (section 14 (5) sentence 2 UStG) states the full service with its full VAT and deducts the advance payments received:
 
 ```php
+use Quittio\Core\Builder\InvoiceBuilder;
 use Quittio\Core\Calculation\En16931Calculator;
+use Quittio\Core\Enums\UnitCode;
+use Quittio\Country\DE\Tax\VatPreset;
 
 $advance = (new En16931Calculator)->calculate($advanceInvoice);   // or $rendered->data()
 
@@ -639,6 +643,7 @@ With an advance invoice RE-2026-0040 of 1,000.00 EUR net plus 19 % VAT, the fina
 - Without a VAT identifier, EN 16931 needs a seller identifier (BT-29) or legal registration (BT-30) (BR-CO-26); in Laravel set `quittio.seller.identifiers` or `legal_registration` (see [configuration](configuration.md)).
 
 ```php
+use Quittio\Core\Enums\UnitCode;
 use Quittio\Laravel\Facades\Quittio;
 
 $builder = Quittio::invoice()                      // quittio.seller.small_business = true
@@ -820,6 +825,7 @@ use Brick\Money\Money;
 use Quittio\Core\Support\Amount;
 use Quittio\Core\Support\Date;
 use Quittio\Country\DE\Dunning\DefaultInterest;
+use Quittio\Laravel\Facades\Quittio;
 
 $interest = new DefaultInterest;
 $reminder = Quittio::paymentReminder(1)                          // seller and bank account from the config

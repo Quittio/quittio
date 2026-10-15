@@ -43,34 +43,24 @@ Germany is the first market; everything country-specific lives in country packs,
 ## Quick example
 
 ```php
-use Quittio\Core\Builder\InvoiceBuilder;
-use Quittio\Core\Enums\{InvoiceTypeCode, PaymentMeansCode, UnitCode};
-use Quittio\Country\DE\Tax\VatPreset;
+use Quittio\Core\Builder\Party;
+use Quittio\Core\Enums\UnitCode;
 use Quittio\Laravel\Facades\Quittio;
 
-$invoice = InvoiceBuilder::make()
+$result = Quittio::invoice()                                     // seller and bank account from config/quittio.php
     ->number('RE-2026-0042')
-    ->issueDate('2026-10-03')
-    ->type(InvoiceTypeCode::CommercialInvoice)
-    ->currency('EUR')
-    ->seller(Party::make('Muster GmbH')
-        ->vatId('DE123456789')
-        ->address('Hauptstraße 1', '12345', 'Musterstadt', 'DE')
-        ->contact('Max Muster', '+49 123 456789', 'rechnung@muster.de')
-        ->electronicAddress('rechnung@muster.de', 'EM'))
-    ->buyer(Party::make('Kunde AG')
-        ->address('Bahnhofstraße 5', '54321', 'Beispielstadt', 'DE')
-        ->electronicAddress('ap@kunde.de', 'EM'))
     ->deliveryDate('2026-09-30')
-    ->line('Web development', netPrice: '95.00', quantity: 24, unit: UnitCode::Hour, vat: VatPreset::Standard19)
+    ->buyer(Party::make('Kunde AG')                               // or a model: ->buyer($customer)
+        ->vatId('DE987654321')
+        ->address('Bahnhofstraße 5', '54321', 'Beispielstadt', 'DE'))
+    ->line('Web development', netPrice: '95.00', quantity: 24, unit: UnitCode::Hour)
+    ->line('Hosting', netPrice: '49.00')                          // quantity 1, VAT 19 % by default
     ->dueInDays(14)
-    ->payment(PaymentMeansCode::SepaCreditTransfer, iban: 'DE02120300000000202051')
-    ->build();
+    ->render();                                                   // ZUGFeRD: PDF/A-3 with embedded XML
 
-$result = Quittio::make($invoice)->format('zugferd')->render();
-
-$result->pdf();   // PDF/A-3 with embedded factur-x.xml
-$result->xml();   // CII XML
+$result->pdf();
+$result->save('invoices', '2026/');
+$result->cancel('ST-2026-0001', reason: 'Charged twice');        // the cancellation, rendered
 ```
 
 ## Documentation

@@ -78,8 +78,10 @@ integration end to end:
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
+use Quittio\Core\Data\InvoiceData;
 use Quittio\Laravel\Events\InvoiceRendered;
 use Quittio\Laravel\Events\InvoiceValidationFailed;
+use Quittio\Laravel\Facades\Quittio;
 use Quittio\Laravel\Jobs\RenderInvoice;
 
 it('stores the PDF', function () {
@@ -248,7 +250,9 @@ By default rendering and `assertValidEInvoice()` use the PHP rules and the XSD s
 check (veraPDF, level L6) need Java and veraPDF. Run them in a separate test group:
 
 ```php
+use Quittio\Core\Data\InvoiceData;
 use Quittio\Core\Validation\Drivers\KositArtifacts;
+use Quittio\Laravel\Facades\Quittio;
 
 function useOfficialValidators(): void
 {
@@ -337,6 +341,7 @@ database.
 | `data(InvoiceData $data)` | The columns of your invoice data instead |
 
 ```php
+use Quittio\Core\Data\InvoiceData;
 use Quittio\Managed\Models\Invoice;
 use Quittio\Managed\Models\Issuer;
 

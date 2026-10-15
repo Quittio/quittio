@@ -31,7 +31,7 @@ All notable changes to this project are documented in this file. The format foll
 - Laravel: `QUITTIO_SELLER_SMALL_BUSINESS` for `quittio.seller.small_business`.
 - Laravel: `quittio.defaults.vat` (tax preset of lines without `->vat()`, default the standard rate of the seller's country) and `RenderedInvoice::cancel($number, reason: …)`, which renders the cancellation in the formats of the invoice; `Quittio::defaultVat()`.
 - Laravel: `Quittio::invoice()` starts an invoice with the seller, bank account and small business setting of the configuration and renders it with `->render()` (optionally a format or a list of formats); `Quittio::quote()`, `orderConfirmation()`, `deliveryNote()`, `proforma()`, `paymentReminder()` and `accountStatement()` start documents the same way. The seller comes from the binding of `Quittio\Laravel\Contracts\InvoiceDefaults` (default `ConfigInvoiceDefaults`; quittio/managed binds the current issuer).
-- Documentation page Examples: complete examples from service invoices, small businesses, XRechnung and customers abroad to cancellations, Laravel orders, drafts, reminders and incoming invoices; a test runs the code of the page.
+- Documentation page Examples: complete examples from service invoices, small businesses, XRechnung and customers abroad to cancellations, Laravel orders, drafts, reminders and incoming invoices; a test runs the code of the page, and another one checks that every code block of the documentation imports the classes it uses.
 
 ### Changed
 
