@@ -56,6 +56,8 @@ exclude:
   - _config.ci.yml
   - wrangler.jsonc
   - .wrangler
+  # Decision records for contributors (see ARCHITECTURE.md), not part of the website.
+  - adr
 
 defaults:
   - scope:
