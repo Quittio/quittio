@@ -60,27 +60,25 @@ $brand = function () use ($design, $invoice, $e): string {
     .lines th { font-size: 9pt; color: <?= $muted ?>; font-weight: normal; <?= $medium ?> text-align: left; padding: 0 0 2mm 0; border-bottom: 0.26mm solid <?= $text ?>; }
     .lines td { padding: 2.2mm 0 2.6mm 0; border-bottom: 0.26mm solid #e6e8ec; }
     .lines .num { text-align: right; white-space: nowrap; }
-    .lines td.num, .lines td.position { color: <?= $muted ?>; }
-    .lines td.amount { color: <?= $text ?>; }
+    /* mPDF does not let one class rule override another on the same cell: muted cells have a class of their own. */
+    .lines td.position, .lines td.quiet { color: <?= $muted ?>; }
     .lines .name { <?= $medium ?> }
     .lines .group td { <?= $semibold ?> padding-top: 5mm; }
     .lines .sub td { color: <?= $muted ?>; font-size: 9pt; padding-top: 1mm; }
-    .lines .subtotal td { color: <?= $muted ?>; }
     /* Highlighted lines (LineBuilder::highlight()): shaded, marked in the secondary colour. */
     .lines .highlight td { background-color: #f8fafc; }
     .lines .highlight td.position { border-left: 0.8mm solid <?= $secondary ?>; padding-left: 1.5mm; }
     /* Carry-over rows at page breaks (filled in by the PDF renderer). */
-    .lines .carry td { color: <?= $muted ?>; border-bottom: 0; padding-top: 3.6mm; }
+    .lines .carry td { border-bottom: 0; padding-top: 3.6mm; }
     .lines .carry-in td { border-bottom: 0.26mm solid #e6e8ec; padding-top: 2.2mm; }
-    .lines td.carry-amount { color: <?= $text ?>; <?= $medium ?> }
+    .lines td.carry-amount { <?= $medium ?> }
     .description { color: <?= $muted ?>; font-size: 9pt; }
     .totals { width: 74.2mm; margin-left: auto; margin-top: 3.1mm; page-break-inside: avoid; }
     .totals td { padding: 0.47mm 0; }
     .totals tr.gap td { height: 2.2mm; padding: 0; line-height: 1; }
     .totals td.label { color: <?= $muted ?>; }
-    .totals .gross td.label { color: <?= $text ?>; }
-    .totals .grand td { border-top: 0.26mm solid <?= $secondary ?>; padding-top: 3.1mm; vertical-align: bottom; line-height: 1.2; }
-    .totals .grand td.label { font-size: 10.5pt; color: <?= $text ?>; <?= $semibold ?> }
+    .totals .grand td { border-top: 0.26mm solid <?= $text ?>; padding-top: 3.1mm; vertical-align: bottom; line-height: 1.2; }
+    .totals td.grand-label { font-size: 10.5pt; <?= $semibold ?> }
     .totals .grand td.amount { font-size: 12.75pt; font-weight: bold; color: <?= $primary ?>; }
     .section { margin-top: 8.3mm; page-break-inside: avoid; }
     .section-title { font-size: 9pt; color: <?= $secondary ?>; <?= $semibold ?> }
@@ -245,11 +243,11 @@ $brand = function () use ($design, $invoice, $e): string {
                     <?php if ($line->note): ?><div class="description"><?= $e($line->note) ?></div><?php endif ?>
                     <?php if (count($line->serialNumbers) > 0): ?><div class="description"><?= $e($labels->serial_numbers) ?>: <?php foreach ($line->serialNumbers as $i => $serial): ?><?= $i > 0 ? ', ' : '' ?><?= $e($serial) ?><?php endforeach ?></div><?php endif ?>
                 </td>
-                <td class="num"><?= $e($line->quantity) ?> <?= $e($line->unit->label) ?></td>
+                <td class="num quiet"><?= $e($line->quantity) ?> <?= $e($line->unit->label) ?></td>
                 <?php if ($prices): ?>
-                <td class="num"><?= $e($line->unitPrice) ?><?php if ($line->unitPriceBase): ?><div class="description">/ <?= $e($line->unitPriceBase) ?></div><?php endif ?><?php if ($line->showGrossPrice): ?><div class="description"><?= $e($labels->unit_price_gross) ?> <?= $e($line->grossUnitPrice) ?></div><?php endif ?></td>
-                <?php if ($vatColumn): ?><td class="num"><?= $e($line->vatRate) ?></td><?php endif ?>
-                <td class="num amount"><?= $e($line->total) ?></td>
+                <td class="num quiet"><?= $e($line->unitPrice) ?><?php if ($line->unitPriceBase): ?><div class="description">/ <?= $e($line->unitPriceBase) ?></div><?php endif ?><?php if ($line->showGrossPrice): ?><div class="description"><?= $e($labels->unit_price_gross) ?> <?= $e($line->grossUnitPrice) ?></div><?php endif ?></td>
+                <?php if ($vatColumn): ?><td class="num quiet"><?= $e($line->vatRate) ?></td><?php endif ?>
+                <td class="num"><?= $e($line->total) ?></td>
                 <?php endif ?>
             </tr>
             <?php foreach ($line->subLines as $sub): ?>
@@ -265,15 +263,15 @@ $brand = function () use ($design, $invoice, $e): string {
                 </tr>
             <?php endforeach ?>
         <?php endforeach ?>
-        <?php if ($prices && $group->subtotal): ?><tr class="subtotal"><td></td><td colspan="<?= $columns - 2 ?>" class="right"><?= $e($labels->subtotal) ?></td><td class="num amount"><?= $e($group->subtotal) ?></td></tr><?php endif ?>
+        <?php if ($prices && $group->subtotal): ?><tr class="subtotal"><td></td><td colspan="<?= $columns - 2 ?>" class="right quiet"><?= $e($labels->subtotal) ?></td><td class="num"><?= $e($group->subtotal) ?></td></tr><?php endif ?>
     <?php endforeach ?>
     <!--/quittio:rows-->
     </tbody>
 </table>
 <?php if ($prices): ?>
 <?php /* Rows the PDF renderer inserts where the table continues on the next page; {page} and {amount} are filled in. */ ?>
-<!--quittio:carry-out <tr class="carry carry-out"><td colspan="2"><?= $e($invoice->label('continued_on', ['page' => '{page}'])) ?></td><td colspan="<?= $columns - 3 ?>" style="padding-left: 5.8mm;"><?= $e($labels->carry_over) ?></td><td class="num carry-amount">{amount}</td></tr> -->
-<!--quittio:carry-in <tr class="carry carry-in"><td></td><td colspan="<?= $columns - 2 ?>"><?= $e($invoice->label('carry_over_from', ['page' => '{page}'])) ?></td><td class="num">{amount}</td></tr> -->
+<!--quittio:carry-out <tr class="carry carry-out"><td colspan="2" class="quiet"><?= $e($invoice->label('continued_on', ['page' => '{page}'])) ?></td><td colspan="<?= $columns - 3 ?>" class="quiet" style="padding-left: 5.8mm;"><?= $e($labels->carry_over) ?></td><td class="num carry-amount">{amount}</td></tr> -->
+<!--quittio:carry-in <tr class="carry carry-in"><td></td><td colspan="<?= $columns - 2 ?>" class="quiet"><?= $e($invoice->label('carry_over_from', ['page' => '{page}'])) ?></td><td class="num quiet">{amount}</td></tr> -->
 <?php endif ?>
 <?php endif ?>
 
@@ -294,16 +292,16 @@ $brand = function () use ($design, $invoice, $e): string {
         <tr><td class="label"><?= $e($row->label) ?></td><td class="right"><?= $e($row->amount) ?></td></tr>
     <?php endforeach ?>
     <?php if ($totals->amountDue && ! $totals->dueEqualsGross): ?>
-        <tr class="gross"><td class="label"><?= $e($labels->gross_total) ?></td><td class="right"><?= $e($totals->grossTotal) ?></td></tr>
+        <tr class="gross"><td><?= $e($labels->gross_total) ?></td><td class="right"><?= $e($totals->grossTotal) ?></td></tr>
         <?php if ($totals->prepaid): ?><tr><td class="label"><?= $e($labels->prepaid) ?></td><td class="right">−<?= $e($totals->prepaid) ?></td></tr><?php endif ?>
         <?php if ($totals->rounding): ?><tr><td class="label"><?= $e($labels->rounding) ?></td><td class="right"><?= $e($totals->rounding) ?></td></tr><?php endif ?>
         <?php foreach ($totals->thirdPartyPayments as $payment): ?><tr><td class="label"><?= $e($payment->description) ?></td><td class="right"><?= $e($payment->amount) ?></td></tr><?php endforeach ?>
         <tr class="gap"><td></td><td></td></tr>
-        <tr class="grand"><td class="label"><?= $e($totals->amountDueLabel) ?></td><td class="right amount"><?= $e($totals->amountDue) ?></td></tr>
+        <tr class="grand"><td class="grand-label"><?= $e($totals->amountDueLabel) ?></td><td class="right amount"><?= $e($totals->amountDue) ?></td></tr>
     <?php else: ?>
         <?php /* Nothing prepaid or rounded: the amount due is the gross total, printed once. */ ?>
         <tr class="gap"><td></td><td></td></tr>
-        <tr class="grand"><td class="label"><?= $e($labels->gross_total) ?></td><td class="right amount"><?= $e($totals->amountDue ?? $totals->grossTotal) ?></td></tr>
+        <tr class="grand"><td class="grand-label"><?= $e($labels->gross_total) ?></td><td class="right amount"><?= $e($totals->amountDue ?? $totals->grossTotal) ?></td></tr>
     <?php endif ?>
 </table>
 <?php if ($totals->taxCurrencyNote): ?><p class="small muted right"><?= $e($totals->taxCurrencyNote) ?></p><?php endif ?>
@@ -348,7 +346,7 @@ $brand = function () use ($design, $invoice, $e): string {
     <tr><td><?= $e($labels->open_items) ?></td><td class="right"><?= $e($info->dunning->openTotal) ?></td></tr>
     <?php foreach ($info->dunning->fees as $fee): ?><tr><td><?= $e($fee->description) ?></td><td class="right"><?= $e($fee->amount) ?></td></tr><?php endforeach ?>
     <?php foreach ($info->dunning->interest as $interest): ?><tr><td><?= $e($interest->description) ?></td><td class="right"><?= $e($interest->amount) ?></td></tr><?php endforeach ?>
-    <tr class="grand"><td><?= $e($labels->dunning_total) ?></td><td class="right amount"><?= $e($info->dunning->total) ?></td></tr>
+    <tr class="grand"><td class="grand-label"><?= $e($labels->dunning_total) ?></td><td class="right amount"><?= $e($info->dunning->total) ?></td></tr>
 </table>
 <?php if ($info->dunning->deadlineText): ?><p><?= $e($info->dunning->deadlineText) ?></p><?php endif ?>
 <?php endif ?>
@@ -357,7 +355,7 @@ $brand = function () use ($design, $invoice, $e): string {
 <table class="totals">
     <tr><td><?= $e($labels->statement_period) ?></td><td class="right"><?= $e($info->statement->period) ?></td></tr>
     <?php if ($info->statement->openingBalance): ?><tr><td><?= $e($labels->opening_balance) ?></td><td class="right"><?= $e($info->statement->openingBalance) ?></td></tr><?php endif ?>
-    <tr class="grand"><td><?= $e($labels->balance) ?></td><td class="right amount"><?= $e($info->statement->balance) ?></td></tr>
+    <tr class="grand"><td class="grand-label"><?= $e($labels->balance) ?></td><td class="right amount"><?= $e($info->statement->balance) ?></td></tr>
 </table>
 <?php endif ?>
 

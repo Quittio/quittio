@@ -33,13 +33,13 @@
                     @if ($line->note)<div class="description">{{ $line->note }}</div>@endif
                     @if (count($line->serialNumbers) > 0)<div class="description">{{ $labels->serial_numbers }}: {{ implode(', ', $line->serialNumbers->toArray()) }}</div>@endif
                 </td>
-                <td class="num">{{ $line->quantity }} {{ $line->unit->label }}</td>
+                <td class="num quiet">{{ $line->quantity }} {{ $line->unit->label }}</td>
                 @if ($prices)
-                    <td class="num">{{ $line->unitPrice }}@if ($line->unitPriceBase)<div class="description">/ {{ $line->unitPriceBase }}</div>@endif @if ($line->showGrossPrice)<div class="description">{{ $labels->unit_price_gross }} {{ $line->grossUnitPrice }}</div>@endif</td>
+                    <td class="num quiet">{{ $line->unitPrice }}@if ($line->unitPriceBase)<div class="description">/ {{ $line->unitPriceBase }}</div>@endif @if ($line->showGrossPrice)<div class="description">{{ $labels->unit_price_gross }} {{ $line->grossUnitPrice }}</div>@endif</td>
                     @if ($vatColumn)
-                        <td class="num">{{ $line->vatRate }}</td>
+                        <td class="num quiet">{{ $line->vatRate }}</td>
                     @endif
-                    <td class="num amount">{{ $line->total }}</td>
+                    <td class="num">{{ $line->total }}</td>
                 @endif
             </tr>
             @foreach ($line->subLines as $sub)
@@ -58,7 +58,7 @@
             @endforeach
         @endforeach
         @if ($prices && $group->subtotal)
-            <tr class="subtotal"><td></td><td colspan="{{ $columns - 2 }}" class="right">{{ $labels->subtotal }}</td><td class="num amount">{{ $group->subtotal }}</td></tr>
+            <tr class="subtotal"><td></td><td colspan="{{ $columns - 2 }}" class="right quiet">{{ $labels->subtotal }}</td><td class="num">{{ $group->subtotal }}</td></tr>
         @endif
     @endforeach
     <!--/quittio:rows-->
@@ -66,7 +66,7 @@
 </table>
 @if ($prices)
 {{-- Rows the PDF renderer inserts where the table continues on the next page; {page} and {amount} are filled in. --}}
-<!--quittio:carry-out <tr class="carry carry-out"><td colspan="2">{{ $invoice->label('continued_on', ['page' => '{page}']) }}</td><td colspan="{{ $columns - 3 }}" style="padding-left: 5.8mm;">{{ $labels->carry_over }}</td><td class="num carry-amount">{amount}</td></tr> -->
-<!--quittio:carry-in <tr class="carry carry-in"><td></td><td colspan="{{ $columns - 2 }}">{{ $invoice->label('carry_over_from', ['page' => '{page}']) }}</td><td class="num">{amount}</td></tr> -->
+<!--quittio:carry-out <tr class="carry carry-out"><td colspan="2" class="quiet">{{ $invoice->label('continued_on', ['page' => '{page}']) }}</td><td colspan="{{ $columns - 3 }}" class="quiet" style="padding-left: 5.8mm;">{{ $labels->carry_over }}</td><td class="num carry-amount">{amount}</td></tr> -->
+<!--quittio:carry-in <tr class="carry carry-in"><td></td><td colspan="{{ $columns - 2 }}" class="quiet">{{ $invoice->label('carry_over_from', ['page' => '{page}']) }}</td><td class="num quiet">{amount}</td></tr> -->
 @endif
 @endif

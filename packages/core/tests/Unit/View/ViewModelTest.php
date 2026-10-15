@@ -413,7 +413,7 @@ it('prints the amount due once when it is the gross total', function () {
 
     expect($simple->totals->dueEqualsGross)->toBeTrue()
         ->and($rounded->totals->dueEqualsGross)->toBeFalse()
-        ->and(spaces($html))->toContain('<tr class="grand"><td class="label">Gesamtbetrag</td><td class="right amount">2.747,71 €</td></tr>')
+        ->and(spaces($html))->toContain('<tr class="grand"><td class="grand-label">Gesamtbetrag</td><td class="right amount">2.747,71 €</td></tr>')
         ->and($html)->not->toContain('Zahlbetrag')
         ->and($simple->accessLog()->accessed('totals.amountDue'))->toBeTrue();
 });

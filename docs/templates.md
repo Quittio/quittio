@@ -248,7 +248,7 @@ Values that need formatting are `FormattedValue` objects: `{{ $invoice->totals->
 
 | Key | Content |
 |---|---|
-| `primaryColor`, `secondaryColor`, `textColor`, `mutedColor` | Hex colours (`secondaryColor` falls back to the primary colour). The default templates print the issuer's name, the title, the header of the following pages and the gross total or amount due in the primary colour, section titles, the line above the gross total or amount due and the mark of highlighted lines in the secondary colour |
+| `primaryColor`, `secondaryColor`, `textColor`, `mutedColor` | Hex colours (`secondaryColor` falls back to the primary colour). The default templates print the issuer's name, the title, the header of the following pages and the gross total or amount due in the primary colour, section titles and the mark of highlighted lines in the secondary colour; the lines below the column heads and above the gross total or amount due in the text colour |
 | `font` | Font family |
 | `fontMedium` | Family for the medium and semibold weights (item names, column heads, title, headings): `geistmedium` for Geist (normal = medium, bold = semibold); `null` for other fonts, the templates use bold |
 | `logo` | Prepared logo ([Logos](#logos)) or `null` |

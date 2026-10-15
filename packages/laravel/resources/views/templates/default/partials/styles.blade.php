@@ -33,27 +33,25 @@
     .lines th { font-size: 9pt; color: {{ $muted }}; font-weight: normal; {{ $medium }} text-align: left; padding: 0 0 2mm 0; border-bottom: 0.26mm solid {{ $text }}; }
     .lines td { padding: 2.2mm 0 2.6mm 0; border-bottom: 0.26mm solid #e6e8ec; }
     .lines .num { text-align: right; white-space: nowrap; }
-    .lines td.num, .lines td.position { color: {{ $muted }}; }
-    .lines td.amount { color: {{ $text }}; }
+    /* mPDF does not let one class rule override another on the same cell: muted cells have a class of their own. */
+    .lines td.position, .lines td.quiet { color: {{ $muted }}; }
     .lines .name { {{ $medium }} }
     .lines .group td { {{ $semibold }} padding-top: 5mm; }
     .lines .sub td { color: {{ $muted }}; font-size: 9pt; padding-top: 1mm; }
-    .lines .subtotal td { color: {{ $muted }}; }
     /* Highlighted lines (LineBuilder::highlight()): shaded, marked in the secondary colour. */
     .lines .highlight td { background-color: #f8fafc; }
     .lines .highlight td.position { border-left: 0.8mm solid {{ $secondary }}; padding-left: 1.5mm; }
     /* Carry-over rows at page breaks (filled in by the PDF renderer). */
-    .lines .carry td { color: {{ $muted }}; border-bottom: 0; padding-top: 3.6mm; }
+    .lines .carry td { border-bottom: 0; padding-top: 3.6mm; }
     .lines .carry-in td { border-bottom: 0.26mm solid #e6e8ec; padding-top: 2.2mm; }
-    .lines td.carry-amount { color: {{ $text }}; {{ $medium }} }
+    .lines td.carry-amount { {{ $medium }} }
     .description { color: {{ $muted }}; font-size: 9pt; }
     .totals { width: 74.2mm; margin-left: auto; margin-top: 3.1mm; page-break-inside: avoid; }
     .totals td { padding: 0.47mm 0; }
     .totals tr.gap td { height: 2.2mm; padding: 0; line-height: 1; }
     .totals td.label { color: {{ $muted }}; }
-    .totals .gross td.label { color: {{ $text }}; }
-    .totals .grand td { border-top: 0.26mm solid {{ $secondary }}; padding-top: 3.1mm; vertical-align: bottom; line-height: 1.2; }
-    .totals .grand td.label { font-size: 10.5pt; color: {{ $text }}; {{ $semibold }} }
+    .totals .grand td { border-top: 0.26mm solid {{ $text }}; padding-top: 3.1mm; vertical-align: bottom; line-height: 1.2; }
+    .totals td.grand-label { font-size: 10.5pt; {{ $semibold }} }
     .totals .grand td.amount { font-size: 12.75pt; font-weight: bold; color: {{ $primary }}; }
     .section { margin-top: 8.3mm; page-break-inside: avoid; }
     .section-title { font-size: 9pt; color: {{ $secondary }}; {{ $semibold }} }
