@@ -19,6 +19,8 @@ use Quittio\Laravel\Templates\BladeTemplateEngine;
  * accepts (see BladeTemplateEngine: "default", quittio.pdf.template, the shipped views under
  * "quittio::templates." and the views of quittio.pdf.templates, never partials) are rendered,
  * never file paths or other application views.
+ *
+ * @internal
  */
 final readonly class Preview
 {

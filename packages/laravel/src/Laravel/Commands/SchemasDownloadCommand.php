@@ -9,6 +9,9 @@ use Quittio\Laravel\QuittioManager;
 use RuntimeException;
 use Symfony\Component\Console\Attribute\AsCommand;
 
+/**
+ * @internal
+ */
 #[AsCommand(name: 'quittio:schemas:download')]
 final class SchemasDownloadCommand extends QuittioCommand
 {

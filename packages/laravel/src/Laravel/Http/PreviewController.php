@@ -13,6 +13,8 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
  * Browser preview of the sample scenarios (local environment only).
+ *
+ * @internal
  */
 final readonly class PreviewController
 {

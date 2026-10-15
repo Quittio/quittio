@@ -10,6 +10,8 @@ use Quittio\Core\I18n\Translator;
 /**
  * Bridges the core translator contract to Laravel's translator, so that applications
  * can override labels and messages in lang/vendor/quittio.
+ *
+ * @internal
  */
 final class LaravelTranslator implements Translator
 {

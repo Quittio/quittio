@@ -16,6 +16,8 @@ use Quittio\Core\Exceptions\RuntimeException;
  * Empty values are skipped and containers without content are removed again,
  * so that no empty elements are written. The output is
  * deterministic: same input, same bytes.
+ *
+ * @internal
  */
 final class XmlBuilder
 {

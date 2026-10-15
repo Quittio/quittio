@@ -7,6 +7,9 @@ namespace Quittio\Laravel\Commands;
 use Quittio\Laravel\Contracts\ManagedInstaller;
 use Symfony\Component\Console\Attribute\AsCommand;
 
+/**
+ * @internal
+ */
 #[AsCommand(name: 'quittio:install')]
 final class InstallCommand extends QuittioCommand
 {

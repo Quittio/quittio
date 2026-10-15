@@ -9,6 +9,9 @@ use Quittio\Laravel\Support\Preview;
 use RuntimeException;
 use Symfony\Component\Console\Attribute\AsCommand;
 
+/**
+ * @internal
+ */
 #[AsCommand(name: 'quittio:preview')]
 final class PreviewCommand extends QuittioCommand
 {

@@ -12,6 +12,9 @@ use RuntimeException;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Throwable;
 
+/**
+ * @internal
+ */
 #[AsCommand(name: 'quittio:render')]
 final class RenderCommand extends QuittioCommand
 {

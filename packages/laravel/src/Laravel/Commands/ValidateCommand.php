@@ -8,6 +8,9 @@ use Quittio\Laravel\QuittioManager;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Throwable;
 
+/**
+ * @internal
+ */
 #[AsCommand(name: 'quittio:validate')]
 final class ValidateCommand extends QuittioCommand
 {

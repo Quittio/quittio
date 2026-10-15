@@ -10,6 +10,9 @@ use Quittio\Laravel\QuittioManager;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Throwable;
 
+/**
+ * @internal
+ */
 #[AsCommand(name: 'quittio:read')]
 final class ReadCommand extends QuittioCommand
 {

@@ -10,6 +10,8 @@ use Quittio\Core\Pdf\PdfException;
  * Reads PDF objects (ISO 32000-1, 7.2 and 7.3) from a byte string.
  *
  * Streams are not handled here; the document reads the stream data after a dictionary.
+ *
+ * @internal
  */
 final class Lexer
 {

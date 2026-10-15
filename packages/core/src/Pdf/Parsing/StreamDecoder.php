@@ -10,6 +10,8 @@ use Quittio\Core\Pdf\PdfException;
  * Decodes stream data: FlateDecode with optional PNG or TIFF predictors (ISO 32000-1, 7.4.4).
  *
  * Decompression runs chunk by chunk and stops at the size limit (protection against zip bombs).
+ *
+ * @internal
  */
 final class StreamDecoder
 {

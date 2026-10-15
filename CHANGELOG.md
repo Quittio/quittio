@@ -6,6 +6,7 @@ All notable changes to this project are documented in this file. The format foll
 
 ### Added
 
+- Documentation: [Versioning and compatibility](docs/compatibility.md) with the backwards compatibility promise; `ARCHITECTURE.md`, decision records in `docs/adr/`, `RELEASING.md`, a reworked `CONTRIBUTING.md`, an FAQ page; issue and pull request templates, `CODEOWNERS` and response times in `SECURITY.md`. Classes outside the public API (`XPathReader`, `XmlBuilder`, `Pdf\Parsing`, `CarryOver`, `ConfigMapper`, the command and preview classes, …) are marked `@internal`.
 - Documents (quotes, reminders, …) dispatch `DocumentRendering` and `DocumentRendered` in Laravel; `PendingDocument` has `option()` (core and Laravel), `data()`, `options()` and is `Macroable` (Laravel).
 - `QuittioFake` dispatches the events of a real run (`InvoiceRendering`, `InvoiceValidated`, `InvoiceRendered`) and records queued invoices: `assertQueued()`, `assertNothingQueued()`, `queued()`. Its decisions follow configuration changes without `Quittio::flush()`.
 - Events `QueuedInvoiceStored` (a queued job stored the file, with disk and path) and `QueuedInvoiceFailed` (a queued job failed for good).
@@ -13,7 +14,8 @@ All notable changes to this project are documented in this file. The format foll
 
 ### Changed
 
-- README and documentation mark the Managed layer `quittio/managed` as not released yet.
+- README and documentation mark the Managed layer `quittio/managed` as not released yet; its documentation page is a preview and is left out of `llms.txt`, `llms-full.txt` and the MCP index.
+- The documentation is built and link-checked on pull requests.
 - Queued `RenderInvoice` jobs store the render options as versioned JSON (`RenderOptions::toArray()`/`fromArray()`) instead of a PHP-serialised object, so an update of Quittio no longer breaks jobs in the queue; jobs queued by 0.1.0 still run. Errors that another attempt cannot fix (validation, invalid data, configuration) fail the job at once instead of three times; other errors are retried after 10 and 60 seconds. Inside a database transaction the job is dispatched after the commit (`quittio.queue.after_commit`).
 - Every exception that Quittio throws implements `QuittioException`: invalid arguments and runtime errors are now `Quittio\Core\Exceptions\InvalidArgumentException`, `RuntimeException` or `LogicException`, which extend the PHP classes of the same name, so existing `catch` blocks keep working.
 - Country pack discovery keeps its result in `bootstrap/cache/quittio-countries.php` (and per process) until Composer changes the installed packages, instead of reading `vendor/composer/installed.json` whenever the core is built.

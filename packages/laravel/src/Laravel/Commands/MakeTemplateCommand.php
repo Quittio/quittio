@@ -8,6 +8,9 @@ use Illuminate\Filesystem\Filesystem;
 use Quittio\Laravel\QuittioServiceProvider;
 use Symfony\Component\Console\Attribute\AsCommand;
 
+/**
+ * @internal
+ */
 #[AsCommand(name: 'make:quittio-template')]
 final class MakeTemplateCommand extends QuittioCommand
 {

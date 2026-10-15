@@ -8,6 +8,9 @@ use Quittio\Core\Testing\Scenarios;
 use Quittio\Laravel\QuittioManager;
 use Symfony\Component\Console\Attribute\AsCommand;
 
+/**
+ * @internal
+ */
 #[AsCommand(name: 'quittio:benchmark')]
 final class BenchmarkCommand extends QuittioCommand
 {

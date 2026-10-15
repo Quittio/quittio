@@ -25,6 +25,8 @@ use Throwable;
 
 /**
  * Base class for XML readers: XPath access, tolerant value conversion and findings.
+ *
+ * @internal
  */
 abstract class XPathReader
 {

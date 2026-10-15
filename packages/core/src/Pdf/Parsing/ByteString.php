@@ -6,6 +6,8 @@ namespace Quittio\Core\Pdf\Parsing;
 
 /**
  * A literal or hexadecimal string with its decoded bytes.
+ *
+ * @internal
  */
 final readonly class ByteString implements PdfValue
 {

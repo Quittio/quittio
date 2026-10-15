@@ -10,6 +10,8 @@ use Quittio\Core\Validation\ValidationResult;
 
 /**
  * Typed access to arguments and options, shared output helpers.
+ *
+ * @internal
  */
 abstract class QuittioCommand extends Command
 {

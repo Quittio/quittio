@@ -14,6 +14,8 @@ use Quittio\Core\View\ViewModelFactory;
 
 /**
  * Translates config/quittio.php into the core configuration.
+ *
+ * @internal
  */
 final class ConfigMapper
 {

@@ -8,6 +8,9 @@ use Quittio\Core\Codes\CodeListGenerator;
 use RuntimeException;
 use Symfony\Component\Console\Attribute\AsCommand;
 
+/**
+ * @internal
+ */
 #[AsCommand(name: 'quittio:codelists:update')]
 final class CodeListsUpdateCommand extends QuittioCommand
 {

@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Quittio\Core\Pdf\Parsing;
 
+/**
+ * @internal
+ */
 final readonly class NumberValue implements PdfValue
 {
     public function __construct(public int|float $value) {}

@@ -8,6 +8,9 @@ use Quittio\Core\Profiles\Profile;
 use Quittio\Laravel\QuittioManager;
 use Symfony\Component\Console\Attribute\AsCommand;
 
+/**
+ * @internal
+ */
 #[AsCommand(name: 'quittio:countries')]
 final class CountriesCommand extends QuittioCommand
 {

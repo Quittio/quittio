@@ -18,6 +18,8 @@ use Symfony\Component\Console\Attribute\AsCommand;
  * quittio-de.base_rate_file, so that default interest can be calculated for periods after the
  * table shipped with Quittio. Schedule it, e.g. weekly: it writes the file only when the
  * Bundesbank has published something new.
+ *
+ * @internal
  */
 #[AsCommand(name: 'quittio:base-rate:update')]
 final class UpdateBaseRateCommand extends Command

@@ -13,6 +13,8 @@ use Quittio\Core\Pdf\PdfException;
  * Only what is needed to find embedded files is supported. Every structure is limited:
  * the number of objects and cross-reference sections, the nesting of references and the
  * decompressed size of cross-reference and object streams.
+ *
+ * @internal
  */
 final class Document
 {

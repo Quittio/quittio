@@ -17,6 +17,8 @@ namespace Quittio\Core\Pdf\Renderers;
  * rows land on more than one page, it finds the page breaks with the carry rows reserved: on the
  * first page the carry-out row ({@see self::firstPage()}), on the following pages also the
  * carry-in row ({@see self::followingPages()}). Then it splits the table there ({@see self::paginated()}).
+ *
+ * @internal
  */
 final readonly class CarryOver
 {
