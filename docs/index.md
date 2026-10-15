@@ -84,6 +84,7 @@ $result->xml();   // CII XML
 | Topic | Content |
 |---|---|
 | [Getting started](getting-started.md) | Installation, building and rendering invoices, cancellations, use without Laravel, JSON |
+| [Examples](examples.md) | Complete examples: service invoices, VAT rates, online shops, small businesses, XRechnung, customers abroad, final invoices, cancellations, orders, drafts, reminders, incoming invoices |
 | [Building invoices](building-invoices.md) | Every builder method, parties, lines, VAT, payment, calculation, cancellations in the core, data model |
 | [Formats and profiles](formats.md) | Output formats, automatic format choice, embedded files and XMP |
 | [Validation](validation.md) | Levels L1 to L7, KoSIT and veraPDF, BMF error classes |

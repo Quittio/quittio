@@ -85,6 +85,7 @@ $result->xml();   // CII XML
 The documentation is published at **[docs.quittio.dev](https://docs.quittio.dev)** (with search). The same pages are in [`docs/`](docs/):
 
 - [Getting started](docs/getting-started.md)
+- [Examples](docs/examples.md)
 - [Building invoices](docs/building-invoices.md)
 - [Formats and profiles](docs/formats.md)
 - [Validation](docs/validation.md)

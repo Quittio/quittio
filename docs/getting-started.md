@@ -1,6 +1,6 @@
 # Getting started
 
-This tutorial creates, renders and cancels a first invoice. The references for each step are [Building invoices](building-invoices.md) (every builder method, VAT, calculation, cancellations, data model), [Formats and profiles](formats.md) (outputs and the automatic format choice), [Laravel integration](laravel.md) (facade, storage, queue, mail) and [Configuration](configuration.md) (every key of `config/quittio.php`).
+This tutorial creates, renders and cancels a first invoice. The references for each step are [Building invoices](building-invoices.md) (every builder method, VAT, calculation, cancellations, data model), [Formats and profiles](formats.md) (outputs and the automatic format choice), [Laravel integration](laravel.md) (facade, storage, queue, mail) and [Configuration](configuration.md) (every key of `config/quittio.php`). Complete examples for common situations, from small businesses to XRechnung and incoming invoices, are on [Examples](examples.md).
 
 ## Installation
 

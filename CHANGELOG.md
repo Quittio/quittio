@@ -20,9 +20,9 @@ All notable changes to this project are documented in this file. The format foll
 - Country pack Germany: info `DE-LEITWEG-ID-SUSPECT` for buyer references shaped like a Leitweg-ID with wrong check digits; warning `DE-USTG-13` when `newVehicle()` is used without a line of category K.
 - Country pack Germany: the base rate (§ 247 BGB) can be updated without a release: `quittio-de.base_rates` in the new configuration `config/quittio-de.php`, `php artisan quittio:base-rate:update` fetching it from the statistics API of the Deutsche Bundesbank (`BundesbankBaseRates`), or `BaseRates::register()`; `DefaultInterest` uses these rates by default. The pack has a Laravel service provider of its own (`GermanyServiceProvider`, discovered automatically).
 - Country pack Germany: tax numbers (BT-32) of German sellers are checked for format and check digit according to the ELSTER procedures of every federal state (warning `DE-TAX-NUMBER`); `TaxNumber` parses the ELSTER, federal and state notations.
-
 - Country pack Germany: rule `DE-USTG-14` rejects intra-community supplies (category K) of small businesses except for new vehicles (section 19 (1) sentence 2 and (6) sentence 1 UStG); warning `DE-USTG-15` for invoices on intra-community supplies and on services in another member state issued after the 15th of the month following the supply (section 14a (1) sentence 2 and (3) sentence 1 UStG); `UstgRules::issuingDeadline()`.
 - Documentation for AI assistants: `llms.txt`, `llms-full.txt` and every page as Markdown on the website, a read-only MCP server at `https://docs.quittio.dev/mcp` (tools `search_docs`, `get_page`, `list_pages`) and Laravel Boost guidelines and the skill `quittio-development` in `quittio/quittio` and `quittio/laravel`.
+- Documentation page Examples: complete examples from service invoices, small businesses, XRechnung and customers abroad to cancellations, Laravel orders, drafts, reminders and incoming invoices; a test runs the code of the page.
 
 ### Changed
 
