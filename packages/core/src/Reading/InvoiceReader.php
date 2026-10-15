@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Quittio\Core\Reading;
 
 use Brick\Money\Money;
+use Exception;
 use Quittio\Core\Calculation\DeclaredAmounts;
 use Quittio\Core\Calculation\En16931Calculator;
 use Quittio\Core\Calculation\TotalsCalculator;
@@ -18,7 +19,6 @@ use Quittio\Core\Validation\ValidationMessage;
 use Quittio\Core\Xml\Cii\CiiReader;
 use Quittio\Core\Xml\Ubl\UblReader;
 use Quittio\Core\Xml\XmlSecurity;
-use Throwable;
 
 /**
  * Reads e-invoices from XML or PDF.
@@ -188,7 +188,8 @@ final class InvoiceReader
 
         try {
             $recalculated = $this->calculator->calculate($declared->with(['totals' => null, 'vatBreakdown' => []]));
-        } catch (Throwable $e) {
+        } catch (Exception $e) {
+            // Read data the calculator rejects is reported; errors such as a TypeError are not hidden.
             return [new ValidationMessage(Severity::Warning, 'QUITTIO-READER-RECALCULATION', 'The invoice could not be recalculated: '.$e->getMessage(), ValidationLevel::L3)];
         }
 
