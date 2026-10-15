@@ -14,7 +14,7 @@
             <directory>packages/core/tests/Unit/Calculation</directory>
             <directory>packages/core/tests/Unit/Corrections</directory>
             <directory>packages/core/tests/Unit/Data</directory>
-            <directory>packages/core/tests/Unit/Round3</directory>
+            <directory>packages/core/tests/Unit/Documents</directory>
             <directory>packages/core/tests/Unit/Validation</directory>
             <directory>packages/core/tests/Unit/Xml</directory>
             <directory>packages/country-de/tests</directory>
