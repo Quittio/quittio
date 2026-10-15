@@ -322,7 +322,8 @@ final class En16931Calculator implements TotalsCalculator
 
     /**
      * BT-92 = input or round2(BT-93 × BT-94 / 100). Without base amount the line sum
-     * of the matching VAT group is used.
+     * of the matching VAT group is used; without such lines it is an error, unless the
+     * data has no lines at all (draft).
      *
      * @template T of DocumentAllowanceCharge
      *
@@ -341,7 +342,14 @@ final class En16931Calculator implements TotalsCalculator
         }
 
         $base = $entry->baseAmount?->getAmount()
-            ?? ($groups[LineVat::key($entry->vatCategory, $entry->vatRate)]['lines'] ?? BigDecimal::zero());
+            ?? ($groups[LineVat::key($entry->vatCategory, $entry->vatRate)]['lines'] ?? null)
+            // Drafts without lines are calculated with a zero line sum; with lines, a missing group is a mistake.
+            ?? ($groups === [] ? BigDecimal::zero() : throw new CalculationException(sprintf(
+                'A percentage document allowance or charge (%s %%) without base amount (BT-93/BT-100) needs invoice lines of its VAT category %s and rate %s %%; none were found, so the amount would be 0.00. Pass the base amount or correct the VAT category and rate.',
+                $entry->percent,
+                $entry->vatCategory->value,
+                $entry->vatRate ?? '-',
+            )));
         $amount = Decimal::round($base->multipliedBy($entry->percent)->dividedBy(100, 10, RoundingMode::HalfUp), 2);
 
         return $entry->with([
