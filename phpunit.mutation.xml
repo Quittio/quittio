@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The tests of the code that composer test:mutation mutates: Calculation, Validation/Rules, Xml
+     and the rules of the German pack (no PDF, view or Laravel tests, which take long and add
+     nothing there). Used with pest -c phpunit.mutation.xml. -->
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         cacheDirectory=".phpunit.cache"
+         failOnWarning="true"
+         failOnRisky="true">
+    <testsuites>
+        <testsuite name="mutation">
+            <directory>packages/core/tests/Unit/Builder</directory>
+            <directory>packages/core/tests/Unit/Calculation</directory>
+            <directory>packages/core/tests/Unit/Corrections</directory>
+            <directory>packages/core/tests/Unit/Data</directory>
+            <directory>packages/core/tests/Unit/Round3</directory>
+            <directory>packages/core/tests/Unit/Validation</directory>
+            <directory>packages/core/tests/Unit/Xml</directory>
+            <directory>packages/country-de/tests</directory>
+        </testsuite>
+    </testsuites>
+    <source>
+        <include>
+            <directory>packages/core/src</directory>
+            <directory>packages/country-de/src</directory>
+        </include>
+    </source>
+    <php>
+        <ini name="memory_limit" value="2G"/>
+        <env name="APP_ENV" value="testing"/>
+    </php>
+</phpunit>

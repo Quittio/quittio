@@ -106,9 +106,35 @@
         "test:core": "pest --testsuite=core",
         "test:laravel": "pest --testsuite=laravel",
         "test:country-de": "pest --testsuite=country-de",
+        "test:fast": "pest --parallel --exclude-group=official,visual",
+        "test:official": [
+            "Composer\\Config::disableProcessTimeout",
+            "tools/schemas/download.sh",
+            "tools/fixtures/download.sh",
+            "pest --group=official"
+        ],
+        "test:visual": [
+            "Composer\\Config::disableProcessTimeout",
+            "pest --group=visual"
+        ],
+        "test:coverage": [
+            "Composer\\Config::disableProcessTimeout",
+            "pest --parallel --exclude-group=official,visual --coverage --coverage-clover=build/coverage/clover.xml"
+        ],
+        "test:mutation": [
+            "Composer\\Config::disableProcessTimeout",
+            "pest -c phpunit.mutation.xml --mutate --everything --parallel --exclude-group=official,visual --path=packages/core/src/Calculation,packages/core/src/Validation/Rules,packages/core/src/Xml,packages/country-de/src/Rules --min=85"
+        ],
         "analyse": "phpstan analyse --memory-limit=1G",
         "lint": "pint --test",
-        "format": "pint"
+        "format": "pint",
+        "docs:generate": "php tools/docs/generate.php",
+        "codelists:update": "php tools/codelists/update.php",
+        "ci": [
+            "@lint",
+            "@analyse",
+            "@test:fast"
+        ]
     },
     "config": {
         "sort-packages": true,
@@ -117,5 +143,15 @@
         }
     },
     "minimum-stability": "stable",
-    "prefer-stable": true
+    "prefer-stable": true,
+    "scripts-descriptions": {
+        "test:fast": "The tests the CI matrix runs: without the official validators and the visual comparison",
+        "test:official": "Downloads the official validators and the XRechnung test suite, then runs the tests that need them (Java)",
+        "test:visual": "Compares the rendered sample invoices with the baselines (poppler)",
+        "test:coverage": "Line coverage with pcov or Xdebug, written to build/coverage/clover.xml",
+        "test:mutation": "Mutation testing of the calculator, the rules and the XML code (pcov or Xdebug)",
+        "docs:generate": "Regenerates the JSON schema and docs/field-reference.md from the data model",
+        "codelists:update": "Regenerates the code lists from the EN 16931 Schematron (after tools/schemas/download.sh)",
+        "ci": "Lint, static analysis and the fast tests, as CI runs them"
+    }
 }

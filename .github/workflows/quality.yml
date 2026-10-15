@@ -1,0 +1,65 @@
+name: Quality
+
+# Line coverage and mutation testing. Both take longer than the CI run, so they run once a week
+# and on demand, not for every push. Locally: composer test:coverage, composer test:mutation
+# (pcov or Xdebug).
+
+on:
+  schedule:
+    - cron: '43 4 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php: '8.4'
+          extensions: dom, libxml, mbstring, xmlwriter, zlib, intl, gd, bcmath
+          coverage: pcov
+      - run: sudo apt-get update && sudo apt-get install -y poppler-utils
+      - uses: ramsey/composer-install@65e4f84970763564f46a70b8a54b90d033b3bdda # 4.0.0
+      - run: composer test:coverage
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: coverage
+          path: build/coverage/clover.xml
+
+  # One job per area, so that they run side by side; each has its own minimum score, a few
+  # points below the score measured when it was set (raise it when tests improve).
+  mutation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - path: packages/core/src/Calculation
+            min: 90   # measured 94.6 (2026-10-15)
+          - path: packages/core/src/Validation/Rules
+            min: 85   # measured 89.1
+          - path: packages/core/src/Xml
+            min: 82   # measured 86.9
+          - path: packages/country-de/src/Rules
+            min: 90   # measured 94.3
+    name: mutation (${{ matrix.path }})
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php: '8.4'
+          extensions: dom, libxml, mbstring, xmlwriter, zlib, intl, gd, bcmath
+          coverage: pcov
+      - uses: ramsey/composer-install@65e4f84970763564f46a70b8a54b90d033b3bdda # 4.0.0
+      # The tests of phpunit.mutation.xml against the mutated code.
+      - run: vendor/bin/pest -c phpunit.mutation.xml --mutate --everything --parallel --exclude-group=official,visual --path=${{ matrix.path }} --min=${{ matrix.min }}

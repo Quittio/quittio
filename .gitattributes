@@ -9,6 +9,8 @@
 /tools export-ignore
 /docs export-ignore
 /phpunit.xml.dist export-ignore
+/phpunit.mutation.xml export-ignore
+/packages/*/phpunit.xml.dist export-ignore
 /phpstan.neon.dist export-ignore
 /pint.json export-ignore
 /tests export-ignore
