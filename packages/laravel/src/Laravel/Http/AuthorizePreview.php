@@ -9,7 +9,7 @@ use Illuminate\Contracts\Auth\Access\Gate;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Exception\HttpException;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
  * Lets requests reach the preview only in the local environment, or where the gate
@@ -36,7 +36,7 @@ final readonly class AuthorizePreview
         $allowed = $this->app->environment('local') === true
             || ($this->gate->has(self::GATE) && $this->gate->forUser($request->user())->allows(self::GATE));
         if (! $allowed) {
-            throw new HttpException(403);
+            throw new AccessDeniedHttpException;
         }
 
         return $next($request);
