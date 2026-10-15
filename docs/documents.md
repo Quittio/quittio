@@ -283,7 +283,7 @@ Dates accept `Date`, `DateTimeInterface` or a string; amounts are strings.
 | `optionalLine(string\|InvoiceLine\|LineBuilder\|array\|callable $line, …)` | Optional quote line: shown with its amounts, not in the totals. Takes the same named values as `line()` |
 | `alternativeLine(string $alternativeTo, string\|InvoiceLine\|LineBuilder\|array\|callable $line, …)` | Alternative to the line with the identifier `$alternativeTo` (BT-126; lines are numbered `1`, `2`, … unless set with `LineBuilder::id()`); shown, not in the totals |
 | `serialisedLine(string\|InvoiceLine\|LineBuilder\|array\|callable $line, array $serialNumbers, …)` | Delivery note line with serial numbers |
-| `note(string $content, ?NoteSubjectCode $subject = null)` | Note |
+| `note(string $content, NoteSubjectCode\|RawCode\|string\|null $subject = null)` | Note (BT-22) with its subject code (BT-21) |
 | `discountPercent(BigDecimal\|int\|string $percent, ?string $reason = null, $reasonCode = AllowanceReasonCode::Discount)`, `discountAmount(BigDecimal\|int\|string $amount, ?string $reason = null, $reasonCode = AllowanceReasonCode::Discount)` | Document discount, on the lines that count towards the totals |
 | `dueInDays(int $days)`, `cashDiscount(int $days, string $percent, ?string $baseAmount = null)` | Payment target and cash discount ([Payment terms](building-invoices.md#payment-terms)) |
 | `paymentTerms(PaymentTerms\|string\|callable $terms)` | Payment terms as text or object |
