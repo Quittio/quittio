@@ -23,6 +23,7 @@ In Laravel (keys of `config/quittio.php`, see [Configuration](configuration.md))
 | `validation.mode` | `error` (throw), `warn` (attach the result only), `off` | `error` (`QUITTIO_VALIDATION`) |
 | `validation.levels` | `php` (L1, L2, L3, L7), `xsd` (L4), `kosit` (L5), `verapdf` (L6), or the name of a driver registered with `Quittio::extend('validator', …)` | `['php', 'xsd']` |
 | `validation.block_on_warnings` | `true`: warnings block like errors | `false` |
+| `validation.locale` | language of the messages: `null` = the language of the application, `'invoice'` = the language of the invoice, or a locale | `null` |
 | `validation.mandatory_field_guard` | `exception`, `log`, `off`; `null` = `exception` outside production, `log` in production | `null` (`QUITTIO_GUARD`) |
 | `validation.drivers.kosit` | see [KoSIT validator](#kosit-validator-l5) | |
 | `validation.drivers.verapdf` | see [veraPDF](#verapdf-l6) | |
@@ -131,7 +132,7 @@ Other exceptions of a render run: `ConfigurationException` (unknown format, prof
 |---|---|
 | `severity` | `Severity::Error`, `Severity::Warning` or `Severity::Info` (`error`, `warning`, `info`) |
 | `code` | rule identifier, e.g. `BR-CO-25`, `BR-DE-15`, `DE-USTG-03`, `PEPPOL-EN16931-R010`, `QUITTIO-IBAN`, `XSD`, `PDFA-6.2.2-1` |
-| `message` | text in the locale of the run (where a translation exists) |
+| `message` | text in the language of the messages (`validation.locale`, see [Messages and translations](#messages-and-translations)), where a translation exists |
 | `level` | `ValidationLevel::L1` … `L7` |
 | `bt` | business term or group, e.g. `BT-10`, `BG-23` (nullable) |
 | `path` | path in the data model, e.g. `buyer.vatId`, `line 2.price.netPrice`, `vatBreakdown[0].taxAmount`; for XSD `line 12` (nullable) |
@@ -143,6 +144,8 @@ Other exceptions of a render run: `ConfigurationException` (unknown format, prof
 Results of several drivers are merged by concatenation: a rule that is checked both in PHP (L3) and by the official Schematron (L5) can appear twice, with the two levels. Within the PHP driver identical findings (same code, path and message) are reported once.
 
 ## Messages and translations
+
+Messages and hints are written in the language of the application in Laravel (`app()->getLocale()`), so a developer of an English application reads English messages also for German invoices. `validation.locale` sets `'invoice'` (the language of the invoice, as in the PDF) or a fixed locale. Without Laravel the default is the language of the invoice; `Quittio::create(['validation' => ['locale' => 'en']])` sets a fixed one, `'app'` the locale of the translator. Rules that check texts of the invoice (e.g. the reverse charge statement of `DE-USTG-06`) still use the language of the invoice.
 
 Messages come from the catalog `quittio::rules.{CODE}` with the entries `message` and `hint`, placeholders such as `:value` are replaced. The core ships the catalog in German and English (`packages/core/resources/lang/{de,en}/rules.php`); other locales fall back to English, rules without an entry use their English fallback text. Country packs bring their own namespace (`quittio-de::rules.DE-USTG-01`).
 

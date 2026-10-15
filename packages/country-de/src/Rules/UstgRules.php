@@ -348,7 +348,7 @@ final class UstgRules
     private static function addressReplacements(RuleReporter $report, string $party, array $missing): array
     {
         $translator = $report->context()->translator();
-        $locale = $report->context()->locale;
+        $locale = $report->context()->messageLocale();
         $word = static function (string $key) use ($translator, $locale): string {
             $catalog = CountryDE::TRANSLATION_NAMESPACE.'::rules.DE-USTG-01.'.$key;
             foreach ([$locale, 'en'] as $candidate) {

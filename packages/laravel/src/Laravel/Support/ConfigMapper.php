@@ -70,6 +70,8 @@ final class ConfigMapper
             ],
             presentation: self::presentation($settings),
             blockOnWarnings: $settings->bool('validation.block_on_warnings', false),
+            // Laravel default: the messages follow the language of the application.
+            validationLocale: $settings->nullableString('validation.locale') ?? 'app',
             maxXmlBytes: $settings->int('reader.max_xml_bytes', 10 * 1024 * 1024),
             maxPdfBytes: $settings->int('reader.max_pdf_bytes', 25 * 1024 * 1024),
             maxDecompressedBytes: $settings->int('reader.max_decompressed_bytes', 50 * 1024 * 1024),

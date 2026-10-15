@@ -104,7 +104,7 @@ $result = Quittio::invoice()
 ->render(['zugferd', 'xrechnung-cii'])                       // several formats, the first is the main result
 ```
 
-`render(string|array|null $format = null)` is `Quittio::make($builder)->format($format)->render()`; for profile, locale, template or the queue, pass the builder to `Quittio::make()` ([Rendering invoices](#rendering-invoices)). The builder is a `Quittio\Laravel\Builder\RenderableInvoiceBuilder`, a subclass of `InvoiceBuilder`, so all builder methods and macros work.
+`check(string|array|null $format = null)` validates in the same way without rendering a PDF and returns the `ValidationResult` ([Validation](validation.md)). `render(string|array|null $format = null)` is `Quittio::make($builder)->format($format)->render()`; for profile, locale, template or the queue, pass the builder to `Quittio::make()` ([Rendering invoices](#rendering-invoices)). The builder is a `Quittio\Laravel\Builder\RenderableInvoiceBuilder`, a subclass of `InvoiceBuilder`, so all builder methods and macros work.
 
 Documents start the same way, with the seller and bank account of the configuration, and end with `->build()` or `->render()` (PDF):
 

@@ -44,6 +44,7 @@ replace the `seller` section below.
 | `QUITTIO_SELLER_SMALL_BUSINESS` | `seller.small_business` | `false` |
 | `QUITTIO_DEFAULT_VAT` | `defaults.vat` | – (standard rate of the seller's country) |
 | `QUITTIO_VALIDATION` | `validation.mode` | `error` |
+| `QUITTIO_VALIDATION_LOCALE` | `validation.locale` | – (the language of the application) |
 | `QUITTIO_GUARD` | `validation.mandatory_field_guard` | – (`exception`, in production `log`) |
 | `QUITTIO_KOSIT_URL` | `validation.drivers.kosit.url` | `http://127.0.0.1:8081` (start the validator with `-P 8081`; its own default port is 8080) |
 | `QUITTIO_CANCELLATION_STRATEGY` | `corrections.cancellation_strategy` | – (country pack) |
@@ -180,6 +181,7 @@ override them property by property.
 | `validation.mode` | string | `env('QUITTIO_VALIDATION', 'error')` | `error`: throw a `ValidationException` on errors; `warn`: attach the result only; `off`: no validation while rendering. Per call: `->validate()`, `->validate(false)`, `->withoutValidation()`. |
 | `validation.levels` | list | `['php', 'xsd']` | Validation run while rendering and by `validateFile()`: `php` (L1–L3, L7), `xsd` (L4), `kosit` (L5, KoSIT validator), `verapdf` (L6), or the name of a driver registered with `Quittio::extend('validator', …)`. Without `php`, the PHP rules do not run. |
 | `validation.block_on_warnings` | bool | `false` | In mode `error`, warnings block as well |
+| `validation.locale` | string\|null | `null` (`QUITTIO_VALIDATION_LOCALE`) | Language of the validation messages and hints: `null` = the language of the application (`app()->getLocale()`), `'invoice'` = the language of the invoice, or a locale such as `'de'`. The invoice itself keeps its language. |
 | `validation.mandatory_field_guard` | string\|null | `env('QUITTIO_GUARD')` | Check that the template printed every mandatory value: `exception`, `log` or `off`. `null` = `exception` outside production, `log` in production. |
 | `validation.drivers.kosit.mode` | string | `'daemon'` | `daemon` (HTTP to a running validator) or `cli` (one JVM per file) |
 | `validation.drivers.kosit.url` | string | `env('QUITTIO_KOSIT_URL', 'http://127.0.0.1:8081')` | Address of the validator daemon. The validator listens on port 8080 unless started with `-P 8081` (or mapped, `docker run -p 8081:8080`); `quittio:schemas:download` prints a start command for the port of this URL. |

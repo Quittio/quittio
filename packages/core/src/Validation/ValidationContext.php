@@ -24,6 +24,7 @@ final readonly class ValidationContext
         public string $locale = 'en',
         public ?Translator $translator = null,
         public array $options = [],
+        public ?string $messageLocale = null,
     ) {}
 
     public function option(string $key, mixed $default = null): mixed
@@ -36,6 +37,15 @@ final readonly class ValidationContext
         $value = $this->options[$key] ?? $default;
 
         return is_int($value) ? $value : $default;
+    }
+
+    /**
+     * Language of the messages: the configured one (validation.locale), otherwise the language
+     * of the run. Rules that check texts of the invoice use $locale instead.
+     */
+    public function messageLocale(): string
+    {
+        return $this->messageLocale ?? $this->locale;
     }
 
     public function translator(): Translator

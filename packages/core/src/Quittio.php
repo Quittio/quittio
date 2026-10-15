@@ -846,6 +846,11 @@ final class Quittio
             countryPacks: $countries->all(),
             locale: $locale,
             options: [...$this->config->options, ...($options->options ?? []), ...($syntax === null ? [] : ['syntax' => $syntax])],
+            messageLocale: match ($this->config->validationLocale) {
+                null, '', 'invoice' => null,
+                'app' => Translations::translator()->locale(),
+                default => $this->config->validationLocale,
+            },
         );
     }
 

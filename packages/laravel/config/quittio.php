@@ -124,6 +124,9 @@ return [
         'mode' => env('QUITTIO_VALIDATION', 'error'),
         'levels' => ['php', 'xsd'],
         'block_on_warnings' => false,
+        // Language of validation messages: null = the language of the application
+        // (app()->getLocale()), 'invoice' = the language of the invoice, or a locale such as 'de'.
+        'locale' => env('QUITTIO_VALIDATION_LOCALE'),
         'mandatory_field_guard' => env('QUITTIO_GUARD'),
         'drivers' => [
             'kosit' => [

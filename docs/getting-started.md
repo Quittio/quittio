@@ -186,6 +186,7 @@ $cancellation = $quittio->cancellation($result->data(), 'ST-2026-0001', reason: 
 | `validation.mode` | `error` (`warn`, `off`) | `validation.mode` |
 | `validation.levels` | `['L1', 'L2', 'L3', 'L4', 'L7']` | `validation.levels` (`php`, `xsd`) |
 | `validation.block_on_warnings` | `false` | `validation.block_on_warnings` |
+| `validation.locale` | `null` (the language of the invoice; `'app'` = the language of the translator; or a locale) | `validation.locale` (default: the language of the application) |
 | `validation.kosit`, `validation.verapdf` | disabled; `['enabled' => true, 'mode' => …, …]` enables L5 and L6 (KoSIT scenario sets only in `configurations`) | `validation.levels` (`kosit`, `verapdf`) and `validation.drivers.*` |
 | `mandatory_fields` | `exception` (`log`, `off`) | `validation.mandatory_field_guard` |
 | `temp_dir` | system temp directory | `pdf.cache_path` |

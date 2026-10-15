@@ -505,3 +505,14 @@ it('takes the latest supply date for the issuing deadline', function () {
     expect(UstgRules::issuingDeadline($builder->build())?->toIsoString())->toBe('2026-10-15')
         ->and(UstgRules::issuingDeadline(Scenarios::make('simple')->deliveryDate('2026-12-31')->build())?->toIsoString())->toBe('2027-01-15');
 });
+
+it('writes the messages in the configured language', function (?string $configured, string $expected) {
+    $invoice = Scenarios::make('simple')->buyer(fn ($b) => $b->name('Kunde AG')->address(null, null, 'Berlin', 'DE'))->locale('de');
+    $quittio = Quittio::create(['validation' => ['locale' => $configured]], [new CountryDE]);
+
+    expect($quittio->make($invoice)->format('cii')->check()->errors()[0]->message)->toStartWith($expected);
+})->with([
+    'the invoice language by default' => [null, 'Die Anschrift des Leistungsempfängers'],
+    'the invoice language' => ['invoice', 'Die Anschrift des Leistungsempfängers'],
+    'a fixed language' => ['en', 'The address of the buyer'],
+]);

@@ -37,6 +37,8 @@ final readonly class Config
      * @param  Presentation|null  $presentation  design defaults (logo, colours, texts); the invoice's own values win
      * @param  int|null  $dueDays  due date (BT-9) = issue date + days for invoices without due date and payment terms
      * @param  string|null  $cancellationStrategy  credit_note or negative_invoice; null = default of the country pack
+     * @param  string|null  $validationLocale  language of validation messages: null or "invoice" = the language of the
+     *         invoice, "app" = the language of the application translator (Laravel: app()->getLocale()), or a locale
      */
     public function __construct(
         public ?string $format = null,
@@ -64,6 +66,7 @@ final readonly class Config
         public int $maxDecompressedBytes = 50 * 1024 * 1024,
         public ?int $dueDays = null,
         public ?string $cancellationStrategy = null,
+        public ?string $validationLocale = null,
     ) {
         if ($cancellationStrategy !== null && ! in_array($cancellationStrategy, Cancellation::STRATEGIES, true)) {
             throw new ConfigurationException(sprintf('Unknown cancellation strategy "%s".', $cancellationStrategy));
@@ -136,6 +139,7 @@ final readonly class Config
             maxDecompressedBytes: self::int($reader, 'max_decompressed_bytes') ?? $defaults->maxDecompressedBytes,
             dueDays: self::int($config, 'due_days'),
             cancellationStrategy: self::str(self::arr($config, 'corrections'), 'cancellation_strategy'),
+            validationLocale: self::str($validation, 'locale'),
         );
     }
 

@@ -28,13 +28,14 @@ final class Messages
     ): ValidationMessage {
         $translator = $context->translator();
         $base = $namespace.'::rules.'.$code;
+        $locale = $context->messageLocale();
 
-        $message = $translator->has($base.'.message', $context->locale) || $translator->has($base.'.message', 'en')
-            ? $translator->get($base.'.message', $replace, $context->locale)
+        $message = $translator->has($base.'.message', $locale) || $translator->has($base.'.message', 'en')
+            ? $translator->get($base.'.message', $replace, $locale)
             : self::replace($fallback, $replace);
 
-        $hint = $translator->has($base.'.hint', $context->locale) || $translator->has($base.'.hint', 'en')
-            ? $translator->get($base.'.hint', $replace, $context->locale)
+        $hint = $translator->has($base.'.hint', $locale) || $translator->has($base.'.hint', 'en')
+            ? $translator->get($base.'.hint', $replace, $locale)
             : null;
 
         return new ValidationMessage(
