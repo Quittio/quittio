@@ -184,6 +184,8 @@ Country packs are found in three ways, and all of them are combined:
    }
    ```
 
+   The result is kept in `bootstrap/cache/quittio-countries.php` until Composer rewrites `vendor/composer/installed.json` or your `composer.json` changes, so requests do not read the package list. After editing `extra.quittio.country-packs` of the root `composer.json` by hand, the next request picks it up as well.
+
 2. **Configuration**: `countries` lists further pack classes. The array keys are ignored; the pack's `code()` counts. Classes are resolved through the container.
 3. **At runtime**: `Quittio::registerCountry(new CountryAT)`, e.g. in a service provider. It wins over the other two for the same country code and survives `Quittio::flush()`.
 

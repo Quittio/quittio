@@ -432,7 +432,8 @@ class QuittioManager
         // Per country code the last one wins: discovered packs, then quittio.countries (e.g. a
         // subclass of a discovered pack), then registerCountry().
         $vendor = dirname((string) (new ReflectionClass(ClassLoader::class))->getFileName(), 2);
-        $classes = [...CountryPackDiscovery::discover($vendor), ...$settings->strings('countries')];
+        $cache = $this->container() instanceof Application ? $this->container()->bootstrapPath('cache/quittio-countries.php') : null;
+        $classes = [...CountryPackDiscovery::discover($vendor, $cache), ...$settings->strings('countries')];
 
         $packs = [];
         foreach (array_unique($classes) as $class) {

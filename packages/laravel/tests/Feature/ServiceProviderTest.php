@@ -95,6 +95,40 @@ it('discovers country packs from Composer metadata', function () {
         ->and(CountryPackDiscovery::discover('/nonexistent/vendor'))->toBe([]);
 });
 
+it('keeps discovered country packs in a cache file until Composer changes the packages', function () {
+    $root = sys_get_temp_dir().'/quittio-discovery-'.bin2hex(random_bytes(4));
+    mkdir($root.'/vendor/composer', 0775, true);
+    $installed = $root.'/vendor/composer/installed.json';
+    $cache = $root.'/countries.php';
+    file_put_contents($root.'/composer.json', '{}');
+    $write = static function (string $class, int $time) use ($installed): void {
+        file_put_contents($installed, json_encode(['packages' => [['name' => 'acme/pack', 'extra' => ['quittio' => ['country-packs' => [$class]]]]]], JSON_THROW_ON_ERROR));
+        touch($installed, $time);
+    };
+
+    try {
+        $write(CountryDE::class, 1_000_000);
+        expect(CountryPackDiscovery::discover($root.'/vendor', $cache))->toBe([CountryDE::class])
+            ->and(is_file($cache))->toBeTrue();
+
+        // Another process reads the cache file instead of installed.json.
+        CountryPackDiscovery::flush();
+        file_put_contents($installed, 'not JSON');
+        touch($installed, 1_000_000);
+        expect(CountryPackDiscovery::discover($root.'/vendor', $cache))->toBe([CountryDE::class]);
+
+        // composer update rewrites installed.json: the cache is read again.
+        $write(stdClass::class.'Missing', 2_000_000);
+        expect(CountryPackDiscovery::discover($root.'/vendor', $cache))->toBe([]);
+    } finally {
+        CountryPackDiscovery::flush();
+        array_map(unlink(...), [...(glob($root.'/vendor/composer/*') ?: []), ...(glob($root.'/*.*') ?: [])]);
+        rmdir($root.'/vendor/composer');
+        rmdir($root.'/vendor');
+        rmdir($root);
+    }
+});
+
 it('lets configured country packs replace discovered ones', function () {
     $custom = new class extends CountryDE {};
     config(['quittio.countries' => ['DE' => $custom::class]]);
