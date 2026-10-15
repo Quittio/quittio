@@ -5,7 +5,6 @@
 ```php
 use Quittio\Core\Builder\InvoiceBuilder;
 use Quittio\Core\Builder\Party;
-use Quittio\Core\Builder\PaymentTermsBuilder;
 use Quittio\Core\Enums\PaymentMeansCode;
 use Quittio\Core\Enums\UnitCode;
 use Quittio\Country\DE\Tax\VatPreset;
@@ -26,7 +25,7 @@ $invoice = InvoiceBuilder::make()
         ->electronicAddress('ap@kunde.de', 'EM'))
     ->line('Web development', netPrice: '95.00', quantity: 24, unit: UnitCode::Hour, vat: VatPreset::Standard19)
     ->payment(PaymentMeansCode::SepaCreditTransfer, iban: 'DE02120300000000202051', remittanceInformation: 'RE-2026-0042')
-    ->paymentTerms(fn (PaymentTermsBuilder $t) => $t->dueInDays(14)->cashDiscount(days: 7, percent: '2.00'))
+    ->dueInDays(14)->cashDiscount(days: 7, percent: '2.00')
     ->build();
 ```
 
@@ -107,7 +106,6 @@ Further cases: `RequestForPayment` (71), `DebitNoteGoodsServices` (80), `CreditN
 ### Credit notes, corrected invoices and self-billing
 
 ```php
-use Quittio\Core\Data\Lines\InvoiceLine;
 use Quittio\Core\Enums\InvoiceTypeCode;
 
 // Credit note: positive amounts, type code 381, reference to the invoice
@@ -119,7 +117,7 @@ InvoiceBuilder::from($original)
     ->issueDate('2026-10-20')
     ->type(InvoiceTypeCode::CorrectedInvoice)
     ->precedingInvoice($original->number, $original->issueDate)
-    ->updateLine('2', fn (InvoiceLine $l) => $l->withNetPrice('80.00'));
+    ->updateLine('2', netPrice: '80.00');
 
 // Self-billing: the buyer issues the invoice, the supplier stays the seller (BG-4)
 InvoiceBuilder::make()->type(InvoiceTypeCode::SelfBilledInvoice);
@@ -132,7 +130,7 @@ A cancellation of an issued invoice is built with `Quittio::cancellation()` ([Ca
 | Method | BT | Description |
 |---|---|---|
 | `issueDate(Date\|DateTimeInterface\|string $date)` | BT-2 | Issue date, default today. |
-| `dueDate(Date\|DateTimeInterface\|string $date)` | BT-9 | Due date. Without it the calculator derives it from `paymentTerms()->dueInDays()`; without payment terms the configured default applies when rendering (`due_days`, Laravel `defaults.due_days`, default 14 there; not for credit notes). |
+| `dueDate(Date\|DateTimeInterface\|string $date)` | BT-9 | Due date. Without it the calculator derives it from `dueInDays()`; without payment terms the configured default applies when rendering (`due_days`, Laravel `defaults.due_days`, default 14 there; not for credit notes). |
 | `deliveryDate(Date\|DateTimeInterface\|string $date)` | BT-72 | Actual delivery or service date. Keeps the deliver-to data. |
 | `invoicingPeriod(Date\|string\|null $start, Date\|string\|null $end = null)` | BG-14 (BT-73, BT-74) | Invoicing or service period; one of the two dates may be `null`, not both. |
 | `taxPointDate(Date\|DateTimeInterface\|string $date)` | BT-7 | Date when VAT becomes chargeable, if it differs from the issue date. |
@@ -246,7 +244,7 @@ Without a VAT identifier, EN 16931 requires a seller identifier (BT-29) or a leg
 
 | Method | BT | Description |
 |---|---|---|
-| `payee(PayeeParty\|string\|callable $payee, ?string $identifier = null, ?string $legalRegistration = null, IdentifierScheme\|RawCode\|string\|null $identifierScheme = null, IdentifierScheme\|RawCode\|string\|null $legalRegistrationScheme = null)` | BG-10 (BT-59, BT-60, BT-61) | Payee, if different from the seller (e.g. a factoring company): a `PayeeParty`, the name with identifier, legal registration identifier and their schemes (e.g. `'0088'` for a GLN), or a callable that receives a `PartyBuilder` (`name()`, `identifier()`, `legalRegistration()`) and, like `seller()` and `buyer()`, continues an earlier payee. Identifiers and schemes next to a `PayeeParty` or a callable throw an `InvalidArgumentException`. |
+| `payee(PayeeParty\|PartyBuilder\|string\|callable $payee, ?string $identifier = null, ?string $legalRegistration = null, IdentifierScheme\|RawCode\|string\|null $identifierScheme = null, IdentifierScheme\|RawCode\|string\|null $legalRegistrationScheme = null)` | BG-10 (BT-59, BT-60, BT-61) | Payee, if different from the seller (e.g. a factoring company): a `PayeeParty`, the name with identifier, legal registration identifier and their schemes (e.g. `'0088'` for a GLN), or a callable that receives a `PartyBuilder` (`name()`, `identifier()`, `legalRegistration()`) and, like `seller()` and `buyer()`, continues an earlier payee. Identifiers and schemes next to a `PayeeParty` or a callable throw an `InvalidArgumentException`. |
 | `taxRepresentative(string $name, string $vatId, Address $address)` | BG-11 (BT-62, BT-63, BG-12) | Seller's tax representative. |
 | `deliverTo(?string $recipientName, ?Address $address = null, ?Identifier $locationId = null)` | BG-13 (BT-70, BG-15, BT-71) | Deliver-to party, address and location identifier. Replaces these three values (also with `null`) and keeps the delivery date. |
 | `delivery(Delivery $delivery)` | BG-13 | Replaces the whole delivery information, including the delivery date. |
@@ -268,7 +266,7 @@ use Quittio\Core\Enums\IdentifierScheme;
 |---|---|
 | `line(InvoiceLine\|LineBuilder\|ProvidesInvoiceLine\|array\|callable $line)` | Adds a line (BG-25), in one of the forms below. |
 | `lines(iterable $lines)` | Adds several lines; each entry may be any of the forms, e.g. an array of arrays or an Eloquent collection of order items. |
-| `updateLine(string $id, callable $change)` | Changes an existing line: the callable receives the `InvoiceLine` and returns the changed one. The line net amount is reset, and percentage allowances and charges of the line are recalculated from the new line amount. |
+| `updateLine(string $id, ?callable $change = null, netPrice, quantity, priceInclVat, name, description)` | Changes an existing line: with the named values (`->updateLine('2', netPrice: '80.00', quantity: 3)`), or with a callable that receives the `InvoiceLine` and returns the changed one. The line net amount is reset, and percentage allowances and charges of the line are recalculated from the new line amount. |
 | `removeLine(string $id)` | Removes an existing line by its identifier (BT-126). |
 
 A line can be given as:
@@ -304,7 +302,8 @@ Without `quantity()` a line has the quantity 1; without `vat()` it takes the [de
 use Quittio\Core\Data\Lines\InvoiceLine;
 
 $changed = InvoiceBuilder::from($draft)
-    ->updateLine('2', fn (InvoiceLine $line) => $line->withNetPrice('80.00')->with(['note' => 'Price adjusted']))
+    ->updateLine('2', netPrice: '80.00', description: 'Price adjusted')
+    ->updateLine('4', fn (InvoiceLine $line) => $line->with(['note' => 'Delivered in two parts']))
     ->removeLine('3')
     ->line('Travel expenses', netPrice: '120.00', vat: VatPreset::Standard19)
     ->build();
@@ -558,21 +557,22 @@ XRechnung requires payment instructions (BR-DE-1). Profile EXTENDED can carry fu
 
 ### Payment terms
 
-`paymentTerms(PaymentTerms|string|callable $terms)` sets the payment terms (BT-20): a text, a `PaymentTerms` object or a callable that receives a `PaymentTermsBuilder`. A text or a `PaymentTerms` object replaces earlier terms; a callable continues the earlier terms (of a callable, a text, a `PaymentTerms` object or `InvoiceBuilder::from()`), like `seller()` and `buyer()`: `InvoiceBuilder::from($draft)->paymentTerms(fn ($t) => $t->cashDiscount(7, '2.00'))` adds a cash discount to the existing terms. To start over, pass a text or `new PaymentTerms(...)`.
+The payment terms (BT-20) are set with these methods; each continues the terms set before, also those of `InvoiceBuilder::from()` or of the seller's defaults:
 
-| `PaymentTermsBuilder` method | Description |
+| Method | Description |
 |---|---|
-| `text(?string $text)` | Free text of the payment terms. |
 | `dueInDays(int $days)` | Payment target: the calculator sets the due date (BT-9) to issue date + days unless `dueDate()` is set. |
-| `cashDiscount(int $days, string $percent, ?string $baseAmount = null)` | Cash discount ("Skonto") for payment within `$days` days after the issue date, optionally on a base amount; repeatable. The percentage is rounded to two decimals. |
+| `cashDiscount(int $days, string $percent, ?string $baseAmount = null)` | Cash discount ("Skonto") for payment within `$days` days after the issue date, optionally on a base amount; repeatable for several tiers. The percentage is rounded to two decimals. |
 | `lateFee(?int $days = null, ?string $percent = null, ?string $text = null)` | Late payment terms. |
+| `paymentTerms(PaymentTerms\|string\|callable $terms)` | A text or a `PaymentTerms` object replaces the earlier terms, e.g. to start over; a callable receives the `PaymentTermsBuilder` (`text()` and the three methods above) and continues them. |
 
 ```php
-->paymentTerms(fn (PaymentTermsBuilder $t) => $t
-    ->dueInDays(30)
-    ->cashDiscount(days: 10, percent: '3.00')
-    ->cashDiscount(days: 20, percent: '2.00', baseAmount: '1000.00'))
+->dueInDays(30)
+->cashDiscount(days: 10, percent: '3.00')
+->cashDiscount(days: 20, percent: '2.00', baseAmount: '1000.00')
 ```
+
+`InvoiceBuilder::from($draft)->cashDiscount(days: 7, percent: '2.00')` adds a cash discount to the terms of the draft.
 
 Cash discounts are an agreed reduction of the consideration and must be part of the XML, not only of the PDF, so they are written into the text BT-20, generated in the locale of the rendering run:
 
@@ -650,7 +650,7 @@ use Quittio\Core\Support\Date;
 
 | Method | Description |
 |---|---|
-| `presentation(Presentation\|callable $presentation)` | Design of this invoice in PDF and HTML (logo, colours, font, texts, footer, line groups, gross prices, payment QR code, watermark, paper, labels, title …). A callable receives the current `Presentation` (or an empty one) and returns the new one. Not part of the XML. See [Templates and design](templates.md). |
+| `presentation(Presentation\|array\|callable $presentation)` | Design of this invoice in PDF and HTML (logo, colours, font, texts, footer, line groups, gross prices, payment QR code, watermark, paper, labels, title …). A `Presentation` replaces it, an array changes single properties (`['introText' => '…']`), a callable receives the current `Presentation` (or an empty one) and returns the new one. Not part of the XML. See [Templates and design](templates.md). |
 | `group(string $id, string $title, bool $showSubtotal = true)` | Defines a line group of the PDF; lines join it with `LineBuilder::group($id)`. |
 | `locale(string $locale)` | Language of the invoice (labels, generated texts, exemption texts of presets). Rendering uses the locale of the call, then this one, then the configured locale, then the country pack default. |
 | `timezone(string $timezone)` | Time zone for dates (see [Dates](#dates)). |
@@ -659,9 +659,8 @@ use Quittio\Core\Support\Date;
 | `flag(string $flag, bool $enabled = true)` | Sets or removes a flag that country packs evaluate, e.g. `Meta::FLAG_SMALL_BUSINESS` (`small_business`) or the German `Quittio\Country\DE\Support\Flags::SMALL_AMOUNT` (`de.small_amount`, see [Meta flags](country-packs.md#meta-flags)). |
 
 ```php
-use Quittio\Core\Data\Presentation\Presentation;
 
-->presentation(fn (Presentation $p) => $p->with(['introText' => 'Thank you for your order.', 'showGrossPrices' => true]))
+->presentation(['introText' => 'Thank you for your order.', 'showGrossPrices' => true])
 ->group('hardware', 'Hardware')
 ->line(Line::make('Notebook')->quantity(1)->netPrice('1200.00')->vat(VatPreset::Standard19)->group('hardware'))
 ```
@@ -792,7 +791,7 @@ Data read from XML has no exchange rate. `InvoiceData::withImpliedExchangeRate()
 $draft = InvoiceBuilder::from($stored)
     ->issueDate('2026-10-20')
     ->buyer(fn (PartyBuilder $b) => $b->contact('Lena Kunde', null, 'lena@kunde.de'))
-    ->updateLine('1', fn (InvoiceLine $l) => $l->withNetPrice('90.00'))
+    ->updateLine('1', netPrice: '90.00')
     ->build();
 ```
 
@@ -800,7 +799,7 @@ $draft = InvoiceBuilder::from($stored)
 - Percentage document allowances and charges whose base is the line sum of their VAT group, and discounts that `discountPercent()` or `discountAmount()` split over the VAT groups, follow the lines when lines are added, changed or removed: they are recalculated or split again (a VAT group without lines keeps no allowance of 0.00, a new VAT group gets its part).
 - `updateLine()` resets the line net amount and recalculates percentage line allowances and charges; a base amount that equalled the previous line amount follows the new one.
 - `InvoiceLine::withNetPrice()` drops list price and discount; it throws for a line with a price including VAT, `withPriceInclVat()` throws for a line with a net price (the gross price mode applies to all lines).
-- `paymentTerms()` with a callable starts new payment terms; seller and buyer callables continue the existing parties.
+- `dueInDays()`, `cashDiscount()` and `lateFee()` continue the existing payment terms, a text passed to `paymentTerms()` replaces them; seller and buyer callables continue the existing parties.
 
 ## Cancellations and corrections
 

@@ -42,7 +42,7 @@ $invoice = Quittio::invoice()                          // seller and bank accoun
         description: 'Customer portal, sprint 3')        // 19 %: the default VAT
     ->line('Hosting', netPrice: '49.00', unit: UnitCode::Month)
     ->line('Handbook of VAT law', netPrice: '39.00', vat: VatPreset::Reduced7)
-    ->paymentTerms(fn ($t) => $t->dueInDays(14)->cashDiscount(days: 7, percent: '2.00'))
+    ->dueInDays(14)->cashDiscount(days: 7, percent: '2.00')
     ->build();
 ```
 

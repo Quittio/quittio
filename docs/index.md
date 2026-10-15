@@ -63,7 +63,7 @@ $invoice = InvoiceBuilder::make()
         ->electronicAddress('ap@kunde.de', 'EM'))
     ->deliveryDate('2026-09-30')
     ->line('Web development', netPrice: '95.00', quantity: 24, unit: UnitCode::Hour, vat: VatPreset::Standard19)
-    ->paymentTerms(fn ($t) => $t->dueInDays(14))
+    ->dueInDays(14)
     ->payment(PaymentMeansCode::SepaCreditTransfer, iban: 'DE02120300000000202051')
     ->build();
 

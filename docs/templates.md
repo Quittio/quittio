@@ -286,7 +286,7 @@ use Quittio\Core\Data\Presentation\Presentation;
 
 $invoice = InvoiceBuilder::make()
     // ...
-    ->presentation(fn (Presentation $p) => $p->with(['logo' => storage_path('app/logo.png'), 'introText' => 'Thank you for your order.']))
+    ->presentation(['logo' => storage_path('app/logo.png'), 'introText' => 'Thank you for your order.'])
     ->group('hardware', 'Hardware')                                     // line group with subtotal
     ->line(Line::make('Router')->quantity(2, 'C62')->netPrice('89.00')->vat(VatPreset::Standard19)->group('hardware'))
     ->build();

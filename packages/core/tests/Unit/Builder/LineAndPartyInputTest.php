@@ -262,3 +262,31 @@ it('keeps default values the caller changed in place', function () {
 
     expect($invoice->paymentTerms?->dueDays)->toBe(30);
 });
+
+it('sets payment terms, design, payee and line changes without callbacks', function () {
+    $invoice = Invoices::simple()
+        ->dueInDays(30)
+        ->cashDiscount(days: 10, percent: '3.00')
+        ->cashDiscount(days: 20, percent: '2.00')
+        ->lateFee(text: 'Interest after the due date.')
+        ->presentation(['introText' => 'Thank you for your order.'])
+        ->presentation(['showGrossPrices' => true])                       // changes add up
+        ->payee(Party::make('Factoring AG')->identifier('4000001000005', '0088'))
+        ->build();
+    $changed = InvoiceBuilder::from($invoice)
+        ->updateLine('1', netPrice: '80.00', quantity: 2, description: 'Discounted')
+        ->build();
+
+    expect($invoice->paymentTerms?->dueDays)->toBe(30)
+        ->and($invoice->paymentTerms?->discounts)->toHaveCount(2)
+        ->and($invoice->paymentTerms?->lateFeeTerms?->text)->toBe('Interest after the due date.')
+        ->and($invoice->presentation?->introText)->toBe('Thank you for your order.')
+        ->and($invoice->presentation?->showGrossPrices)->toBeTrue()
+        ->and($invoice->payee?->name)->toBe('Factoring AG')
+        ->and($changed->lines[0]->price->netPrice?->toString())->toBe('80.00')
+        ->and($changed->lines[0]->quantity->toString())->toBe('2')
+        ->and($changed->lines[0]->item->description)->toBe('Discounted')
+        ->and($changed->lines[0]->netAmount)->toBeNull();
+
+    expect(fn () => Invoices::simple()->presentation(['Thank you']))->toThrow(InvalidArgumentException::class, 'by property name');
+});

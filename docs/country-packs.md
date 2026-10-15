@@ -867,7 +867,7 @@ $classes = (new CountryDE)->errorClassification($result);   // ['format' => [...
 | Punch mark | 148.5 | 148.5 |
 | Letterhead height in the default templates (top margin 20) | 7 | 25 |
 
-The address field keeps its position with a logo. Select a layout per invoice with `->presentation(fn ($p) => $p->with(['letterLayout' => 'din5008a']))` or for all invoices with `quittio.pdf.layout`; fold and punch marks are printed with `quittio.pdf.fold_marks = true` (core option `fold_marks`). See [templates](templates.md#letter-layouts).
+The address field keeps its position with a logo. Select a layout per invoice with `->presentation(['letterLayout' => 'din5008a'])` or for all invoices with `quittio.pdf.layout`; fold and punch marks are printed with `quittio.pdf.fold_marks = true` (core option `fold_marks`). See [templates](templates.md#letter-layouts).
 
 ### Translations
 

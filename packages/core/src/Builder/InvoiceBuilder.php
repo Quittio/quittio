@@ -512,17 +512,17 @@ class InvoiceBuilder
     }
 
     /**
-     * Payee (BG-10), if different from the seller (e.g. a factoring company): a PayeeParty, the
-     * name with the identifier (BT-60) and the legal registration identifier (BT-61) and their
-     * schemes, or a callable that receives a PartyBuilder (name(), identifier(), legalRegistration())
-     * and, like seller() and buyer(), continues an earlier payee.
+     * Payee (BG-10), if different from the seller (e.g. a factoring company): the name with the
+     * identifier (BT-60) and the legal registration identifier (BT-61) and their schemes, a
+     * PartyBuilder (Party::make('Factoring AG')->identifier(…)), a PayeeParty, or a callable that
+     * receives a PartyBuilder and, like seller() and buyer(), continues an earlier payee.
      *
-     * @param  PayeeParty|string|callable(PartyBuilder): mixed  $payee
+     * @param  PayeeParty|PartyBuilder|string|callable(PartyBuilder): mixed  $payee
      *
      * @throws InvalidArgumentException for identifiers or schemes next to a PayeeParty or a callable
      */
     public function payee(
-        PayeeParty|string|callable $payee,
+        PayeeParty|PartyBuilder|string|callable $payee,
         ?string $identifier = null,
         ?string $legalRegistration = null,
         IdentifierScheme|RawCode|string|null $identifierScheme = null,
@@ -542,6 +542,11 @@ class InvoiceBuilder
         }
         if ($payee instanceof PayeeParty) {
             $this->payee = $payee;
+
+            return $this;
+        }
+        if ($payee instanceof PartyBuilder) {
+            $this->payee = clone $payee;
 
             return $this;
         }
@@ -670,6 +675,33 @@ class InvoiceBuilder
         ]);
 
         return $this;
+    }
+
+    /**
+     * Payment target: the due date (BT-9) is the issue date plus $days unless dueDate() is set,
+     * and the payment terms say "Payable within … days without deduction." Continues the
+     * payment terms set before.
+     */
+    public function dueInDays(int $days): static
+    {
+        return $this->paymentTerms(static fn (PaymentTermsBuilder $terms) => $terms->dueInDays($days));
+    }
+
+    /**
+     * Cash discount ("Skonto") of $percent for payment within $days days after the issue date,
+     * optionally on a base amount; repeatable for several tiers. Continues the payment terms.
+     */
+    public function cashDiscount(int $days, string $percent, ?string $baseAmount = null): static
+    {
+        return $this->paymentTerms(static fn (PaymentTermsBuilder $terms) => $terms->cashDiscount($days, $percent, $baseAmount));
+    }
+
+    /**
+     * Late payment terms: days, percentage and text. Continues the payment terms.
+     */
+    public function lateFee(?int $days = null, ?string $percent = null, ?string $text = null): static
+    {
+        return $this->paymentTerms(static fn (PaymentTermsBuilder $terms) => $terms->lateFee($days, $percent, $text));
     }
 
     /**
@@ -863,19 +895,43 @@ class InvoiceBuilder
 
     /**
      * Changes an existing line, e.g. of a correction draft started with {@see self::from()}:
-     * $builder->updateLine('2', fn (InvoiceLine $l) => $l->withNetPrice('80.00')).
+     * with the named values ->updateLine('2', netPrice: '80.00', quantity: 3), or with a callable
+     * that receives the InvoiceLine and returns the changed one, e.g.
+     * ->updateLine('2', fn (InvoiceLine $l) => $l->with(['note' => 'Delivered in two parts'])).
      * The calculated line net amount is reset, and percentage allowances and charges on the
      * line amount are recalculated from the new amount.
      *
-     * @param  callable(InvoiceLine): InvoiceLine  $change
+     * @param  (callable(InvoiceLine): InvoiceLine)|null  $change
      */
-    public function updateLine(string $id, callable $change): static
-    {
+    public function updateLine(
+        string $id,
+        ?callable $change = null,
+        BigDecimal|int|float|string|null $netPrice = null,
+        BigDecimal|int|float|string|null $quantity = null,
+        BigDecimal|int|float|string|null $priceInclVat = null,
+        ?string $name = null,
+        ?string $description = null,
+    ): static {
+        $named = static function (InvoiceLine $line) use ($netPrice, $quantity, $priceInclVat, $name, $description): InvoiceLine {
+            if ($netPrice !== null) {
+                $line = $line->withNetPrice($netPrice);
+            }
+            if ($priceInclVat !== null) {
+                $line = $line->withPriceInclVat($priceInclVat);
+            }
+            if ($quantity !== null) {
+                $line = $line->with(['quantity' => Decimal::of($quantity)]);
+            }
+            $item = array_filter(['name' => $name, 'description' => $description], static fn (?string $value): bool => $value !== null);
+
+            return $item === [] ? $line : $line->with(['item' => $line->item->with($item)]);
+        };
         $found = false;
         $lines = [];
         foreach ($this->lines as $line) {
             if (! $found && $line instanceof InvoiceLine && $line->id === $id) {
-                $line = self::withPercentagesReset($change($line), self::lineBaseAmount($line))->with(['netAmount' => null]);
+                $changed = $named($change === null ? $line : $change($line));
+                $line = self::withPercentagesReset($changed, self::lineBaseAmount($line))->with(['netAmount' => null]);
                 $found = true;
             }
             $lines[] = $line;
@@ -950,13 +1006,28 @@ class InvoiceBuilder
     }
 
     /**
-     * @param  Presentation|callable(Presentation): Presentation  $presentation
+     * Design of this invoice in PDF and HTML: a Presentation replaces it, an array changes single
+     * values (->presentation(['introText' => 'Thank you for your order.', 'showGrossPrices' => true])),
+     * a callable receives the current Presentation and returns the new one.
+     *
+     * @param  Presentation|array<string, mixed>|callable(Presentation): Presentation  $presentation
      */
-    public function presentation(Presentation|callable $presentation): static
+    public function presentation(Presentation|array|callable $presentation): static
     {
-        $this->presentation = $presentation instanceof Presentation
-            ? $presentation
-            : $presentation($this->presentation ?? new Presentation);
+        $current = $this->presentation ?? new Presentation;
+        if (is_array($presentation)) {
+            $changes = [];
+            foreach ($presentation as $property => $value) {
+                if (! is_string($property)) {
+                    throw new InvalidArgumentException('presentation() takes the changes by property name, e.g. [\'introText\' => \'Thank you.\'].');
+                }
+                $changes[$property] = $value;
+            }
+            $this->presentation = $current->with($changes);
+
+            return $this;
+        }
+        $this->presentation = $presentation instanceof Presentation ? $presentation : $presentation($current);
 
         return $this;
     }

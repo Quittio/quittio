@@ -304,6 +304,26 @@ class DocumentBuilder
         return $this;
     }
 
+    /**
+     * Payment target in days, see InvoiceBuilder::dueInDays().
+     */
+    public function dueInDays(int $days): static
+    {
+        $this->invoice->dueInDays($days);
+
+        return $this;
+    }
+
+    /**
+     * Cash discount ("Skonto"), see InvoiceBuilder::cashDiscount().
+     */
+    public function cashDiscount(int $days, string $percent, ?string $baseAmount = null): static
+    {
+        $this->invoice->cashDiscount($days, $percent, $baseAmount);
+
+        return $this;
+    }
+
     public function creditTransfer(string $iban, ?string $bic = null, ?string $accountName = null): static
     {
         $this->invoice->creditTransfer($iban, $bic, $accountName);
@@ -439,9 +459,11 @@ class DocumentBuilder
     }
 
     /**
-     * @param  Presentation|callable(Presentation): Presentation  $presentation
+     * Design of this document, see InvoiceBuilder::presentation().
+     *
+     * @param  Presentation|array<string, mixed>|callable(Presentation): Presentation  $presentation
      */
-    public function presentation(Presentation|callable $presentation): static
+    public function presentation(Presentation|array|callable $presentation): static
     {
         $this->invoice->presentation($presentation);
 

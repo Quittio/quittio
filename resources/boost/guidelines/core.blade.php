@@ -26,7 +26,7 @@ $result = Quittio::invoice()                         // seller from config/quitt
     ->buyer($customer)                               // implements ProvidesParty
     ->line('Web development', netPrice: '95.00', quantity: 24, unit: UnitCode::Hour)   // 19 % by default
     ->line('Handbook', netPrice: '39.00', vat: VatPreset::Reduced7)
-    ->paymentTerms(fn ($t) => $t->dueInDays(14))
+    ->dueInDays(14)
     ->render();                                      // ZUGFeRD for German businesses
 
 $result->save('invoices', '2026/');

@@ -1202,7 +1202,7 @@ $cancellation = $invoice->cancelPartially([
 ], reason: 'Teilrücknahme');
 
 $draft = $invoice->correct();
-$draft->updateData(fn (InvoiceBuilder $b) => $b->updateLine('2', fn (InvoiceLine $l) => $l->withNetPrice('80.00')));
+$draft->updateData(fn (InvoiceBuilder $b) => $b->updateLine('2', netPrice: '80.00'));
 $draft->issue();
 ```
 

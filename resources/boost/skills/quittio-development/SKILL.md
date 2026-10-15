@@ -21,7 +21,7 @@ Use this skill when code creates, renders, sends, validates, cancels or reads in
 - Parties: `->buyer(Party::make('Kunde AG')->vatId()->address($street, $postcode, $city, $country)->electronicAddress($email, 'EM'))` (`Quittio\Core\Builder\Party`). Models can implement `Quittio\Core\Contracts\ProvidesParty` (`fillParty()`), `ProvidesInvoiceLine` (`fillLine()`) or `ProvidesInvoiceData` (`toInvoiceData()`); pass them directly: `->buyer($user)`, `->lines($order->items)`, `Quittio::make($order)`. A callable (`->seller(fn ($s) => $s->contact(…))`) changes the party set before.
 - Lines: `->line('Name', netPrice: '19.90', quantity: '2', unit: UnitCode::Piece)` with the named arguments `netPrice`, `priceInclVat`, `quantity`, `unit`, `vat`, `description`; for further values `Line::make('Name', netPrice: …)->sellerId(…)->allowance(…)` (`Quittio\Core\Builder\Line`), or arrays whose keys are the `LineBuilder` methods: `->lines([['name' => 'Hosting', 'quantity' => [1, UnitCode::Month], 'netPrice' => '49.00']])`. The quantity defaults to 1. Without `->vat()` a line gets the default VAT (`->defaultVat()` of the invoice, otherwise `quittio.defaults.vat`, otherwise the standard rate of the seller's country).
 - Amounts, prices and quantities are strings or `Brick\Math` values; floats throw an `InvalidArgumentException`. Do not set totals: the calculator computes line amounts, the VAT breakdown and totals (EN 16931 rounding).
-- Payment: `->paymentTerms(fn ($t) => $t->dueInDays(14)->cashDiscount(days: 7, percent: '2.00'))`, `->payment(PaymentMeansCode::SepaCreditTransfer, iban: '…')`.
+- Payment: `->dueInDays(14)->cashDiscount(days: 7, percent: '2.00')`, `->payment(PaymentMeansCode::SepaCreditTransfer, iban: '…')`.
 
 ## German VAT (quittio/country-de)
 

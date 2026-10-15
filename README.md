@@ -56,7 +56,7 @@ $result = Quittio::invoice()                                     // seller and b
         ->address('Bahnhofstraße 5', '54321', 'Beispielstadt', 'DE'))
     ->line('Web development', netPrice: '95.00', quantity: 24, unit: UnitCode::Hour)
     ->line(['name' => 'Hosting', 'netPrice' => '49.00'])          // quantity 1, VAT 19 % by default
-    ->paymentTerms(fn ($t) => $t->dueInDays(14))
+    ->dueInDays(14)
     ->render();                                                   // ZUGFeRD: PDF/A-3 with embedded XML
 
 $result->pdf();

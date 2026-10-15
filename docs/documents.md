@@ -50,7 +50,8 @@ Parties, lines, notes, discounts and payment data work exactly like in the [invo
 | `serialisedLine(InvoiceLine\|LineBuilder\|array\|callable $line, array $serialNumbers)` | Delivery note line with serial numbers |
 | `note(string $content, ?NoteSubjectCode $subject = null)` | Note |
 | `discountPercent(string $percent, ?string $reason = null)`, `discountAmount(string $amount, ?string $reason = null)` | Document discount, on the lines that count towards the totals |
-| `paymentTerms(PaymentTerms\|string\|callable $terms)` | Payment terms |
+| `dueInDays(int $days)`, `cashDiscount(int $days, string $percent, ?string $baseAmount = null)` | Payment target and cash discount ([Payment terms](building-invoices.md#payment-terms)) |
+| `paymentTerms(PaymentTerms\|string\|callable $terms)` | Payment terms as text or object |
 | `creditTransfer(string $iban, ?string $bic = null, ?string $accountName = null)` | Bank account |
 | `buyerReference(?string $reference)`, `purchaseOrderReference(?string $reference)` | Buyer's references |
 | `reference(string $number, $date = null)` | Preceding document, e.g. the quote of an order confirmation or the order of a delivery note |
@@ -64,7 +65,7 @@ Parties, lines, notes, discounts and payment data work exactly like in the [invo
 | `deadline($date)` | Payment deadline of a reminder |
 | `statementPeriod($start, $end)` | Period of an account statement |
 | `openingBalance(string $amount)` | Opening balance of an account statement |
-| `presentation(Presentation\|callable $presentation)` | Design of this document ([Templates](templates.md#presentation)) |
+| `presentation(Presentation\|array\|callable $presentation)` | Design of this document ([Templates](templates.md#presentation)) |
 | `locale(string $locale)` | Locale |
 | `custom(string $key, mixed $value)` | Custom value (`meta.custom` in the view model) |
 | `tap(callable $callback)` | Access to the underlying `InvoiceBuilder` |

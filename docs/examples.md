@@ -64,7 +64,7 @@ $result = Quittio::invoice()
     ->line('Software development', netPrice: '95.00', quantity: '62.5', unit: UnitCode::Hour,
         description: 'Customer portal, sprints 5 and 6')
     ->line('Hosting', netPrice: '49.00', unit: UnitCode::Month)
-    ->paymentTerms(fn ($t) => $t->dueInDays(30)->cashDiscount(days: 10, percent: '2.00'))
+    ->dueInDays(30)->cashDiscount(days: 10, percent: '2.00')
     ->render();                                          // ZUGFeRD, profile EN 16931
 
 $result->save('invoices', '2026/');                    // 2026/Rechnung_RE-2026-0101.pdf
@@ -174,7 +174,7 @@ $result = Quittio::invoice()
     ->buyer(Party::make('Café Sonnenschein GmbH')->address('Am Markt 3', '12345', 'Musterstadt', 'DE'))
     ->line('Logo design', netPrice: '650.00', unit: UnitCode::LumpSum)
     ->line('Business card layout', netPrice: '55.00', quantity: 2, unit: UnitCode::Hour)
-    ->paymentTerms(fn ($t) => $t->dueInDays(14))
+    ->dueInDays(14)
     ->render();
 
 $result->data()->totals->amountDue;                    // EUR 760.00, no VAT
@@ -203,7 +203,7 @@ $result = Quittio::invoice()
         ->address('Rathausplatz 1', '54321', 'Beispielstadt', 'DE')
         ->electronicAddress('04011000-12345-03', '0204'))
     ->line('Website maintenance', netPrice: '85.00', quantity: 8, unit: UnitCode::Hour)
-    ->paymentTerms(fn ($t) => $t->dueInDays(30))
+    ->dueInDays(30)
     ->render(['xrechnung-cii', 'pdf']);
 
 $result->save('invoices', '2026/');                    // 2026/Rechnung_RE-2026-0104.xml, the e-invoice
@@ -236,7 +236,7 @@ $advance = Quittio::invoice()
     ->invoicingPeriod('2026-09-01', '2026-10-31')        // planned period of the service
     ->buyer($customer)
     ->line('Website relaunch, advance payment', netPrice: '1000.00', unit: UnitCode::LumpSum)
-    ->paymentTerms(fn ($t) => $t->dueInDays(14))
+    ->dueInDays(14)
     ->render();
 
 // Final invoice: the whole service with its whole VAT, minus the advance payment received
@@ -247,7 +247,7 @@ $final = Quittio::invoice()
     ->buyer($customer)
     ->line('Website relaunch', netPrice: '3000.00', unit: UnitCode::LumpSum)
     ->deductAdvance($advance->data())
-    ->paymentTerms(fn ($t) => $t->dueInDays(14))
+    ->dueInDays(14)
     ->render();
 
 $final->data()->totals->grossTotal;                    // EUR 3570.00
@@ -336,7 +336,7 @@ $result = Quittio::invoice()
         ->electronicAddress('0123456749', '0208'))
     ->defaultVat(VatPreset::ReverseChargeEu)             // for every line of this invoice
     ->line('IT consulting', netPrice: '110.00', quantity: 16, unit: UnitCode::Hour)
-    ->paymentTerms(fn ($t) => $t->dueInDays(14))
+    ->dueInDays(14)
     ->render('peppol');
 
 $xml = $result->xml();                                 // hand it to your Peppol access point
@@ -508,7 +508,7 @@ class Order extends Model implements ProvidesInvoiceData
             ->purchaseOrderReference($this->customer_reference)
             ->buyer($this->customer)
             ->lines($this->items)
-            ->paymentTerms(fn ($t) => $t->dueInDays(14))
+            ->dueInDays(14)
             ->build();
     }
 }
@@ -544,7 +544,6 @@ Drafts need no Managed layer: a draft is invoice data that you keep until you is
 use Quittio\Core\Builder\InvoiceBuilder;
 use Quittio\Core\Builder\Party;
 use Quittio\Core\Data\InvoiceData;
-use Quittio\Core\Data\Lines\InvoiceLine;
 use Quittio\Core\Enums\UnitCode;
 use Quittio\Laravel\Facades\Quittio;
 
@@ -564,7 +563,7 @@ $preview = Quittio::make(InvoiceData::fromJson($json))
 
 // Change the draft as often as needed
 $json = InvoiceBuilder::from(InvoiceData::fromJson($json))
-    ->updateLine('1', fn (InvoiceLine $line) => $line->withNetPrice('110.00'))
+    ->updateLine('1', netPrice: '110.00')
     ->build()
     ->toJson();
 
@@ -645,7 +644,7 @@ $result = Quittio::make(InvoiceBuilder::fromDocument($quote->build())
     ->number('RE-2026-0140')
     ->issueDate('2026-11-03')
     ->deliveryDate('2026-10-28')
-    ->paymentTerms(fn ($t) => $t->dueInDays(14)))
+    ->dueInDays(14))
     ->render();
 ```
 
@@ -781,7 +780,7 @@ $invoice = InvoiceBuilder::make()
     ->buyer(Party::make('Kunde AG')->vatId('DE987654321')->address('Bahnhofstraße 5', '54321', 'Beispielstadt', 'DE'))
     ->line('Consulting', netPrice: '120.00', quantity: 4, unit: UnitCode::Hour)
     ->payment(PaymentMeansCode::SepaCreditTransfer, iban: 'DE02120300000000202051')
-    ->paymentTerms(fn ($t) => $t->dueInDays(14))
+    ->dueInDays(14)
     ->build();
 
 $result = $quittio->make($invoice)->render();
