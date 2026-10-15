@@ -48,7 +48,13 @@ Two groups need more than PHP:
   vendor/bin/pest --group=visual
   ```
 
-  A failing comparison leaves `<scenario>.actual.png` next to the baseline (ignored by Git; CI uploads it as the artifact `visual-diff`). When a design change is intended, delete the affected baselines and run the group again outside CI: missing baselines are written on local runs. Then check them in the Linux image that CI uses, because macOS and Linux must produce the same images:
+  A failing comparison leaves `<scenario>.actual.png` next to the baseline (ignored by Git; CI uploads it as the artifact `visual-diff`). A missing baseline fails the test. When a design change is intended, delete the affected baselines and write them again with the flag `QUITTIO_UPDATE_BASELINES=1` (ignored on CI):
+
+  ```bash
+  QUITTIO_UPDATE_BASELINES=1 vendor/bin/pest --group=visual
+  ```
+
+  Then check them in the Linux image that CI uses, because macOS and Linux must produce the same images:
 
   ```bash
   tools/visual/check-linux.sh

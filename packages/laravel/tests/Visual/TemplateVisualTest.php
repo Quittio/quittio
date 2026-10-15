@@ -9,8 +9,8 @@ use Quittio\Laravel\Facades\Quittio;
 | Visual regression of the default Blade template (sample scenarios).
 | The first page of each PDF is rasterised with pdftoppm and compared pixel by pixel
 | with the baseline in __snapshots__. macOS and the Linux CI image (tools/visual/check-linux.sh)
-| produce the same images. Missing baselines are written on the first run outside CI;
-| delete a baseline to accept an intended design change.
+| produce the same images. A missing baseline fails the test; with QUITTIO_UPDATE_BASELINES=1
+| it is written instead. Delete a baseline and run with the flag to accept an intended change.
 */
 
 const VISUAL_TOLERANCE = 0.002;
@@ -73,9 +73,9 @@ it('renders the default template like the baseline', function (string $scenario)
     $baseline = $directory.'/'.$scenario.'.png';
 
     if (! is_file($baseline)) {
-        if (getenv('CI') !== false) {
+        if (getenv('QUITTIO_UPDATE_BASELINES') !== '1' || getenv('CI') !== false) {
             unlink($actual);
-            throw new RuntimeException(sprintf('Missing baseline %s; run the visual tests locally to create it.', $baseline));
+            throw new RuntimeException(sprintf('Missing baseline %s; run QUITTIO_UPDATE_BASELINES=1 vendor/bin/pest --group=visual locally to create it.', $baseline));
         }
         @mkdir(dirname($baseline), 0775, true);
         rename($actual, $baseline);
