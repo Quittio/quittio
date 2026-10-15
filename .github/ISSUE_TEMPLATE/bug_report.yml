@@ -1,0 +1,55 @@
+name: Bug report
+description: Something does not work as documented, or an invoice is wrong or rejected.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for the report. Please do not post real invoices, names, addresses, bank accounts or tax numbers: reduce the example to fictitious data. Security issues go through the private channel in SECURITY.md, not here.
+  - type: input
+    id: version
+    attributes:
+      label: Quittio version
+      description: "`composer show 'quittio/*'`"
+      placeholder: 0.1.0
+    validations:
+      required: true
+  - type: dropdown
+    id: package
+    attributes:
+      label: Package
+      options:
+        - quittio/core
+        - quittio/laravel
+        - quittio/country-de
+        - not sure
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: PHP and Laravel version
+      placeholder: PHP 8.4.13, Laravel 13.2
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: The code that builds or reads the invoice, the format and profile, and the configuration you changed.
+      render: php
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual result
+      description: The exception or validation message with its rule code, or what is wrong in the PDF or XML. If a receiver or validator rejected the file, add its message.
+    validations:
+      required: true

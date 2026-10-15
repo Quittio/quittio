@@ -13,8 +13,11 @@
 /pint.json export-ignore
 /tests export-ignore
 /packages/*/tests export-ignore
+/packages/*/.github export-ignore
+/packages/*/.gitattributes export-ignore
 /testbench.yaml export-ignore
 /.editorconfig export-ignore
+/.gitattributes export-ignore
 /CONTRIBUTING.md export-ignore
 /ARCHITECTURE.md export-ignore
 /RELEASING.md export-ignore

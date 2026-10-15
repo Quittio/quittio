@@ -4,6 +4,8 @@
 *.ttf binary
 *.icc binary
 /tests export-ignore
+/.github export-ignore
+/.gitattributes export-ignore
 
 # Third-party schemas are kept byte for byte as published.
 resources/xsd/** -text

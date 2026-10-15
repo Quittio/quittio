@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/Quittio/quittio/security/advisories/new
+    about: Please report vulnerabilities privately, as described in SECURITY.md.
+  - name: Documentation
+    url: https://docs.quittio.dev
+    about: Guides, configuration and troubleshooting.

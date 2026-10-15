@@ -5,6 +5,13 @@
   </picture>
 </p>
 
+<p align="center">
+  <a href="https://github.com/Quittio/quittio/actions/workflows/ci.yml"><img src="https://github.com/Quittio/quittio/actions/workflows/ci.yml/badge.svg?branch=master" alt="CI"></a>
+  <a href="https://packagist.org/packages/quittio/quittio"><img src="https://img.shields.io/packagist/v/quittio/quittio" alt="Latest version on Packagist"></a>
+  <a href="https://packagist.org/packages/quittio/quittio"><img src="https://img.shields.io/packagist/dependency-v/quittio/quittio/php" alt="PHP version"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/packagist/l/quittio/quittio" alt="Licence"></a>
+</p>
+
 # Quittio
 
 E-invoicing for Laravel. Quittio creates, validates, reads and renders electronic invoices based on the European standard EN 16931. Germany is the first market; everything country-specific lives in country packs, so the core stays country-neutral.
@@ -96,7 +103,7 @@ composer analyse     # PHPStan, level max
 composer lint        # Pint
 ```
 
-Development happens in this repository. `packages/core`, `packages/laravel` and `packages/country-de` are copied to the read-only repositories `quittio/core`, `quittio/laravel` and `quittio/country-de` on every push and tag once CI passed (`.github/workflows/split.yml`, called by `ci.yml`); open issues and pull requests here.
+Development happens in this repository: see [CONTRIBUTING.md](CONTRIBUTING.md) for the setup, the test groups and pull requests, [ARCHITECTURE.md](ARCHITECTURE.md) for how the packages fit together and [RELEASING.md](RELEASING.md) for releases. `packages/core`, `packages/laravel` and `packages/country-de` are copied to the read-only repositories `quittio/core`, `quittio/laravel` and `quittio/country-de` on every push and tag once CI passed (`.github/workflows/split.yml`, called by `ci.yml`); open issues and pull requests here.
 
 Official validation (KoSIT validator and veraPDF) runs in CI and locally:
 
