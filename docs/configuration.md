@@ -109,12 +109,16 @@ Inside a section you keep, a missing key gets the value Quittio uses when nothin
 | `storage.disk` | the default disk of `config/filesystems.php` |
 | `queue.queue` | the default queue of the connection |
 
-The manager (a singleton) reads the configuration once, when it is used for the first time. In queue workers and under Octane that is once per worker process. After changing values at runtime (in tests, or for per-tenant settings), call `Quittio::flush()`. The next call then builds the core again:
+The manager (a singleton) builds the core from the configuration when it is used for the first time and keeps it as long as the `quittio` configuration stays the same. A value changed at runtime (in tests, or per tenant) makes the next call build the core again, without further steps:
 
 ```php
 config()->set('quittio.pdf.colors.primary', '#0f766e');
-Quittio::flush();
+Quittio::make($invoice)->render(); // uses the new colour
 ```
+
+Under Octane the manager reads the configuration of the current request, not that of the worker's first request. `Quittio::flush()` still forgets the built core, e.g. after a bound class changed.
+
+Some values are process-wide rather than per application: the translator bridge, the default VAT for lines without VAT, the snapshot upcasters and the registered base rates of the German pack. `Quittio\Core\Quittio::resetState()` forgets them; the service providers set them again when the application boots. The test trait `InteractsWithQuittio` calls it after each test ([Testing](testing.md#assertions)).
 
 Some keys are read at other times:
 

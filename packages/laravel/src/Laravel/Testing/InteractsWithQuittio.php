@@ -7,6 +7,7 @@ namespace Quittio\Laravel\Testing;
 use DOMDocument;
 use Illuminate\Container\Container;
 use PHPUnit\Framework\Assert;
+use Quittio\Core\Quittio;
 use Quittio\Core\Validation\ValidationMessage;
 use Quittio\Laravel\QuittioManager;
 use ReflectionClass;
@@ -17,6 +18,15 @@ use ReflectionProperty;
  */
 trait InteractsWithQuittio
 {
+    /**
+     * Called by Laravel's test case after each test: forgets the process-wide state of Quittio
+     * (e.g. base rates registered by a test), see Quittio\Core\Quittio::resetState().
+     */
+    protected function tearDownInteractsWithQuittio(): void
+    {
+        Quittio::resetState();
+    }
+
     /**
      * Reads the PDF or XML and validates it with all configured levels.
      */

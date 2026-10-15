@@ -49,6 +49,7 @@ use Quittio\Core\Rendering\PreparedInvoice;
 use Quittio\Core\Rendering\RenderedDocument;
 use Quittio\Core\Rendering\RenderedInvoice;
 use Quittio\Core\Rendering\RenderOptions;
+use Quittio\Core\Serialization\Snapshots\SnapshotUpcasterChain;
 use Quittio\Core\Support\Date;
 use Quittio\Core\Templates\PhpTemplateEngine;
 use Quittio\Core\Templates\TemplateEngine;
@@ -104,6 +105,9 @@ final class Quittio
     /** @var (Closure(InvoiceData, list<MandatoryField>): void)|null */
     private ?Closure $mandatoryFieldListener = null;
 
+    /** @var array<string, Closure(): void> see onResetState() */
+    private static array $stateResetters = [];
+
     public function __construct(
         private readonly Config $config = new Config,
         private readonly ProfileRegistry $profiles = new ProfileRegistry,
@@ -120,6 +124,36 @@ final class Quittio
         $this->formatResolver = $formatResolver ?? new DefaultFormatResolver($config->profile ?? self::DEFAULT_PROFILE, $config->autoUpgradeProfile);
         $this->countryResolver = $countryResolver ?? new DefaultCountryResolver($countries, $config->country);
         $this->withSerializer(new CiiWriter)->withSerializer(new UblWriter);
+    }
+
+    /**
+     * Resets the process-wide state: the translator of Translations, the default snapshot
+     * upcasters of SnapshotUpcasterChain::default(), the application default VAT of
+     * InvoiceBuilder::useDefaultVat() and the state that extensions registered with
+     * onResetState() (e.g. the base rates of quittio/country-de).
+     *
+     * Test suites call it between tests, long-running processes between tenants. The Laravel
+     * integration sets the state again when the application boots.
+     */
+    public static function resetState(): void
+    {
+        Translations::reset();
+        SnapshotUpcasterChain::useDefault(null);
+        InvoiceBuilder::useDefaultVat(null);
+        foreach (self::$stateResetters as $reset) {
+            $reset();
+        }
+    }
+
+    /**
+     * Registers process-wide state of an extension with resetState(). A second registration
+     * under the same key replaces the first.
+     *
+     * @param  Closure(): void  $reset
+     */
+    public static function onResetState(string $key, Closure $reset): void
+    {
+        self::$stateResetters[$key] = $reset;
     }
 
     /**

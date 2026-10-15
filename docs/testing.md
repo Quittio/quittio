@@ -153,7 +153,7 @@ it('queues the rendering', function () {
 - The factory's invoice is German (locale `de`), so the file name starts with the German title "Rechnung" (invoice).
 - The events are described in [Events](laravel.md#events), the queue in [Queueing](laravel.md#queueing). `quittio` is the default queue name.
 - Rendered results are `Attachable`. So `Mail::fake()` with `Mail::assertSent(YourMail::class, fn ($mail) => $mail->hasAttachment($result))` checks mail attachments.
-- After changing `config('quittio.…')` inside a test, call `Quittio::flush()`, so that the next call uses the new configuration ([Configuration](configuration.md)).
+- After changing `config('quittio.…')` inside a test, the next call uses the new configuration ([Configuration](configuration.md)).
 
 ## Assertions
 
@@ -174,6 +174,8 @@ uses(InteractsWithQuittio::class);
 // Pest, for all tests of a directory (in tests/Pest.php)
 pest()->use(InteractsWithQuittio::class)->in('Feature');
 ```
+
+After each test the trait also resets the process-wide state of Quittio (`Quittio\Core\Quittio::resetState()`), e.g. base rates that a test registered.
 
 Then use the assertions on the outputs of a rendered invoice:
 
@@ -321,7 +323,6 @@ function useOfficialValidators(): void
         'timeout' => 120,
     ]);
     config()->set('quittio.validation.drivers.verapdf', ['mode' => 'docker', 'image' => 'verapdf/cli']);
-    Quittio::flush();
 }
 
 it('produces valid ZUGFeRD and XRechnung', function () {

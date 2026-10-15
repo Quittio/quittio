@@ -721,7 +721,7 @@ Instead of the facade you can inject `Quittio\Laravel\QuittioManager`; both are 
 | `profiles()` | `ProfileRegistry` | Profiles of the core and the country packs: `all()`, `has($key)`, `get($key)`, `bySpecificationId($id)` |
 | `formats()` | `FormatRegistry` | Output formats: `all()`, `has($key)`, `get($key)` |
 | `settings()` | `Settings` | Typed access to `config('quittio')` (see [Settings](#settings)) |
-| `flush()` | `QuittioManager` | Forgets the built core; the next call builds it again from the current configuration |
+| `flush()` | `QuittioManager` | Forgets the built core; the next call builds it again. Configuration changes do not need it |
 | `core()` | `Quittio\Core\Quittio` | The core instance, e.g. `Quittio::core()->config()` or `->validators()` |
 | `coreWithLevels(array $levels)` | `Quittio\Core\Quittio` | A new core (the cached one stays unchanged) that validates with `validation.levels` plus `$levels`, e.g. `['kosit', 'verapdf']`, every driver with its settings of `validation.drivers.*`; used by `quittio:validate --kosit --verapdf` |
 | `macro()`, `mixin()`, `hasMacro()`, `flushMacros()` | – | Macros of the manager (see [Macros](#macros)) |

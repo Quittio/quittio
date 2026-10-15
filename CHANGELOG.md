@@ -4,9 +4,14 @@ All notable changes to this project are documented in this file. The format foll
 
 ## [Unreleased]
 
+### Added
+
+- `Quittio\Core\Quittio::resetState()` forgets the process-wide state (translator bridge, default snapshot upcasters, application default VAT, base rates of the German pack); extensions register their own state with `onResetState()`. The test trait `InteractsWithQuittio` calls it after each test.
+
 ### Changed
 
 - README and documentation mark the Managed layer `quittio/managed` as not released yet.
+- The Laravel manager builds a new core when the `quittio` configuration changes, so `Quittio::flush()` is no longer needed after `config()->set()`. Under Octane it reads the configuration of the current request instead of the application that created the singleton; so does the default VAT of lines without VAT.
 
 ### Security
 

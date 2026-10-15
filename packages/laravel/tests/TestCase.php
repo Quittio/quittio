@@ -5,11 +5,8 @@ declare(strict_types=1);
 namespace Quittio\Tests;
 
 use Orchestra\Testbench\TestCase as Orchestra;
-use Quittio\Core\Builder\InvoiceBuilder;
-use Quittio\Core\I18n\Translations;
-use Quittio\Core\Serialization\Snapshots\SnapshotUpcasterChain;
+use Quittio\Core\Quittio as QuittioCore;
 use Quittio\Country\DE\CountryDE;
-use Quittio\Country\DE\Dunning\BaseRates;
 use Quittio\Country\DE\Laravel\GermanyServiceProvider;
 use Quittio\Laravel\Facades\Quittio;
 use Quittio\Laravel\QuittioServiceProvider;
@@ -19,11 +16,8 @@ abstract class TestCase extends Orchestra
     protected function tearDown(): void
     {
         parent::tearDown();
-        // The bridge points to the translator of the destroyed application.
-        Translations::reset();
-        SnapshotUpcasterChain::useDefault(null);
-        BaseRates::reset();
-        InvoiceBuilder::useDefaultVat(null);
+        // The translator bridge and the default VAT point to the destroyed application.
+        QuittioCore::resetState();
     }
 
     protected function getPackageProviders($app): array

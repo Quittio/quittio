@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Quittio\Laravel;
 
+use Illuminate\Container\Container;
 use Illuminate\Contracts\Config\Repository;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\Foundation\CachesRoutes;
@@ -72,8 +73,9 @@ final class QuittioServiceProvider extends ServiceProvider
         $this->bridgeTranslations();
         // InvoiceData::fromSnapshot() uses the configured upcasters.
         SnapshotUpcasterChain::useDefault($this->app->make(SnapshotUpcasterChain::class));
-        // Lines without ->vat() use quittio.defaults.vat or the default of the seller's country.
-        InvoiceBuilder::useDefaultVat(fn (?string $country, bool $smallBusiness): ?TaxPreset => $this->app->make(QuittioManager::class)->defaultVat($country, $smallBusiness));
+        // Lines without ->vat() use quittio.defaults.vat or the default of the seller's country,
+        // read from the current application (under Octane the one of the request).
+        InvoiceBuilder::useDefaultVat(static fn (?string $country, bool $smallBusiness): ?TaxPreset => Container::getInstance()->make(QuittioManager::class)->defaultVat($country, $smallBusiness));
         $this->registerPublishing();
         $this->registerPreviewRoutes();
 
