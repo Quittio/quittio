@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Quittio\Core\Support;
 
-use RuntimeException;
+use Quittio\Core\Exceptions\RuntimeException;
 
 /**
  * Writes rendered output to local files.

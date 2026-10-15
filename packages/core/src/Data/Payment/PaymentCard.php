@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Quittio\Core\Data\Payment;
 
-use InvalidArgumentException;
 use Quittio\Core\Data\Concerns\Immutable;
+use Quittio\Core\Exceptions\InvalidArgumentException;
 use Quittio\Core\Mapping\Attributes as Q;
 
 /**

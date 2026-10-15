@@ -6,7 +6,6 @@ namespace Quittio\Core\Data\Lines;
 
 use Brick\Math\BigDecimal;
 use Brick\Money\Money;
-use InvalidArgumentException;
 use Quittio\Core\Codes\RawCode;
 use Quittio\Core\Data\AllowanceCharge\LineAllowance;
 use Quittio\Core\Data\AllowanceCharge\LineCharge;
@@ -17,6 +16,7 @@ use Quittio\Core\Data\Identifier;
 use Quittio\Core\Data\Presentation\LinePresentation;
 use Quittio\Core\Data\References\DocumentReference;
 use Quittio\Core\Enums\UnitCode;
+use Quittio\Core\Exceptions\InvalidArgumentException;
 use Quittio\Core\Mapping\Attributes as Q;
 use Quittio\Core\Profiles\ProfileLevel;
 use Quittio\Core\Support\Decimal;

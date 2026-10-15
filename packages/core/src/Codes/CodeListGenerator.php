@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Quittio\Core\Codes;
 
-use RuntimeException;
+use Quittio\Core\Exceptions\RuntimeException;
 
 /**
  * Generates the code list files (resources/codelists/*.json) from the official EN 16931

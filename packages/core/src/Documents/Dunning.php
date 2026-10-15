@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Quittio\Core\Documents;
 
 use Brick\Money\Money;
-use InvalidArgumentException;
+use Quittio\Core\Exceptions\InvalidArgumentException;
 use Quittio\Core\Support\Amount;
 use Quittio\Core\Support\Date;
 

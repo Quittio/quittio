@@ -7,8 +7,8 @@ namespace Quittio\Core\Support;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use DateTimeZone;
-use InvalidArgumentException;
 use JsonSerializable;
+use Quittio\Core\Exceptions\InvalidArgumentException;
 use Stringable;
 use Throwable;
 

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Quittio\Core\Rendering;
 
-use LogicException;
 use Quittio\Core\Documents\DocumentData;
+use Quittio\Core\Exceptions\LogicException;
 use Quittio\Core\Support\LocalFile;
 
 /**

@@ -6,7 +6,7 @@ namespace Quittio\Core\Serialization;
 
 use Opis\JsonSchema\Errors\ErrorFormatter;
 use Opis\JsonSchema\Validator;
-use RuntimeException;
+use Quittio\Core\Exceptions\RuntimeException;
 
 /**
  * Validates JSON input against the shipped invoice schema before hydration

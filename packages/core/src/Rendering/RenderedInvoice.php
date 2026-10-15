@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Quittio\Core\Rendering;
 
-use LogicException;
 use Quittio\Core\Data\InvoiceData;
+use Quittio\Core\Exceptions\LogicException;
 use Quittio\Core\Profiles\Profile;
 use Quittio\Core\Support\LocalFile;
 use Quittio\Core\Validation\ValidationResult;

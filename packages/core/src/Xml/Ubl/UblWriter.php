@@ -6,7 +6,6 @@ namespace Quittio\Core\Xml\Ubl;
 
 use Brick\Math\BigDecimal;
 use Brick\Money\Money;
-use InvalidArgumentException;
 use Quittio\Core\Calculation\CalculationException;
 use Quittio\Core\Data\AllowanceCharge\DocumentAllowanceCharge;
 use Quittio\Core\Data\AllowanceCharge\LineAllowanceCharge;
@@ -18,6 +17,7 @@ use Quittio\Core\Data\Party\Contact;
 use Quittio\Core\Enums\DocumentReferenceTypeCode;
 use Quittio\Core\Enums\TaxPointDateCode;
 use Quittio\Core\Enums\VatCategory;
+use Quittio\Core\Exceptions\InvalidArgumentException;
 use Quittio\Core\Profiles\Capabilities\RequiresVatBreakdownRate;
 use Quittio\Core\Profiles\Profile;
 use Quittio\Core\Profiles\Syntax;

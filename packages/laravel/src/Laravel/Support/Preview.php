@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Quittio\Laravel\Support;
 
 use Illuminate\Contracts\View\Factory;
-use InvalidArgumentException;
+use Quittio\Core\Exceptions\InvalidArgumentException;
 use Quittio\Core\I18n\Translations;
 use Quittio\Core\Testing\Scenarios;
 use Quittio\Laravel\QuittioManager;

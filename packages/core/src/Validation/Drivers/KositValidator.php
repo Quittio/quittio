@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace Quittio\Core\Validation\Drivers;
 
 use Closure;
-use InvalidArgumentException;
+use Quittio\Core\Exceptions\InvalidArgumentException;
+use Quittio\Core\Exceptions\RuntimeException;
 use Quittio\Core\Support\Process;
 use Quittio\Core\Validation\Severity;
 use Quittio\Core\Validation\ValidationDriver;
@@ -13,7 +14,6 @@ use Quittio\Core\Validation\ValidationLevel;
 use Quittio\Core\Validation\ValidationMessage;
 use Quittio\Core\Validation\ValidationResult;
 use Quittio\Core\Validation\ValidationSubject;
-use RuntimeException;
 
 /**
  * Official Schematron validation (level L5) with the KoSIT validator.
@@ -86,7 +86,7 @@ final class KositValidator implements ValidationDriver
 
         try {
             $report = $this->mode === self::MODE_DAEMON ? $this->viaDaemon($xml) : $this->viaCli($xml);
-        } catch (RuntimeException $e) {
+        } catch (\RuntimeException $e) { // not only Quittio's: also failures of PHP functions and libraries
             return [new ValidationMessage(
                 severity: $this->failOnUnavailable ? Severity::Error : Severity::Warning,
                 code: 'KOSIT-UNAVAILABLE',

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Quittio\Core\Support;
 
-use RuntimeException;
+use Quittio\Core\Exceptions\RuntimeException;
 
 /**
  * Minimal external process runner with stdin, timeout and captured output.

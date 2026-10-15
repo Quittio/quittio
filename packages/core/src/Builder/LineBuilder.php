@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Quittio\Core\Builder;
 
 use Brick\Math\BigDecimal;
-use InvalidArgumentException;
 use Quittio\Core\Codes\RawCode;
 use Quittio\Core\Contracts\ProvidesInvoiceLine;
 use Quittio\Core\Data\AllowanceCharge\LineAllowance;
@@ -28,6 +27,7 @@ use Quittio\Core\Enums\ItemClassificationScheme;
 use Quittio\Core\Enums\UnitCode;
 use Quittio\Core\Enums\VatCategory;
 use Quittio\Core\Enums\VatExemptionReasonCode;
+use Quittio\Core\Exceptions\InvalidArgumentException;
 use Quittio\Core\Exceptions\InvalidInvoiceData;
 use Quittio\Core\Support\Amount;
 use Quittio\Core\Support\Date;

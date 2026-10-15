@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Quittio\Core\Profiles;
 
-use InvalidArgumentException;
+use Quittio\Core\Exceptions\InvalidArgumentException;
 
 /**
  * Known profiles by key. Country packs and network packages register further profiles.

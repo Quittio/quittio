@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Quittio\Country\DE\Dunning;
 
-use InvalidArgumentException;
+use Quittio\Core\Exceptions\InvalidArgumentException;
 use Quittio\Core\Support\Date;
 
 /**

@@ -6,12 +6,12 @@ namespace Quittio\Laravel\Testing;
 
 use Closure;
 use Illuminate\Contracts\Container\Container;
-use LogicException;
 use PHPUnit\Framework\Assert;
 use Quittio\Core\Countries\CountryPack;
 use Quittio\Core\Data\InvoiceData;
 use Quittio\Core\Documents\DocumentCalculator;
 use Quittio\Core\Documents\DocumentData;
+use Quittio\Core\Exceptions\LogicException;
 use Quittio\Core\Quittio;
 use Quittio\Core\Rendering\RenderedDocument as CoreRenderedDocument;
 use Quittio\Core\Rendering\RenderedInvoice as CoreRenderedInvoice;

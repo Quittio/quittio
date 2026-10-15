@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Quittio\Core\Pdf\Renderers;
 
-use InvalidArgumentException;
 use Mpdf\Http\ClientInterface;
 use Psr\Http\Message\RequestInterface;
+use Quittio\Core\Exceptions\InvalidArgumentException;
 
 /**
  * mPDF HTTP client that refuses every request (defence in depth).

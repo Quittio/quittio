@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Quittio\Core\Codes;
 
 use BackedEnum;
-use InvalidArgumentException;
+use Quittio\Core\Exceptions\InvalidArgumentException;
 
 /**
  * Access to the official code lists generated from the EN 16931 rules

@@ -8,7 +8,7 @@ use ArrayAccess;
 use Countable;
 use IteratorAggregate;
 use JsonSerializable;
-use LogicException;
+use Quittio\Core\Exceptions\LogicException;
 use Traversable;
 
 /**

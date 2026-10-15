@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Quittio\Core\Templates;
 
-use InvalidArgumentException;
+use Quittio\Core\Exceptions\InvalidArgumentException;
 use Quittio\Core\View\InvoiceViewModel;
 use Stringable;
 use Throwable;

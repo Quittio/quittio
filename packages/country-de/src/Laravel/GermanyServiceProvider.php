@@ -7,8 +7,8 @@ namespace Quittio\Country\DE\Laravel;
 use Illuminate\Contracts\Config\Repository;
 use Illuminate\Support\ServiceProvider;
 use JsonException;
+use Quittio\Core\Exceptions\RuntimeException;
 use Quittio\Country\DE\Dunning\BaseRates;
-use RuntimeException;
 
 /**
  * Laravel integration of the German country pack (discovered automatically): the base rates

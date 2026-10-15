@@ -6,7 +6,6 @@ namespace Quittio\Core\Data;
 
 use Brick\Math\RoundingMode;
 use Brick\Money\Money;
-use InvalidArgumentException;
 use Quittio\Core\Codes\RawCode;
 use Quittio\Core\Data\AllowanceCharge\DocumentAllowance;
 use Quittio\Core\Data\AllowanceCharge\DocumentCharge;
@@ -30,6 +29,7 @@ use Quittio\Core\Data\Totals\Totals;
 use Quittio\Core\Data\Totals\VatBreakdown;
 use Quittio\Core\Enums\InvoiceTypeCode;
 use Quittio\Core\Enums\TaxPointDateCode;
+use Quittio\Core\Exceptions\InvalidArgumentException;
 use Quittio\Core\Mapping\Attributes as Q;
 use Quittio\Core\Profiles\ProfileLevel;
 use Quittio\Core\Serialization\ArrayHydrator;

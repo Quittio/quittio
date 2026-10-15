@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Quittio\Core\Validation\Drivers;
 
 use Closure;
+use Quittio\Core\Exceptions\RuntimeException;
 use Quittio\Core\Support\Process;
-use RuntimeException;
 use ZipArchive;
 
 /**

@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace Quittio\Core\Builder;
 
 use Brick\Math\BigDecimal;
-use InvalidArgumentException;
 use Quittio\Core\Codes\RawCode;
 use Quittio\Core\Contracts\ProvidesInvoiceLine;
 use Quittio\Core\Enums\UnitCode;
 use Quittio\Core\Enums\VatCategory;
+use Quittio\Core\Exceptions\InvalidArgumentException;
 use Quittio\Core\Tax\TaxPreset;
 
 /**

@@ -10,7 +10,7 @@ use Illuminate\Contracts\Filesystem\Factory as FilesystemFactory;
 use Illuminate\Http\Request;
 use Illuminate\Mail\Attachment;
 use Illuminate\Support\Str;
-use RuntimeException;
+use Quittio\Core\Exceptions\RuntimeException;
 use Symfony\Component\HttpFoundation\Response;
 
 /**

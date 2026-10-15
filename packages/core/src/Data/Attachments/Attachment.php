@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Quittio\Core\Data\Attachments;
 
-use InvalidArgumentException;
 use Quittio\Core\Data\Concerns\Immutable;
 use Quittio\Core\Enums\MimeType;
+use Quittio\Core\Exceptions\InvalidArgumentException;
 use Quittio\Core\Mapping\Attributes as Q;
 
 /**

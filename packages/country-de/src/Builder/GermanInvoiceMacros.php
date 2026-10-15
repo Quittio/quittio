@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Quittio\Country\DE\Builder;
 
-use InvalidArgumentException;
 use Quittio\Core\Builder\InvoiceBuilder;
 use Quittio\Core\Data\InvoiceData;
 use Quittio\Core\Enums\InvoiceTypeCode;
 use Quittio\Core\Enums\NoteSubjectCode;
 use Quittio\Core\Enums\VatCategory;
+use Quittio\Core\Exceptions\InvalidArgumentException;
 use Quittio\Core\Support\Amount;
 use Quittio\Core\View\IntlFormatter;
 use Quittio\Country\DE\Support\Flags;

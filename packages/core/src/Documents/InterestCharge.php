@@ -8,7 +8,7 @@ use Brick\Math\BigDecimal;
 use Brick\Math\BigRational;
 use Brick\Math\RoundingMode;
 use Brick\Money\Money;
-use InvalidArgumentException;
+use Quittio\Core\Exceptions\InvalidArgumentException;
 use Quittio\Core\Support\Amount;
 use Quittio\Core\Support\Date;
 

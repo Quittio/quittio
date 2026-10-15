@@ -6,8 +6,8 @@ namespace Quittio\Core\Tax;
 
 use ArrayIterator;
 use Countable;
-use InvalidArgumentException;
 use IteratorAggregate;
+use Quittio\Core\Exceptions\InvalidArgumentException;
 use Traversable;
 
 /**

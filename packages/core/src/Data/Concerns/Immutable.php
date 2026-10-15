@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Quittio\Core\Data\Concerns;
 
-use InvalidArgumentException;
+use Quittio\Core\Exceptions\InvalidArgumentException;
 use ReflectionClass;
 
 /**

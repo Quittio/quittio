@@ -11,7 +11,7 @@ use Brick\Money\Context\CustomContext;
 use Brick\Money\Currency;
 use Brick\Money\Exception\UnknownCurrencyException;
 use Brick\Money\Money;
-use InvalidArgumentException;
+use Quittio\Core\Exceptions\InvalidArgumentException;
 
 /**
  * Factory for monetary amounts.

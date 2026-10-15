@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Quittio\Laravel\Templates;
 
 use Illuminate\Contracts\View\Factory;
-use InvalidArgumentException;
+use Quittio\Core\Exceptions\InvalidArgumentException;
 use Quittio\Core\Templates\PhpTemplateEngine;
 use Quittio\Core\Templates\TemplateEngine;
 use Quittio\Core\View\InvoiceViewModel;

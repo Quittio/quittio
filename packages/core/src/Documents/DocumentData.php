@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Quittio\Core\Documents;
 
-use InvalidArgumentException;
 use Quittio\Core\Data\AllowanceCharge\DocumentAllowance;
 use Quittio\Core\Data\AllowanceCharge\DocumentCharge;
 use Quittio\Core\Data\Concerns\Immutable;
@@ -21,6 +20,7 @@ use Quittio\Core\Data\Presentation\Presentation;
 use Quittio\Core\Data\Totals\Totals;
 use Quittio\Core\Data\Totals\VatBreakdown;
 use Quittio\Core\Enums\InvoiceTypeCode;
+use Quittio\Core\Exceptions\InvalidArgumentException;
 use Quittio\Core\Support\Date;
 
 /**

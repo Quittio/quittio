@@ -55,7 +55,7 @@ Other exceptions of a render run:
 - `ConfigurationException`: unknown format, profile not supported by the format, watermark with e-invoice XML, invalid design values,
 - `Quittio\Core\View\MandatoryFieldMissing` from the [mandatory field guard](#mandatory-field-guard).
 
-All exceptions of the package implement `Quittio\Core\Exceptions\QuittioException`.
+All exceptions of the package implement `Quittio\Core\Exceptions\QuittioException`, so `catch (QuittioException $e)` catches every error of Quittio. Invalid arguments and runtime errors without a class of their own are `InvalidArgumentException`, `RuntimeException` or `LogicException` from `Quittio\Core\Exceptions`; they extend the PHP classes of the same name.
 
 ### Warnings
 

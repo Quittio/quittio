@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Quittio\Core\Testing;
 
-use InvalidArgumentException;
 use Quittio\Core\Builder\InvoiceBuilder;
 use Quittio\Core\Data\Extensions\ExtendedData;
 use Quittio\Core\Data\Extensions\ExtendedParty;
@@ -15,6 +14,7 @@ use Quittio\Core\Enums\InvoiceTypeCode;
 use Quittio\Core\Enums\PaymentMeansCode;
 use Quittio\Core\Enums\UnitCode;
 use Quittio\Core\Enums\VatCategory;
+use Quittio\Core\Exceptions\InvalidArgumentException;
 
 /**
  * Example invoices for previews, tests and the official validation runs.

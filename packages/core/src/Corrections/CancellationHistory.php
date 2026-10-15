@@ -6,7 +6,6 @@ namespace Quittio\Core\Corrections;
 
 use Brick\Math\BigDecimal;
 use Brick\Math\RoundingMode;
-use InvalidArgumentException;
 use Quittio\Core\Calculation\CalculationException;
 use Quittio\Core\Calculation\DeclaredAmounts;
 use Quittio\Core\Calculation\GrossPriceConverter;
@@ -15,6 +14,7 @@ use Quittio\Core\Calculation\LineCalculator;
 use Quittio\Core\Data\InvoiceData;
 use Quittio\Core\Data\Totals\VatBreakdown;
 use Quittio\Core\Enums\VatCategory;
+use Quittio\Core\Exceptions\InvalidArgumentException;
 use Quittio\Core\Support\Amount;
 use Quittio\Core\Support\Decimal;
 

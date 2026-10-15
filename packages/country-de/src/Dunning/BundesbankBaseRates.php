@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Quittio\Country\DE\Dunning;
 
 use Closure;
-use RuntimeException;
+use Quittio\Core\Exceptions\RuntimeException;
 
 /**
  * Fetches the base rate according to section 247 BGB from the statistics API of the Deutsche

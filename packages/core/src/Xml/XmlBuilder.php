@@ -6,9 +6,9 @@ namespace Quittio\Core\Xml;
 
 use DOMDocument;
 use DOMElement;
-use InvalidArgumentException;
+use Quittio\Core\Exceptions\InvalidArgumentException;
 use Quittio\Core\Exceptions\InvalidInvoiceData;
-use RuntimeException;
+use Quittio\Core\Exceptions\RuntimeException;
 
 /**
  * Builds XML documents element by element.

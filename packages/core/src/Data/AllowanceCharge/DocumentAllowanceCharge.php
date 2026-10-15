@@ -7,10 +7,10 @@ namespace Quittio\Core\Data\AllowanceCharge;
 use BackedEnum;
 use Brick\Math\BigDecimal;
 use Brick\Money\Money;
-use InvalidArgumentException;
 use Quittio\Core\Codes\RawCode;
 use Quittio\Core\Enums\VatCategory;
 use Quittio\Core\Enums\VatExemptionReasonCode;
+use Quittio\Core\Exceptions\InvalidArgumentException;
 use ReflectionClass;
 
 /**

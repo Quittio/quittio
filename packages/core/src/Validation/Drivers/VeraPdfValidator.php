@@ -9,7 +9,8 @@ use DOMDocument;
 use DOMElement;
 use DOMNode;
 use DOMXPath;
-use InvalidArgumentException;
+use Quittio\Core\Exceptions\InvalidArgumentException;
+use Quittio\Core\Exceptions\RuntimeException;
 use Quittio\Core\Support\Process;
 use Quittio\Core\Validation\Severity;
 use Quittio\Core\Validation\ValidationDriver;
@@ -17,7 +18,6 @@ use Quittio\Core\Validation\ValidationLevel;
 use Quittio\Core\Validation\ValidationMessage;
 use Quittio\Core\Validation\ValidationResult;
 use Quittio\Core\Validation\ValidationSubject;
-use RuntimeException;
 
 /**
  * PDF/A conformance check (level L6) with veraPDF.
@@ -83,7 +83,7 @@ final class VeraPdfValidator implements ValidationDriver
     {
         try {
             $report = $this->run($pdf);
-        } catch (RuntimeException $e) {
+        } catch (\RuntimeException $e) { // not only Quittio's: also failures of PHP functions and libraries
             return [new ValidationMessage(
                 severity: $this->failOnUnavailable ? Severity::Error : Severity::Warning,
                 code: 'VERAPDF-UNAVAILABLE',

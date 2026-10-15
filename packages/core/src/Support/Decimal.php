@@ -8,7 +8,7 @@ use Brick\Math\BigDecimal;
 use Brick\Math\BigNumber;
 use Brick\Math\Exception\NumberFormatException;
 use Brick\Math\RoundingMode;
-use InvalidArgumentException;
+use Quittio\Core\Exceptions\InvalidArgumentException;
 
 /**
  * Helpers for exact decimal arithmetic. Floats are rejected on purpose, see rejectFloat().
