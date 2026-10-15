@@ -4,7 +4,9 @@ name: Split
 # quittio/country-de for every push to master and every tag (with the same tag). Called by the
 # job "split" of ci.yml once lint, analysis, tests and the official validation passed, so that
 # nothing reaches the split repositories and Packagist that failed CI.
-# Secret SPLIT_TOKEN: a token with write access ("Contents: Read and write") to these repositories.
+# Secret SPLIT_TOKEN: a token with write access to these repositories: "Contents: Read and write" and,
+# because every package ships .github/workflows/close-pull-request.yml, "Workflows: Read and write"
+# (classic tokens: the scopes repo and workflow). Without it GitHub refuses the push of the split.
 
 on:
   workflow_call:

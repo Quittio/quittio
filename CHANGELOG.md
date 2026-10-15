@@ -4,6 +4,10 @@ All notable changes to this project are documented in this file. The format foll
 
 ## [Unreleased]
 
+### Changed
+
+- Pull requests opened in the read-only split repositories `quittio/core`, `quittio/laravel` and `quittio/country-de` are closed automatically with a pointer to the monorepo.
+
 ## [0.2.0] - 2026-10-16
 
 ### Added

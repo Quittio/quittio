@@ -14,7 +14,7 @@ flowchart LR
 
 - `ci.yml` runs for pushes to `master`, for every tag and for pull requests. Its last job, `split`, calls the reusable workflow `split.yml` only for pushes to `Quittio/quittio`, and only after every other job passed. A red tag therefore never reaches the split repositories.
 - `quittio/quittio` is published from this repository itself. Packagist sees its tag as soon as it is pushed, before CI has finished. Push a tag only for a commit whose CI on `master` is green.
-- The split needs the repository secret `SPLIT_TOKEN`, a token with "Contents: Read and write" on the three split repositories.
+- The split needs the repository secret `SPLIT_TOKEN`, a token with "Contents: Read and write" and "Workflows: Read and write" on the three split repositories (classic tokens: the scopes `repo` and `workflow`). The workflow permission is needed because every package contains `.github/workflows/close-pull-request.yml`, which closes pull requests opened in a split repository with a pointer to this one.
 
 ## Steps
 
