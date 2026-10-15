@@ -93,7 +93,7 @@ A country pack may add or tighten rules, but never relax EN 16931 (`CountryPack`
 
 ## Laravel layer
 
-`QuittioManager` (`packages/laravel/src/Laravel/QuittioManager.php`) is the root of the facade. It maps `config/quittio.php` to a core `Config` (`Support/ConfigMapper`), discovers the country packs, creates the drivers registered with `extend()`, builds the core once and keeps it until `flush()`. `PendingInvoice` collects the options of a call and renders through `renderInvoice()`, which dispatches `InvoiceRendering`, `InvoiceValidated`, `InvoiceValidationFailed` and `InvoiceRendered`. `RenderInvoice` is the queue job; it carries the invoice as a versioned JSON snapshot.
+`QuittioManager` (`packages/laravel/src/Laravel/QuittioManager.php`) is the root of the facade. It maps `config/quittio.php` to a core `Config` (`Support/ConfigMapper`), discovers the country packs, creates the drivers registered with `extend()`, builds the core and keeps it as long as the `quittio` configuration is unchanged (`flush()`, `extend()` and `registerCountry()` drop it). It reads the configuration of the current application (`Container::getInstance()`), which under Octane is the request's sandbox. `PendingInvoice` collects the options of a call and renders through `renderInvoice()`, which dispatches `InvoiceRendering`, `InvoiceValidated`, `InvoiceValidationFailed` and `InvoiceRendered`; documents dispatch `DocumentRendering` and `DocumentRendered`. `RenderInvoice` is the queue job; it carries the invoice as a versioned JSON snapshot and the render options as versioned JSON (`RenderOptions::toArray()`), and fails at once on errors that another attempt cannot fix. `QuittioFake` replaces only the protected `run()`/`runDocument()` of the manager, so it dispatches the same events.
 
 ## Static state
 
@@ -101,13 +101,14 @@ Some state is process-wide. Keep it in mind for tests, queue workers and Octane:
 
 | State | Set by | Reset with |
 |---|---|---|
-| `I18n\Translations` (translator, registered paths) | `QuittioServiceProvider::boot()` (Laravel translator), `Quittio::registerCountry()` (pack translations) | `Translations::reset()` |
-| `SnapshotUpcasterChain::useDefault()` | `QuittioServiceProvider::boot()` | `SnapshotUpcasterChain::useDefault(null)` |
-| `InvoiceBuilder::useDefaultVat()` | `QuittioServiceProvider::boot()` | `InvoiceBuilder::useDefaultVat(null)` |
-| `Country\DE\Dunning\BaseRates` | `GermanyServiceProvider` (configured and updated rates) | `BaseRates::reset()` |
+| `I18n\Translations` (translator, registered paths) | `QuittioServiceProvider::boot()` (Laravel translator), `Quittio::registerCountry()` (pack translations) | `Quittio::resetState()` |
+| `SnapshotUpcasterChain::useDefault()` | `QuittioServiceProvider::boot()` | `Quittio::resetState()` |
+| `InvoiceBuilder::useDefaultVat()` | `QuittioServiceProvider::boot()` (a closure that resolves the manager of the current application) | `Quittio::resetState()` |
+| `Country\DE\Dunning\BaseRates` | `GermanyServiceProvider` (configured and updated rates) | `Quittio::resetState()` (registered in `packages/country-de/bootstrap.php` with `Quittio::onResetState()`) |
+| `Laravel\Support\CountryPackDiscovery` (discovered pack classes) | the manager; also kept in `bootstrap/cache/quittio-countries.php` | `CountryPackDiscovery::flush()`; keyed on the modification times of `installed.json` and `composer.json` |
 | Builder macros (`Support\Macroable`) | `packages/country-de/bootstrap.php` (Composer autoload), applications | – |
 
-Read-only caches (`Mapping\FieldMatrix`, `Codes\CodeList`, `Support\Amount`, `View\Markdown`) hold data that does not change at runtime. `packages/laravel/tests/TestCase.php` shows the resets a test needs.
+`Quittio\Core\Quittio::resetState()` resets everything above except macros and the discovery cache; extensions register their own state with `Quittio::onResetState()`. Read-only caches (`Mapping\FieldMatrix`, `Codes\CodeList`, `Support\Amount`, `View\Markdown`) hold data that does not change at runtime. `packages/laravel/tests/TestCase.php` and the test trait `InteractsWithQuittio` call `resetState()` after each test.
 
 ## Where things are
 

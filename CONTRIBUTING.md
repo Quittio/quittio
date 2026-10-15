@@ -11,7 +11,7 @@ Before you change code, read [ARCHITECTURE.md](ARCHITECTURE.md) for how the pack
 | PHP 8.3 or newer with `ctype`, `dom`, `gd`, `libxml`, `mbstring`, `xmlwriter`, `zlib`, plus `intl` and `bcmath` | everything; CI tests PHP 8.3, 8.4 and 8.5 |
 | Composer 2 | everything |
 | poppler (`pdftotext`, `pdftoppm`) | the page break tests of the PDF renderer and the visual tests; skipped without it |
-| Java 17 or newer (CI uses 21) | the KoSIT validator in the `official` test group and `tools/validate-fixtures.sh` |
+| Java 11 or newer (CI uses 21) | the KoSIT validator in the `official` test group and `tools/validate-fixtures.sh` |
 | Docker | veraPDF in the `official` group, `tools/visual/check-linux.sh`, `actionlint` |
 | Ruby and Bundler | a local preview of the documentation website |
 
