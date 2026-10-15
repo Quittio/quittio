@@ -15,6 +15,7 @@ use Quittio\Core\Rendering\RenderOptions;
 use Quittio\Core\Serialization\Snapshots\SnapshotUpcasterChain;
 use Quittio\Core\Serialization\Snapshots\SnapshotVersionException;
 use Quittio\Core\Testing\Scenarios;
+use Quittio\Core\Validation\ValidationLevel;
 use Quittio\Laravel\Facades\Quittio;
 use Quittio\Laravel\Jobs\RenderInvoice;
 use Quittio\Laravel\QuittioManager;
@@ -29,6 +30,15 @@ it('accepts the due days as a numeric string and rejects other values', function
         ->and($config(14)->dueDays)->toBe(14)
         ->and($config(null)->dueDays)->toBeNull()
         ->and(fn () => $config('soon'))->toThrow(ConfigurationException::class, 'due_days');
+});
+
+it('keeps the default checks when the published file has no validation levels', function () {
+    $levels = static fn (array $validation): array => ConfigMapper::toCore(new Settings(['validation' => $validation]), false)->validationLevels;
+
+    expect($levels(['mode' => 'error']))->toBe([ValidationLevel::L1, ValidationLevel::L2, ValidationLevel::L3, ValidationLevel::L7, ValidationLevel::L4])
+        ->and($levels(['levels' => ['php']]))->toBe([ValidationLevel::L1, ValidationLevel::L2, ValidationLevel::L3, ValidationLevel::L7])
+        // An empty list switches them off on purpose.
+        ->and($levels(['levels' => []]))->toBe([]);
 });
 
 it('accepts "auto" as the automatic format choice', function () {

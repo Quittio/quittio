@@ -170,8 +170,10 @@ return [
         // SVG logos in PDF/A need the PHP extension imagick.
         'logo' => null,
 
-        // Colours as hex values: primary = headings and lines, text, muted = secondary text,
-        // secondary = accents (null = the primary colour).
+        // Colours as hex values: primary = issuer name, title and the total to pay; text = body
+        // text and the rules below the column heads and above the total; muted = labels,
+        // descriptions and the footer; secondary = section headings and the mark of highlighted
+        // lines (null = the primary colour).
         'colors' => ['primary' => '#2741d9', 'text' => '#15171c', 'muted' => '#5f6470', 'secondary' => null],
 
         // Small sender line above the address field. null = generated from the seller.

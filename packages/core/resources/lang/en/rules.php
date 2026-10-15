@@ -129,7 +129,7 @@ return [
     ],
     'BR-CO-25' => [
         'message' => 'In case the amount due for payment (BT-115) is positive, either the payment due date (BT-9) or the payment terms (BT-20) shall be present.',
-        'hint' => 'Add a payment target with ->paymentTerms(fn ($t) => $t->dueInDays(14)) or a due date with ->dueDate().',
+        'hint' => 'Add a payment target with ->dueInDays(14) or a due date with ->dueDate().',
     ],
     'BR-CO-26' => [
         'message' => 'In order for the buyer to automatically identify a supplier, the seller identifier (BT-29), the seller legal registration identifier (BT-30) and/or the seller VAT identifier (BT-31) shall be present.',

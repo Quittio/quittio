@@ -360,7 +360,7 @@ it('uses extended validators listed in the levels', function () {
 
     config()->set('quittio.validation.block_on_warnings', true);
     Quittio::flush();
-    expect(fn () => Quittio::make(invoice())->format('cii')->render())->toThrow(ValidationException::class, 'blocking warnings');
+    expect(fn () => Quittio::make(invoice())->format('cii')->render())->toThrow(ValidationException::class, '(1 blocking warning)');
 });
 
 it('renders on the configured paper size', function () {

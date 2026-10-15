@@ -22,7 +22,8 @@ final class ConfigMapper
      */
     public static function toCore(Settings $settings, bool $production, ?array $levels = null): Config
     {
-        $levelNames = $levels ?? $settings->strings('validation.levels');
+        // A published file without the key keeps the default checks; only [] switches them off.
+        $levelNames = $levels ?? ($settings->get('validation.levels') === null ? ['php', 'xsd'] : $settings->strings('validation.levels'));
         $levels = [];
         if (in_array('php', $levelNames, true)) {
             array_push($levels, ValidationLevel::L1, ValidationLevel::L2, ValidationLevel::L3, ValidationLevel::L7);

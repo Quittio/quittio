@@ -129,7 +129,7 @@ return [
     ],
     'BR-CO-25' => [
         'message' => 'Ist der Zahlbetrag (BT-115) positiv, muss ein Fälligkeitsdatum (BT-9) oder eine Zahlungsbedingung (BT-20) angegeben werden.',
-        'hint' => 'Ergänzen Sie ein Zahlungsziel mit ->paymentTerms(fn ($t) => $t->dueInDays(14)) oder ein Fälligkeitsdatum mit ->dueDate().',
+        'hint' => 'Ergänzen Sie ein Zahlungsziel mit ->dueInDays(14) oder ein Fälligkeitsdatum mit ->dueDate().',
     ],
     'BR-CO-26' => [
         'message' => 'Damit der Käufer den Lieferanten automatisch erkennen kann, muss eine Kennung des Verkäufers (BT-29), eine Registernummer (BT-30) oder die USt-IdNr. (BT-31) angegeben werden.',
