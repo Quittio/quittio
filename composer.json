@@ -131,6 +131,7 @@
         "docs:generate": "php tools/docs/generate.php",
         "codelists:update": "php tools/codelists/update.php",
         "ci": [
+            "Composer\\Config::disableProcessTimeout",
             "@lint",
             "@analyse",
             "@test:fast"
