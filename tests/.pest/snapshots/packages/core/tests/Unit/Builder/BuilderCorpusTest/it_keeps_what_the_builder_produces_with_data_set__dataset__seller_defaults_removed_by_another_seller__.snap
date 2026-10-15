@@ -1,0 +1,42 @@
+{
+    "number": "INV-1",
+    "issueDate": "2026-10-03",
+    "typeCode": "380",
+    "currency": "EUR",
+    "seller": {
+        "name": "Lisa Klein",
+        "address": {
+            "countryCode": "DE",
+            "line1": "Gartenstraße 7",
+            "city": "Musterstadt",
+            "postcode": "12345"
+        },
+        "taxNumber": "21/815/08150"
+    },
+    "buyer": {
+        "name": "Kunde AG",
+        "address": {
+            "countryCode": "DE",
+            "line1": "Weg 1",
+            "city": "Beispielstadt",
+            "postcode": "54321"
+        }
+    },
+    "lines": [
+        {
+            "id": "1",
+            "quantity": "1",
+            "unit": "C62",
+            "price": {
+                "netPrice": "650.00"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "19"
+            },
+            "item": {
+                "name": "Logo"
+            }
+        }
+    ]
+}

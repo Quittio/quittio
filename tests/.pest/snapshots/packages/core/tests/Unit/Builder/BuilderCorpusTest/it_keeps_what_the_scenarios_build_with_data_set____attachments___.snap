@@ -1,0 +1,130 @@
+{
+    "number": "RE-2026-0042",
+    "issueDate": "2026-10-03",
+    "typeCode": "380",
+    "currency": "EUR",
+    "seller": {
+        "name": "Muster GmbH",
+        "address": {
+            "countryCode": "DE",
+            "line1": "Hauptstraße 1",
+            "city": "Musterstadt",
+            "postcode": "12345"
+        },
+        "legalRegistration": {
+            "value": "HRB 12345"
+        },
+        "vatId": "DE123456789",
+        "taxNumber": "12/345/67890",
+        "additionalLegalInfo": "Amtsgericht Musterstadt · Geschäftsführer: Max Muster",
+        "electronicAddress": {
+            "value": "rechnung@muster.de",
+            "scheme": "EM"
+        },
+        "contact": {
+            "name": "Max Muster",
+            "phone": "+49 123 456789",
+            "email": "rechnung@muster.de"
+        }
+    },
+    "buyer": {
+        "name": "Kunde AG",
+        "address": {
+            "countryCode": "DE",
+            "line1": "Bahnhofstraße 5",
+            "city": "Beispielstadt",
+            "postcode": "54321"
+        },
+        "identifier": {
+            "value": "K-10001"
+        },
+        "vatId": "DE987654321",
+        "electronicAddress": {
+            "value": "ap@kunde.de",
+            "scheme": "EM"
+        },
+        "contact": {
+            "name": "Erika Kunde",
+            "phone": "+49 987 654321",
+            "email": "einkauf@kunde.de"
+        }
+    },
+    "lines": [
+        {
+            "id": "1",
+            "quantity": "24",
+            "unit": "HUR",
+            "price": {
+                "netPrice": "95.00"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "19"
+            },
+            "item": {
+                "name": "Webentwicklung",
+                "description": "Umsetzung Kundenportal, Sprint 3"
+            }
+        },
+        {
+            "id": "2",
+            "quantity": "1",
+            "unit": "MON",
+            "price": {
+                "netPrice": "29.00"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "19"
+            },
+            "item": {
+                "name": "Hosting Oktober"
+            },
+            "period": {
+                "start": "2026-10-01",
+                "end": "2026-10-31"
+            }
+        }
+    ],
+    "buyerReference": "PO-4711",
+    "paymentTerms": {
+        "dueDays": 14,
+        "discounts": [
+            {
+                "days": 7,
+                "percent": "2.00"
+            }
+        ]
+    },
+    "delivery": {
+        "actualDeliveryDate": "2026-09-30"
+    },
+    "paymentInstructions": {
+        "meansCode": "58",
+        "remittanceInformation": "RE-2026-0042",
+        "creditTransfers": [
+            {
+                "accountId": "DE02120300000000202051",
+                "accountName": "Muster GmbH",
+                "serviceProviderId": "BYLADEM1001"
+            }
+        ]
+    },
+    "attachments": [
+        {
+            "id": "STD-2026-09",
+            "description": "Stundenzettel September",
+            "content": "RGF0dW07U3R1bmRlbgoyMDI2LTA5LTAxOzgKMjAyNi0wOS0wMjs3LjUK",
+            "mimeType": "text/csv",
+            "filename": "stundenzettel.csv"
+        },
+        {
+            "id": "AGB",
+            "description": "Allgemeine Geschäftsbedingungen",
+            "externalUri": "https://muster.de/agb"
+        }
+    ],
+    "meta": {
+        "locale": "de"
+    }
+}

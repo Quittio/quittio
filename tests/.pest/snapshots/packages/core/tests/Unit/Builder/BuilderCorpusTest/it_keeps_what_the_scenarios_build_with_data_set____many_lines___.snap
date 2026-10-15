@@ -1,0 +1,1035 @@
+{
+    "number": "RE-2026-0042",
+    "issueDate": "2026-10-03",
+    "typeCode": "380",
+    "currency": "EUR",
+    "seller": {
+        "name": "Muster GmbH",
+        "address": {
+            "countryCode": "DE",
+            "line1": "Hauptstraße 1",
+            "city": "Musterstadt",
+            "postcode": "12345"
+        },
+        "legalRegistration": {
+            "value": "HRB 12345"
+        },
+        "vatId": "DE123456789",
+        "taxNumber": "12/345/67890",
+        "additionalLegalInfo": "Amtsgericht Musterstadt · Geschäftsführer: Max Muster",
+        "electronicAddress": {
+            "value": "rechnung@muster.de",
+            "scheme": "EM"
+        },
+        "contact": {
+            "name": "Max Muster",
+            "phone": "+49 123 456789",
+            "email": "rechnung@muster.de"
+        }
+    },
+    "buyer": {
+        "name": "Kunde AG",
+        "address": {
+            "countryCode": "DE",
+            "line1": "Bahnhofstraße 5",
+            "city": "Beispielstadt",
+            "postcode": "54321"
+        },
+        "identifier": {
+            "value": "K-10001"
+        },
+        "vatId": "DE987654321",
+        "electronicAddress": {
+            "value": "ap@kunde.de",
+            "scheme": "EM"
+        },
+        "contact": {
+            "name": "Erika Kunde",
+            "phone": "+49 987 654321",
+            "email": "einkauf@kunde.de"
+        }
+    },
+    "lines": [
+        {
+            "id": "1",
+            "quantity": "2",
+            "unit": "H87",
+            "price": {
+                "netPrice": "4.13"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "19"
+            },
+            "item": {
+                "name": "Artikel 001",
+                "sellerId": "ART-00001"
+            }
+        },
+        {
+            "id": "2",
+            "quantity": "3",
+            "unit": "H87",
+            "price": {
+                "netPrice": "5.26"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "19"
+            },
+            "item": {
+                "name": "Artikel 002",
+                "sellerId": "ART-00002"
+            }
+        },
+        {
+            "id": "3",
+            "quantity": "4",
+            "unit": "H87",
+            "price": {
+                "netPrice": "6.39"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "19"
+            },
+            "item": {
+                "name": "Artikel 003",
+                "sellerId": "ART-00003"
+            }
+        },
+        {
+            "id": "4",
+            "quantity": "5",
+            "unit": "H87",
+            "price": {
+                "netPrice": "7.52"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "7"
+            },
+            "item": {
+                "name": "Artikel 004",
+                "sellerId": "ART-00004"
+            }
+        },
+        {
+            "id": "5",
+            "quantity": "6",
+            "unit": "H87",
+            "price": {
+                "netPrice": "8.65"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "19"
+            },
+            "item": {
+                "name": "Artikel 005",
+                "sellerId": "ART-00005"
+            }
+        },
+        {
+            "id": "6",
+            "quantity": "7",
+            "unit": "H87",
+            "price": {
+                "netPrice": "9.78"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "19"
+            },
+            "item": {
+                "name": "Artikel 006",
+                "sellerId": "ART-00006"
+            }
+        },
+        {
+            "id": "7",
+            "quantity": "1",
+            "unit": "H87",
+            "price": {
+                "netPrice": "10.91"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "19"
+            },
+            "item": {
+                "name": "Artikel 007",
+                "sellerId": "ART-00007"
+            }
+        },
+        {
+            "id": "8",
+            "quantity": "2",
+            "unit": "H87",
+            "price": {
+                "netPrice": "11.04"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "7"
+            },
+            "item": {
+                "name": "Artikel 008",
+                "sellerId": "ART-00008"
+            }
+        },
+        {
+            "id": "9",
+            "quantity": "3",
+            "unit": "H87",
+            "price": {
+                "netPrice": "12.17"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "19"
+            },
+            "item": {
+                "name": "Artikel 009",
+                "sellerId": "ART-00009"
+            }
+        },
+        {
+            "id": "10",
+            "quantity": "4",
+            "unit": "H87",
+            "price": {
+                "netPrice": "13.30"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "19"
+            },
+            "item": {
+                "name": "Artikel 010",
+                "sellerId": "ART-00010"
+            }
+        },
+        {
+            "id": "11",
+            "quantity": "5",
+            "unit": "H87",
+            "price": {
+                "netPrice": "14.43"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "19"
+            },
+            "item": {
+                "name": "Artikel 011",
+                "sellerId": "ART-00011"
+            }
+        },
+        {
+            "id": "12",
+            "quantity": "6",
+            "unit": "H87",
+            "price": {
+                "netPrice": "15.56"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "7"
+            },
+            "item": {
+                "name": "Artikel 012",
+                "sellerId": "ART-00012"
+            }
+        },
+        {
+            "id": "13",
+            "quantity": "7",
+            "unit": "H87",
+            "price": {
+                "netPrice": "16.69"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "19"
+            },
+            "item": {
+                "name": "Artikel 013",
+                "sellerId": "ART-00013"
+            }
+        },
+        {
+            "id": "14",
+            "quantity": "1",
+            "unit": "H87",
+            "price": {
+                "netPrice": "17.82"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "19"
+            },
+            "item": {
+                "name": "Artikel 014",
+                "sellerId": "ART-00014"
+            }
+        },
+        {
+            "id": "15",
+            "quantity": "2",
+            "unit": "H87",
+            "price": {
+                "netPrice": "18.95"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "19"
+            },
+            "item": {
+                "name": "Artikel 015",
+                "sellerId": "ART-00015"
+            }
+        },
+        {
+            "id": "16",
+            "quantity": "3",
+            "unit": "H87",
+            "price": {
+                "netPrice": "19.08"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "7"
+            },
+            "item": {
+                "name": "Artikel 016",
+                "sellerId": "ART-00016"
+            }
+        },
+        {
+            "id": "17",
+            "quantity": "4",
+            "unit": "H87",
+            "price": {
+                "netPrice": "20.21"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "19"
+            },
+            "item": {
+                "name": "Artikel 017",
+                "sellerId": "ART-00017"
+            }
+        },
+        {
+            "id": "18",
+            "quantity": "5",
+            "unit": "H87",
+            "price": {
+                "netPrice": "21.34"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "19"
+            },
+            "item": {
+                "name": "Artikel 018",
+                "sellerId": "ART-00018"
+            }
+        },
+        {
+            "id": "19",
+            "quantity": "6",
+            "unit": "H87",
+            "price": {
+                "netPrice": "22.47"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "19"
+            },
+            "item": {
+                "name": "Artikel 019",
+                "sellerId": "ART-00019"
+            }
+        },
+        {
+            "id": "20",
+            "quantity": "7",
+            "unit": "H87",
+            "price": {
+                "netPrice": "23.60"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "7"
+            },
+            "item": {
+                "name": "Artikel 020",
+                "sellerId": "ART-00020"
+            }
+        },
+        {
+            "id": "21",
+            "quantity": "1",
+            "unit": "H87",
+            "price": {
+                "netPrice": "24.73"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "19"
+            },
+            "item": {
+                "name": "Artikel 021",
+                "sellerId": "ART-00021"
+            }
+        },
+        {
+            "id": "22",
+            "quantity": "2",
+            "unit": "H87",
+            "price": {
+                "netPrice": "25.86"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "19"
+            },
+            "item": {
+                "name": "Artikel 022",
+                "sellerId": "ART-00022"
+            }
+        },
+        {
+            "id": "23",
+            "quantity": "3",
+            "unit": "H87",
+            "price": {
+                "netPrice": "26.99"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "19"
+            },
+            "item": {
+                "name": "Artikel 023",
+                "sellerId": "ART-00023"
+            }
+        },
+        {
+            "id": "24",
+            "quantity": "4",
+            "unit": "H87",
+            "price": {
+                "netPrice": "27.12"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "7"
+            },
+            "item": {
+                "name": "Artikel 024",
+                "sellerId": "ART-00024"
+            }
+        },
+        {
+            "id": "25",
+            "quantity": "5",
+            "unit": "H87",
+            "price": {
+                "netPrice": "28.25"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "19"
+            },
+            "item": {
+                "name": "Artikel 025",
+                "sellerId": "ART-00025"
+            }
+        },
+        {
+            "id": "26",
+            "quantity": "6",
+            "unit": "H87",
+            "price": {
+                "netPrice": "29.38"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "19"
+            },
+            "item": {
+                "name": "Artikel 026",
+                "sellerId": "ART-00026"
+            }
+        },
+        {
+            "id": "27",
+            "quantity": "7",
+            "unit": "H87",
+            "price": {
+                "netPrice": "30.51"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "19"
+            },
+            "item": {
+                "name": "Artikel 027",
+                "sellerId": "ART-00027"
+            }
+        },
+        {
+            "id": "28",
+            "quantity": "1",
+            "unit": "H87",
+            "price": {
+                "netPrice": "31.64"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "7"
+            },
+            "item": {
+                "name": "Artikel 028",
+                "sellerId": "ART-00028"
+            }
+        },
+        {
+            "id": "29",
+            "quantity": "2",
+            "unit": "H87",
+            "price": {
+                "netPrice": "32.77"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "19"
+            },
+            "item": {
+                "name": "Artikel 029",
+                "sellerId": "ART-00029"
+            }
+        },
+        {
+            "id": "30",
+            "quantity": "3",
+            "unit": "H87",
+            "price": {
+                "netPrice": "33.90"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "19"
+            },
+            "item": {
+                "name": "Artikel 030",
+                "sellerId": "ART-00030"
+            }
+        },
+        {
+            "id": "31",
+            "quantity": "4",
+            "unit": "H87",
+            "price": {
+                "netPrice": "34.03"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "19"
+            },
+            "item": {
+                "name": "Artikel 031",
+                "sellerId": "ART-00031"
+            }
+        },
+        {
+            "id": "32",
+            "quantity": "5",
+            "unit": "H87",
+            "price": {
+                "netPrice": "35.16"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "7"
+            },
+            "item": {
+                "name": "Artikel 032",
+                "sellerId": "ART-00032"
+            }
+        },
+        {
+            "id": "33",
+            "quantity": "6",
+            "unit": "H87",
+            "price": {
+                "netPrice": "36.29"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "19"
+            },
+            "item": {
+                "name": "Artikel 033",
+                "sellerId": "ART-00033"
+            }
+        },
+        {
+            "id": "34",
+            "quantity": "7",
+            "unit": "H87",
+            "price": {
+                "netPrice": "37.42"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "19"
+            },
+            "item": {
+                "name": "Artikel 034",
+                "sellerId": "ART-00034"
+            }
+        },
+        {
+            "id": "35",
+            "quantity": "1",
+            "unit": "H87",
+            "price": {
+                "netPrice": "38.55"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "19"
+            },
+            "item": {
+                "name": "Artikel 035",
+                "sellerId": "ART-00035"
+            }
+        },
+        {
+            "id": "36",
+            "quantity": "2",
+            "unit": "H87",
+            "price": {
+                "netPrice": "39.68"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "7"
+            },
+            "item": {
+                "name": "Artikel 036",
+                "sellerId": "ART-00036"
+            }
+        },
+        {
+            "id": "37",
+            "quantity": "3",
+            "unit": "H87",
+            "price": {
+                "netPrice": "40.81"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "19"
+            },
+            "item": {
+                "name": "Artikel 037",
+                "sellerId": "ART-00037"
+            }
+        },
+        {
+            "id": "38",
+            "quantity": "4",
+            "unit": "H87",
+            "price": {
+                "netPrice": "41.94"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "19"
+            },
+            "item": {
+                "name": "Artikel 038",
+                "sellerId": "ART-00038"
+            }
+        },
+        {
+            "id": "39",
+            "quantity": "5",
+            "unit": "H87",
+            "price": {
+                "netPrice": "42.07"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "19"
+            },
+            "item": {
+                "name": "Artikel 039",
+                "sellerId": "ART-00039"
+            }
+        },
+        {
+            "id": "40",
+            "quantity": "6",
+            "unit": "H87",
+            "price": {
+                "netPrice": "43.20"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "7"
+            },
+            "item": {
+                "name": "Artikel 040",
+                "sellerId": "ART-00040"
+            }
+        },
+        {
+            "id": "41",
+            "quantity": "7",
+            "unit": "H87",
+            "price": {
+                "netPrice": "44.33"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "19"
+            },
+            "item": {
+                "name": "Artikel 041",
+                "sellerId": "ART-00041"
+            }
+        },
+        {
+            "id": "42",
+            "quantity": "1",
+            "unit": "H87",
+            "price": {
+                "netPrice": "45.46"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "19"
+            },
+            "item": {
+                "name": "Artikel 042",
+                "sellerId": "ART-00042"
+            }
+        },
+        {
+            "id": "43",
+            "quantity": "2",
+            "unit": "H87",
+            "price": {
+                "netPrice": "46.59"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "19"
+            },
+            "item": {
+                "name": "Artikel 043",
+                "sellerId": "ART-00043"
+            }
+        },
+        {
+            "id": "44",
+            "quantity": "3",
+            "unit": "H87",
+            "price": {
+                "netPrice": "47.72"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "7"
+            },
+            "item": {
+                "name": "Artikel 044",
+                "sellerId": "ART-00044"
+            }
+        },
+        {
+            "id": "45",
+            "quantity": "4",
+            "unit": "H87",
+            "price": {
+                "netPrice": "48.85"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "19"
+            },
+            "item": {
+                "name": "Artikel 045",
+                "sellerId": "ART-00045"
+            }
+        },
+        {
+            "id": "46",
+            "quantity": "5",
+            "unit": "H87",
+            "price": {
+                "netPrice": "49.98"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "19"
+            },
+            "item": {
+                "name": "Artikel 046",
+                "sellerId": "ART-00046"
+            }
+        },
+        {
+            "id": "47",
+            "quantity": "6",
+            "unit": "H87",
+            "price": {
+                "netPrice": "50.11"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "19"
+            },
+            "item": {
+                "name": "Artikel 047",
+                "sellerId": "ART-00047"
+            }
+        },
+        {
+            "id": "48",
+            "quantity": "7",
+            "unit": "H87",
+            "price": {
+                "netPrice": "51.24"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "7"
+            },
+            "item": {
+                "name": "Artikel 048",
+                "sellerId": "ART-00048"
+            }
+        },
+        {
+            "id": "49",
+            "quantity": "1",
+            "unit": "H87",
+            "price": {
+                "netPrice": "52.37"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "19"
+            },
+            "item": {
+                "name": "Artikel 049",
+                "sellerId": "ART-00049"
+            }
+        },
+        {
+            "id": "50",
+            "quantity": "2",
+            "unit": "H87",
+            "price": {
+                "netPrice": "53.50"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "19"
+            },
+            "item": {
+                "name": "Artikel 050",
+                "sellerId": "ART-00050"
+            }
+        },
+        {
+            "id": "51",
+            "quantity": "3",
+            "unit": "H87",
+            "price": {
+                "netPrice": "54.63"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "19"
+            },
+            "item": {
+                "name": "Artikel 051",
+                "sellerId": "ART-00051"
+            }
+        },
+        {
+            "id": "52",
+            "quantity": "4",
+            "unit": "H87",
+            "price": {
+                "netPrice": "55.76"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "7"
+            },
+            "item": {
+                "name": "Artikel 052",
+                "sellerId": "ART-00052"
+            }
+        },
+        {
+            "id": "53",
+            "quantity": "5",
+            "unit": "H87",
+            "price": {
+                "netPrice": "56.89"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "19"
+            },
+            "item": {
+                "name": "Artikel 053",
+                "sellerId": "ART-00053"
+            }
+        },
+        {
+            "id": "54",
+            "quantity": "6",
+            "unit": "H87",
+            "price": {
+                "netPrice": "57.02"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "19"
+            },
+            "item": {
+                "name": "Artikel 054",
+                "sellerId": "ART-00054"
+            }
+        },
+        {
+            "id": "55",
+            "quantity": "7",
+            "unit": "H87",
+            "price": {
+                "netPrice": "58.15"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "19"
+            },
+            "item": {
+                "name": "Artikel 055",
+                "sellerId": "ART-00055"
+            }
+        },
+        {
+            "id": "56",
+            "quantity": "1",
+            "unit": "H87",
+            "price": {
+                "netPrice": "59.28"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "7"
+            },
+            "item": {
+                "name": "Artikel 056",
+                "sellerId": "ART-00056"
+            }
+        },
+        {
+            "id": "57",
+            "quantity": "2",
+            "unit": "H87",
+            "price": {
+                "netPrice": "60.41"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "19"
+            },
+            "item": {
+                "name": "Artikel 057",
+                "sellerId": "ART-00057"
+            }
+        },
+        {
+            "id": "58",
+            "quantity": "3",
+            "unit": "H87",
+            "price": {
+                "netPrice": "61.54"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "19"
+            },
+            "item": {
+                "name": "Artikel 058",
+                "sellerId": "ART-00058"
+            }
+        },
+        {
+            "id": "59",
+            "quantity": "4",
+            "unit": "H87",
+            "price": {
+                "netPrice": "62.67"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "19"
+            },
+            "item": {
+                "name": "Artikel 059",
+                "sellerId": "ART-00059"
+            }
+        },
+        {
+            "id": "60",
+            "quantity": "5",
+            "unit": "H87",
+            "price": {
+                "netPrice": "63.80"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "7"
+            },
+            "item": {
+                "name": "Artikel 060",
+                "sellerId": "ART-00060"
+            }
+        }
+    ],
+    "buyerReference": "PO-4711",
+    "paymentTerms": {
+        "dueDays": 14
+    },
+    "delivery": {
+        "actualDeliveryDate": "2026-09-30"
+    },
+    "paymentInstructions": {
+        "meansCode": "58",
+        "remittanceInformation": "RE-2026-0042",
+        "creditTransfers": [
+            {
+                "accountId": "DE02120300000000202051",
+                "accountName": "Muster GmbH",
+                "serviceProviderId": "BYLADEM1001"
+            }
+        ]
+    },
+    "meta": {
+        "locale": "de"
+    }
+}

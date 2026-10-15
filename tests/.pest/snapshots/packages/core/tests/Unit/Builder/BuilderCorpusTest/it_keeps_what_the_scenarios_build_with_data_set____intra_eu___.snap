@@ -1,0 +1,106 @@
+{
+    "number": "RE-2026-0042",
+    "issueDate": "2026-10-03",
+    "typeCode": "380",
+    "currency": "EUR",
+    "seller": {
+        "name": "Muster GmbH",
+        "address": {
+            "countryCode": "DE",
+            "line1": "Hauptstraße 1",
+            "city": "Musterstadt",
+            "postcode": "12345"
+        },
+        "legalRegistration": {
+            "value": "HRB 12345"
+        },
+        "vatId": "DE123456789",
+        "taxNumber": "12/345/67890",
+        "additionalLegalInfo": "Amtsgericht Musterstadt · Geschäftsführer: Max Muster",
+        "electronicAddress": {
+            "value": "rechnung@muster.de",
+            "scheme": "EM"
+        },
+        "contact": {
+            "name": "Max Muster",
+            "phone": "+49 123 456789",
+            "email": "rechnung@muster.de"
+        }
+    },
+    "buyer": {
+        "name": "Cliente S.r.l.",
+        "address": {
+            "countryCode": "IT",
+            "line1": "Via Roma 1",
+            "city": "Roma",
+            "postcode": "00184"
+        },
+        "identifier": {
+            "value": "K-10001"
+        },
+        "vatId": "IT12345678901",
+        "electronicAddress": {
+            "value": "ap@kunde.de",
+            "scheme": "EM"
+        },
+        "contact": {
+            "name": "Erika Kunde",
+            "phone": "+49 987 654321",
+            "email": "einkauf@kunde.de"
+        }
+    },
+    "lines": [
+        {
+            "id": "1",
+            "quantity": "2",
+            "unit": "H87",
+            "price": {
+                "netPrice": "1450.00"
+            },
+            "vat": {
+                "category": "K",
+                "rate": "0",
+                "exemptionReason": "Steuerfreie innergemeinschaftliche Lieferung",
+                "exemptionReasonCode": "VATEX-EU-IC"
+            },
+            "item": {
+                "name": "Industriepumpe",
+                "classifications": [
+                    {
+                        "code": "84137030",
+                        "listId": "HS"
+                    }
+                ],
+                "originCountry": "DE"
+            }
+        }
+    ],
+    "buyerReference": "PO-4711",
+    "paymentTerms": {
+        "dueDays": 14
+    },
+    "delivery": {
+        "recipientName": "Cliente S.r.l.",
+        "actualDeliveryDate": "2026-09-30",
+        "address": {
+            "countryCode": "IT",
+            "line1": "Via Roma 1",
+            "city": "Roma",
+            "postcode": "00184"
+        }
+    },
+    "paymentInstructions": {
+        "meansCode": "58",
+        "remittanceInformation": "RE-2026-0042",
+        "creditTransfers": [
+            {
+                "accountId": "DE02120300000000202051",
+                "accountName": "Muster GmbH",
+                "serviceProviderId": "BYLADEM1001"
+            }
+        ]
+    },
+    "meta": {
+        "locale": "de"
+    }
+}

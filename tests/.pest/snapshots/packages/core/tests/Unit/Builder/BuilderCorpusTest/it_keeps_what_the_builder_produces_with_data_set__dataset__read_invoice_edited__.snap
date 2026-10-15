@@ -1,0 +1,154 @@
+{
+    "number": "RE-2026-0042",
+    "issueDate": "2026-10-03",
+    "typeCode": "380",
+    "currency": "EUR",
+    "seller": {
+        "name": "Muster GmbH",
+        "address": {
+            "countryCode": "DE",
+            "line1": "Hauptstraße 1",
+            "city": "Musterstadt",
+            "postcode": "12345"
+        },
+        "legalRegistration": {
+            "value": "HRB 12345"
+        },
+        "vatId": "DE123456789",
+        "taxNumber": "12/345/67890",
+        "additionalLegalInfo": "Amtsgericht Musterstadt · Geschäftsführer: Max Muster",
+        "electronicAddress": {
+            "value": "rechnung@muster.de",
+            "scheme": "EM"
+        },
+        "contact": {
+            "name": "Max Muster",
+            "phone": "+49 123 456789",
+            "email": "rechnung@muster.de"
+        }
+    },
+    "buyer": {
+        "name": "Kunde AG",
+        "address": {
+            "countryCode": "DE",
+            "line1": "Bahnhofstraße 5",
+            "city": "Beispielstadt",
+            "postcode": "54321"
+        },
+        "identifier": {
+            "value": "K-10001"
+        },
+        "vatId": "DE987654321",
+        "electronicAddress": {
+            "value": "ap@kunde.de",
+            "scheme": "EM"
+        },
+        "contact": {
+            "name": "Erika Kunde",
+            "phone": "+49 987 654321",
+            "email": "einkauf@kunde.de"
+        }
+    },
+    "lines": [
+        {
+            "id": "1",
+            "quantity": "250",
+            "unit": "H87",
+            "price": {
+                "netPrice": "12.3456",
+                "baseQuantity": "100",
+                "baseQuantityUnit": "H87"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "19.00"
+            },
+            "item": {
+                "name": "Schrauben"
+            },
+            "netAmount": "29.32",
+            "allowances": [
+                {
+                    "amount": "1.54",
+                    "baseAmount": "30.86",
+                    "percent": "5.00",
+                    "reason": "Mengenrabatt",
+                    "reasonCode": "95"
+                }
+            ]
+        },
+        {
+            "id": "2",
+            "quantity": "100",
+            "unit": "H87",
+            "price": {
+                "netPrice": "0.20",
+                "discount": "0.05",
+                "grossPrice": "0.25"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "19.00"
+            },
+            "item": {
+                "name": "Dübel"
+            },
+            "netAmount": "22.50",
+            "charges": [
+                {
+                    "amount": "2.50",
+                    "reason": "Sonderverpackung",
+                    "reasonCode": "PC"
+                }
+            ]
+        }
+    ],
+    "dueDate": "2026-10-17",
+    "buyerReference": "PO-4711",
+    "paymentTerms": {
+        "text": "Payable within 14 days without deduction."
+    },
+    "notes": [
+        {
+            "content": "Edited after reading"
+        }
+    ],
+    "delivery": {
+        "actualDeliveryDate": "2026-09-30"
+    },
+    "paymentInstructions": {
+        "meansCode": "58",
+        "remittanceInformation": "RE-2026-0042",
+        "creditTransfers": [
+            {
+                "accountId": "DE02120300000000202051",
+                "accountName": "Muster GmbH",
+                "serviceProviderId": "BYLADEM1001"
+            }
+        ]
+    },
+    "allowances": [
+        {
+            "amount": "1.04",
+            "vatCategory": "S",
+            "vatRate": "19.00",
+            "baseAmount": "51.82",
+            "percent": "2.00",
+            "reason": "Treuerabatt"
+        }
+    ],
+    "charges": [
+        {
+            "amount": "15.00",
+            "vatCategory": "S",
+            "vatRate": "19.00",
+            "reason": "Fracht",
+            "reasonCode": "FC"
+        }
+    ],
+    "meta": {
+        "flags": [
+            "amounts_fingerprint:f8ee1afb76e3d691b6ba9068248da5e2"
+        ]
+    }
+}

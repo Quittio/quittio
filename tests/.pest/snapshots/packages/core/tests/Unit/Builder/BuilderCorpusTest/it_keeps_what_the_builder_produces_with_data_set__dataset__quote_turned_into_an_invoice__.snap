@@ -1,0 +1,42 @@
+{
+    "number": "INV-1",
+    "issueDate": "2026-11-02",
+    "typeCode": "380",
+    "currency": "EUR",
+    "seller": {
+        "name": "Seller Ltd",
+        "address": {
+            "countryCode": "DE",
+            "line1": "Main Street 1",
+            "city": "Sample City",
+            "postcode": "12345"
+        },
+        "vatId": "DE123456789"
+    },
+    "buyer": {
+        "name": "Buyer Inc",
+        "address": {
+            "countryCode": "DE",
+            "line1": "Station Road 5",
+            "city": "Example Town",
+            "postcode": "54321"
+        }
+    },
+    "lines": [
+        {
+            "id": "1",
+            "quantity": "1",
+            "unit": "C62",
+            "price": {
+                "netPrice": "100.00"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "19"
+            },
+            "item": {
+                "name": "Consulting"
+            }
+        }
+    ]
+}

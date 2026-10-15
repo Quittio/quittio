@@ -1,0 +1,72 @@
+{
+    "number": "INV-2026-0001",
+    "issueDate": "2026-10-03",
+    "typeCode": "380",
+    "currency": "EUR",
+    "seller": {
+        "name": "Seller Ltd",
+        "address": {
+            "countryCode": "DE",
+            "line1": "Main Street 1",
+            "city": "Sample City",
+            "postcode": "12345"
+        },
+        "vatId": "DE123456789",
+        "electronicAddress": {
+            "value": "billing@seller.example",
+            "scheme": "EM"
+        },
+        "contact": {
+            "name": "Jane Seller",
+            "phone": "+49 30 123456",
+            "email": "billing@seller.example"
+        }
+    },
+    "buyer": {
+        "name": "Buyer Inc",
+        "address": {
+            "countryCode": "DE",
+            "line1": "Station Road 5",
+            "city": "Example Town",
+            "postcode": "54321"
+        },
+        "vatId": "DE987654321",
+        "electronicAddress": {
+            "value": "ap@buyer.example",
+            "scheme": "EM"
+        }
+    },
+    "lines": [
+        {
+            "id": "1",
+            "quantity": "3",
+            "unit": "HUR",
+            "price": {
+                "netPrice": "120.00"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "19"
+            },
+            "item": {
+                "name": "Changed"
+            }
+        }
+    ],
+    "dueDate": "2026-10-17",
+    "paymentTerms": {
+        "dueDays": 14
+    },
+    "delivery": {
+        "actualDeliveryDate": "2026-09-30"
+    },
+    "paymentInstructions": {
+        "meansCode": "58",
+        "creditTransfers": [
+            {
+                "accountId": "DE02120300000000202051",
+                "serviceProviderId": "BYLADEM1001"
+            }
+        ]
+    }
+}

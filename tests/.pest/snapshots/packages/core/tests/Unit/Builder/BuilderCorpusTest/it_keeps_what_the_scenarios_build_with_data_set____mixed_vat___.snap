@@ -1,0 +1,149 @@
+{
+    "number": "RE-2026-0042",
+    "issueDate": "2026-10-03",
+    "typeCode": "380",
+    "currency": "EUR",
+    "seller": {
+        "name": "Muster GmbH",
+        "address": {
+            "countryCode": "DE",
+            "line1": "Hauptstraße 1",
+            "city": "Musterstadt",
+            "postcode": "12345"
+        },
+        "legalRegistration": {
+            "value": "HRB 12345"
+        },
+        "vatId": "DE123456789",
+        "taxNumber": "12/345/67890",
+        "additionalLegalInfo": "Amtsgericht Musterstadt · Geschäftsführer: Max Muster",
+        "electronicAddress": {
+            "value": "rechnung@muster.de",
+            "scheme": "EM"
+        },
+        "contact": {
+            "name": "Max Muster",
+            "phone": "+49 123 456789",
+            "email": "rechnung@muster.de"
+        }
+    },
+    "buyer": {
+        "name": "Kunde AG",
+        "address": {
+            "countryCode": "DE",
+            "line1": "Bahnhofstraße 5",
+            "city": "Beispielstadt",
+            "postcode": "54321"
+        },
+        "identifier": {
+            "value": "K-10001"
+        },
+        "vatId": "DE987654321",
+        "electronicAddress": {
+            "value": "ap@kunde.de",
+            "scheme": "EM"
+        },
+        "contact": {
+            "name": "Erika Kunde",
+            "phone": "+49 987 654321",
+            "email": "einkauf@kunde.de"
+        }
+    },
+    "lines": [
+        {
+            "id": "1",
+            "quantity": "2",
+            "unit": "H87",
+            "price": {
+                "netPrice": "39.90"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "7"
+            },
+            "item": {
+                "name": "Fachbuch"
+            }
+        },
+        {
+            "id": "2",
+            "quantity": "1",
+            "unit": "DAY",
+            "price": {
+                "netPrice": "850.00"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "19"
+            },
+            "item": {
+                "name": "Schulung"
+            }
+        },
+        {
+            "id": "3",
+            "quantity": "4",
+            "unit": "H87",
+            "price": {
+                "netPrice": "189.00"
+            },
+            "vat": {
+                "category": "Z",
+                "rate": "0"
+            },
+            "item": {
+                "name": "Photovoltaikmodul"
+            }
+        }
+    ],
+    "buyerReference": "PO-4711",
+    "paymentTerms": {
+        "dueDays": 14
+    },
+    "delivery": {
+        "actualDeliveryDate": "2026-09-30"
+    },
+    "paymentInstructions": {
+        "meansCode": "58",
+        "remittanceInformation": "RE-2026-0042",
+        "creditTransfers": [
+            {
+                "accountId": "DE02120300000000202051",
+                "accountName": "Muster GmbH",
+                "serviceProviderId": "BYLADEM1001"
+            }
+        ]
+    },
+    "allowances": [
+        {
+            "amount": "7.98",
+            "vatCategory": "S",
+            "vatRate": "7",
+            "baseAmount": "79.80",
+            "percent": "10.00",
+            "reason": "Projektrabatt",
+            "reasonCode": "95"
+        },
+        {
+            "amount": "85.00",
+            "vatCategory": "S",
+            "vatRate": "19",
+            "baseAmount": "850.00",
+            "percent": "10.00",
+            "reason": "Projektrabatt",
+            "reasonCode": "95"
+        },
+        {
+            "amount": "75.60",
+            "vatCategory": "Z",
+            "vatRate": "0",
+            "baseAmount": "756.00",
+            "percent": "10.00",
+            "reason": "Projektrabatt",
+            "reasonCode": "95"
+        }
+    ],
+    "meta": {
+        "locale": "de"
+    }
+}
