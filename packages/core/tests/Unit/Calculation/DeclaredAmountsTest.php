@@ -200,7 +200,7 @@ describe('third party payments (BG-DEX-09)', function () {
     ]);
 });
 
-describe('round 3b: declared amounts that cannot be kept', function () {
+describe('declared amounts that cannot be kept', function () {
     it('recalculates a declared VAT amount of a category without VAT instead of keeping it (BR-Z-09)', function (string $strategy) {
         $calculated = (new En16931Calculator)->calculate(Invoices::base()
             ->line(fn ($l) => $l->name('Widget')->quantity(1)->netPrice('100.00')->vat(VatCategory::StandardRate, '19'))
@@ -265,7 +265,7 @@ describe('round 3b: declared amounts that cannot be kept', function () {
     });
 });
 
-describe('round 3b: percentage discounts split over VAT groups', function () {
+describe('percentage discounts split over VAT groups', function () {
     // 10 % of 100.00 (7 %) and 300.00 (19 %): both parts keep their percentage.
     $original = fn () => (new En16931Calculator)->calculate(Invoices::base()
         ->line(fn ($l) => $l->name('Book')->quantity(1)->netPrice('100.00')->vat(VatCategory::StandardRate, '7'))
@@ -290,7 +290,7 @@ describe('round 3b: percentage discounts split over VAT groups', function () {
     });
 });
 
-describe('round 3b: declared amounts only where needed and never stale', function () {
+describe('declared amounts only where needed and never stale', function () {
     it('never flags data whose amounts the recalculation reproduces', function () {
         $quittio = (new En16931Calculator)->calculate(Invoices::simple()->build());
 
