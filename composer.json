@@ -54,6 +54,11 @@
         "phpstan/phpstan-strict-rules": "^2.0",
         "spatie/pest-plugin-snapshots": "^2.2"
     },
+    "suggest": {
+        "ext-intl": "Locale-aware number and date formatting",
+        "ext-zip": "Unpack the KoSIT validator configuration (quittio:schemas:download)",
+        "opis/json-schema": "Validate JSON input against the shipped invoice schema"
+    },
     "replace": {
         "quittio/core": "self.version",
         "quittio/laravel": "self.version",
@@ -81,7 +86,10 @@
             "providers": [
                 "Quittio\\Laravel\\QuittioServiceProvider",
                 "Quittio\\Country\\DE\\Laravel\\GermanyServiceProvider"
-            ]
+            ],
+            "aliases": {
+                "Quittio": "Quittio\\Laravel\\Facades\\Quittio"
+            }
         },
         "quittio": {
             "country-packs": [
