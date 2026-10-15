@@ -3,14 +3,25 @@ name: CI
 on:
   push:
     branches: [master]
+    # Tags run CI too: the split below publishes a tag only after every job passed.
+    tags: ['*']
   pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  # Pushes to master and tags are never cancelled, so that every one of them can be split.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   lint:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v7
-      - uses: shivammathur/setup-php@v2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         with:
           php: '8.4'
           coverage: none
@@ -20,9 +31,10 @@ jobs:
 
   analyse:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v7
-      - uses: shivammathur/setup-php@v2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         with:
           php: '8.4'
           extensions: dom, libxml, mbstring, xmlwriter, zlib, intl, gd, bcmath
@@ -32,6 +44,7 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
@@ -39,24 +52,25 @@ jobs:
         dependencies: ['highest', 'lowest']
     name: test (PHP ${{ matrix.php }}, Laravel 13, ${{ matrix.dependencies }})
     steps:
-      - uses: actions/checkout@v7
-      - uses: shivammathur/setup-php@v2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         with:
           php: ${{ matrix.php }}
           extensions: dom, libxml, mbstring, xmlwriter, zlib, intl, gd, bcmath
           coverage: none
       - run: sudo apt-get update && sudo apt-get install -y poppler-utils
-      - uses: ramsey/composer-install@4.0.0
+      - uses: ramsey/composer-install@65e4f84970763564f46a70b8a54b90d033b3bdda # 4.0.0
         with:
           dependency-versions: ${{ matrix.dependencies }}
       - run: vendor/bin/pest --exclude-group=official,visual
 
   visual:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: test
     steps:
-      - uses: actions/checkout@v7
-      - uses: shivammathur/setup-php@v2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         with:
           php: '8.4'
           extensions: dom, libxml, mbstring, xmlwriter, zlib, intl, gd, bcmath
@@ -64,7 +78,7 @@ jobs:
       - run: sudo apt-get update && sudo apt-get install -y poppler-utils
       - run: composer install --no-interaction --no-progress
       - run: vendor/bin/pest --group=visual
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
         with:
           name: visual-diff
@@ -72,15 +86,16 @@ jobs:
 
   official-validation:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     needs: test
     steps:
-      - uses: actions/checkout@v7
-      - uses: shivammathur/setup-php@v2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         with:
           php: '8.4'
           extensions: dom, libxml, mbstring, xmlwriter, zlib, intl, gd, bcmath
           coverage: none
-      - uses: actions/setup-java@v6
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
           java-version: '21'
@@ -89,3 +104,10 @@ jobs:
       - run: tools/fixtures/download.sh
       - run: tools/validate-fixtures.sh
       - run: vendor/bin/pest --group=official
+
+  split:
+    needs: [lint, analyse, test, visual, official-validation]
+    if: github.event_name == 'push' && github.repository == 'Quittio/quittio'
+    uses: ./.github/workflows/split.yml
+    secrets:
+      SPLIT_TOKEN: ${{ secrets.SPLIT_TOKEN }}

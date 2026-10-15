@@ -1,0 +1,36 @@
+# Keeps the pinned GitHub Actions (commit SHAs), the Composer constraints and the gems of the
+# documentation website current. Updates of one ecosystem come as one pull request per week.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      github-actions:
+        patterns: ['*']
+    commit-message:
+      prefix: ci
+
+  - package-ecosystem: composer
+    directory: /
+    schedule:
+      interval: weekly
+    # A library: raise a constraint only when a new release falls outside of it.
+    versioning-strategy: increase-if-necessary
+    groups:
+      composer:
+        patterns: ['*']
+    commit-message:
+      prefix: chore
+      include: scope
+
+  - package-ecosystem: bundler
+    directory: /docs
+    schedule:
+      interval: weekly
+    groups:
+      docs:
+        patterns: ['*']
+    commit-message:
+      prefix: docs
