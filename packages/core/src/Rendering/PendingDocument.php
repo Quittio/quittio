@@ -23,6 +23,9 @@ final class PendingDocument
 
     private ?Presentation $presentation = null;
 
+    /** @var array<string, mixed> */
+    private array $options = [];
+
     public function __construct(
         private readonly Quittio $quittio,
         private readonly DocumentData $data,
@@ -63,6 +66,16 @@ final class PendingDocument
         return $this;
     }
 
+    /**
+     * Output option of this call, e.g. option('fold_marks', false); see the output configuration.
+     */
+    public function option(string $key, mixed $value): self
+    {
+        $this->options[$key] = $value;
+
+        return $this;
+    }
+
     public function render(): RenderedDocument
     {
         return $this->quittio->renderDocument($this->data, new RenderOptions(
@@ -71,6 +84,7 @@ final class PendingDocument
             locale: $this->locale,
             country: $this->country,
             presentation: $this->presentation,
+            options: $this->options,
         ));
     }
 }

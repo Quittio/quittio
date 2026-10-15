@@ -87,7 +87,7 @@ final class QuittioFake extends QuittioManager
         return $result;
     }
 
-    public function renderDocument(DocumentData $document, RenderOptions $options): RenderedDocument
+    protected function runDocument(DocumentData $document, RenderOptions $options): RenderedDocument
     {
         $document = (new DocumentCalculator)->calculate($document);
         // PendingDocument::htmlOnly() requests the format "html": no PDF, as in a real run.

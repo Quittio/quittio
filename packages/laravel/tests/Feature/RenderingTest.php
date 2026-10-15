@@ -30,6 +30,8 @@ use Quittio\Core\Validation\ValidationLevel;
 use Quittio\Core\Validation\ValidationMessage;
 use Quittio\Core\Validation\ValidationResult;
 use Quittio\Core\Validation\ValidationSubject;
+use Quittio\Laravel\Events\DocumentRendered;
+use Quittio\Laravel\Events\DocumentRendering;
 use Quittio\Laravel\Events\InvoiceRendered;
 use Quittio\Laravel\Events\InvoiceRendering;
 use Quittio\Laravel\Events\InvoiceValidated;
@@ -38,6 +40,7 @@ use Quittio\Laravel\Events\MandatoryFieldMissing;
 use Quittio\Laravel\Facades\Quittio;
 use Quittio\Laravel\Jobs\RenderInvoice;
 use Quittio\Laravel\QuittioManager;
+use Quittio\Laravel\Rendering\PendingDocument;
 use Quittio\Laravel\Rendering\RenderedDocument;
 use Quittio\Laravel\Rendering\RenderedInvoice;
 use Quittio\Laravel\Seller;
@@ -257,6 +260,27 @@ it('renders documents', function () {
         ->and($htmlOnly->mimeType())->toBe('text/html')
         ->and($pdf->hasPdf())->toBeTrue()
         ->and($pdf->pdf())->toStartWith('%PDF-');
+});
+
+it('dispatches events and passes options for documents', function () {
+    Event::fake([DocumentRendering::class, DocumentRendered::class]);
+    $quote = DocumentBuilder::quote()->number('AN-1')->issueDate('2026-10-01')
+        ->seller(Seller::fromConfig())
+        ->buyer(fn ($b) => $b->name('Kunde AG')->address('Weg 1', '54321', 'Beispielstadt', 'DE'))
+        ->line(fn ($l) => $l->name('Beratung')->quantity(2, 'HUR')->netPrice('100.00')->vat(VatCategory::StandardRate, '19'));
+    PendingDocument::macro('german', fn () => $this->locale('de'));
+
+    $marked = Quittio::document($quote)->german()->htmlOnly()->render()->html();
+    $plain = Quittio::document($quote)->german()->htmlOnly()->option('fold_marks', false)->render()->html();
+
+    expect(substr_count($marked, 'class="mark"'))->toBeGreaterThan(0)
+        ->and(substr_count($plain, 'class="mark"'))->toBe(0);
+    Event::assertDispatched(DocumentRendering::class, fn (DocumentRendering $event): bool => $event->document->number === 'AN-1' && $event->options->locale === 'de');
+    Event::assertDispatchedTimes(DocumentRendered::class, 2);
+
+    Quittio::fake();
+    Quittio::document($quote)->htmlOnly()->render();
+    Event::assertDispatchedTimes(DocumentRendered::class, 3);
 });
 
 it('fakes rendering in tests', function () {

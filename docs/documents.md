@@ -237,11 +237,12 @@ $html = Quittio::document($quote)->htmlOnly()->render()->html();
 | `country(string $country)` | Country pack |
 | `presentation(Presentation $presentation)` | Design defaults of this call; the document's own presentation wins |
 | `htmlOnly()` | HTML instead of PDF |
+| `option(string $key, mixed $value)` | Output option of this call, e.g. `option('fold_marks', false)` ([output configuration](formats.md#output-configuration)) |
 | `render()` | `RenderedDocument` |
 
 Documents use the invoice templates and the same view model. The node `documentInfo` holds the document specific values ([view model](templates.md#documentinfo)), `document.kind` the type.
 
-The PDF is PDF/A-3b (the archivable PDF variant) when `pdf.pdfa` is set and no watermark is used, and it never contains embedded XML. Documents run no validation and no [mandatory field guard](templates.md#mandatory-field-guard), and they dispatch no events.
+The PDF is PDF/A-3b (the archivable PDF variant) when `pdf.pdfa` is set and no watermark is used, and it never contains embedded XML. Documents run no validation and no [mandatory field guard](templates.md#mandatory-field-guard). In Laravel they dispatch `DocumentRendering` and `DocumentRendered` ([Events](laravel.md#events)).
 
 `RenderedDocument` (core) has:
 

@@ -51,6 +51,8 @@ use Quittio\Core\Xml\XmlSerializer;
 use Quittio\Laravel\Builder\RenderableDocumentBuilder;
 use Quittio\Laravel\Builder\RenderableInvoiceBuilder;
 use Quittio\Laravel\Contracts\InvoiceDefaults;
+use Quittio\Laravel\Events\DocumentRendered;
+use Quittio\Laravel\Events\DocumentRendering;
 use Quittio\Laravel\Events\InvoiceRendered;
 use Quittio\Laravel\Events\InvoiceRendering;
 use Quittio\Laravel\Events\InvoiceValidated;
@@ -231,7 +233,12 @@ class QuittioManager
 
     public function renderDocument(DocumentData $document, RenderOptions $options): RenderedDocument
     {
-        return new RenderedDocument($this->core()->renderDocument($document, $options));
+        $events = $this->container()->make(Dispatcher::class);
+        $events->dispatch(new DocumentRendering($document, $options));
+        $result = $this->runDocument($document, $options);
+        $events->dispatch(new DocumentRendered($result));
+
+        return $result;
     }
 
     /**
@@ -409,6 +416,14 @@ class QuittioManager
     protected function run(InvoiceData $invoice, RenderOptions $options): RenderedInvoice
     {
         return new RenderedInvoice($this->core()->render($invoice, $options));
+    }
+
+    /**
+     * The render run behind renderDocument(), without the events; the fake replaces it.
+     */
+    protected function runDocument(DocumentData $document, RenderOptions $options): RenderedDocument
+    {
+        return new RenderedDocument($this->core()->renderDocument($document, $options));
     }
 
     /**

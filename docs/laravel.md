@@ -419,10 +419,14 @@ Events let you react to rendering, e.g. to log every invoice or to store its has
 | `InvoiceValidationFailed` | When validation blocked the run (mode `error`); the `ValidationException` is thrown afterwards | `invoice` (`InvoiceData` as passed), `result` (`ValidationResult`) |
 | `InvoiceRendered` | After all requested formats were produced | `result` (`Quittio\Laravel\Rendering\RenderedInvoice`) |
 | `QueuedInvoiceStored` | After a queued `RenderInvoice` job stored the main output, after `InvoiceRendered` | `result` (`RenderedInvoice`), `disk` (of the job, `null` = configured disk), `path` (the stored path) |
+| `DocumentRendering` | Before a document (quote, reminder, …) is calculated and rendered | `document` (`DocumentData` as passed), `options` (`RenderOptions`) |
+| `DocumentRendered` | After a document was rendered | `result` (`Quittio\Laravel\Rendering\RenderedDocument`) |
 | `QueuedInvoiceFailed` | When a queued `RenderInvoice` job failed for good (last attempt, or at once for errors another attempt cannot fix) | `job` (`RenderInvoice`; `$job->data()` returns the invoice), `exception` |
 | `MandatoryFieldMissing` | When the template omitted mandatory values ([Mandatory field guard](validation.md#mandatory-field-guard)), in the guard modes `exception` (before the exception is thrown) and `log` | `invoice` (calculated `InvoiceData`), `fields` (list of `Quittio\Core\Countries\MandatoryField` with `accessKey`, `description`, `legalBasis`) |
 
-No events are dispatched for documents, `check()`, `prepare()`, reading or validating files, or while `Quittio::fake()` is active.
+No events are dispatched for `check()`, `prepare()`, reading or validating files. `Quittio::fake()` dispatches the events of a real run ([Testing](testing.md#how-the-fake-works)).
+
+Queued listeners receive the event serialised: `InvoiceRendered`, `QueuedInvoiceStored` and `DocumentRendered` carry the rendered files, PDF bytes included, into the queue payload. For many or large invoices, listen synchronously and queue a job with the stored path instead.
 
 ```php
 use Illuminate\Support\Facades\Event;
@@ -489,7 +493,10 @@ return Quittio::document($quote)->locale('de')->render()->download();
 | `country(string $country)` | Leading country pack |
 | `presentation(Presentation $presentation)` | Design for this call |
 | `htmlOnly()` | Render HTML only, no PDF |
+| `option(string $key, mixed $value)` | Output option of this call, e.g. `option('fold_marks', false)` |
 | `render()` | `RenderedDocument` |
+
+`PendingDocument` is `Macroable` like `PendingInvoice`.
 
 Documents never contain XML and are not validated. `RenderedDocument` offers:
 
