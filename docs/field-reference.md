@@ -244,7 +244,7 @@ Paths use the property names of `InvoiceData`; `[]` marks lists. "Level" is the 
 | `paymentInstructions.directDebit.mandateReference` | BT-89 | 0..1 | BASIC WL | `ram:SpecifiedTradePaymentTerms/ram:DirectDebitMandateID` | `cac:PaymentMandate/cbc:ID` |  |
 | `paymentInstructions.directDebit.creditorId` | BT-90 | 0..1 | BASIC WL | `ram:CreditorReferenceID` | `cac:AccountingSupplierParty/cac:Party/cac:PartyIdentification/cbc:ID[@schemeID="SEPA"]` |  |
 | `paymentInstructions.directDebit.debitedAccountId` | BT-91 | 0..1 | BASIC WL | `ram:PayerPartyDebtorFinancialAccount/ram:IBANID` | `cac:PaymentMandate/cac:PayerFinancialAccount/cbc:ID` |  |
-| `allowances[]` | BG-20 | 0..n | BASIC WL | `ram:SpecifiedTradeAllowanceCharge[ChargeIndicator=false]` | `cac:AllowanceCharge[cbc:ChargeIndicator=false]` |  |
+| `allowances[]` | BG-20 | 0..n | BASIC WL | `ram:SpecifiedTradeAllowanceCharge[ram:ChargeIndicator/udt:Indicator="false"]` | `cac:AllowanceCharge[cbc:ChargeIndicator="false"]` |  |
 | `allowances[].amount` | BT-92 | 1 | BASIC WL | `ram:SpecifiedTradeAllowanceCharge/ram:ActualAmount` | `cac:AllowanceCharge/cbc:Amount` |  |
 | `allowances[].vatCategory` | BT-95 | 1 | BASIC WL | `ram:CategoryTradeTax/ram:CategoryCode` | `cac:TaxCategory/cbc:ID` |  |
 | `allowances[].vatRate` | BT-96 | 0..1 | BASIC WL | `ram:CategoryTradeTax/ram:RateApplicablePercent` | `cac:TaxCategory/cbc:Percent` |  |
@@ -254,7 +254,7 @@ Paths use the property names of `InvoiceData`; `[]` marks lists. "Level" is the 
 | `allowances[].reasonCode` | BT-98 | 0..1 | BASIC WL | `ram:ReasonCode` | `cbc:AllowanceChargeReasonCode` |  |
 | `allowances[].exemptionReason` |  |  |  |  |  | internal |
 | `allowances[].exemptionReasonCode` |  |  |  |  |  | internal |
-| `charges[]` | BG-21 | 0..n | BASIC WL | `ram:SpecifiedTradeAllowanceCharge[ChargeIndicator=true]` | `cac:AllowanceCharge[cbc:ChargeIndicator=true]` |  |
+| `charges[]` | BG-21 | 0..n | BASIC WL | `ram:SpecifiedTradeAllowanceCharge[ram:ChargeIndicator/udt:Indicator="true"]` | `cac:AllowanceCharge[cbc:ChargeIndicator="true"]` |  |
 | `charges[].amount` | BT-99 | 1 | BASIC WL | `ram:SpecifiedTradeAllowanceCharge/ram:ActualAmount` | `cac:AllowanceCharge/cbc:Amount` |  |
 | `charges[].vatCategory` | BT-102 | 1 | BASIC WL | `ram:CategoryTradeTax/ram:CategoryCode` | `cac:TaxCategory/cbc:ID` |  |
 | `charges[].vatRate` | BT-103 | 0..1 | BASIC WL | `ram:CategoryTradeTax/ram:RateApplicablePercent` | `cac:TaxCategory/cbc:Percent` |  |

@@ -123,9 +123,9 @@ final readonly class InvoiceData
         public ?Period $invoicingPeriod = null,
         #[Q\Bt('BG-16'), Q\Cardinality('0..1'), Q\Level(ProfileLevel::BasicWl), Q\RequiredIn('xrechnung'), Q\Cii('ram:SpecifiedTradeSettlementPaymentMeans'), Q\Ubl('cac:PaymentMeans')]
         public ?PaymentInstructions $paymentInstructions = null,
-        #[Q\Bt('BG-20'), Q\Cardinality('0..n'), Q\Level(ProfileLevel::BasicWl), Q\ListOf(DocumentAllowance::class), Q\Cii('ram:SpecifiedTradeAllowanceCharge[ChargeIndicator=false]'), Q\Ubl('cac:AllowanceCharge[cbc:ChargeIndicator=false]')]
+        #[Q\Bt('BG-20'), Q\Cardinality('0..n'), Q\Level(ProfileLevel::BasicWl), Q\ListOf(DocumentAllowance::class), Q\Cii('ram:SpecifiedTradeAllowanceCharge[ram:ChargeIndicator/udt:Indicator="false"]'), Q\Ubl('cac:AllowanceCharge[cbc:ChargeIndicator="false"]')]
         public array $allowances = [],
-        #[Q\Bt('BG-21'), Q\Cardinality('0..n'), Q\Level(ProfileLevel::BasicWl), Q\ListOf(DocumentCharge::class), Q\Cii('ram:SpecifiedTradeAllowanceCharge[ChargeIndicator=true]'), Q\Ubl('cac:AllowanceCharge[cbc:ChargeIndicator=true]')]
+        #[Q\Bt('BG-21'), Q\Cardinality('0..n'), Q\Level(ProfileLevel::BasicWl), Q\ListOf(DocumentCharge::class), Q\Cii('ram:SpecifiedTradeAllowanceCharge[ram:ChargeIndicator/udt:Indicator="true"]'), Q\Ubl('cac:AllowanceCharge[cbc:ChargeIndicator="true"]')]
         public array $charges = [],
         #[Q\Bt('BG-22'), Q\Cardinality('1'), Q\Level(ProfileLevel::Minimum), Q\Computed, Q\Cii('ram:SpecifiedTradeSettlementHeaderMonetarySummation'), Q\Ubl('cac:LegalMonetaryTotal')]
         public ?Totals $totals = null,

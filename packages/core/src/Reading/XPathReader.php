@@ -123,6 +123,33 @@ abstract class XPathReader
     }
 
     /**
+     * Reads a ChargeIndicator (xs:boolean): true for a charge, false for an allowance, null when it is missing or
+     * has another value. xs:boolean allows "true", "false", "1" and "0" with surrounding white space.
+     */
+    protected function chargeIndicator(DOMNode $context, string $path): ?bool
+    {
+        return match ($this->value($context, $path)) {
+            'true', '1' => true,
+            'false', '0' => false,
+            default => null,
+        };
+    }
+
+    /**
+     * Reports an allowance or charge whose ChargeIndicator is missing or invalid; the entry is not read.
+     *
+     * @param  string  $group  BG-20 for the document level, BG-27 for lines
+     */
+    protected function invalidChargeIndicator(DOMNode $context, string $path, string $group): void
+    {
+        $this->finding('QUITTIO-READER-CHARGE-INDICATOR', sprintf(
+            'An allowance or charge (%s) has the charge indicator "%s" instead of true or false and was not read.',
+            $group === 'BG-27' ? 'BG-27/BG-28' : 'BG-20/BG-21',
+            self::excerpt($this->value($context, $path) ?? ''),
+        ), $group, Severity::Error);
+    }
+
+    /**
      * Strict ISO date (UBL xs:date: YYYY-MM-DD with optional time zone).
      */
     protected function date(?string $value, string $bt): ?Date

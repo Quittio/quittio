@@ -8,6 +8,10 @@ All notable changes to this project are documented in this file. The format foll
 
 - README and documentation mark the Managed layer `quittio/managed` as not released yet.
 
+### Fixed
+
+- The CII and UBL readers accept every `xs:boolean` spelling of `ChargeIndicator` (`1`/`0`, surrounding white space). Before, such document allowances and charges were dropped and line charges were read as allowances; a missing or invalid indicator is now reported as `QUITTIO-READER-CHARGE-INDICATOR`. The documented CII and UBL paths of BG-20 and BG-21 are valid XPath.
+
 ## [0.1.0] - 2026-10-15
 
 First release.

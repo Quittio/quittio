@@ -612,7 +612,10 @@ final class CiiReader extends XPathReader implements FormatReader
     private function documentAllowances(DOMElement $settlement): array
     {
         $result = [];
-        foreach ($this->nodes($settlement, 'ram:SpecifiedTradeAllowanceCharge[ram:ChargeIndicator/udt:Indicator="false"]') as $node) {
+        foreach ($this->nodes($settlement, 'ram:SpecifiedTradeAllowanceCharge') as $node) {
+            if ($this->chargeIndicator($node, 'ram:ChargeIndicator/udt:Indicator') !== false) {
+                continue;
+            }
             $result[] = new DocumentAllowance(
                 amount: $this->money($this->value($node, 'ram:ActualAmount'), $this->currency, 'BT-92'),
                 vatCategory: $this->category($this->value($node, 'ram:CategoryTradeTax/ram:CategoryCode'), 'BT-95'),
@@ -633,7 +636,15 @@ final class CiiReader extends XPathReader implements FormatReader
     private function documentCharges(DOMElement $settlement): array
     {
         $result = [];
-        foreach ($this->nodes($settlement, 'ram:SpecifiedTradeAllowanceCharge[ram:ChargeIndicator/udt:Indicator="true"]') as $node) {
+        foreach ($this->nodes($settlement, 'ram:SpecifiedTradeAllowanceCharge') as $node) {
+            $isCharge = $this->chargeIndicator($node, 'ram:ChargeIndicator/udt:Indicator');
+            if ($isCharge === null) {
+                // Reported here only, documentAllowances() skips these entries as well.
+                $this->invalidChargeIndicator($node, 'ram:ChargeIndicator/udt:Indicator', 'BG-20');
+            }
+            if ($isCharge !== true) {
+                continue;
+            }
             $result[] = new DocumentCharge(
                 amount: $this->money($this->value($node, 'ram:ActualAmount'), $this->currency, 'BT-99'),
                 vatCategory: $this->category($this->value($node, 'ram:CategoryTradeTax/ram:CategoryCode'), 'BT-102'),
@@ -898,7 +909,12 @@ final class CiiReader extends XPathReader implements FormatReader
         $allowances = [];
         $charges = [];
         foreach ($this->nodes($settlement, 'ram:SpecifiedTradeAllowanceCharge') as $entry) {
-            $isCharge = $this->value($entry, 'ram:ChargeIndicator/udt:Indicator') === 'true';
+            $isCharge = $this->chargeIndicator($entry, 'ram:ChargeIndicator/udt:Indicator');
+            if ($isCharge === null) {
+                $this->invalidChargeIndicator($entry, 'ram:ChargeIndicator/udt:Indicator', 'BG-27');
+
+                continue;
+            }
             $args = [
                 'amount' => $this->money($this->value($entry, 'ram:ActualAmount'), $c, $isCharge ? 'BT-141' : 'BT-136'),
                 'baseAmount' => $this->money($this->value($entry, 'ram:BasisAmount'), $c, $isCharge ? 'BT-142' : 'BT-137'),

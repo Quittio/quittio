@@ -456,7 +456,10 @@ final class UblReader extends XPathReader implements FormatReader
     private function documentAllowances(DOMElement $root): array
     {
         $result = [];
-        foreach ($this->nodes($root, 'cac:AllowanceCharge[cbc:ChargeIndicator="false"]') as $node) {
+        foreach ($this->nodes($root, 'cac:AllowanceCharge') as $node) {
+            if ($this->chargeIndicator($node, 'cbc:ChargeIndicator') !== false) {
+                continue;
+            }
             $result[] = new DocumentAllowance(
                 amount: $this->money($this->value($node, 'cbc:Amount'), $this->currency, 'BT-92'),
                 vatCategory: $this->category($this->value($node, 'cac:TaxCategory/cbc:ID'), 'BT-95'),
@@ -477,7 +480,15 @@ final class UblReader extends XPathReader implements FormatReader
     private function documentCharges(DOMElement $root): array
     {
         $result = [];
-        foreach ($this->nodes($root, 'cac:AllowanceCharge[cbc:ChargeIndicator="true"]') as $node) {
+        foreach ($this->nodes($root, 'cac:AllowanceCharge') as $node) {
+            $isCharge = $this->chargeIndicator($node, 'cbc:ChargeIndicator');
+            if ($isCharge === null) {
+                // Reported here only, documentAllowances() skips these entries as well.
+                $this->invalidChargeIndicator($node, 'cbc:ChargeIndicator', 'BG-20');
+            }
+            if ($isCharge !== true) {
+                continue;
+            }
             $result[] = new DocumentCharge(
                 amount: $this->money($this->value($node, 'cbc:Amount'), $this->currency, 'BT-99'),
                 vatCategory: $this->category($this->value($node, 'cac:TaxCategory/cbc:ID'), 'BT-102'),
@@ -586,7 +597,12 @@ final class UblReader extends XPathReader implements FormatReader
         $allowances = [];
         $charges = [];
         foreach ($this->nodes($node, 'cac:AllowanceCharge') as $entry) {
-            $isCharge = $this->value($entry, 'cbc:ChargeIndicator') === 'true';
+            $isCharge = $this->chargeIndicator($entry, 'cbc:ChargeIndicator');
+            if ($isCharge === null) {
+                $this->invalidChargeIndicator($entry, 'cbc:ChargeIndicator', 'BG-27');
+
+                continue;
+            }
             $args = [
                 'amount' => $this->money($this->value($entry, 'cbc:Amount'), $c, $isCharge ? 'BT-141' : 'BT-136'),
                 'baseAmount' => $this->money($this->value($entry, 'cbc:BaseAmount'), $c, $isCharge ? 'BT-142' : 'BT-137'),
