@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Quittio\Country\DE\Dunning;
 
 use Brick\Math\BigDecimal;
+use Quittio\Core\Dunning\ReferenceRates;
 use Quittio\Core\Exceptions\InvalidArgumentException;
 use Quittio\Core\Support\Date;
 
@@ -14,7 +15,7 @@ use Quittio\Core\Support\Date;
  * BaseRates::register() or, in Laravel, the configuration quittio-de.base_rates and the
  * command quittio:base-rate:update (BundesbankBaseRates).
  */
-final readonly class BaseRateTable
+final readonly class BaseRateTable implements ReferenceRates
 {
     /** Known rates in percent, keyed by the first day of validity. */
     public const array PUBLISHED = [
@@ -40,6 +41,9 @@ final readonly class BaseRateTable
         $this->rates = $rates;
     }
 
+    /**
+     * A copy with a rate in percent from $from on, e.g. a newly published rate.
+     */
     public function withRate(Date|string $from, string $rate): self
     {
         $key = $from instanceof Date ? $from->toIsoString() : Date::parse($from)->toIsoString();

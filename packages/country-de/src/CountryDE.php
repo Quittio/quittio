@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Quittio\Country\DE;
 
 use Quittio\Core\Countries\AbstractCountryPack;
+use Quittio\Core\Countries\Capabilities\ProvidesReferenceRates;
 use Quittio\Core\Countries\CorrectionPolicy;
 use Quittio\Core\Countries\CountryDefaults;
 use Quittio\Core\Countries\DunningLaw;
@@ -15,6 +16,7 @@ use Quittio\Core\Countries\NumberingRules;
 use Quittio\Core\Countries\RetentionRule;
 use Quittio\Core\Data\InvoiceData;
 use Quittio\Core\Data\Note;
+use Quittio\Core\Dunning\ReferenceRates;
 use Quittio\Core\Enums\InvoiceTypeCode;
 use Quittio\Core\Enums\VatCategory;
 use Quittio\Core\I18n\Translations;
@@ -25,6 +27,7 @@ use Quittio\Core\Validation\ValidationResult;
 use Quittio\Core\View\MandatoryFieldGuard;
 use Quittio\Core\View\ViewModelFactory;
 use Quittio\Country\DE\Builder\GermanInvoiceMacros;
+use Quittio\Country\DE\Dunning\BaseRates;
 use Quittio\Country\DE\Formats\GermanFormatRule;
 use Quittio\Country\DE\Formats\XRechnungFormats;
 use Quittio\Country\DE\Layouts\Din5008;
@@ -39,7 +42,7 @@ use Quittio\Country\DE\Texts\LegalTexts;
 /**
  * Country pack for Germany.
  */
-class CountryDE extends AbstractCountryPack
+class CountryDE extends AbstractCountryPack implements ProvidesReferenceRates
 {
     public const string CODE = 'DE';
 
@@ -199,6 +202,15 @@ class CountryDE extends AbstractCountryPack
      */
     public function dunningLaw(): DunningLaw
     {
+        return self::germanDunningLaw();
+    }
+
+    /**
+     * The dunning law of section 288 BGB without an instance of the pack (whose constructor
+     * registers the builder macros).
+     */
+    public static function germanDunningLaw(): DunningLaw
+    {
         return new DunningLaw(
             b2bInterestPoints: '9.00',
             b2cInterestPoints: '5.00',
@@ -207,6 +219,14 @@ class CountryDE extends AbstractCountryPack
             consumerDefaultAfterDays: 30,
             referenceRateName: 'Basiszinssatz (§ 247 BGB)',
         );
+    }
+
+    /**
+     * The Basiszinssatz (section 247 BGB): the shipped rates plus those registered with BaseRates.
+     */
+    public function referenceRates(): ReferenceRates
+    {
+        return BaseRates::table();
     }
 
     /**

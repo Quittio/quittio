@@ -8,7 +8,7 @@ use Brick\Math\BigDecimal;
 use Brick\Money\Money;
 use Quittio\Core\Countries\DunningLaw;
 use Quittio\Core\Documents\InterestCharge;
-use Quittio\Core\Support\Amount;
+use Quittio\Core\Dunning\DefaultInterest as CoreDefaultInterest;
 use Quittio\Core\Support\Date;
 use Quittio\Country\DE\CountryDE;
 use Quittio\Country\DE\Texts\LegalTexts;
@@ -17,21 +17,26 @@ use Quittio\Country\DE\Texts\LegalTexts;
  * Default interest according to section 288 BGB: base rate plus 9 points (business)
  * or 5 points (consumer), split at every change of the base rate.
  * Points, flat rate and day count basis come from the dunning law, by default
- * CountryDE::dunningLaw(). The base rates are those shipped with Quittio plus the rates
+ * CountryDE::germanDunningLaw(); the calculation is that of Quittio\Core\Dunning\DefaultInterest. The base rates are those shipped with Quittio plus the rates
  * registered with BaseRates (configured or fetched from the Bundesbank), unless a table is given.
  */
 final readonly class DefaultInterest
 {
-    private DunningLaw $law;
+    private CoreDefaultInterest $interest;
 
-    private BaseRateTable $rates;
-
+    /**
+     * @param  BaseRateTable|null  $rates  base rates; null = BaseRates::table()
+     * @param  DunningLaw|null  $law  null = CountryDE::germanDunningLaw()
+     */
     public function __construct(
         ?BaseRateTable $rates = null,
         ?DunningLaw $law = null,
     ) {
-        $this->rates = $rates ?? BaseRates::table();
-        $this->law = $law ?? (new CountryDE)->dunningLaw();
+        $this->interest = new CoreDefaultInterest(
+            $rates ?? BaseRates::table(),
+            $law ?? CountryDE::germanDunningLaw(),
+            self::description(...),
+        );
     }
 
     /**
@@ -41,27 +46,7 @@ final readonly class DefaultInterest
      */
     public function calculate(Money $amount, Date $from, Date $until, bool $consumer = false, string $locale = 'de'): array
     {
-        if (! $amount->isPositive() || ! $until->isAfter($from)) {
-            return [];
-        }
-
-        $points = $consumer ? $this->law->b2cInterestPoints : $this->law->b2bInterestPoints;
-        $charges = [];
-        foreach ($this->rates->periods($from, $until) as $period) {
-            $rate = $period['rate']->plus($points);
-            // Periods end exclusively; the text names the last day with interest.
-            $lastDay = $period['until']->addDays(-1);
-            $charges[] = new InterestCharge(
-                base: $amount,
-                ratePercent: $rate,
-                from: $period['from'],
-                until: $period['until'],
-                dayCount: $this->law->dayCount,
-                description: self::description($rate, $period['rate'], $points, $period['from'], $lastDay, $locale),
-            );
-        }
-
-        return $charges;
+        return $this->interest->calculate($amount, $from, $until, $consumer, $locale);
     }
 
     /**
@@ -69,7 +54,7 @@ final readonly class DefaultInterest
      */
     public function flatRate(string $currency = 'EUR'): ?Money
     {
-        return $this->law->b2bFlatRate === null ? null : Amount::of($this->law->b2bFlatRate, $currency);
+        return $this->interest->flatRate($currency);
     }
 
     /**

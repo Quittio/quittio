@@ -139,7 +139,6 @@ In Germany, a debtor in default owes interest at the statutory rate of section 2
 
 ```php
 use Brick\Money\Money;
-use Quittio\Core\Support\Amount;
 use Quittio\Core\Support\Date;
 use Quittio\Country\DE\Dunning\DefaultInterest;
 use Quittio\Laravel\Facades\Quittio;
@@ -150,12 +149,10 @@ $reminder = Quittio::paymentReminder(1)
     ->openItem('RE-2026-0042', '2026-06-01', '1000.00', dueDate: '2026-06-15');
 
 // one charge per period with the same base rate; the end date is exclusive
-foreach ((new DefaultInterest)->calculate(Money::of('1000.00', 'EUR'), Date::parse('2026-06-16'), Date::parse('2026-10-05'), consumer: false) as $charge) {
-    $reminder->interest(Amount::format($charge->base), $charge->ratePercent, $charge->from, $charge->until, $charge->description, $charge->dayCount);
-}
+$reminder->interestCharge(...(new DefaultInterest)->calculate(Money::of('1000.00', 'EUR'), Date::parse('2026-06-16'), Date::parse('2026-10-05'), consumer: false));
 ```
 
-Pass `$charge->dayCount` along, so that the reminder uses the day count of the country pack (365 in Germany) instead of actual/actual. The descriptions are German by default; any other locale, e.g. `calculate(…, locale: 'en')`, returns English ones.
+`interestCharge()` takes the charges with their day count (365 in Germany instead of actual/actual) and texts. For any country pack with a reference rate, `Quittio\Core\Dunning\DefaultInterest::forCountry($pack)` calculates the same with the pack's `referenceRates()` and `dunningLaw()`; the German class adds the German texts. The descriptions are German by default; any other locale, e.g. `calculate(…, locale: 'en')`, returns English ones.
 
 The base rate table, the flat rate and the conditions of default are described in [Country packs](country-packs.md#dunning-law). The country-neutral contract is `CountryPack::dunningLaw()` (`DunningLaw`: `b2bInterestPoints`, `b2cInterestPoints`, `b2bFlatRate`, `dayCount`, `consumerDefaultAfterDays`, `referenceRateName`).
 
@@ -297,6 +294,7 @@ Dates accept `Date`, `DateTimeInterface` or a string; amounts are strings.
 | `openItem(string $invoiceNumber, $invoiceDate, string $amount, $dueDate = null, ?string $paid = null, ?string $description = null)` | Invoice of a reminder or statement |
 | `fee(string $description, BigDecimal\|int\|string $amount)` | Reminder fee |
 | `interest(string $base, BigDecimal\|string $ratePercent, $from, $until, ?string $description = null, ?int $dayCount = InterestCharge::ACTUAL_ACTUAL)` | Default interest of a reminder |
+| `interestCharge(InterestCharge ...$charges)` | Calculated interest charges, e.g. of `DefaultInterest::calculate()`, with their day count and texts |
 | `deadline($date)` | Payment deadline of a reminder |
 | `statementPeriod($start, $end)` | Period of an account statement |
 | `openingBalance(BigDecimal\|int\|string $amount)` | Opening balance of an account statement |

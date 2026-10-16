@@ -3,7 +3,9 @@
 declare(strict_types=1);
 
 use Brick\Money\Money;
+use Quittio\Core\Dunning\DefaultInterest as CoreDefaultInterest;
 use Quittio\Core\Support\Date;
+use Quittio\Country\DE\CountryDE;
 use Quittio\Country\DE\Dunning\BaseRates;
 use Quittio\Country\DE\Dunning\BaseRateTable;
 use Quittio\Country\DE\Dunning\BundesbankBaseRates;
@@ -74,3 +76,13 @@ it('accepts base rates only for 1 January and 1 July as decimal percentages', fu
     'float' => [['2027-01-01' => 1.5], 'percentage'],
     'text' => [['2027-01-01' => 'eins'], 'percentage'],
 ]);
+
+it('gives the generic default interest the base rates and the law of the pack', function () {
+    $german = (new DefaultInterest)->calculate(Money::of('1000.00', 'EUR'), Date::of(2026, 5, 1), Date::of(2026, 8, 1));
+    $generic = CoreDefaultInterest::forCountry(new CountryDE)->calculate(Money::of('1000.00', 'EUR'), Date::of(2026, 5, 1), Date::of(2026, 8, 1));
+
+    expect(array_map(fn ($c) => [(string) $c->ratePercent, (string) $c->from, (string) $c->until, $c->dayCount], $generic))
+        ->toBe(array_map(fn ($c) => [(string) $c->ratePercent, (string) $c->from, (string) $c->until, $c->dayCount], $german))
+        ->and($generic[0]->ratePercent->toString())->toBe('10.27')
+        ->and((new CountryDE)->referenceRates())->toBeInstanceOf(BaseRateTable::class);
+});

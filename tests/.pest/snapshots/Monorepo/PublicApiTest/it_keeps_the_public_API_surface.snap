@@ -458,6 +458,12 @@
             "abstract public serializers(): array"
         ]
     },
+    "Quittio\\Core\\Countries\\Capabilities\\ProvidesReferenceRates": {
+        "kind": "interface",
+        "methods": [
+            "abstract public referenceRates(): Quittio\\Core\\Dunning\\ReferenceRates"
+        ]
+    },
     "Quittio\\Core\\Countries\\CorrectionPolicy": {
         "kind": "final readonly class",
         "constants": [
@@ -1549,6 +1555,7 @@
             "public dueInDays(int $days): static",
             "public fee(string $description, Brick\\Math\\BigDecimal|string|int|float $amount): static",
             "public interest(string $base, Brick\\Math\\BigDecimal|string $ratePercent, Quittio\\Core\\Support\\Date|DateTimeInterface|string $from, Quittio\\Core\\Support\\Date|DateTimeInterface|string $until, ?string $description = null, ?int $dayCount = Quittio\\Core\\Documents\\InterestCharge::ACTUAL_ACTUAL): static",
+            "public interestCharge(Quittio\\Core\\Documents\\InterestCharge ...$charges): static",
             "public issueDate(Quittio\\Core\\Support\\Date|DateTimeInterface|string $date): static",
             "public line(Quittio\\Core\\Data\\Lines\\InvoiceLine|Quittio\\Core\\Builder\\LineBuilder|Quittio\\Core\\Contracts\\ProvidesInvoiceLine|callable|array|string $line, Brick\\Math\\BigDecimal|string|int|float|null $netPrice = null, Brick\\Math\\BigDecimal|string|int|float|null $quantity = null, Quittio\\Core\\Enums\\UnitCode|Quittio\\Core\\Codes\\RawCode|string|null $unit = null, Quittio\\Core\\Tax\\TaxPreset|Quittio\\Core\\Enums\\VatCategory|null $vat = null, ?string $description = null, Brick\\Math\\BigDecimal|string|int|float|null $priceInclVat = null, ?Quittio\\Core\\Documents\\DocumentLineOptions $options = null): static",
             "public lines(iterable $lines): static",
@@ -1743,6 +1750,22 @@
         ],
         "methods": [
             "public __construct(string $id, ?string $type = null, ?Brick\\Math\\BigDecimal $weightKg = null, ?string $dimensions = null, ?string $trackingNumber = null)"
+        ]
+    },
+    "Quittio\\Core\\Dunning\\DefaultInterest": {
+        "kind": "final readonly class",
+        "methods": [
+            "public __construct(Quittio\\Core\\Dunning\\ReferenceRates $rates, Quittio\\Core\\Countries\\DunningLaw $law, ?Closure $describe = null)",
+            "public calculate(Brick\\Money\\Money $amount, Quittio\\Core\\Support\\Date $from, Quittio\\Core\\Support\\Date $until, bool $consumer = false, string $locale = \"en\"): array",
+            "public flatRate(string $currency = \"EUR\"): ?Brick\\Money\\Money",
+            "public static forCountry(Quittio\\Core\\Countries\\CountryPack $pack): Quittio\\Core\\Dunning\\DefaultInterest"
+        ]
+    },
+    "Quittio\\Core\\Dunning\\ReferenceRates": {
+        "kind": "interface",
+        "methods": [
+            "abstract public periods(Quittio\\Core\\Support\\Date $from, Quittio\\Core\\Support\\Date $until): array",
+            "abstract public rateOn(Quittio\\Core\\Support\\Date $date): Brick\\Math\\BigDecimal"
         ]
     },
     "Quittio\\Core\\Enums\\AllowanceReasonCode": {
@@ -4428,6 +4451,7 @@
         "extends": "Quittio\\Core\\Countries\\AbstractCountryPack",
         "implements": [
             "Quittio\\Core\\Countries\\Capabilities\\ProvidesFormats",
+            "Quittio\\Core\\Countries\\Capabilities\\ProvidesReferenceRates",
             "Quittio\\Core\\Countries\\CountryPack"
         ],
         "constants": [
@@ -4454,9 +4478,11 @@
             "public paymentQr(): ?Quittio\\Core\\Pdf\\Qr\\PaymentQrGenerator",
             "public profiles(): array",
             "public readers(): array",
+            "public referenceRates(): Quittio\\Core\\Dunning\\ReferenceRates",
             "public retention(): Quittio\\Core\\Countries\\RetentionRule",
             "public rules(): array",
             "public serializers(): array",
+            "public static germanDunningLaw(): Quittio\\Core\\Countries\\DunningLaw",
             "public static locales(): array",
             "public static registerTranslations(): void",
             "public taxPresets(): Quittio\\Core\\Tax\\TaxPresetCollection",
@@ -4465,6 +4491,9 @@
     },
     "Quittio\\Country\\DE\\Dunning\\BaseRateTable": {
         "kind": "final readonly class",
+        "implements": [
+            "Quittio\\Core\\Dunning\\ReferenceRates"
+        ],
         "constants": [
             "PUBLISHED"
         ],
@@ -4825,6 +4854,7 @@
             "public dueInDays(int $days): static",
             "public fee(string $description, Brick\\Math\\BigDecimal|string|int|float $amount): static",
             "public interest(string $base, Brick\\Math\\BigDecimal|string $ratePercent, Quittio\\Core\\Support\\Date|DateTimeInterface|string $from, Quittio\\Core\\Support\\Date|DateTimeInterface|string $until, ?string $description = null, ?int $dayCount = Quittio\\Core\\Documents\\InterestCharge::ACTUAL_ACTUAL): static",
+            "public interestCharge(Quittio\\Core\\Documents\\InterestCharge ...$charges): static",
             "public issueDate(Quittio\\Core\\Support\\Date|DateTimeInterface|string $date): static",
             "public line(Quittio\\Core\\Data\\Lines\\InvoiceLine|Quittio\\Core\\Builder\\LineBuilder|Quittio\\Core\\Contracts\\ProvidesInvoiceLine|callable|array|string $line, Brick\\Math\\BigDecimal|string|int|float|null $netPrice = null, Brick\\Math\\BigDecimal|string|int|float|null $quantity = null, Quittio\\Core\\Enums\\UnitCode|Quittio\\Core\\Codes\\RawCode|string|null $unit = null, Quittio\\Core\\Tax\\TaxPreset|Quittio\\Core\\Enums\\VatCategory|null $vat = null, ?string $description = null, Brick\\Math\\BigDecimal|string|int|float|null $priceInclVat = null, ?Quittio\\Core\\Documents\\DocumentLineOptions $options = null): static",
             "public lines(iterable $lines): static",

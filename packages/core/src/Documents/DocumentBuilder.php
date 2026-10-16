@@ -520,6 +520,26 @@ class DocumentBuilder
     }
 
     /**
+     * Adds calculated interest charges, e.g. of Dunning\DefaultInterest::calculate(), with their
+     * own day count basis and texts. The base is taken over as amount in the document currency.
+     */
+    public function interestCharge(InterestCharge ...$charges): static
+    {
+        foreach ($charges as $charge) {
+            $this->interest(
+                base: Amount::format($charge->base),
+                ratePercent: $charge->ratePercent,
+                from: $charge->from,
+                until: $charge->until,
+                description: $charge->description,
+                dayCount: $charge->dayCount,
+            );
+        }
+
+        return $this;
+    }
+
+    /**
      * Period of an account statement.
      */
     public function statementPeriod(Date|DateTimeInterface|string $start, Date|DateTimeInterface|string $end): static
