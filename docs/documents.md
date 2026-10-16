@@ -236,6 +236,7 @@ $html = Quittio::document($quote)->htmlOnly()->render()->html();
 | `htmlOnly()` | HTML instead of PDF |
 | `option(string $key, mixed $value)` | Output option of this call, e.g. `option('fold_marks', false)` ([output configuration](formats.md#output-configuration)) |
 | `render()` | `RenderedDocument` |
+| `queue(?string $connection = null, ?string $queue = null)` | Laravel: renders in a queued job, see below |
 
 Documents use the invoice templates and the same view model. The node `documentInfo` holds the document specific values ([view model](templates.md#documentinfo)), `document.kind` the type.
 
@@ -248,6 +249,22 @@ The PDF is PDF/A-3b (the archivable PDF variant) when `pdf.pdfa` is set and no w
 - `save(string $path)`: a file, or a directory (an existing one or a path ending in `/`) for the generated file name; missing directories are created.
 
 The Laravel class adds `core()`, `download(?string $filename = null)`, `stream(?string $filename = null)` and `save(?string $disk = null, ?string $path = null)` (default disk `quittio.storage.disk`; a path ending in `/` gets the file name appended). It is `Responsable`, so a controller can return it as a download, and `Attachable` for mails ([Laravel integration](laravel.md)).
+
+### Queueing
+
+In Laravel, `queue()->save()` renders the document in a queued job (`Quittio\Laravel\Jobs\RenderDocument`) and stores it on a disk:
+
+```php
+use Quittio\Laravel\Facades\Quittio;
+
+Quittio::document($quote)->locale('de')->queue()->save('documents', 'quotes/');
+```
+
+- The job carries the document as versioned JSON snapshot (`DocumentData::toSnapshot()`, `SNAPSHOT_VERSION`) and the render options as versioned JSON, never as serialised PHP objects. Jobs queued before an update are brought up to date by the classes in `quittio.snapshots.document_upcasters`.
+- Connection, queue and the dispatch after a database commit follow `quittio.queue.*`, as for invoices.
+- After storing, the job dispatches `QueuedDocumentStored` (result, disk and path); a job that failed for good dispatches `QueuedDocumentFailed`. Errors that another attempt cannot fix (invalid data, configuration) fail the job at once.
+
+`DocumentData::toArray()`, `fromArray()`, `toJson()`, `fromJson()`, `toSnapshot()` and `fromSnapshot()` store and restore documents outside the queue as well.
 
 ### File names
 

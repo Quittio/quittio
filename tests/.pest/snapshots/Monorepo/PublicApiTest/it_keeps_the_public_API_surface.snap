@@ -5077,6 +5077,27 @@
             "public __construct(Quittio\\Core\\Data\\InvoiceData $invoice, array $fields)"
         ]
     },
+    "Quittio\\Laravel\\Events\\QueuedDocumentFailed": {
+        "kind": "final readonly class",
+        "properties": [
+            "public readonly Quittio\\Laravel\\Jobs\\RenderDocument $job",
+            "public readonly Throwable $exception"
+        ],
+        "methods": [
+            "public __construct(Quittio\\Laravel\\Jobs\\RenderDocument $job, Throwable $exception)"
+        ]
+    },
+    "Quittio\\Laravel\\Events\\QueuedDocumentStored": {
+        "kind": "final readonly class",
+        "properties": [
+            "public readonly ?string $disk",
+            "public readonly Quittio\\Laravel\\Rendering\\RenderedDocument $result",
+            "public readonly string $path"
+        ],
+        "methods": [
+            "public __construct(Quittio\\Laravel\\Rendering\\RenderedDocument $result, ?string $disk, string $path)"
+        ]
+    },
     "Quittio\\Laravel\\Events\\QueuedInvoiceFailed": {
         "kind": "final readonly class",
         "properties": [
@@ -5103,6 +5124,77 @@
         "extends": "Illuminate\\Support\\Facades\\Facade",
         "methods": [
             "public static fake(): Quittio\\Laravel\\Testing\\QuittioFake"
+        ]
+    },
+    "Quittio\\Laravel\\Jobs\\RenderDocument": {
+        "kind": "final class",
+        "implements": [
+            "Illuminate\\Contracts\\Queue\\ShouldQueue"
+        ],
+        "constants": [
+            "PERMANENT_ERRORS"
+        ],
+        "properties": [
+            "public $afterCommit",
+            "public $chainCatchCallbacks",
+            "public $chainConnection",
+            "public $chainQueue",
+            "public $chained",
+            "public $connection",
+            "public $debounceOwner",
+            "public $deduplicator",
+            "public $delay",
+            "public $job",
+            "public $messageGroup",
+            "public $middleware",
+            "public $queue",
+            "public $uniqueLockOwner",
+            "public array $backoff",
+            "public int $tries",
+            "public readonly ?string $disk",
+            "public readonly ?string $path",
+            "public readonly string $document",
+            "public readonly string $options"
+        ],
+        "methods": [
+            "public __construct(string $document, string $options, ?string $disk = null, ?string $path = null)",
+            "public afterCommit()",
+            "public allOnConnection($connection)",
+            "public allOnQueue($queue)",
+            "public appendToChain($job)",
+            "public assertDeleted()",
+            "public assertDoesntHaveChain()",
+            "public assertFailed()",
+            "public assertFailedWith($exception)",
+            "public assertHasChain($expectedChain)",
+            "public assertNotDeleted()",
+            "public assertNotFailed()",
+            "public assertNotReleased()",
+            "public assertReleased($delay = null)",
+            "public attempts()",
+            "public beforeCommit()",
+            "public chain($chain)",
+            "public data(): Quittio\\Core\\Documents\\DocumentData",
+            "public delay($delay)",
+            "public delete()",
+            "public dispatchNextJobInChain()",
+            "public fail($exception = null)",
+            "public failed(Throwable $exception): void",
+            "public handle(Quittio\\Laravel\\QuittioManager $quittio): void",
+            "public invokeChainCatchCallbacks($e)",
+            "public middleware(): array",
+            "public onConnection($connection)",
+            "public onGroup($group)",
+            "public onQueue($queue)",
+            "public prependToChain($job)",
+            "public release($delay = 0)",
+            "public renderOptions(): Quittio\\Core\\Rendering\\RenderOptions",
+            "public setJob(Illuminate\\Contracts\\Queue\\Job $job)",
+            "public static of(Quittio\\Core\\Documents\\DocumentData $document, Quittio\\Core\\Rendering\\RenderOptions $options, ?string $disk = null, ?string $path = null): Quittio\\Laravel\\Jobs\\RenderDocument",
+            "public through($middleware)",
+            "public withDeduplicator($deduplicator)",
+            "public withFakeQueueInteractions()",
+            "public withoutDelay()"
         ]
     },
     "Quittio\\Laravel\\Jobs\\RenderInvoice": {
@@ -5211,6 +5303,7 @@
             "public prepare(Quittio\\Core\\Data\\InvoiceData $invoice, Quittio\\Core\\Rendering\\RenderOptions $options): Quittio\\Core\\Rendering\\PreparedInvoice",
             "public profiles(): Quittio\\Core\\Profiles\\ProfileRegistry",
             "public proforma(): Quittio\\Laravel\\Builder\\RenderableDocumentBuilder",
+            "public queueDocument(Quittio\\Laravel\\Jobs\\RenderDocument $job): Quittio\\Laravel\\Jobs\\RenderDocument",
             "public queueInvoice(Quittio\\Laravel\\Jobs\\RenderInvoice $job): Quittio\\Laravel\\Jobs\\RenderInvoice",
             "public quote(): Quittio\\Laravel\\Builder\\RenderableDocumentBuilder",
             "public read(string $content): Quittio\\Core\\Reading\\ReadResult",
@@ -5231,6 +5324,9 @@
     "Quittio\\Laravel\\QuittioServiceProvider": {
         "kind": "final class",
         "extends": "Illuminate\\Support\\ServiceProvider",
+        "constants": [
+            "DOCUMENT_UPCASTERS"
+        ],
         "methods": [
             "public boot(): void",
             "public register(): void",
@@ -5263,6 +5359,7 @@
             "public option(string $key, mixed $value): static",
             "public options(): Quittio\\Core\\Rendering\\RenderOptions",
             "public presentation(Quittio\\Core\\Data\\Presentation\\Presentation $presentation): static",
+            "public queue(?string $connection = null, ?string $queue = null): Quittio\\Laravel\\Rendering\\QueuedDocument",
             "public render(): Quittio\\Laravel\\Rendering\\RenderedDocument",
             "public static __callStatic($method, $parameters)",
             "public static flushMacros()",
@@ -5303,6 +5400,13 @@
             "public template(string $template): static",
             "public validate(bool $throwOnError = true): static",
             "public withoutValidation(): static"
+        ]
+    },
+    "Quittio\\Laravel\\Rendering\\QueuedDocument": {
+        "kind": "final readonly class",
+        "methods": [
+            "public __construct(Quittio\\Laravel\\QuittioManager $manager, Quittio\\Core\\Documents\\DocumentData $data, Quittio\\Core\\Rendering\\RenderOptions $options, ?string $connection = null, ?string $queue = null)",
+            "public save(?string $disk = null, ?string $path = null): Quittio\\Laravel\\Jobs\\RenderDocument"
         ]
     },
     "Quittio\\Laravel\\Rendering\\QueuedInvoice": {
@@ -5429,6 +5533,7 @@
             "public __call($method, $parameters)",
             "public __construct(Illuminate\\Contracts\\Container\\Container $app)",
             "public accountStatement(): Quittio\\Laravel\\Builder\\RenderableDocumentBuilder",
+            "public assertDocumentQueued(?callable $callback = null): void",
             "public assertDocumentRendered(?callable $callback = null): void",
             "public assertNothingQueued(): void",
             "public assertNothingRendered(): void",
@@ -5455,8 +5560,10 @@
             "public prepare(Quittio\\Core\\Data\\InvoiceData $invoice, Quittio\\Core\\Rendering\\RenderOptions $options): Quittio\\Core\\Rendering\\PreparedInvoice",
             "public profiles(): Quittio\\Core\\Profiles\\ProfileRegistry",
             "public proforma(): Quittio\\Laravel\\Builder\\RenderableDocumentBuilder",
+            "public queueDocument(Quittio\\Laravel\\Jobs\\RenderDocument $job): Quittio\\Laravel\\Jobs\\RenderDocument",
             "public queueInvoice(Quittio\\Laravel\\Jobs\\RenderInvoice $job): Quittio\\Laravel\\Jobs\\RenderInvoice",
             "public queued(): array",
+            "public queuedDocuments(): array",
             "public quote(): Quittio\\Laravel\\Builder\\RenderableDocumentBuilder",
             "public read(string $content): Quittio\\Core\\Reading\\ReadResult",
             "public readFile(string $path): Quittio\\Core\\Reading\\ReadResult",

@@ -342,6 +342,9 @@ return [
         // stored invoices (queued jobs, quittio/managed) of older Quittio versions up to date.
         // Only needed after an update that changes the data model.
         'upcasters' => [],
+
+        // The same for stored documents (queued quotes, reminders and other documents).
+        'document_upcasters' => [],
     ],
 
     /*

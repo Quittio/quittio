@@ -378,6 +378,5 @@ Quittio\Laravel\Support\Settings::nullableString
 Quittio\Laravel\Support\Settings::section
 Quittio\Laravel\Support\Settings::string
 Quittio\Laravel\Templates\BladeTemplateEngine::allows
-Quittio\Laravel\Testing\QuittioFake::assertNothingQueued
 Quittio\Laravel\Testing\QuittioFake::assertNothingRendered
 Quittio\Laravel\Testing\QuittioFake::assertRenderedCount

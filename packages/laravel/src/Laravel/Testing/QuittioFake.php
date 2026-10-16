@@ -14,6 +14,7 @@ use Quittio\Core\Rendering\RenderedDocument as CoreRenderedDocument;
 use Quittio\Core\Rendering\RenderedInvoice as CoreRenderedInvoice;
 use Quittio\Core\Rendering\RenderOptions;
 use Quittio\Core\Validation\ValidationResult;
+use Quittio\Laravel\Jobs\RenderDocument;
 use Quittio\Laravel\Jobs\RenderInvoice;
 use Quittio\Laravel\QuittioManager;
 use Quittio\Laravel\Rendering\RenderedDocument;
@@ -37,6 +38,9 @@ final class QuittioFake extends QuittioManager
     /** @var list<RenderInvoice> */
     private array $queued = [];
 
+    /** @var list<RenderDocument> */
+    private array $queuedDocuments = [];
+
     /** Core without validators that takes the decisions of a run (see Quittio::prepare()). */
     private ?Quittio $planner = null;
 
@@ -52,6 +56,16 @@ final class QuittioFake extends QuittioManager
         $this->queued[] = $job;
 
         return parent::queueInvoice($job);
+    }
+
+    /**
+     * Records the document job and dispatches it like the real manager.
+     */
+    public function queueDocument(RenderDocument $job): RenderDocument
+    {
+        $this->queuedDocuments[] = $job;
+
+        return parent::queueDocument($job);
     }
 
     protected function run(InvoiceData $invoice, RenderOptions $options): RenderedInvoice
@@ -128,9 +142,23 @@ final class QuittioFake extends QuittioManager
         Assert::assertNotEmpty($matching, $callback === null ? 'No invoice was queued.' : 'No queued invoice matches the given callback.');
     }
 
+    /**
+     * Asserts that neither an invoice nor a document was queued.
+     */
     public function assertNothingQueued(): void
     {
         Assert::assertSame([], $this->queued, sprintf('Expected no queued invoice, got %d.', count($this->queued)));
+        Assert::assertSame([], $this->queuedDocuments, sprintf('Expected no queued document, got %d.', count($this->queuedDocuments)));
+    }
+
+    /**
+     * @param  (callable(RenderDocument): bool)|null  $callback  e.g. fn ($job) => $job->data()->number === 'AN-1'
+     */
+    public function assertDocumentQueued(?callable $callback = null): void
+    {
+        $matching = $callback === null ? $this->queuedDocuments : array_filter($this->queuedDocuments, $callback);
+
+        Assert::assertNotEmpty($matching, $callback === null ? 'No document was queued.' : 'No queued document matches the given callback.');
     }
 
     /**
@@ -171,6 +199,16 @@ final class QuittioFake extends QuittioManager
     public function queued(): array
     {
         return $this->queued;
+    }
+
+    /**
+     * The recorded queued render jobs of documents, in order.
+     *
+     * @return list<RenderDocument>
+     */
+    public function queuedDocuments(): array
+    {
+        return $this->queuedDocuments;
     }
 
     private function planner(): Quittio

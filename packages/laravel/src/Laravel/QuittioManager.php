@@ -46,6 +46,7 @@ use Quittio\Laravel\Events\InvoiceRendered;
 use Quittio\Laravel\Events\InvoiceRendering;
 use Quittio\Laravel\Events\InvoiceValidated;
 use Quittio\Laravel\Events\InvoiceValidationFailed;
+use Quittio\Laravel\Jobs\RenderDocument;
 use Quittio\Laravel\Jobs\RenderInvoice;
 use Quittio\Laravel\Rendering\PendingDocument;
 use Quittio\Laravel\Rendering\PendingInvoice;
@@ -276,6 +277,17 @@ class QuittioManager
      * records the job as well.
      */
     public function queueInvoice(RenderInvoice $job): RenderInvoice
+    {
+        $this->container()->make(BusDispatcher::class)->dispatch($job);
+
+        return $job;
+    }
+
+    /**
+     * Dispatches a queued render job of a document; PendingDocument::queue()->save() calls it,
+     * the fake records the job as well.
+     */
+    public function queueDocument(RenderDocument $job): RenderDocument
     {
         $this->container()->make(BusDispatcher::class)->dispatch($job);
 

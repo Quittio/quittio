@@ -404,6 +404,8 @@ $job = Quittio::make($invoice)->queue('redis', 'invoices')->save();
 | Execution | `handle()` renders with the stored options (events included), calls `save($disk, $path)` and dispatches `QueuedInvoiceStored`. A `null` disk is resolved when the job runs. |
 | Retries | `$tries = 3` with 10 and 60 seconds between the attempts, for errors that may pass (a disk that is not reachable, a KoSIT daemon that restarts). Errors that another attempt cannot fix fail the job at once: validation errors, invalid or unreadable data, configuration errors (`RenderInvoice::PERMANENT_ERRORS`). |
 | Failure | `failed()` dispatches `QueuedInvoiceFailed` with the job and the exception |
+
+Documents are queued the same way: `Quittio::document($quote)->queue()->save('documents', 'quotes/')` dispatches a `RenderDocument` job, which carries the document as versioned snapshot and dispatches `QueuedDocumentStored` or `QueuedDocumentFailed` ([Documents: queueing](documents.md#queueing)).
 | Upgrades | Snapshots of older data model versions are migrated by `quittio.snapshots.upcasters` ([Snapshots](configuration.md#snapshots)); `data()` returns the restored invoice. Jobs queued by Quittio 0.1.0 (options as PHP object) still run. |
 
 With the `sync` connection the job runs immediately.
@@ -422,6 +424,8 @@ Events let you react to rendering, e.g. to log every invoice or to store its has
 | `DocumentRendering` | Before a document (quote, reminder, …) is calculated and rendered | `document` (`DocumentData` as passed), `options` (`RenderOptions`) |
 | `DocumentRendered` | After a document was rendered | `result` (`Quittio\Laravel\Rendering\RenderedDocument`) |
 | `QueuedInvoiceFailed` | When a queued `RenderInvoice` job failed for good (last attempt, or at once for errors another attempt cannot fix) | `job` (`RenderInvoice`; `$job->data()` returns the invoice), `exception` |
+| `QueuedDocumentStored` | After a queued `RenderDocument` job stored the document | `result` (`RenderedDocument`), `disk`, `path` |
+| `QueuedDocumentFailed` | When a queued `RenderDocument` job failed for good | `job` (`RenderDocument`; `$job->data()` returns the document), `exception` |
 | `MandatoryFieldMissing` | When the template omitted mandatory values ([Mandatory field guard](validation.md#mandatory-field-guard)), in the guard modes `exception` (before the exception is thrown) and `log` | `invoice` (calculated `InvoiceData`), `fields` (list of `Quittio\Core\Countries\MandatoryField` with `accessKey`, `description`, `legalBasis`) |
 
 No events are dispatched for `check()`, `prepare()`, reading or validating files. `Quittio::fake()` dispatches the events of a real run ([Testing](testing.md#how-the-fake-works)).

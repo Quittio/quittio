@@ -42,6 +42,9 @@ use ReflectionClass;
  */
 final class QuittioServiceProvider extends ServiceProvider
 {
+    /** Container key of the upcaster chain of document snapshots. */
+    public const string DOCUMENT_UPCASTERS = 'quittio.snapshots.documents';
+
     public function register(): void
     {
         $this->mergeConfigFrom(self::packagePath('config/quittio.php'), 'quittio');
@@ -64,6 +67,19 @@ final class QuittioServiceProvider extends ServiceProvider
 
             return $chain;
         });
+        $this->app->singleton(self::DOCUMENT_UPCASTERS, function (Application $app): SnapshotUpcasterChain {
+            $chain = new SnapshotUpcasterChain;
+            $classes = $app->make(Repository::class)->get('quittio.snapshots.document_upcasters', []);
+            foreach (is_array($classes) ? $classes : [] as $class) {
+                $upcaster = is_string($class) ? $app->make($class) : $class;
+                if (! $upcaster instanceof SnapshotUpcaster) {
+                    throw new ConfigurationException(sprintf('quittio.snapshots.document_upcasters: %s is not a SnapshotUpcaster.', is_string($class) ? $class : get_debug_type($class)));
+                }
+                $chain->register($upcaster);
+            }
+
+            return $chain;
+        });
     }
 
     public function boot(): void
@@ -74,6 +90,8 @@ final class QuittioServiceProvider extends ServiceProvider
         $this->bridgeTranslations();
         // InvoiceData::fromSnapshot() uses the configured upcasters.
         SnapshotUpcasterChain::useDefault($this->app->make(SnapshotUpcasterChain::class));
+        // DocumentData::fromSnapshot() (queued documents) uses the document upcasters.
+        SnapshotUpcasterChain::useDocumentDefault($this->app->make(self::DOCUMENT_UPCASTERS));
         // Lines without ->vat() use quittio.defaults.vat or the default of the seller's country,
         // read from the current application (under Octane the one of the request).
         InvoiceBuilder::useDefaultVat(static fn (?string $country, bool $smallBusiness): ?TaxPreset => Container::getInstance()->make(QuittioManager::class)->defaultVat($country, $smallBusiness));

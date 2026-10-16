@@ -23,7 +23,7 @@ The public API is everything below that is not marked `@internal`:
 | Configuration | The keys of `config/quittio.php` and `config/quittio-de.php`, their meaning and defaults, and the environment variables. A renamed key or variable keeps working under its old name until the next major release. |
 | Rule codes | Codes of findings, both official (`BR-CO-10`, `BR-DE-1`, `PEPPOL-EN16931-R001`) and Quittio's (`QUITTIO-…`). A code keeps its meaning; its message text is not covered. Rule overrides (`validation.rules`, `Quittio::extend('rule', …)`) address rules by these codes. |
 | Events | Class names and payload properties of the events in `Quittio\Laravel\Events` |
-| Stored data | The snapshot format of `InvoiceData::toSnapshot()` and the array format of `RenderOptions::toArray()`. A new version comes with an upcaster or a reader for the old one, so stored invoices and queued jobs stay readable. |
+| Stored data | The snapshot formats of `InvoiceData::toSnapshot()` and `DocumentData::toSnapshot()` and the array format of `RenderOptions::toArray()`. A new version comes with an upcaster or a reader for the old one, so stored invoices and queued jobs stay readable. |
 | Commands | Names, arguments, options and exit codes of the Artisan commands |
 | Output | XML that conforms to the profile. The XML of the same data changes only when a standard or a profile changes, or to fix a conformance error. |
 

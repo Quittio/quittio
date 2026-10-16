@@ -131,4 +131,12 @@ final class PendingDocument
     {
         return $this->manager->renderDocument($this->data, $this->options());
     }
+
+    /**
+     * Renders in a queued job: Quittio::document($quote)->queue()->save('documents', $path).
+     */
+    public function queue(?string $connection = null, ?string $queue = null): QueuedDocument
+    {
+        return new QueuedDocument($this->manager, $this->data, $this->options(), $connection, $queue);
+    }
 }

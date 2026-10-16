@@ -78,7 +78,8 @@ These methods belong to the fake and are also callable through the facade (`Quit
 | `rendered(): array` | The recorded `RenderedInvoice` results (the main format of each call), in order |
 | `documents(): array` | The recorded `RenderedDocument` results, in order |
 | `assertQueued(?callable $callback = null)` | At least one invoice was queued with `queue()->save()`; with a callback, one `RenderInvoice` job matches (`$job->data()` is the invoice, `$job->disk`, `$job->path`) |
-| `assertNothingQueued()` | No invoice was queued |
+| `assertNothingQueued()` | No invoice and no document was queued |
+| `assertDocumentQueued(?callable $callback = null)` | At least one document was queued with `Quittio::document(…)->queue()->save()`; with a callback, one `RenderDocument` job matches (`$job->data()` is the document) |
 | `queued(): array` | The recorded `RenderInvoice` jobs, in order |
 
 Documents such as quotes and reminders ([Quotes and other documents](documents.md)) are recorded separately from invoices:
