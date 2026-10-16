@@ -37,6 +37,8 @@ use Quittio\Core\Support\Decimal;
  * within 0.01 of round2(BT-110 × exchange rate), e.g. the BT-111 of a partial cancellation
  * aligned with the earlier ones (Corrections\CancellationHistory). In gross price mode the rounding amount (BT-114) follows
  * the amounts finally used, so that the amount due stays the gross amount of the lines.
+ *
+ * @phpstan-type VatGroup array{category: VatCategory, rate: ?BigDecimal, lines: BigDecimal, allowances: BigDecimal, charges: BigDecimal, reasons: list<string>, codes: array<string, VatExemptionReasonCode|RawCode|null>}
  */
 final class En16931Calculator implements TotalsCalculator
 {
@@ -48,37 +50,90 @@ final class En16931Calculator implements TotalsCalculator
     public function calculate(InvoiceData $invoice): InvoiceData
     {
         $currency = $invoice->currency;
-        $lines = $invoice->lines;
-        // Gross price mode: G, the gross amount of all lines (GrossPriceConverter).
-        $gross = null;
         $flagged = $invoice->meta->hasFlag(Meta::FLAG_DECLARED_AMOUNTS);
         $declared = $flagged && DeclaredAmounts::isTrusted($invoice);
+        $deviates = false;
 
-        if ($this->grossPriceConverter->appliesTo($invoice)) {
-            // The net amounts of a partial cancellation aligned with the earlier ones (taxable amounts of
-            // its declared VAT breakdown) replace N = round2(G / (1 + rate)) within 0.01.
-            $nets = [];
-            if ($declared && $invoice->meta->hasFlag(Meta::FLAG_CANCELLATION_VAT_ALIGNED)) {
-                foreach ($invoice->vatBreakdown as $entry) {
-                    $nets[DeclaredAmounts::breakdownKey($entry->category, $entry->rate)] = $entry->taxableAmount->getAmount();
-                }
-            }
-            $converted = $this->grossPriceConverter->convert($invoice, $nets);
-            $lines = $converted['lines'];
-            $gross = $converted['gross'];
+        [$lines, $gross] = $this->convertGrossPrices($invoice, $declared);
+        $lines = $this->lineAmounts($invoice, $lines, $declared, $deviates);
+        [$groups, $lineNetSum] = $this->lineGroups($lines);
+        // 7.3 Document allowances and charges, both resolved against the line groups.
+        $allowances = array_map(fn (DocumentAllowanceCharge $a) => $this->resolveDocumentLevel($a, $groups, $currency), $invoice->allowances);
+        $charges = array_map(fn (DocumentAllowanceCharge $c) => $this->resolveDocumentLevel($c, $groups, $currency), $invoice->charges);
+        $allowanceSum = $this->addToGroups($allowances, 'allowances', $groups);
+        $chargeSum = $this->addToGroups($charges, 'charges', $groups);
+        [$breakdown, $vatTotal] = $this->vatBreakdown($invoice, $groups, $declared, $deviates);
+
+        $totals = $this->totals($invoice, $lineNetSum, $allowanceSum, $chargeSum, $vatTotal, $gross, $allowances !== [], $charges !== [], $declared);
+        $meta = self::meta($invoice, $flagged, $declared, $deviates);
+
+        $result = $invoice->with([
+            'lines' => $lines,
+            'allowances' => $allowances,
+            'charges' => $charges,
+            'vatBreakdown' => $breakdown,
+            'totals' => $totals,
+            'dueDate' => $invoice->dueDate ?? $this->dueDate($invoice),
+            'meta' => $meta,
+        ]);
+
+        // Fingerprint of the amount inputs of the result: later changes (with(), stored JSON) make
+        // its amounts stale, so that from(), Cancellation and the calculator never keep them.
+        return $result->with(['meta' => $meta->withAmountsFingerprint(DeclaredAmounts::fingerprint($result))]);
+    }
+
+    /**
+     * Gross price mode: net prices from the gross prices of the lines, and G, the gross amount
+     * of all lines (GrossPriceConverter); otherwise the lines unchanged and no G.
+     *
+     * @return array{list<InvoiceLine>, ?BigDecimal}
+     */
+    private function convertGrossPrices(InvoiceData $invoice, bool $declared): array
+    {
+        if (! $this->grossPriceConverter->appliesTo($invoice)) {
+            return [$invoice->lines, null];
         }
 
-        // 7.2 Line amounts
-        $lines = array_map(fn (InvoiceLine $line): InvoiceLine => $this->lineCalculator->calculate($line, $currency), $lines);
-        $deviates = false;
+        // The net amounts of a partial cancellation aligned with the earlier ones (taxable amounts of
+        // its declared VAT breakdown) replace N = round2(G / (1 + rate)) within 0.01.
+        $nets = [];
+        if ($declared && $invoice->meta->hasFlag(Meta::FLAG_CANCELLATION_VAT_ALIGNED)) {
+            foreach ($invoice->vatBreakdown as $entry) {
+                $nets[DeclaredAmounts::breakdownKey($entry->category, $entry->rate)] = $entry->taxableAmount->getAmount();
+            }
+        }
+        $converted = $this->grossPriceConverter->convert($invoice, $nets);
+
+        return [$converted['lines'], $converted['gross']];
+    }
+
+    /**
+     * 7.2 Line amounts; with declared amounts the declared line net amounts within tolerance.
+     *
+     * @param  list<InvoiceLine>  $lines
+     * @return list<InvoiceLine>
+     */
+    private function lineAmounts(InvoiceData $invoice, array $lines, bool $declared, bool &$deviates): array
+    {
+        $lines = array_map(fn (InvoiceLine $line): InvoiceLine => $this->lineCalculator->calculate($line, $invoice->currency), $lines);
         if ($declared) {
             foreach ($lines as $index => $line) {
                 $lines[$index] = self::declaredLine($line, $invoice->lines[$index] ?? null, $deviates);
             }
         }
 
-        // Group sums of the line amounts, in order of first appearance.
-        /** @var array<string, array{category: VatCategory, rate: ?BigDecimal, lines: BigDecimal, allowances: BigDecimal, charges: BigDecimal, reasons: list<string>, codes: array<string, VatExemptionReasonCode|RawCode|null>}> $groups */
+        return $lines;
+    }
+
+    /**
+     * Group sums of the line amounts per VAT category and rate, in order of first appearance,
+     * and the sum of all line net amounts (BT-106).
+     *
+     * @param  list<InvoiceLine>  $lines
+     * @return array{array<string, VatGroup>, BigDecimal}
+     */
+    private function lineGroups(array $lines): array
+    {
         $groups = [];
         $lineNetSum = BigDecimal::zero();
         foreach ($lines as $line) {
@@ -93,30 +148,42 @@ final class En16931Calculator implements TotalsCalculator
             }
         }
 
-        // 7.3 Document allowances and charges
-        $allowances = array_map(fn (DocumentAllowanceCharge $a) => $this->resolveDocumentLevel($a, $groups, $currency), $invoice->allowances);
-        $charges = array_map(fn (DocumentAllowanceCharge $c) => $this->resolveDocumentLevel($c, $groups, $currency), $invoice->charges);
+        return [$groups, $lineNetSum];
+    }
 
-        $allowanceSum = BigDecimal::zero();
-        foreach ($allowances as $allowance) {
-            $value = $allowance->amount?->getAmount() ?? BigDecimal::zero();
-            $allowanceSum = $allowanceSum->plus($value);
-            $key = LineVat::key($allowance->vatCategory, $allowance->vatRate);
-            $groups[$key] ??= $this->group($allowance->vatCategory, $allowance->vatRate);
-            $groups[$key]['allowances'] = $groups[$key]['allowances']->plus($value);
-            $this->takeExemptionReason($groups[$key], $allowance);
+    /**
+     * Adds resolved document level allowances or charges to their VAT groups and returns their sum.
+     *
+     * @param  list<DocumentAllowanceCharge>  $entries
+     * @param  'allowances'|'charges'  $kind
+     * @param  array<string, VatGroup>  $groups
+     */
+    private function addToGroups(array $entries, string $kind, array &$groups): BigDecimal
+    {
+        $sum = BigDecimal::zero();
+        foreach ($entries as $entry) {
+            $value = $entry->amount?->getAmount() ?? BigDecimal::zero();
+            $sum = $sum->plus($value);
+            $key = LineVat::key($entry->vatCategory, $entry->vatRate);
+            $groups[$key] ??= $this->group($entry->vatCategory, $entry->vatRate);
+            $groups[$key][$kind] = $groups[$key][$kind]->plus($value);
+            $this->takeExemptionReason($groups[$key], $entry);
         }
 
-        $chargeSum = BigDecimal::zero();
-        foreach ($charges as $charge) {
-            $value = $charge->amount?->getAmount() ?? BigDecimal::zero();
-            $chargeSum = $chargeSum->plus($value);
-            $key = LineVat::key($charge->vatCategory, $charge->vatRate);
-            $groups[$key] ??= $this->group($charge->vatCategory, $charge->vatRate);
-            $groups[$key]['charges'] = $groups[$key]['charges']->plus($value);
-            $this->takeExemptionReason($groups[$key], $charge);
-        }
+        return $sum;
+    }
 
+    /**
+     * 7.4 VAT breakdown. EN 16931 allows one breakdown per category and rate (BR-E-01 …) with
+     * one exemption reason: different reason texts of the group are joined, so that no legally
+     * required note (e.g. "Gebrauchtgegenstände/Sonderregelung", § 14a (6) UStG) is lost. A code
+     * that holds only for part of the group is omitted (QUITTIO-EXEMPTION-CONFLICT).
+     *
+     * @param  array<string, VatGroup>  $groups
+     * @return array{list<VatBreakdown>, BigDecimal}
+     */
+    private function vatBreakdown(InvoiceData $invoice, array $groups, bool $declared, bool &$deviates): array
+    {
         /** @var array<string, VatBreakdown> $declaredBreakdown */
         $declaredBreakdown = [];
         foreach ($declared ? $invoice->vatBreakdown : [] as $entry) {
@@ -126,10 +193,6 @@ final class En16931Calculator implements TotalsCalculator
             $deviates = true;
         }
 
-        // 7.4 VAT breakdown. EN 16931 allows one breakdown per category and rate (BR-E-01 …) with
-        // one exemption reason: different reason texts of the group are joined, so that no legally
-        // required note (e.g. "Gebrauchtgegenstände/Sonderregelung", § 14a (6) UStG) is lost. A code
-        // that holds only for part of the group is omitted (QUITTIO-EXEMPTION-CONFLICT).
         $breakdown = [];
         $vatTotal = BigDecimal::zero();
         foreach ($groups as $group) {
@@ -153,8 +216,8 @@ final class En16931Calculator implements TotalsCalculator
             $vatTotal = $vatTotal->plus($tax);
 
             $breakdown[] = new VatBreakdown(
-                taxableAmount: Amount::fromDecimal($taxable, $currency),
-                taxAmount: Amount::fromDecimal($tax, $currency),
+                taxableAmount: Amount::fromDecimal($taxable, $invoice->currency),
+                taxAmount: Amount::fromDecimal($tax, $invoice->currency),
                 category: $group['category'],
                 rate: $group['category']->requiresRate() ? ($group['rate'] ?? BigDecimal::zero()) : null,
                 exemptionReason: $group['reasons'] === [] ? null : implode('; ', $group['reasons']),
@@ -162,7 +225,15 @@ final class En16931Calculator implements TotalsCalculator
             );
         }
 
-        // 7.7 Totals
+        return [$breakdown, $vatTotal];
+    }
+
+    /**
+     * 7.7 Totals.
+     */
+    private function totals(InvoiceData $invoice, BigDecimal $lineNetSum, BigDecimal $allowanceSum, BigDecimal $chargeSum, BigDecimal $vatTotal, ?BigDecimal $gross, bool $hasAllowances, bool $hasCharges, bool $declared): Totals
+    {
+        $currency = $invoice->currency;
         $netTotal = $lineNetSum->minus($allowanceSum)->plus($chargeSum);
         $grossTotal = $netTotal->plus($vatTotal);
         $prepaid = $invoice->prepaidAmount?->getAmount();
@@ -180,20 +251,26 @@ final class En16931Calculator implements TotalsCalculator
             $amountDue = $amountDue->plus($payment->amount->getAmount());
         }
 
-        $totals = new Totals(
+        return new Totals(
             lineNetSum: Amount::fromDecimal($lineNetSum, $currency),
             netTotal: Amount::fromDecimal($netTotal, $currency),
             grossTotal: Amount::fromDecimal($grossTotal, $currency),
             amountDue: Amount::fromDecimal($amountDue, $currency),
-            allowanceSum: $allowances === [] ? null : Amount::fromDecimal($allowanceSum, $currency),
-            chargeSum: $charges === [] ? null : Amount::fromDecimal($chargeSum, $currency),
+            allowanceSum: $hasAllowances ? Amount::fromDecimal($allowanceSum, $currency) : null,
+            chargeSum: $hasCharges ? Amount::fromDecimal($chargeSum, $currency) : null,
             vatTotal: Amount::fromDecimal($vatTotal, $currency),
             vatTotalInTaxCurrency: $this->vatInTaxCurrency($invoice, $vatTotal, $declared),
             prepaidAmount: $prepaid === null ? null : Amount::fromDecimal($prepaid, $currency),
             roundingAmount: $rounding === null || $rounding->isZero() ? null : Amount::fromDecimal($rounding, $currency),
         );
+    }
 
-        $meta = match (true) {
+    /**
+     * The declared amounts flags of the result.
+     */
+    private static function meta(InvoiceData $invoice, bool $flagged, bool $declared, bool $deviates): Meta
+    {
+        return match (true) {
             // Sticky: calculating the result again (e.g. when rendering calculated data) finds no
             // deviation from the already recalculated amounts, but the original is still not reversed.
             $declared => $invoice->meta->withFlag(Meta::FLAG_DECLARED_AMOUNTS_RECALCULATED, $deviates || $invoice->meta->hasFlag(Meta::FLAG_DECLARED_AMOUNTS_RECALCULATED)),
@@ -202,20 +279,6 @@ final class En16931Calculator implements TotalsCalculator
                 ->withFlag(Meta::FLAG_DECLARED_AMOUNTS_RECALCULATED, false)->withFlag(Meta::FLAG_CANCELLATION_VAT_ALIGNED, false),
             default => $invoice->meta,
         };
-
-        $result = $invoice->with([
-            'lines' => $lines,
-            'allowances' => $allowances,
-            'charges' => $charges,
-            'vatBreakdown' => $breakdown,
-            'totals' => $totals,
-            'dueDate' => $invoice->dueDate ?? $this->dueDate($invoice),
-            'meta' => $meta,
-        ]);
-
-        // Fingerprint of the amount inputs of the result: later changes (with(), stored JSON) make
-        // its amounts stale, so that from(), Cancellation and the calculator never keep them.
-        return $result->with(['meta' => $meta->withAmountsFingerprint(DeclaredAmounts::fingerprint($result))]);
     }
 
     /**
