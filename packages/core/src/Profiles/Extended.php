@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace Quittio\Core\Profiles;
 
+use Quittio\Core\Profiles\Capabilities\SupportsSubLines;
 use Quittio\Core\Standards\StandardVersion;
 
 /**
  * Factur-X/ZUGFeRD EXTENDED: EN 16931 plus additional elements.
  */
-final class Extended extends AbstractProfile
+final class Extended extends AbstractProfile implements SupportsSubLines
 {
     public function key(): string
     {

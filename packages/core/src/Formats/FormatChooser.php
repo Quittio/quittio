@@ -8,6 +8,7 @@ use Quittio\Core\Config;
 use Quittio\Core\Countries\ResolvedCountries;
 use Quittio\Core\Data\InvoiceData;
 use Quittio\Core\Exceptions\ConfigurationException;
+use Quittio\Core\Profiles\Capabilities\SupportsSubLines;
 use Quittio\Core\Profiles\Profile;
 use Quittio\Core\Profiles\ProfileLevel;
 use Quittio\Core\Profiles\ProfileRegistry;
@@ -96,7 +97,7 @@ final readonly class FormatChooser
         // Only formats that allow EXTENDED are upgraded; the others (e.g. XRechnung) report the
         // EXTENDED features in the validation instead.
         if ($requested === null && $format->syntax === Syntax::Cii && $format->allowsProfile('extended')
-            && $profile->level() !== ProfileLevel::Extended && $profile->key() !== 'xrechnung-extension' && ExtendedFeatures::used($invoice)) {
+            && $profile->level() !== ProfileLevel::Extended && ! $profile instanceof SupportsSubLines && ExtendedFeatures::used($invoice)) {
             if (! $this->config->autoUpgradeProfile) {
                 throw new ConfigurationException('The invoice uses features of profile EXTENDED (e.g. sub lines), but the automatic profile upgrade is switched off.');
             }

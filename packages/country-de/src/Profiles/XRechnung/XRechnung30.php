@@ -8,6 +8,7 @@ use Quittio\Core\Profiles\AbstractProfile;
 use Quittio\Core\Profiles\Capabilities\DescribesEmbeddedXml;
 use Quittio\Core\Profiles\Capabilities\RequiresVatBreakdownRate;
 use Quittio\Core\Profiles\Capabilities\StructuredCashDiscountText;
+use Quittio\Core\Profiles\Capabilities\SupportsThirdPartyPayments;
 use Quittio\Core\Profiles\PeppolBis3;
 use Quittio\Core\Profiles\ProfileLevel;
 use Quittio\Core\Profiles\Syntax;
@@ -19,7 +20,7 @@ use Quittio\Country\DE\Rules\XRechnungRules;
  *
  * Embedded in a ZUGFeRD PDF it uses the file name xrechnung.xml and the conformance level XRECHNUNG.
  */
-class XRechnung30 extends AbstractProfile implements DescribesEmbeddedXml, RequiresVatBreakdownRate, StructuredCashDiscountText
+class XRechnung30 extends AbstractProfile implements DescribesEmbeddedXml, RequiresVatBreakdownRate, StructuredCashDiscountText, SupportsThirdPartyPayments
 {
     public const string SPECIFICATION_ID = 'urn:cen.eu:en16931:2017#compliant#urn:xeinkauf.de:kosit:xrechnung_3.0';
 

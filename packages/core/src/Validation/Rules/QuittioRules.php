@@ -12,6 +12,7 @@ use Quittio\Core\Data\InvoiceData;
 use Quittio\Core\Data\Lines\InvoiceLine;
 use Quittio\Core\Data\Meta;
 use Quittio\Core\Enums\InvoiceTypeCode;
+use Quittio\Core\Profiles\Capabilities\SupportsThirdPartyPayments;
 use Quittio\Core\Profiles\Syntax;
 use Quittio\Core\Validation\Rule;
 use Quittio\Core\Xml\XmlBuilder;
@@ -130,7 +131,7 @@ final class QuittioRules
                 }
                 $profile = $report->context()->profile;
                 $syntax = $report->context()->option('syntax') ?? ($profile->syntaxes() === [Syntax::Cii] ? Syntax::Cii : null);
-                if ($syntax === Syntax::Cii || $i->isCreditNote() || ! str_contains($profile->specificationId(), 'urn:xeinkauf.de:kosit:xrechnung')) {
+                if ($syntax === Syntax::Cii || $i->isCreditNote() || ! $profile instanceof SupportsThirdPartyPayments) {
                     $report->error('BG-DEX-09', 'xrechnungExtension.thirdPartyPayments');
                 }
             }),

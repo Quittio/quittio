@@ -11,6 +11,10 @@ use Quittio\Core\Data\Party\Address;
 use Quittio\Core\Data\Party\Contact;
 use Quittio\Core\Enums\VatCategory;
 use Quittio\Core\Mapping\FieldMatrix;
+use Quittio\Core\Profiles\AbstractProfile;
+use Quittio\Core\Profiles\Capabilities\SupportsExtensionFields;
+use Quittio\Core\Profiles\Capabilities\SupportsSubLines;
+use Quittio\Core\Profiles\Capabilities\SupportsThirdPartyPayments;
 use Quittio\Core\Profiles\ProfileLevel;
 use Quittio\Core\Profiles\ProfileRegistry;
 use Quittio\Core\Profiles\Syntax;
@@ -152,4 +156,56 @@ it('reports data of EXTENDED and the XRechnung extension once, at the field that
         'QUITTIO-PROFILE-EXTENDED-ONLY extended',
         'QUITTIO-PROFILE-XRECHNUNG-EXTENSION-ONLY xrechnungExtension',
     ]);
+});
+
+it('accepts sub lines and extension fields in profiles that declare them', function () {
+    $national = new class extends AbstractProfile implements SupportsExtensionFields, SupportsSubLines, SupportsThirdPartyPayments
+    {
+        public function key(): string
+        {
+            return 'national-extension';
+        }
+
+        public function name(): string
+        {
+            return 'National extension';
+        }
+
+        public function level(): ProfileLevel
+        {
+            return ProfileLevel::En16931;
+        }
+
+        public function specificationId(StandardVersion $version = StandardVersion::En16931_2017): string
+        {
+            return 'urn:cen.eu:en16931:2017#compliant#urn:example:national';
+        }
+
+        public function xmpConformanceLevel(): ?string
+        {
+            return null;
+        }
+
+        public function syntaxes(): array
+        {
+            return [Syntax::Ubl];
+        }
+
+        public function extensions(): array
+        {
+            return ['xrechnung'];
+        }
+    };
+    $invoice = Invoices::simple()
+        ->xrechnungExtension(new XRechnungExtensionData([new ThirdPartyPayment('Porto', Amount::of('4.90', 'EUR'), 'Briefporto')]))
+        ->line(fn ($l) => $l->name('Bundle')->vat(VatCategory::StandardRate, '19')
+            ->subLine(fn ($s) => $s->name('Part')->quantity(1)->netPrice('10')->vat(VatCategory::StandardRate, '19')))
+        ->build();
+    $codes = Validate::codes(Validate::data($invoice, $national, options: ['syntax' => Syntax::Ubl]));
+
+    expect($codes)->not->toContain('QUITTIO-PROFILE-SUBLINES')
+        ->and($codes)->not->toContain('QUITTIO-PROFILE-XRECHNUNG-EXTENSION-ONLY')
+        ->and($codes)->not->toContain('QUITTIO-THIRD-PARTY-PAYMENTS')
+        ->and(Validate::codes(Validate::data($invoice, 'en16931', options: ['syntax' => Syntax::Ubl])))
+        ->toContain('QUITTIO-PROFILE-SUBLINES', 'QUITTIO-PROFILE-XRECHNUNG-EXTENSION-ONLY', 'QUITTIO-THIRD-PARTY-PAYMENTS');
 });

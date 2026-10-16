@@ -6,6 +6,8 @@ namespace Quittio\Country\DE\Profiles\XRechnung;
 
 use Quittio\Core\Codes\CodeList;
 use Quittio\Core\Profiles\Capabilities\ExtendsCodeLists;
+use Quittio\Core\Profiles\Capabilities\SupportsExtensionFields;
+use Quittio\Core\Profiles\Capabilities\SupportsSubLines;
 use Quittio\Core\Standards\StandardVersion;
 
 /**
@@ -14,7 +16,7 @@ use Quittio\Core\Standards\StandardVersion;
  * choice nor the profile xrechnung switch to it when extension data is used; with xrechnung
  * such data is reported as an error.
  */
-final class XRechnung30Extension extends XRechnung30 implements ExtendsCodeLists
+final class XRechnung30Extension extends XRechnung30 implements ExtendsCodeLists, SupportsExtensionFields, SupportsSubLines
 {
     public const string SPECIFICATION_ID = 'urn:cen.eu:en16931:2017#compliant#urn:xeinkauf.de:kosit:xrechnung_3.0#conformant#urn:xeinkauf.de:kosit:extension:xrechnung_3.0';
 
@@ -47,5 +49,13 @@ final class XRechnung30Extension extends XRechnung30 implements ExtendsCodeLists
     public function additionalCodes(string $codeList): array
     {
         return in_array($codeList, [CodeList::ICD, CodeList::EAS], true) ? ['XR01', 'XR02', 'XR03'] : [];
+    }
+
+    /**
+     * The fields of the XRechnung extension (Mapping\Attributes\XRechnungExtensionOnly).
+     */
+    public function extensions(): array
+    {
+        return ['xrechnung'];
     }
 }

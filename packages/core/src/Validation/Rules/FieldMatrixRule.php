@@ -10,6 +10,8 @@ use Brick\Money\Money;
 use Quittio\Core\Codes\RawCode;
 use Quittio\Core\Data\InvoiceData;
 use Quittio\Core\Mapping\FieldMatrix;
+use Quittio\Core\Profiles\Capabilities\SupportsExtensionFields;
+use Quittio\Core\Profiles\Capabilities\SupportsSubLines;
 use Quittio\Core\Profiles\ProfileLevel;
 use Quittio\Core\Support\Date;
 use Quittio\Core\Validation\Messages;
@@ -44,7 +46,7 @@ final class FieldMatrixRule implements Rule
         $this->walk($invoice, '', null, null, false, $context, $messages);
 
         $hasSubLines = array_filter($invoice->lines, static fn ($line): bool => $line->subLines !== []) !== [];
-        if ($hasSubLines && ! in_array($context->profile->key(), ['extended', 'xrechnung-extension'], true)) {
+        if ($hasSubLines && $context->profile->level() !== ProfileLevel::Extended && ! $context->profile instanceof SupportsSubLines) {
             $messages[] = $this->message($context, Severity::Error, 'QUITTIO-PROFILE-SUBLINES', 'Sub lines are supported only in the profiles EXTENDED and XRechnung extension, not in :profile.', 'lines', null);
         }
 
@@ -82,7 +84,7 @@ final class FieldMatrixRule implements Rule
 
                     continue;
                 }
-                if ($field->xrechnungExtensionOnly && $profile->key() !== 'xrechnung-extension') {
+                if ($field->xrechnungExtensionOnly && ! ($profile instanceof SupportsExtensionFields && in_array('xrechnung', $profile->extensions(), true))) {
                     $messages[] = $this->message($context, Severity::Error, 'QUITTIO-PROFILE-XRECHNUNG-EXTENSION-ONLY', 'The field :field is available only in the XRechnung extension, not in :profile.', $childPath, $bt);
 
                     continue;

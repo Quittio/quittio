@@ -2867,6 +2867,18 @@
     "Quittio\\Core\\Profiles\\Capabilities\\StructuredCashDiscountText": {
         "kind": "interface"
     },
+    "Quittio\\Core\\Profiles\\Capabilities\\SupportsExtensionFields": {
+        "kind": "interface",
+        "methods": [
+            "abstract public extensions(): array"
+        ]
+    },
+    "Quittio\\Core\\Profiles\\Capabilities\\SupportsSubLines": {
+        "kind": "interface"
+    },
+    "Quittio\\Core\\Profiles\\Capabilities\\SupportsThirdPartyPayments": {
+        "kind": "interface"
+    },
     "Quittio\\Core\\Profiles\\En16931": {
         "kind": "final class",
         "extends": "Quittio\\Core\\Profiles\\AbstractProfile",
@@ -2894,6 +2906,7 @@
         "kind": "final class",
         "extends": "Quittio\\Core\\Profiles\\AbstractProfile",
         "implements": [
+            "Quittio\\Core\\Profiles\\Capabilities\\SupportsSubLines",
             "Quittio\\Core\\Profiles\\Profile"
         ],
         "methods": [
@@ -4530,6 +4543,7 @@
             "Quittio\\Core\\Profiles\\Capabilities\\DescribesEmbeddedXml",
             "Quittio\\Core\\Profiles\\Capabilities\\RequiresVatBreakdownRate",
             "Quittio\\Core\\Profiles\\Capabilities\\StructuredCashDiscountText",
+            "Quittio\\Core\\Profiles\\Capabilities\\SupportsThirdPartyPayments",
             "Quittio\\Core\\Profiles\\Profile"
         ],
         "constants": [
@@ -4562,6 +4576,9 @@
             "Quittio\\Core\\Profiles\\Capabilities\\ExtendsCodeLists",
             "Quittio\\Core\\Profiles\\Capabilities\\RequiresVatBreakdownRate",
             "Quittio\\Core\\Profiles\\Capabilities\\StructuredCashDiscountText",
+            "Quittio\\Core\\Profiles\\Capabilities\\SupportsExtensionFields",
+            "Quittio\\Core\\Profiles\\Capabilities\\SupportsSubLines",
+            "Quittio\\Core\\Profiles\\Capabilities\\SupportsThirdPartyPayments",
             "Quittio\\Core\\Profiles\\Profile"
         ],
         "constants": [
@@ -4572,6 +4589,7 @@
             "public afRelationship(): ?string",
             "public defaultBusinessProcess(): ?string",
             "public embeddedFilename(): ?string",
+            "public extensions(): array",
             "public isEn16931Compliant(): bool",
             "public key(): string",
             "public level(): Quittio\\Core\\Profiles\\ProfileLevel",
