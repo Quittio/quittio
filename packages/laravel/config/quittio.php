@@ -248,6 +248,17 @@ return [
         // 'off'. null = 'exception' outside production, 'log' in production.
         'mandatory_field_guard' => env('QUITTIO_MANDATORY_FIELD_GUARD', env('QUITTIO_GUARD')),
 
+        // Single PHP rules by the code of their messages; a trailing * matches by prefix.
+        // 'disabled' switches rules off, 'severity' changes the severity of their findings
+        // (error, warning, info), e.g. ['DE-USTG-15' => 'warning']. Official EN 16931 and Peppol
+        // rules (BR-*, PEPPOL-*) need 'allow_official' => true. Own implementations replace
+        // a rule with Quittio::extend('rule', 'DE-USTG-15', fn () => new MyRule).
+        'rules' => [
+            'disabled' => [],
+            'severity' => [],
+            'allow_official' => false,
+        ],
+
         'drivers' => [
 
             // KoSIT validator (level 'kosit'), the official validator for XRechnung and Peppol.

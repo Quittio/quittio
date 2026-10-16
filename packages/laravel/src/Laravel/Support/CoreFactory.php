@@ -25,6 +25,8 @@ use Quittio\Core\Quittio;
 use Quittio\Core\Validation\Drivers\PhpRulesDriver;
 use Quittio\Core\Validation\Plausibility\VatIdVerifier;
 use Quittio\Core\Validation\Plausibility\ViesVerifier;
+use Quittio\Core\Validation\Rule;
+use Quittio\Core\Validation\RuleOverrides;
 use Quittio\Core\Validation\ValidationDriver;
 use Quittio\Core\Xml\XmlSerializer;
 use Quittio\Laravel\Events\MandatoryFieldMissing;
@@ -82,6 +84,14 @@ final readonly class CoreFactory
             if ($this->drivers->has('validator', $level)) {
                 $quittio->addValidator($this->drivers->make('validator', $level, $this->container, $settings->array('validation.drivers.'.$level), ValidationDriver::class));
             }
+        }
+
+        $replacements = [];
+        foreach ($this->drivers->names('rule') as $code) {
+            $replacements[$code] = $this->drivers->make('rule', $code, $this->container, [], Rule::class);
+        }
+        if ($replacements !== []) {
+            $quittio->configureRules($config->rules->merge(new RuleOverrides(replacements: $replacements, allowOfficial: $config->rules->allowOfficial)));
         }
 
         $events = $this->container->make(Dispatcher::class);

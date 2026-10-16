@@ -310,8 +310,9 @@ class QuittioManager
     }
 
     /**
-     * Registers a driver: renderer, validator, serializer or format_resolver.
-     * The factory receives the container and the driver's configuration.
+     * Registers a driver: renderer, validator, serializer or format_resolver, or a rule that
+     * replaces the PHP rule with the code $name. The factory receives the container and the
+     * driver's configuration.
      *
      * @param  Closure(ContainerContract, array<string, mixed>): object  $factory
      */

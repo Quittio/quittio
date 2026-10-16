@@ -16,10 +16,10 @@ use Quittio\Core\Exceptions\InvalidArgumentException;
  */
 final class DriverRegistry
 {
-    public const array TYPES = ['renderer', 'validator', 'serializer', 'format_resolver'];
+    public const array TYPES = ['renderer', 'validator', 'serializer', 'format_resolver', 'rule'];
 
     /** @var array<string, array<string, Closure(Container, array<string, mixed>): object>> */
-    private array $factories = ['renderer' => [], 'validator' => [], 'serializer' => [], 'format_resolver' => []];
+    private array $factories = ['renderer' => [], 'validator' => [], 'serializer' => [], 'format_resolver' => [], 'rule' => []];
 
     /**
      * @param  Closure(Container, array<string, mixed>): object  $factory
