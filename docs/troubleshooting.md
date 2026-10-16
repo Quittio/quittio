@@ -73,6 +73,10 @@ XRechnung (public buyers in Germany) requires fields that other formats leave op
 
 See the [public sector example](examples.md#public-sector) and [German format choice](country-packs.md#format-choice).
 
+### Peppol rejects the electronic address (PEPPOL-EN16931-CL008)
+
+Peppol delivers to the electronic address (BT-34, BT-49), so it must be a Peppol participant identifier. EN 16931 also allows an e-mail address (`EM`), Peppol does not, nor the other letter schemes and a few newer codes of the EAS list. Use the scheme under which the party is registered in Peppol, e.g. `->electronicAddress('DE123456789', '9930')` (German VAT number) or `->electronicAddress('4000001000005', '0088')` (GLN); for the seller set `seller.electronic_address` in the configuration. ZUGFeRD and XRechnung keep accepting `EM`.
+
 ### Small business with VAT (DE-USTG-09)
 
 The seller is marked as a small business (`seller.small_business`, German Kleinunternehmer under section 19 UStG), but a line carries VAT. Small businesses charge no VAT: with the small business setting, lines without `vat:` get the small business preset automatically; remove explicit `vat:` values from the lines.

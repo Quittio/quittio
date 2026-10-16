@@ -56,7 +56,7 @@ Secrets and variables: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` and the v
 |---|---|---|
 | 1 January and 1 July | New German base rate (Basiszinssatz, section 247 BGB), published by the Deutsche Bundesbank shortly before | Add it to `BaseRateTable::PUBLISHED` (`packages/country-de/src/Dunning/BaseRateTable.php`) and to the README section "Keeping data current" for the next release. Applications get it earlier with `php artisan quittio:base-rate:update`. |
 | New XRechnung configuration of KoSIT (usually with a new XRechnung version or Schematron release) | Validator configuration, code lists, test suite | See [Updating the validators](#updating-the-validators), then `php tools/codelists/update.php` and the test suite in `tools/fixtures/download.sh` |
-| New Peppol BIS Billing 3.0 release (OpenPeppol publishes several a year) | Peppol Schematron | `PEPPOL_TAG` and checksum, see below |
+| New Peppol BIS Billing 3.0 release (OpenPeppol publishes several a year) | Peppol Schematron, the Peppol code list of electronic address schemes | `PEPPOL_TAG` and checksum, see below; then `php tools/codelists/update.php` |
 | New KoSIT validator release | `validator.jar` | `VALIDATOR_VERSION` and checksum, see below |
 | Weekly | Dependabot pull requests for the GitHub Actions (pinned commit SHAs), Composer and the gems of the website | `.github/dependabot.yml` |
 
@@ -74,5 +74,5 @@ To update one of them:
 1. Download the new file from its official release page and compute the checksum (`shasum -a 256 <file>`). Compare it with a checksum published by the project, where there is one.
 2. Change version and checksum in both places.
 3. Run `tools/schemas/download.sh`, `tools/fixtures/download.sh`, `vendor/bin/pest --group=official` and `tools/validate-fixtures.sh`.
-4. For a new XRechnung configuration, regenerate the code lists (`php tools/codelists/update.php`) and check the changes of the rules in `docs/validation.md`.
+4. For a new XRechnung configuration or Peppol release, regenerate the code lists (`php tools/codelists/update.php`; it also writes the Peppol list `peppol-eas-codes.json`) and check the changes of the rules in `docs/validation.md`.
 5. Note the new versions in `CHANGELOG.md`.

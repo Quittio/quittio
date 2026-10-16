@@ -4,10 +4,6 @@ All notable changes to this project are documented in this file. The format foll
 
 ## [Unreleased]
 
-### Fixed
-
-- Peppol invoices with an electronic address scheme that Peppol does not accept, e.g. `EM` (e-mail), are rejected with the new rule `PEPPOL-EN16931-CL008` instead of passing the PHP rules and failing the official Peppol validation. The allowed schemes are the code list `CodeList::PEPPOL_EAS` (`peppol-eas-codes.json`, from the Peppol BIS rules 3.0.20); `tools/codelists/update.php` regenerates it with `CodeListGenerator::generatePeppol()`.
-
 ## [0.3.0] - 2026-10-16
 
 ### Added
@@ -34,6 +30,10 @@ All notable changes to this project are documented in this file. The format foll
 
 - `VatPreset::Standard19` and `VatPreset::Reduced7`: use `VatPreset::Standard` and `VatPreset::Reduced`; the keys `de.standard_19` and `de.reduced_7` stay readable. `Flags::SMALL_AMOUNT_LIMIT`: use `TaxTables::smallAmountLimitOn()`.
 - The builder macros `smallAmount()`, `propertyRelatedService()`, `newVehicle()`, `selfBilled()`, `deductAdvance()` and `consumerDefaultNotice()` directly on the builder: use `->de()->…`. `GermanInvoiceMacros::ADVANCE_TYPES`: use `GermanInvoice::ADVANCE_TYPES`. `FormatRegistry::XRECHNUNG_CII` and `XRECHNUNG_UBL`: use `XRechnungFormats::CII` and `UBL` of the German pack, which registers the formats; the core keeps them until 1.0.
+
+### Fixed
+
+- Peppol invoices with an electronic address scheme that Peppol does not accept, e.g. `EM` (e-mail), are rejected with the new rule `PEPPOL-EN16931-CL008` instead of passing the PHP rules and failing the official Peppol validation. The allowed schemes are the code list `CodeList::PEPPOL_EAS` (`peppol-eas-codes.json`, from the Peppol BIS rules 3.0.20); `tools/codelists/update.php` regenerates it with `CodeListGenerator::generatePeppol()`.
 
 ## [0.2.0] - 2026-10-16
 
