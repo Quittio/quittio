@@ -127,3 +127,26 @@ jobs:
     uses: ./.github/workflows/split.yml
     secrets:
       SPLIT_TOKEN: ${{ secrets.SPLIT_TOKEN }}
+
+  # quittio/quittio is published from this repository. It has no Packagist webhook, so that a
+  # push or tag reaches Packagist only here, after every job passed and the split packages were
+  # published. Secrets: PACKAGIST_USERNAME and PACKAGIST_TOKEN (API token of the Packagist profile).
+  packagist:
+    needs: [split]
+    if: github.event_name == 'push' && github.repository == 'Quittio/quittio'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Update quittio/quittio on Packagist
+        env:
+          PACKAGIST_USERNAME: ${{ secrets.PACKAGIST_USERNAME }}
+          PACKAGIST_TOKEN: ${{ secrets.PACKAGIST_TOKEN }}
+        run: |
+          if [ -z "$PACKAGIST_USERNAME" ] || [ -z "$PACKAGIST_TOKEN" ]; then
+            echo "::error::The secrets PACKAGIST_USERNAME and PACKAGIST_TOKEN are missing."
+            exit 1
+          fi
+          curl --fail-with-body --silent --show-error --retry 3 -X POST \
+            -H 'Content-Type: application/json' \
+            "https://packagist.org/api/update-package?username=${PACKAGIST_USERNAME}&apiToken=${PACKAGIST_TOKEN}" \
+            -d '{"repository":{"url":"https://packagist.org/packages/quittio/quittio"}}'

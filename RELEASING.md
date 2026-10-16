@@ -9,11 +9,11 @@ flowchart LR
     T["git push origin vX.Y.Z"] --> CI["ci.yml on the tag<br/>lint, analyse, test, visual, official-validation"]
     CI -->|all green| S["split.yml (job split)<br/>packages/* → Quittio/core, laravel, country-de<br/>with the same tag"]
     S --> P["Packagist<br/>quittio/core, quittio/laravel, quittio/country-de"]
-    T --> PQ["Packagist<br/>quittio/quittio (this repository)"]
+    S --> PQ["ci.yml (job packagist)<br/>Packagist: quittio/quittio (this repository)"]
 ```
 
 - `ci.yml` runs for pushes to `master`, for every tag and for pull requests. Its last job, `split`, calls the reusable workflow `split.yml` only for pushes to `Quittio/quittio`, and only after every other job passed. A red tag therefore never reaches the split repositories.
-- `quittio/quittio` is published from this repository itself. Packagist sees its tag as soon as it is pushed, before CI has finished. Push a tag only for a commit whose CI on `master` is green.
+- `quittio/quittio` is published from this repository itself. The repository has no Packagist webhook; the job `packagist` of `ci.yml` calls the Packagist API after the split, so a tag reaches Packagist only once CI on the tag passed. It needs the repository secrets `PACKAGIST_USERNAME` and `PACKAGIST_TOKEN` (the API token of the Packagist profile). Packagist still crawls packages without a webhook once a week, so push a tag only for a commit whose CI on `master` is green. Do not re-enable the Packagist webhook (Settings → Webhooks) or the GitHub integration of Packagist for this repository.
 - The split needs the repository secret `SPLIT_TOKEN`, a token with "Contents: Read and write" and "Workflows: Read and write" on the three split repositories (classic tokens: the scopes `repo` and `workflow`). The workflow permission is needed because every package contains `.github/workflows/close-pull-request.yml`, which closes pull requests opened in a split repository with a pointer to this one.
 
 ## Steps
@@ -29,7 +29,7 @@ flowchart LR
    git push origin vX.Y.Z
    ```
 
-6. Wait for CI on the tag. Check that the job `split` passed and that the tag appears in the three split repositories and on Packagist.
+6. Wait for CI on the tag. Check that the jobs `split` and `packagist` passed and that the tag appears in the three split repositories and for all four packages on Packagist.
 7. Create the GitHub release from the tag with the section of the changelog:
 
    ```bash
