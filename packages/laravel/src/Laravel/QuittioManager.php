@@ -125,6 +125,15 @@ class QuittioManager
     }
 
     /**
+     * Builder that continues existing invoice data (a draft, an invoice read from XML); the
+     * declared amounts are compared with the configured calculator (calculation.*).
+     */
+    public function edit(InvoiceData $data): RenderableInvoiceBuilder
+    {
+        return RenderableInvoiceBuilder::fromUsing($data, $this->core()->calculator());
+    }
+
+    /**
      * A new quote with the seller and its defaults (config/quittio.php or the current issuer).
      */
     public function quote(): RenderableDocumentBuilder

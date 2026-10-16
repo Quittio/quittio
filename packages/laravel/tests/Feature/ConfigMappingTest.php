@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\Storage;
 use Quittio\Core\Builder\InvoiceBuilder;
+use Quittio\Core\Calculation\DeclaredAmountsMode;
+use Quittio\Core\Calculation\En16931Calculator;
+use Quittio\Core\Calculation\TotalsCalculator;
 use Quittio\Core\Countries\ResolvedCountries;
 use Quittio\Core\Data\InvoiceData;
 use Quittio\Core\Data\Party\BuyerParty;
@@ -212,3 +215,29 @@ it('replaces a rule with an extension of type rule', function () {
     expect($driver instanceof PhpRulesDriver ? $driver->overrides()->replacements : null)->toBe(['DE-USTG-15' => $rule])
         ->and(Quittio::core()->ruleCodes())->toContain('DE-USTG-15');
 });
+
+it('maps the calculation policy and an own calculator', function () {
+    expect(ConfigMapper::toCore(new Settings(['calculation' => ['declared_amounts' => 'reject']]), false)->calculation->declaredAmounts)->toBe(DeclaredAmountsMode::Reject);
+
+    app()->instance(CountingCalculator::class, new CountingCalculator);
+    config()->set('quittio.calculation.calculator', CountingCalculator::class);
+    Quittio::edit((new En16931Calculator)->calculate(Scenarios::simple()->build()))->build();
+
+    expect(Quittio::core()->calculator())->toBe(app(CountingCalculator::class))
+        ->and(app(CountingCalculator::class)->calls)->toBeGreaterThan(0);
+
+    config()->set('quittio.calculation.calculator', stdClass::class);
+    expect(fn () => Quittio::core())->toThrow(ConfigurationException::class, 'TotalsCalculator');
+});
+
+final class CountingCalculator implements TotalsCalculator
+{
+    public int $calls = 0;
+
+    public function calculate(InvoiceData $invoice): InvoiceData
+    {
+        $this->calls++;
+
+        return (new En16931Calculator)->calculate($invoice);
+    }
+}

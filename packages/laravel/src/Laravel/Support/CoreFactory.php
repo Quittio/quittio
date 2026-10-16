@@ -11,6 +11,7 @@ use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\View\Factory as ViewFactory;
 use Psr\Log\LoggerInterface;
+use Quittio\Core\Calculation\TotalsCalculator;
 use Quittio\Core\Config;
 use Quittio\Core\Countries\CountryPack;
 use Quittio\Core\Data\InvoiceData;
@@ -65,6 +66,7 @@ final readonly class CoreFactory
             templates: BladeTemplateEngine::fromSettings($this->container->make(ViewFactory::class), $settings),
             logger: $logger instanceof LoggerInterface ? $logger : null,
             formatResolver: $this->formatResolver($settings, $config),
+            calculator: $this->calculator($settings),
         );
 
         $this->withVatIdVerifier($quittio, $settings->section('validation.drivers.vies'));
@@ -178,6 +180,24 @@ final readonly class CoreFactory
             pdfaAuto: $options->bool('pdfa_auto', false),
             simpleTables: $options->bool('simple_tables', false),
         );
+    }
+
+    /**
+     * calculation.calculator: a TotalsCalculator from the container; null = the core's default.
+     */
+    private function calculator(Settings $settings): ?TotalsCalculator
+    {
+        $class = $settings->nullableString('calculation.calculator');
+        if ($class === null) {
+            return null;
+        }
+
+        $instance = $this->container->make($class);
+        if (! $instance instanceof TotalsCalculator) {
+            throw new ConfigurationException(sprintf('quittio.calculation.calculator: %s does not implement %s.', $class, TotalsCalculator::class));
+        }
+
+        return $instance;
     }
 
     /**

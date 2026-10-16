@@ -312,6 +312,27 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Calculation
+    |--------------------------------------------------------------------------
+    | Invoices continued with Quittio::edit() or InvoiceBuilder::from(), and cancellations,
+    | carry the declared amounts of the original, which another system may have rounded
+    | differently (e.g. per line).
+    */
+    'calculation' => [
+
+        // 'keep' = keep declared amounts within the tolerances of EN 16931, so that foreign
+        // rounding is reversed exactly; 'recalculate' = always recalculate; 'reject' = throw
+        // when declared amounts are outside the tolerances. Every mode reports replaced amounts
+        // (QUITTIO-DECLARED-AMOUNTS).
+        'declared_amounts' => env('QUITTIO_DECLARED_AMOUNTS', 'keep'),
+
+        // Own calculator (class implementing Quittio\Core\Calculation\TotalsCalculator, resolved
+        // from the container); null = the EN 16931 calculator with the mode above.
+        'calculator' => null,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Snapshots
     |--------------------------------------------------------------------------
     */

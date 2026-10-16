@@ -89,7 +89,7 @@ final class QuittioFake extends QuittioManager
 
     protected function runDocument(DocumentData $document, RenderOptions $options): RenderedDocument
     {
-        $document = (new DocumentCalculator)->calculate($document);
+        $document = (new DocumentCalculator($this->core()->calculator()))->calculate($document);
         // PendingDocument::htmlOnly() requests the format "html": no PDF, as in a real run.
         $pdf = in_array('html', $options->formats, true) ? null : "%PDF-1.7\n% fake document ".$document->number;
         $result = new RenderedDocument(new CoreRenderedDocument($document, '<p>'.htmlspecialchars($document->number).'</p>', $document->number.'.{ext}', $pdf));

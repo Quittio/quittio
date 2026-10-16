@@ -12,6 +12,7 @@ use Quittio\Laravel\Testing\QuittioFake;
 /**
  * @method static \Quittio\Laravel\Rendering\PendingInvoice make(\Quittio\Core\Data\InvoiceData|\Quittio\Core\Contracts\ProvidesInvoiceData|\Quittio\Core\Builder\InvoiceBuilder $data)
  * @method static \Quittio\Laravel\Builder\RenderableInvoiceBuilder invoice() a new invoice with the seller of config/quittio.php (or the current issuer of quittio/managed)
+ * @method static \Quittio\Laravel\Builder\RenderableInvoiceBuilder edit(\Quittio\Core\Data\InvoiceData $data) continues existing invoice data with the configured calculator
  * @method static \Quittio\Laravel\Builder\RenderableDocumentBuilder quote()
  * @method static \Quittio\Laravel\Builder\RenderableDocumentBuilder orderConfirmation()
  * @method static \Quittio\Laravel\Builder\RenderableDocumentBuilder deliveryNote()

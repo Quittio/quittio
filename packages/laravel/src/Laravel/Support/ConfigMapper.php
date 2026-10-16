@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Quittio\Laravel\Support;
 
+use Quittio\Core\Calculation\CalculationPolicy;
 use Quittio\Core\Config;
 use Quittio\Core\Data\Presentation\Colors;
 use Quittio\Core\Data\Presentation\Presentation;
@@ -83,6 +84,7 @@ final class ConfigMapper
             maxDecompressedBytes: $settings->int('reader.max_decompressed_bytes', 50 * 1024 * 1024),
             dueDays: self::dueDays($settings->get('defaults.due_days')),
             cancellationStrategy: $settings->nullableString('corrections.cancellation_strategy'),
+            calculation: CalculationPolicy::fromArray($settings->array('calculation')),
         );
     }
 
