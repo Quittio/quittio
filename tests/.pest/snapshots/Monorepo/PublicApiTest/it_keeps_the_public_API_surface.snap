@@ -4399,6 +4399,21 @@
             "abstract public syntax(): Quittio\\Core\\Profiles\\Syntax"
         ]
     },
+    "Quittio\\Country\\DE\\Builder\\GermanInvoice": {
+        "kind": "final readonly class",
+        "constants": [
+            "ADVANCE_TYPES"
+        ],
+        "methods": [
+            "public __construct(Quittio\\Core\\Builder\\InvoiceBuilder $builder)",
+            "public consumerDefaultNotice(string $locale = \"de\"): Quittio\\Core\\Builder\\InvoiceBuilder",
+            "public deductAdvance(Quittio\\Core\\Data\\InvoiceData $advance, string $locale = \"de\"): Quittio\\Core\\Builder\\InvoiceBuilder",
+            "public newVehicle(string $locale = \"de\"): Quittio\\Core\\Builder\\InvoiceBuilder",
+            "public propertyRelatedService(string $locale = \"de\"): Quittio\\Core\\Builder\\InvoiceBuilder",
+            "public selfBilled(string $locale = \"de\"): Quittio\\Core\\Builder\\InvoiceBuilder",
+            "public smallAmount(): Quittio\\Core\\Builder\\InvoiceBuilder"
+        ]
+    },
     "Quittio\\Country\\DE\\Builder\\GermanInvoiceMacros": {
         "kind": "final class",
         "constants": [

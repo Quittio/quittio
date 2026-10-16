@@ -17,7 +17,7 @@ The legal wording and references of the packs are proposals that must be confirm
 
 The German pack implements German VAT law (the VAT Act UStG and its implementing ordinance UStDV), XRechnung and German business letter conventions. Its class is `Quittio\Country\DE\CountryDE` (code `DE`, translation namespace `quittio-de`).
 
-- **Installation.** Laravel discovers the pack automatically, so there is nothing to register. Without Laravel, pass `new CountryDE` to `Quittio::create()` (see [Registering packs](#registering-packs)). The builder macros, such as `->smallAmount()`, are available as soon as Composer loads the package.
+- **Installation.** Laravel discovers the pack automatically, so there is nothing to register. Without Laravel, pass `new CountryDE` to `Quittio::create()` (see [Registering packs](#registering-packs)). The builder macro `de()` leads to the German special cases (`Quittio\Country\DE\Builder\GermanInvoice`), e.g. `->de()->smallAmount()`; it is available as soon as Composer loads the package. Each method returns the builder, so the chain continues there. The macros of version 0.2 directly on the builder (`->smallAmount()`, `->selfBilled()` …) still work, but are deprecated and report an `E_USER_DEPRECATED`. `stubs/InvoiceBuilder.stub.php` describes `de()` for IDEs and PHPStan.
 - **When it applies.** The pack leads every invoice whose seller is in Germany (seller country code `DE`). It then checks the German rules, chooses the format and provides the defaults: the German locale (unless the invoice or the configuration sets one), A4 paper and the DIN 5008 form B layout. For an invoice from another country to a business in Germany, only its format rules apply, so that German public buyers receive XRechnung. Details are in [How a pack is selected](#how-a-pack-is-selected).
 - **Legal references.** This page writes German legal references in English form: "section 14 (4) no. 1 UStG" stands for "§ 14 Abs. 4 Nr. 1 UStG". Other laws cited are the Civil Code (BGB), the Fiscal Code (AO) and the VAT application decree (UStAE). Values that the pack stores or prints in German keep their German form. German terms such as Gutschrift, Kleinunternehmer or Leitweg-ID are explained on first use and in the [glossary](concepts.md#german-terms).
 
@@ -143,7 +143,7 @@ $builder = Quittio::invoice()                      // quittio.seller.small_busin
 What the pack checks:
 
 - An invoice whose lines all use the preset is a small business invoice under section 34a UStDV. It needs no service date (`DE-USTG-03`), and the PDF is not checked for one. The tax number or VAT identifier is still required (`DE-USTG-02`).
-- A small business cannot use the exemption for intra-community supplies (category `K`; `DE-USTG-14`, section 19 (1) sentence 2 UStG). The only exception is the intra-community supply of a new vehicle (`->newVehicle()`, section 19 (6) sentence 1 UStG).
+- A small business cannot use the exemption for intra-community supplies (category `K`; `DE-USTG-14`, section 19 (1) sentence 2 UStG). The only exception is the intra-community supply of a new vehicle (`->de()->newVehicle()`, section 19 (6) sentence 1 UStG).
 
 A complete invoice is in [Examples: Small business](examples.md#small-business).
 
@@ -256,7 +256,7 @@ The severity follows the flags of the official Schematron, the rule file of the 
 
 ### Small amount invoices
 
-German law allows a simplified invoice for small amounts (section 33 UStDV). `->smallAmount()` marks an invoice of at most 250.00 EUR gross as such a small amount invoice; the limit of the issue date applies (`TaxTables::SMALL_AMOUNT_LIMIT`: 150.00 EUR from 2007, 250.00 EUR from 2017). As long as no reverse charge (`AE`) or intra-community supply (`K`) is involved, it relaxes:
+German law allows a simplified invoice for small amounts (section 33 UStDV). `->de()->smallAmount()` marks an invoice of at most 250.00 EUR gross as such a small amount invoice; the limit of the issue date applies (`TaxTables::SMALL_AMOUNT_LIMIT`: 150.00 EUR from 2007, 250.00 EUR from 2017). As long as no reverse charge (`AE`) or intra-community supply (`K`) is involved, it relaxes:
 
 - `DE-USTG-01`: the buyer's address is not required (the seller's still is);
 - `DE-USTG-02`: no tax number or VAT identifier is required;
@@ -295,7 +295,7 @@ parameters:
 
 #### Final invoices (`deductAdvance`)
 
-A final invoice (Schlussrechnung, section 14 (5) sentence 2 UStG) states the full service with its full VAT and deducts the advance payments received. `->deductAdvance($advance)` does this for one advance invoice:
+A final invoice (Schlussrechnung, section 14 (5) sentence 2 UStG) states the full service with its full VAT and deducts the advance payments received. `->de()->deductAdvance($advance)` does this for one advance invoice:
 
 ```php
 use Quittio\Core\Enums\UnitCode;
@@ -307,7 +307,7 @@ $advance = $advanceResult->data();                 // the rendered advance invoi
 $final = Quittio::invoice()
     // number, dates, buyer, payment …
     ->line('Website', netPrice: '3000.00', unit: UnitCode::Piece, vat: VatPreset::Standard)
-    ->deductAdvance($advance);
+    ->de()->deductAdvance($advance);
 ```
 
 The advance invoice must be calculated. The data of a rendered invoice (`$result->data()`) already is; calculate data you built yourself with `(new En16931Calculator)->calculate($advanceInvoice)` (`Quittio\Core\Calculation\En16931Calculator`).
@@ -316,7 +316,7 @@ With an advance invoice RE-2026-0040 of 1,000.00 EUR net plus 19 % VAT, the fina
 
 > Abzüglich Anzahlung gemäß Rechnung RE-2026-0040 vom 01.09.2026: Entgelt 1.000,00 € zzgl. 19 % Umsatzsteuer 190,00 € (§ 14 Abs. 5 Satz 2 UStG).
 
-With `->deductAdvance($advance, 'en')` the note is in English: "Less advance payment according to invoice RE-2026-0040 of 01/09/2026: net 1,000.00 € plus 19% VAT 190.00 € (section 14 (5) sentence 2 UStG)."
+With `->de()->deductAdvance($advance, 'en')` the note is in English: "Less advance payment according to invoice RE-2026-0040 of 01/09/2026: net 1,000.00 € plus 19% VAT 190.00 € (section 14 (5) sentence 2 UStG)."
 
 - **Checks.** The advance invoice must be calculated (`totals` set), have a positive gross total and be in the currency of the final invoice. Otherwise an `InvalidArgumentException` is thrown. Set `->currency()` before calling the macro.
 - **Accepted documents.** Only documents that can be advance invoices are accepted (`GermanInvoiceMacros::ADVANCE_TYPES`): type codes 380 (commercial invoice), 386 (prepayment invoice), 326 (partial invoice), 875 (partial construction invoice) and 389 (self-billed invoice). Credit notes, debit notes, corrected invoices (384), final invoices (876, 877) and cancellations by negative invoice are rejected.
@@ -332,7 +332,7 @@ A complete example with the advance invoice is in [Examples: Advance payment and
 
 In self-billing, the buyer issues the invoice for the seller's supply. German law requires the word "Gutschrift" on such an invoice (section 14 (4) no. 10 UStG). Quittio uses "Gutschrift" only for self-billing; commercial credit notes and cancellations carry other titles.
 
-- `->selfBilled()` sets type code 389 and adds the note "Gutschrift" (English variant: "Gutschrift (self-billed invoice)").
+- `->de()->selfBilled()` sets type code 389 and adds the note "Gutschrift" (English variant: "Gutschrift (self-billed invoice)").
 - The PDF is titled "Gutschrift" in German and "Self-billed invoice (Gutschrift)" in English, and shows the buyer as issuer.
 - `DE-USTG-04` requires the label on every self-billed type code (389, 261, 527).
 - The mandatory output requires the title and the "Gutschrift" note in the PDF.
@@ -373,7 +373,7 @@ When a customer pays late, German law (section 288 BGB) gives the seller default
 | Interest for consumers | base rate plus 5 percentage points |
 | Flat rate for business debtors | 40.00 EUR |
 | Day count | 365 |
-| Consumer default | 30 days after due date and receipt of the invoice, if the invoice points this out (`->consumerDefaultNotice()`) |
+| Consumer default | 30 days after due date and receipt of the invoice, if the invoice points this out (`->de()->consumerDefaultNotice()`) |
 | Reference rate | "Basiszinssatz (§ 247 BGB)", the base rate of section 247 BGB |
 
 #### Default interest
@@ -410,7 +410,7 @@ $reminder->fee('Pauschale nach § 288 Abs. 5 BGB', Amount::format($interest->fla
 - **Day count.** The charges use the day count of the dunning law (`InterestCharge::$dayCount`; 365 for `CountryDE::dunningLaw()`, so a leap year yields 366/365 of the annual rate). Pass it to `interest()` as above (`dayCount: $charge->dayCount`); without it the reminder counts actual/actual.
 - **Periods.** A charge covers a whole period with the same base rate. Interest from 1 December 2025 to 28 February 2026 is one charge, although the table has an entry for 1 January 2026.
 - **Flat rate.** It is due only from business debtors, once per claim. The documents layer does not track which claims already carried it.
-- **Consumers.** For consumers, `->consumerDefaultNotice()` adds the notice on default after 30 days to the invoice.
+- **Consumers.** For consumers, `->de()->consumerDefaultNotice()` adds the notice on default after 30 days to the invoice.
 
 A complete reminder is in [Examples: Payment reminder](examples.md#payment-reminder).
 
@@ -521,17 +521,17 @@ You rarely need this table up front: a failing rule names its code, the field an
 | `DE-USTG-01` | error (BG-5 `seller.address`, BG-8 `buyer.address`) | One message per party that names the missing fields. The seller lacks street (address line 1), postcode or city. Or the buyer lacks street or city, or a buyer in `DE` lacks the postcode. The buyer part is skipped for small amount invoices. | section 14 (4) no. 1 UStG | Add street, postcode and city for seller and buyer. |
 | `DE-USTG-02` | error (BT-31 `seller.vatId`) | The seller has neither a VAT identifier (BT-31) nor a tax number (BT-32), and there is no tax representative (BG-11). Skipped for small amount invoices. | section 14 (4) no. 2 UStG | `->vatId()` or `->taxNumber()` on the seller. |
 | `DE-USTG-03` | error (BT-72 `delivery.actualDeliveryDate`); warning for prepayment invoices (386) | No delivery date (BT-72), no invoicing period (BG-14), and not every line has a period (BG-26). Skipped for small amount invoices (section 33 UStDV) and small business invoices (section 34a UStDV). | section 14 (4) no. 6 UStG | `->deliveryDate()` (also when it equals the invoice date), `->invoicingPeriod()` or a `->period()` on every line. |
-| `DE-USTG-04` | error (BT-22 `notes`) | A self-billed type code (389, 261, 527), and no note contains "Gutschrift" or one of: self-billing, self billing, self-billed invoice, autofacturation, autofactura, autofatturazione, autofacturação, zelffacturering, samofakturowanie (case-insensitive). | section 14 (4) no. 10 UStG; other EU languages: section 14.5 (24) UStAE | `->selfBilled()` adds the note. |
-| `DE-USTG-05` | error (BT-22 `notes`) | The flag `de.property_related_service` is set and no note contains "14b". | section 14 (4) no. 9 UStG | `->propertyRelatedService()` adds the note. |
+| `DE-USTG-04` | error (BT-22 `notes`) | A self-billed type code (389, 261, 527), and no note contains "Gutschrift" or one of: self-billing, self billing, self-billed invoice, autofacturation, autofactura, autofatturazione, autofacturação, zelffacturering, samofakturowanie (case-insensitive). | section 14 (4) no. 10 UStG; other EU languages: section 14.5 (24) UStAE | `->de()->selfBilled()` adds the note. |
+| `DE-USTG-05` | error (BT-22 `notes`) | The flag `de.property_related_service` is set and no note contains "14b". | section 14 (4) no. 9 UStG | `->de()->propertyRelatedService()` adds the note. |
 | `DE-USTG-06` | warning per VAT row (BT-120 `vatBreakdown[i].exemptionReason`) | A VAT breakdown row of category `AE` whose exemption reason contains neither "Steuerschuldnerschaft" nor the text of one of the presets `ReverseChargeDomestic`, `ReverseChargeEu` and `TriangularTransaction`. The preset texts count in every locale the pack ships (`de`, `en`), the invoice locale and the validation locale (case-insensitive). | section 14a (1) and (5) UStG | Use `ReverseChargeDomestic`, `ReverseChargeEu` or `TriangularTransaction`. |
 | `DE-USTG-07` | error per line (BG-32 `lines[i].item.attributes`) | The flag `de.new_vehicle` is set and a line has no item attributes. | section 14a (4) UStG | `->attribute('Erstzulassung', …)` (first registration), `->attribute('Kilometerstand', …)` (mileage) on every line. |
-| `DE-USTG-08` | error (BT-112 `totals.grossTotal`) | The flag `de.small_amount` is set and the gross total exceeds 250.00 EUR. Other currencies count with their EUR equivalent: gross total × exchange rate of `->taxCurrency('EUR', $rate)`. Without that rate the rule always fails. | section 33 UStDV | Remove `->smallAmount()` and issue a full invoice. |
+| `DE-USTG-08` | error (BT-112 `totals.grossTotal`) | The flag `de.small_amount` is set and the gross total exceeds 250.00 EUR. Other currencies count with their EUR equivalent: gross total × exchange rate of `->taxCurrency('EUR', $rate)`. Without that rate the rule always fails. | section 33 UStDV | Remove `->de()->smallAmount()` and issue a full invoice. |
 | `DE-USTG-09` | error (BT-151 `lines`, or BT-102 `charges` for document level entries) | A line uses `VatPreset::SmallBusiness` or the invoice has the small business flag, and a line (sub lines included) or a document level allowance or charge has category `S`. | section 19 UStG; VAT shown on charges counts too (section 14c (2) UStG) | `VatPreset::SmallBusiness` on every line, no standard rated charges. |
 | `DE-USTG-10` | warning (BT-6 `taxCurrency`) | The invoice currency is not EUR, the VAT total is not zero, and the VAT accounting currency (BT-6) is not EUR. | Article 230 VAT Directive, section 16 (6) UStG | `->taxCurrency('EUR', $rate, $date)`. |
 | `DE-USTG-11` | error (BT-31 `seller.vatId`, BT-48 `buyer.vatId`) | A line uses `ReverseChargeEu` or `TriangularTransaction`, or a line of category `AE` without preset has a buyer in the VAT territory of another member state (for services Monaco counts as France, and Northern Ireland does not count). Then the VAT identifiers of the seller (or of the tax representative) and of the buyer are required; each missing one is reported. A tax number is not sufficient. | section 14a (1) and (7) UStG | `->vatId()` for seller and buyer. |
-| `DE-USTG-12` | error (BT-151 `lines`); warning for possible distance sales | The flag `de.small_amount` is set and category `AE` or `K` is used (error). Or the buyer is a consumer and the destination lies in another member state (warning: a distance sale only if goods are transported there). The destination is the deliver-to address if it has a country, otherwise the buyer's address. | section 33 sentence 3 UStDV; section 3c UStG | Remove `->smallAmount()` and issue a full invoice. |
-| `DE-USTG-13` | warning (BT-151 `lines`) | The flag `de.new_vehicle` is set and no line, allowance or charge uses category `K`. A warning, as the exemption may not apply in the individual case. | section 14a (4) UStG | `VatPreset::IntraCommunitySupply` on the vehicle lines, or remove `->newVehicle()`. |
-| `DE-USTG-14` | error (BT-151 `lines`) | A line uses `VatPreset::SmallBusiness` or the invoice has the small business flag, a line, allowance or charge uses category `K`, and the flag `de.new_vehicle` is not set. | section 19 (1) sentence 2, (6) sentence 1 UStG | `VatPreset::SmallBusiness` on the lines; `->newVehicle()` for the intra-community supply of a new vehicle. |
+| `DE-USTG-12` | error (BT-151 `lines`); warning for possible distance sales | The flag `de.small_amount` is set and category `AE` or `K` is used (error). Or the buyer is a consumer and the destination lies in another member state (warning: a distance sale only if goods are transported there). The destination is the deliver-to address if it has a country, otherwise the buyer's address. | section 33 sentence 3 UStDV; section 3c UStG | Remove `->de()->smallAmount()` and issue a full invoice. |
+| `DE-USTG-13` | warning (BT-151 `lines`) | The flag `de.new_vehicle` is set and no line, allowance or charge uses category `K`. A warning, as the exemption may not apply in the individual case. | section 14a (4) UStG | `VatPreset::IntraCommunitySupply` on the vehicle lines, or remove `->de()->newVehicle()`. |
+| `DE-USTG-14` | error (BT-151 `lines`) | A line uses `VatPreset::SmallBusiness` or the invoice has the small business flag, a line, allowance or charge uses category `K`, and the flag `de.new_vehicle` is not set. | section 19 (1) sentence 2, (6) sentence 1 UStG | `VatPreset::SmallBusiness` on the lines; `->de()->newVehicle()` for the intra-community supply of a new vehicle. |
 | `DE-USTG-15` | warning (BT-2 `issueDate`) | A line, allowance or charge uses category `K`, or a line uses `ReverseChargeEu` (or category `AE` without preset for a buyer in another member state), and the invoice date is after the 15th of the month following the supply. The supply date is the latest of the delivery date (BT-72), the end of the invoicing period (BG-14) and the ends of the line periods (BG-26). Skipped without a supply date, for documents that refer to a preceding invoice (BG-3: cancellations, corrections, re-issued and final invoices) and for the type codes 381, 261, 384 and 386. A warning, as a late invoice stays valid. | section 14a (1) sentence 2 and (3) sentence 1 UStG | Issue these invoices by the 15th of the following month. |
 
 Helpers used by the rules and available to you:

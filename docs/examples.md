@@ -266,7 +266,7 @@ $final = Quittio::invoice()
     ->deliveryDate('2026-10-10')
     ->buyer($customer)
     ->line('Website relaunch', netPrice: '3000.00', unit: UnitCode::LumpSum)
-    ->deductAdvance($advance->data())
+    ->de()->deductAdvance($advance->data())
     ->dueInDays(14)
     ->render();
 
@@ -314,7 +314,7 @@ use Quittio\Core\Enums\UnitCode;
 use Quittio\Laravel\Facades\Quittio;
 
 $result = Quittio::invoice()
-    ->selfBilled()                                       // type code 389 and the note "Gutschrift"
+    ->de()->selfBilled()                                       // type code 389 and the note "Gutschrift"
     ->number('GS-2026-0012')
     ->issueDate('2026-10-05')
     ->invoicingPeriod('2026-09-01', '2026-09-30')

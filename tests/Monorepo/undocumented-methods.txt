@@ -328,7 +328,6 @@ Quittio\Core\Xml\Ubl\UblWriter::syntax
 Quittio\Core\Xml\XmlSecurity::load
 Quittio\Core\Xml\XmlSerializer::serialize
 Quittio\Core\Xml\XmlSerializer::syntax
-Quittio\Country\DE\Builder\GermanInvoiceMacros::register
 Quittio\Country\DE\Dunning\BaseRateTable::withRate
 Quittio\Country\DE\Dunning\BaseRates::reset
 Quittio\Country\DE\Laravel\GermanyServiceProvider::boot

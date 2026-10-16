@@ -111,11 +111,11 @@ it('labels self-billed invoices as Gutschrift', function () {
     expect(ustgCodes(ustg($plain)))->toBe(['DE-USTG-04'])
         ->and(ustgCodes(ustg(Scenarios::make('simple')->type('261'))))->toBe(['DE-USTG-04'])
         ->and(ustgCodes(ustg(Scenarios::make('simple')->type('527'))))->toBe(['DE-USTG-04'])
-        ->and(ustgCodes(ustg(Scenarios::make('simple')->selfBilled())))->toBe([]);
+        ->and(ustgCodes(ustg(Scenarios::make('simple')->de()->selfBilled())))->toBe([]);
 });
 
 it('adds the retention notice for property related services', function () {
-    $builder = Scenarios::make('simple')->propertyRelatedService();
+    $builder = Scenarios::make('simple')->de()->propertyRelatedService();
     $invoice = $builder->build();
 
     expect(ustgCodes(ustg($builder)))->toBe([])
@@ -139,7 +139,7 @@ it('warns when the reverse charge wording is missing', function () {
 });
 
 it('requires vehicle details for new vehicles', function () {
-    $builder = Scenarios::make('intra-eu')->newVehicle();
+    $builder = Scenarios::make('intra-eu')->de()->newVehicle();
 
     expect(ustgCodes(ustg($builder)))->toBe(['DE-USTG-07']);
 });
@@ -159,25 +159,25 @@ it('adds the new vehicle notice and expects an intra-community supply (section 1
     $vehicle = fn (VatPreset $preset) => Scenarios::base()
         ->buyer(fn ($b) => $b->name('Cliente S.r.l.')->vatId('IT12345678901')->address('Via Roma 1', '00184', 'Roma', 'IT'))
         ->line(fn ($l) => $l->name('Pkw')->quantity(1, UnitCode::Piece)->netPrice('30000.00')->vat($preset)->attribute('Erstzulassung', '2026-09-01')->attribute('Kilometerstand', '12'));
-    $invoice = $vehicle(VatPreset::IntraCommunitySupply)->newVehicle()->build();
-    $english = $vehicle(VatPreset::IntraCommunitySupply)->newVehicle('en_GB')->build();
-    $standard = ustg($vehicle(VatPreset::Standard19)->newVehicle());
+    $invoice = $vehicle(VatPreset::IntraCommunitySupply)->de()->newVehicle()->build();
+    $english = $vehicle(VatPreset::IntraCommunitySupply)->de()->newVehicle('en_GB')->build();
+    $standard = ustg($vehicle(VatPreset::Standard19)->de()->newVehicle());
 
     expect($invoice->meta->hasFlag(Flags::NEW_VEHICLE))->toBeTrue()
         ->and($invoice->notes[array_key_last($invoice->notes)]->content)->toBe(LegalTexts::catalog()->get(LegalTexts::NEW_VEHICLE, 'de'))
         ->and($invoice->notes[array_key_last($invoice->notes)]->subjectCode?->value)->toBe('REG')
         ->and($english->notes[array_key_last($english->notes)]->content)->toStartWith('Intra-Community supply of a new means of transport')
-        ->and(ustgCodes(ustg($vehicle(VatPreset::IntraCommunitySupply)->newVehicle())))->toBe([])
+        ->and(ustgCodes(ustg($vehicle(VatPreset::IntraCommunitySupply)->de()->newVehicle())))->toBe([])
         ->and(ustgCodes($standard))->toBe(['DE-USTG-13'])
         ->and($standard->warnings()[0]->path)->toBe('lines')
         ->and($standard->isValid())->toBeTrue();
 });
 
 it('limits small amount invoices to 250 EUR gross', function () {
-    $small = Scenarios::base()->smallAmount()
+    $small = Scenarios::base()->de()->smallAmount()
         ->buyer(fn ($b) => $b->name('Barkunde')->address(null, null, null, 'DE'))
         ->line(fn ($l) => $l->name('Kaffee')->quantity(2, UnitCode::Piece)->netPrice('3.50')->vat(VatCategory::StandardRate, '19'));
-    $large = Scenarios::make('simple')->smallAmount();
+    $large = Scenarios::make('simple')->de()->smallAmount();
 
     expect(ustgCodes(ustg($small)))->toBe([])
         ->and(ustgCodes(ustg($large)))->toBe(['DE-USTG-08']);
@@ -240,7 +240,7 @@ it('has German messages for every rule', function () {
     $result = ustg(Scenarios::make('simple')->type('389'), 'de');
 
     expect($result->errors()[0]->message)->toContain('„Gutschrift“')
-        ->and($result->errors()[0]->hint)->toContain('->selfBilled()');
+        ->and($result->errors()[0]->hint)->toContain('->de()->selfBilled()');
 });
 
 it('accepts small business invoices without service date (section 34a UStDV)', function () {
@@ -292,7 +292,7 @@ it('deducts paid advance invoices with their VAT in the final invoice (section 1
         ->build());
     $builder = Scenarios::base()
         ->line(fn ($l) => $l->name('Website')->quantity(1, UnitCode::Piece)->netPrice('3000.00')->vat(VatPreset::Standard19))
-        ->deductAdvance($advance);
+        ->de()->deductAdvance($advance);
     $invoice = (new En16931Calculator)->calculate($builder->build());
 
     expect($invoice->totals?->grossTotal->getAmount()->toString())->toBe('3570.00')
@@ -310,7 +310,7 @@ it('adds up several advance payments', function () {
     $advance = fn (string $number) => (new En16931Calculator)->calculate(Scenarios::base()->number($number)->type('386')
         ->line(fn ($l) => $l->name('Abschlag')->quantity(1, UnitCode::Piece)->netPrice('500.00')->vat(VatPreset::Standard19))
         ->build());
-    $invoice = (new En16931Calculator)->calculate(Scenarios::make('simple')->deductAdvance($advance('RE-1'))->deductAdvance($advance('RE-2'), 'en')->build());
+    $invoice = (new En16931Calculator)->calculate(Scenarios::make('simple')->de()->deductAdvance($advance('RE-1'))->de()->deductAdvance($advance('RE-2'), 'en')->build());
 
     expect($invoice->totals?->prepaidAmount?->getAmount()->toString())->toBe('1190.00')
         ->and($invoice->precedingInvoices)->toHaveCount(2)
@@ -324,7 +324,7 @@ it('writes the whole advance deduction note in one language', function () {
         ->build());
     $note = static fn (string $locale): string => (static function (array $notes): string {
         return $notes[array_key_last($notes)]->content;
-    })(Scenarios::make('simple')->deductAdvance($advance, $locale)->build()->notes);
+    })(Scenarios::make('simple')->de()->deductAdvance($advance, $locale)->build()->notes);
 
     expect($note('fr'))->toBe("Abzüglich Anzahlung gemäß Rechnung RE-2026-0040 vom 01.09.2026: Entgelt 1.000,00\u{00A0}€ zzgl. 19\u{00A0}% Umsatzsteuer 190,00\u{00A0}€; Entgelt 100,00\u{00A0}€ ohne Umsatzsteuer (§ 14 Abs. 5 Satz 2 UStG).")
         ->and($note('fr'))->toBe($note('de'))
@@ -338,7 +338,7 @@ it('deducts only documents that can be advance invoices', function (string $type
     $document = (new En16931Calculator)->calculate(Scenarios::base()->number('X-1')->type($type)
         ->line(fn ($l) => $l->name('Anzahlung')->quantity(1, UnitCode::Piece)->netPrice('100.00')->vat(VatPreset::Standard19))
         ->build());
-    $deduct = fn () => Scenarios::make('simple')->deductAdvance($document);
+    $deduct = fn () => Scenarios::make('simple')->de()->deductAdvance($document);
 
     $accepted ? expect($deduct()->build()->precedingInvoices[0]->number)->toBe('X-1') : expect($deduct)->toThrow(InvalidArgumentException::class, 'cannot be deducted');
 })->with([
@@ -358,7 +358,7 @@ it('does not deduct a cancellation by negative invoice', function () {
     $cancellation = (new En16931Calculator)->calculate($quittio->cancellation($original, 'ST-1', 'Test', 'negative_invoice')->build());
 
     expect($cancellation->typeCodeValue())->toBe('380')
-        ->and(fn () => Scenarios::make('simple')->deductAdvance($cancellation))->toThrow(InvalidArgumentException::class, 'positive gross total');
+        ->and(fn () => Scenarios::make('simple')->de()->deductAdvance($cancellation))->toThrow(InvalidArgumentException::class, 'positive gross total');
 });
 
 it('rejects VAT for sellers marked as small business', function () {
@@ -371,13 +371,13 @@ it('rejects VAT for sellers marked as small business', function () {
 });
 
 it('does not apply the small amount simplifications to reverse charge, intra-community supplies and distance sales (section 33 sentence 3 UStDV)', function () {
-    $reverseCharge = Scenarios::base()->smallAmount()
+    $reverseCharge = Scenarios::base()->de()->smallAmount()
         ->buyer(fn ($b) => $b->name('Bau GmbH')->address(null, null, null, 'DE'))
         ->line(fn ($l) => $l->name('Reinigung')->quantity(1, UnitCode::Piece)->netPrice('150.00')->vat(VatPreset::ReverseChargeDomestic));
-    $distanceSale = Scenarios::base()->smallAmount()
+    $distanceSale = Scenarios::base()->de()->smallAmount()
         ->buyer(fn ($b) => $b->name('Jean Dupont')->vatId(null)->consumer()->address('1 Rue', '75002', 'Paris', 'FR'))
         ->line(fn ($l) => $l->name('Buch')->quantity(1, UnitCode::Piece)->netPrice('20.00')->vat(VatCategory::StandardRate, '5.5'));
-    $domestic = Scenarios::base()->smallAmount()
+    $domestic = Scenarios::base()->de()->smallAmount()
         ->buyer(fn ($b) => $b->name('Barkunde')->vatId(null)->consumer()->address(null, null, null, 'DE'))
         ->line(fn ($l) => $l->name('Kaffee')->quantity(2, UnitCode::Piece)->netPrice('3.50')->vat(VatPreset::Standard19));
 
@@ -417,9 +417,9 @@ it('deducts only advance invoices in the same currency and the amount actually r
         ->line(fn ($l) => $l->name('Anzahlung')->quantity(1, UnitCode::Piece)->netPrice('1000.00')->vat(VatPreset::Standard19))->build());
     $rounded = (new En16931Calculator)->calculate(Scenarios::base()->number('RE-2')->type('386')->rounding('0.03')
         ->line(fn ($l) => $l->name('Anzahlung')->quantity(1, UnitCode::Piece)->netPrice('99.97')->vat(VatPreset::Standard19))->build());
-    $final = (new En16931Calculator)->calculate(Scenarios::make('simple')->deductAdvance($rounded)->build());
+    $final = (new En16931Calculator)->calculate(Scenarios::make('simple')->de()->deductAdvance($rounded)->build());
 
-    expect(fn () => Scenarios::make('simple')->deductAdvance($usd))->toThrow(InvalidArgumentException::class, 'USD')
+    expect(fn () => Scenarios::make('simple')->de()->deductAdvance($usd))->toThrow(InvalidArgumentException::class, 'USD')
         ->and($rounded->totals?->amountDue->getAmount()->toString())->toBe('118.99')
         ->and($final->totals?->prepaidAmount?->getAmount()->toString())->toBe('118.99');
 });
@@ -430,7 +430,7 @@ it('accepts the self-billing label in another official EU language (UStAE 14.5 A
 });
 
 it('compares small amount invoices in a foreign currency by their EUR equivalent', function () {
-    $small = fn (string $rate) => Scenarios::base()->smallAmount()->currency('USD')->taxCurrency('EUR', $rate, '2026-10-01')
+    $small = fn (string $rate) => Scenarios::base()->de()->smallAmount()->currency('USD')->taxCurrency('EUR', $rate, '2026-10-01')
         ->payment(PaymentMeansCode::CreditTransfer, iban: 'DE02120300000000202051')
         ->buyer(fn ($b) => $b->name('Barkunde')->vatId(null)->consumer()->address(null, null, null, 'DE'))
         ->line(fn ($l) => $l->name('Lizenz')->quantity(1, UnitCode::Unit)->netPrice('200.00')->vat(VatPreset::Standard19));
@@ -462,7 +462,7 @@ it('rejects intra-community supplies of small businesses except for new vehicles
         ->line(fn ($l) => $l->name('Ware')->quantity(1, UnitCode::Piece)->netPrice('100.00')->vat(VatPreset::IntraCommunitySupply));
     $flagged = Scenarios::base()->buyer($buyer)->flag(Flags::SMALL_BUSINESS)
         ->line(fn ($l) => $l->name('Ware')->quantity(1, UnitCode::Piece)->netPrice('100.00')->vat(VatPreset::IntraCommunitySupply));
-    $vehicle = Scenarios::base()->buyer($buyer)->flag(Flags::SMALL_BUSINESS)->newVehicle()
+    $vehicle = Scenarios::base()->buyer($buyer)->flag(Flags::SMALL_BUSINESS)->de()->newVehicle()
         ->line(fn ($l) => $l->name('Pkw')->quantity(1, UnitCode::Piece)->netPrice('30000.00')->vat(VatPreset::IntraCommunitySupply)->attribute('Erstzulassung', '2026-09-01')->attribute('Kilometerstand', '12'));
     $regular = Scenarios::base()->buyer($buyer)
         ->line(fn ($l) => $l->name('Ware')->quantity(1, UnitCode::Piece)->netPrice('100.00')->vat(VatPreset::IntraCommunitySupply));
@@ -518,7 +518,7 @@ it('writes the messages in the configured language', function (?string $configur
 ]);
 
 it('applies the small amount limit of the issue date', function () {
-    $invoice = fn (string $issueDate) => Scenarios::base()->issueDate($issueDate)->deliveryDate($issueDate)->smallAmount()
+    $invoice = fn (string $issueDate) => Scenarios::base()->issueDate($issueDate)->deliveryDate($issueDate)->de()->smallAmount()
         ->buyer(fn ($b) => $b->name('Barkunde')->address(null, null, null, 'DE'))
         ->line(fn ($l) => $l->name('Werkzeug')->quantity(1, UnitCode::Piece)->netPrice('170.00')->vat(VatPreset::Standard));
 

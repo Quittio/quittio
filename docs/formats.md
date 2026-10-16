@@ -17,7 +17,7 @@ Without `format()`, Quittio chooses format and profile for each invoice. It uses
 
 - A business customer gets ZUGFeRD: a PDF that people can read, with the XML for accounting software embedded (profile EN 16931).
 - A German public authority gets XRechnung as CII XML. Quittio recognises it by the Leitweg-ID (the routing ID of a German public buyer) in the buyer reference (BT-10).
-- A consumer gets a PDF without XML. So do a customer outside the EU and a small amount invoice up to 250 € that you mark with `->smallAmount()`.
+- A consumer gets a PDF without XML. So do a customer outside the EU and a small amount invoice up to 250 € that you mark with `->de()->smallAmount()`.
 
 [Which format do I need?](concepts.md#which-format-do-i-need) shows all cases in a table, [Automatic choice](#automatic-choice) the exact rules. The result tells you what Quittio chose:
 

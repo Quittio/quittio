@@ -34,7 +34,7 @@ function round3UstgFindings(InvoiceBuilder $builder): array
 
 function round3SmallConsumerInvoice(string $country, ?string $postcode = null): InvoiceBuilder
 {
-    return Scenarios::base()->smallAmount()
+    return Scenarios::base()->de()->smallAmount()
         ->buyer(fn ($b) => $b->name('Kunde')->vatId(null)->consumer()->address(null, $postcode, null, $country))
         ->line(fn ($l) => $l->name('E-Book-Abo')->quantity(1, UnitCode::Piece)->netPrice('10.00')->vat(VatCategory::StandardRate, '20'));
 }
@@ -48,7 +48,7 @@ it('keeps the small amount simplifications for consumers in other member states 
 });
 
 it('looks at the deliver to address and the VAT territory for possible distance sales', function () {
-    $deliveredToAustria = Scenarios::base()->smallAmount()
+    $deliveredToAustria = Scenarios::base()->de()->smallAmount()
         ->buyer(fn ($b) => $b->name('Kunde')->vatId(null)->consumer()->address(null, null, 'Berlin', 'DE'))
         ->deliverTo('Oma', Address::make('Ring 1', '1010', 'Wien', 'AT'))
         ->line(fn ($l) => $l->name('Buch')->quantity(1, UnitCode::Piece)->netPrice('20.00')->vat(VatCategory::StandardRate, '10'));
@@ -61,7 +61,7 @@ it('looks at the deliver to address and the VAT territory for possible distance 
 });
 
 it('still rejects the small amount simplifications for intra-community supplies (section 33 sentence 3 UStDV)', function () {
-    $supply = Scenarios::base()->smallAmount()
+    $supply = Scenarios::base()->de()->smallAmount()
         ->buyer(fn ($b) => $b->name('AT GmbH')->vatId('ATU12345678')->address('Ring 1', '1010', 'Wien', 'AT'))
         ->deliverTo('Lager', Address::make('Ring 2', '1010', 'Wien', 'AT'))
         ->line(fn ($l) => $l->name('Teil')->quantity(1, UnitCode::Piece)->netPrice('100.00')->vat(VatCategory::IntraCommunitySupply, '0', 'Steuerfreie innergemeinschaftliche Lieferung'));

@@ -127,11 +127,11 @@ return [
     ],
     'DE-USTG-04' => [
         'message' => 'A self-billed invoice must be labelled "Gutschrift" (section 14 (4) no. 10 UStG).',
-        'hint' => 'Use ->selfBilled(); the builder adds the note.',
+        'hint' => 'Use ->de()->selfBilled(); the builder adds the note.',
     ],
     'DE-USTG-05' => [
         'message' => 'Services in connection with a property to a non-business buyer require the notice on the buyer\'s retention obligation (section 14 (4) no. 9 UStG).',
-        'hint' => 'Use ->propertyRelatedService(); the builder adds the note.',
+        'hint' => 'Use ->de()->propertyRelatedService(); the builder adds the note.',
     ],
     'DE-USTG-06' => [
         'message' => 'Reverse charge invoices must state "Steuerschuldnerschaft des Leistungsempfängers" (section 14a (1) and (5) UStG).',
@@ -143,7 +143,7 @@ return [
     ],
     'DE-USTG-08' => [
         'message' => 'A small amount invoice must not exceed :limit gross (section 33 UStDV).',
-        'hint' => 'Remove ->smallAmount() and issue a full invoice.',
+        'hint' => 'Remove ->de()->smallAmount() and issue a full invoice.',
     ],
     'DE-USTG-09' => [
         'message' => 'A small business (section 19 UStG) must not charge VAT in the same invoice.',
@@ -159,15 +159,15 @@ return [
     ],
     'DE-USTG-12' => [
         'message' => 'The simplifications for small amount invoices do not apply to distance sales, intra-community supplies and reverse charge supplies (section 33 sentence 3 UStDV).',
-        'hint' => 'Remove ->smallAmount() and issue a full invoice.',
+        'hint' => 'Remove ->de()->smallAmount() and issue a full invoice.',
     ],
     'DE-USTG-13' => [
         'message' => 'The intra-community supply of a new vehicle (section 14a (4) UStG) is marked, but no line uses the VAT category K (intra-community supply).',
-        'hint' => 'Use VatPreset::IntraCommunitySupply for the vehicle lines, or remove ->newVehicle() if the vehicle is not supplied to another member state.',
+        'hint' => 'Use VatPreset::IntraCommunitySupply for the vehicle lines, or remove ->de()->newVehicle() if the vehicle is not supplied to another member state.',
     ],
     'DE-USTG-14' => [
         'message' => 'A small business cannot treat a supply as a tax-exempt intra-community supply (VAT category K) (section 19 (1) sentence 2 UStG); only the intra-community supply of a new vehicle is excepted (section 19 (6) sentence 1 UStG).',
-        'hint' => 'Use VatPreset::SmallBusiness for the lines; for a new vehicle add ->newVehicle().',
+        'hint' => 'Use VatPreset::SmallBusiness for the lines; for a new vehicle add ->de()->newVehicle().',
     ],
     'DE-USTG-15' => [
         'message' => 'Invoices for intra-community supplies and for services under section 3a (2) UStG in another member state must be issued by the 15th day of the month following the supply (section 14a (1) sentence 2 and (3) sentence 1 UStG); the deadline was :deadline.',

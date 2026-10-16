@@ -49,7 +49,7 @@ it('chooses the format for domestic invoices', function (Closure $builder, strin
     'order number shaped like a Leitweg-ID' => [fn () => Scenarios::make('simple')->buyerReference('4711-01'), 'zugferd', 'en16931'],
     'public buyer by endpoint' => [fn () => Scenarios::make('simple')->buyer(fn ($b) => $b->electronicAddress('04011000-12345-03', '0204')), 'xrechnung-cii', 'xrechnung'],
     'consumer' => [fn () => Scenarios::make('b2c-gross'), 'pdf', null],
-    'small amount' => [fn () => Scenarios::make('simple')->smallAmount(), 'pdf', null],
+    'small amount' => [fn () => Scenarios::make('simple')->de()->smallAmount(), 'pdf', null],
 ]);
 
 it('leaves everything but German requirements to the format resolver', function () {
@@ -68,8 +68,8 @@ it('leaves everything but German requirements to the format resolver', function 
         // German public buyers receive XRechnung whatever the seller's country.
         ->and($resolve($usSeller()->buyerReference('04011000-12345-03'), new CountryGeneric('US'))->format)->toBe('xrechnung-cii')
         // Small amount invoices are PDF only between parties in the German Inland.
-        ->and($resolve(Scenarios::make('simple')->smallAmount()->seller(fn ($s) => $s->vatId('FR12345678901')->address('1 Rue', '75002', 'Paris', 'FR')), new CountryGeneric('FR'))->format)->toBe('zugferd')
-        ->and($resolve($buesingen()->smallAmount())->format)->toBe('pdf');
+        ->and($resolve(Scenarios::make('simple')->de()->smallAmount()->seller(fn ($s) => $s->vatId('FR12345678901')->address('1 Rue', '75002', 'Paris', 'FR')), new CountryGeneric('FR'))->format)->toBe('zugferd')
+        ->and($resolve($buesingen()->de()->smallAmount())->format)->toBe('pdf');
 });
 
 it('asks the Peppol lookup for domestic German business invoices', function () {
@@ -129,9 +129,9 @@ it('lists the German mandatory output', function () {
             'buyer.vatId',
             'seller.vatId|taxRepresentative.vatId',
         ])
-        ->and($keys($pack->mandatoryOutput(Scenarios::make('simple')->selfBilled()->build())))->toContain('title')
-        ->and($keys($pack->mandatoryOutput(Scenarios::make('simple')->selfBilled()->build())))->toContain('legalNotes[0]')
-        ->and($keys($pack->mandatoryOutput(Scenarios::make('simple')->propertyRelatedService()->build())))->toContain('legalNotes[0]')
+        ->and($keys($pack->mandatoryOutput(Scenarios::make('simple')->de()->selfBilled()->build())))->toContain('title')
+        ->and($keys($pack->mandatoryOutput(Scenarios::make('simple')->de()->selfBilled()->build())))->toContain('legalNotes[0]')
+        ->and($keys($pack->mandatoryOutput(Scenarios::make('simple')->de()->propertyRelatedService()->build())))->toContain('legalNotes[0]')
         ->and($keys($pack->mandatoryOutput(Scenarios::make('simple')->note('Gutschrift', 'AAI')->type('389')->build())))->toContain('notes[0].content|notes[0].html');
 });
 
@@ -140,8 +140,8 @@ it('passes the mandatory field guard with the default templates for German speci
 
     expect($quittio->make($builder())->format('html')->render()->html())->toContain('</html>');
 })->with([
-    'self-billed' => [fn () => Scenarios::make('simple')->selfBilled()],
-    'property related service' => [fn () => Scenarios::make('simple')->propertyRelatedService()],
+    'self-billed' => [fn () => Scenarios::make('simple')->de()->selfBilled()],
+    'property related service' => [fn () => Scenarios::make('simple')->de()->propertyRelatedService()],
     'reverse charge' => [fn () => Scenarios::make('reverse-charge')],
     'line periods only' => [function () {
         $builder = Scenarios::base()->line(fn ($l) => $l->name('Hosting')->quantity(1, 'MON')->netPrice('10.00')->vat(VatCategory::StandardRate, '19')->period('2026-09-01', '2026-09-30'));

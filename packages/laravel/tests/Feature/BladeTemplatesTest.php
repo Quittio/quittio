@@ -28,7 +28,7 @@ it('hides the direct debit notice on refunds and self-billed invoices in the Bla
         $invoice->precedingInvoice('RE-2026-0001', '2026-09-01');
     }
     if ($type === '389') {
-        $invoice->selfBilled();
+        $invoice->de()->selfBilled();
     }
 
     $html = (string) Quittio::make($invoice->build())->format('html')->validate(false)->render()->html();

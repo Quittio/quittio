@@ -127,11 +127,11 @@ return [
     ],
     'DE-USTG-04' => [
         'message' => 'Eine Gutschrift im Sinne des UStG muss die Angabe „Gutschrift“ enthalten (§ 14 Abs. 4 Nr. 10 UStG).',
-        'hint' => 'Verwenden Sie ->selfBilled(); der Builder ergänzt den Hinweis.',
+        'hint' => 'Verwenden Sie ->de()->selfBilled(); der Builder ergänzt den Hinweis.',
     ],
     'DE-USTG-05' => [
         'message' => 'Bei Leistungen im Zusammenhang mit einem Grundstück an Nichtunternehmer ist der Hinweis auf die Aufbewahrungspflicht des Empfängers Pflicht (§ 14 Abs. 4 Nr. 9 UStG).',
-        'hint' => 'Verwenden Sie ->propertyRelatedService(); der Builder ergänzt den Hinweis.',
+        'hint' => 'Verwenden Sie ->de()->propertyRelatedService(); der Builder ergänzt den Hinweis.',
     ],
     'DE-USTG-06' => [
         'message' => 'Rechnungen mit Steuerschuldnerschaft des Leistungsempfängers müssen die Angabe „Steuerschuldnerschaft des Leistungsempfängers“ enthalten (§ 14a Abs. 1 und 5 UStG).',
@@ -143,7 +143,7 @@ return [
     ],
     'DE-USTG-08' => [
         'message' => 'Eine Kleinbetragsrechnung darf höchstens :limit brutto betragen (§ 33 UStDV).',
-        'hint' => 'Entfernen Sie ->smallAmount() und stellen Sie eine vollständige Rechnung aus.',
+        'hint' => 'Entfernen Sie ->de()->smallAmount() und stellen Sie eine vollständige Rechnung aus.',
     ],
     'DE-USTG-09' => [
         'message' => 'Ein Kleinunternehmer (§ 19 UStG) darf in derselben Rechnung keine Umsatzsteuer ausweisen.',
@@ -159,15 +159,15 @@ return [
     ],
     'DE-USTG-12' => [
         'message' => 'Die Erleichterungen für Kleinbetragsrechnungen gelten nicht für Fernverkäufe, innergemeinschaftliche Lieferungen und Leistungen mit Steuerschuldnerschaft des Leistungsempfängers (§ 33 Satz 3 UStDV).',
-        'hint' => 'Entfernen Sie ->smallAmount() und stellen Sie eine vollständige Rechnung aus.',
+        'hint' => 'Entfernen Sie ->de()->smallAmount() und stellen Sie eine vollständige Rechnung aus.',
     ],
     'DE-USTG-13' => [
         'message' => 'Die innergemeinschaftliche Lieferung eines neuen Fahrzeugs (§ 14a Abs. 4 UStG) ist markiert, aber keine Position verwendet die Steuerkategorie K (innergemeinschaftliche Lieferung).',
-        'hint' => 'Verwenden Sie VatPreset::IntraCommunitySupply für die Fahrzeugpositionen oder entfernen Sie ->newVehicle(), wenn das Fahrzeug nicht in einen anderen Mitgliedstaat geliefert wird.',
+        'hint' => 'Verwenden Sie VatPreset::IntraCommunitySupply für die Fahrzeugpositionen oder entfernen Sie ->de()->newVehicle(), wenn das Fahrzeug nicht in einen anderen Mitgliedstaat geliefert wird.',
     ],
     'DE-USTG-14' => [
         'message' => 'Ein Kleinunternehmer kann eine Lieferung nicht als steuerfreie innergemeinschaftliche Lieferung (Steuerkategorie K) behandeln (§ 19 Abs. 1 Satz 2 UStG); ausgenommen ist nur die innergemeinschaftliche Lieferung eines neuen Fahrzeugs (§ 19 Abs. 6 Satz 1 UStG).',
-        'hint' => 'Verwenden Sie VatPreset::SmallBusiness für die Positionen; bei einem neuen Fahrzeug ergänzen Sie ->newVehicle().',
+        'hint' => 'Verwenden Sie VatPreset::SmallBusiness für die Positionen; bei einem neuen Fahrzeug ergänzen Sie ->de()->newVehicle().',
     ],
     'DE-USTG-15' => [
         'message' => 'Rechnungen über innergemeinschaftliche Lieferungen und über sonstige Leistungen nach § 3a Abs. 2 UStG in einem anderen Mitgliedstaat sind bis zum 15. Tag des Folgemonats auszustellen (§ 14a Abs. 1 Satz 2 und Abs. 3 Satz 1 UStG); die Frist endete am :deadline.',

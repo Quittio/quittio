@@ -85,7 +85,7 @@ Usually none: without `->format()`, Quittio chooses for each invoice ([Automatic
 | A business in Germany | ZUGFeRD (profile EN 16931) | E-invoice that is also a readable PDF |
 | A public authority in Germany (buyer reference is a Leitweg-ID) | XRechnung (CII) | Required by public buyers |
 | A consumer | PDF | No e-invoice obligation |
-| Any customer in Germany, invoice up to 250 € marked with `->smallAmount()` | PDF | Small amount invoices are exempt |
+| Any customer in Germany, invoice up to 250 € marked with `->de()->smallAmount()` | PDF | Small amount invoices are exempt |
 | A business in another EU country | ZUGFeRD (profile EN 16931) | Readable PDF with standard XML |
 | A business reachable via Peppol (with a Peppol lookup) | Peppol BIS | Delivery over the Peppol network |
 | A customer outside the EU | PDF | No EU e-invoice rules |

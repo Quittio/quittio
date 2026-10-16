@@ -11,6 +11,8 @@ All notable changes to this project are documented in this file. The format foll
 - `Quittio::edit()` (core and Laravel) and `InvoiceBuilder::fromUsing()` continue existing invoice data with the calculator of the instance; cancellations and the document calculator of `QuittioFake` use it as well. `InvoiceFactory::calculated()` takes a calculator.
 - Tax presets whose rate depends on the date (`Quittio\Core\Tax\DatedTaxPreset`) are resolved with the supply date of each line (`SupplyDate`: line period, VAT point date, delivery date, invoicing period, issue date). `DatedValues` holds values that change on dates; `TaxPresetCollection::alias()` finds presets under further keys.
 - `VatPreset::Standard` (`de.standard`) and `VatPreset::Reduced` (`de.reduced`) take the German rate of the supply date (`TaxTables`), e.g. 16 % and 5 % from July to December 2020. The plausibility rule `DE-VAT-RATE` warns about rates that applied neither as standard nor as reduced rate on the supply date. The small amount limit of `DE-USTG-08` is that of the issue date (150.00 EUR before 2017).
+- Country packs register output formats, aliases and serializers (`Countries\Capabilities\ProvidesFormats`, implemented by `AbstractCountryPack`); the German pack brings XRechnung (`XRechnungFormats`). Profiles declare sub lines, extension fields and third party payments with capabilities (`SupportsSubLines`, `SupportsExtensionFields`, `SupportsThirdPartyPayments`) instead of the core checking XRechnung keys.
+- The German special cases are reached with the builder macro `de()`: `->de()->smallAmount()`, `->de()->selfBilled()`, `->de()->deductAdvance($advance)` … (`GermanInvoice`).
 
 ### Changed
 
@@ -20,6 +22,7 @@ All notable changes to this project are documented in this file. The format foll
 ### Deprecated
 
 - `VatPreset::Standard19` and `VatPreset::Reduced7`: use `VatPreset::Standard` and `VatPreset::Reduced`; the keys `de.standard_19` and `de.reduced_7` stay readable. `Flags::SMALL_AMOUNT_LIMIT`: use `TaxTables::smallAmountLimitOn()`.
+- The builder macros `smallAmount()`, `propertyRelatedService()`, `newVehicle()`, `selfBilled()`, `deductAdvance()` and `consumerDefaultNotice()` directly on the builder: use `->de()->…`. `GermanInvoiceMacros::ADVANCE_TYPES`: use `GermanInvoice::ADVANCE_TYPES`. `FormatRegistry::XRECHNUNG_CII` and `XRECHNUNG_UBL`: use `XRechnungFormats::CII` and `UBL` of the German pack, which registers the formats; the core keeps them until 1.0.
 
 ## [0.2.0] - 2026-10-16
 

@@ -17,13 +17,44 @@ declare(strict_types=1);
 namespace Quittio\Core\Builder;
 
 use Quittio\Core\Data\InvoiceData;
+use Quittio\Country\DE\Builder\GermanInvoice;
 
-/**
- * @method static smallAmount() small amount invoice up to 250 EUR gross (section 33 UStDV)
- * @method static propertyRelatedService(string $locale = 'de') service connected with a property, with the retention note
- * @method static newVehicle(string $locale = 'de') intra-community supply of a new vehicle, with its note
- * @method static selfBilled(string $locale = 'de') self-billed invoice (type code 389) with the "Gutschrift" note
- * @method static deductAdvance(InvoiceData $advance, string $locale = 'de') final invoice that deducts a paid advance invoice
- * @method static consumerDefaultNotice(string $locale = 'de') notice of default of a consumer 30 days after the due date (section 286 (3) BGB)
- */
-class InvoiceBuilder {}
+class InvoiceBuilder
+{
+    /**
+     * The German special cases: ->de()->smallAmount(), ->de()->selfBilled(), ->de()->deductAdvance($advance) …
+     *
+     * @return GermanInvoice<static>
+     */
+    public function de(): GermanInvoice {}
+
+    /**
+     * @deprecated use ->de()->smallAmount()
+     */
+    public function smallAmount(): static {}
+
+    /**
+     * @deprecated use ->de()->propertyRelatedService()
+     */
+    public function propertyRelatedService(string $locale = 'de'): static {}
+
+    /**
+     * @deprecated use ->de()->newVehicle()
+     */
+    public function newVehicle(string $locale = 'de'): static {}
+
+    /**
+     * @deprecated use ->de()->selfBilled()
+     */
+    public function selfBilled(string $locale = 'de'): static {}
+
+    /**
+     * @deprecated use ->de()->deductAdvance()
+     */
+    public function deductAdvance(InvoiceData $advance, string $locale = 'de'): static {}
+
+    /**
+     * @deprecated use ->de()->consumerDefaultNotice()
+     */
+    public function consumerDefaultNotice(string $locale = 'de'): static {}
+}
