@@ -78,16 +78,20 @@ flowchart LR
 | What | Interface | Register in core | Register in Laravel |
 |---|---|---|---|
 | Country pack | `Countries\CountryPack` (base: `AbstractCountryPack`) | `Quittio::create(countryPacks: …)`, `registerCountry()` | auto-discovery from `extra.quittio.country-packs` in a package's `composer.json`, `quittio.countries`, `Quittio::registerCountry()` |
-| Validation driver | `Validation\ValidationDriver` | `withValidator()` | `Quittio::extend('validator', $name, …)` plus the name in `quittio.validation.levels` |
-| PDF renderer | `Pdf\PdfRenderer` | `withRenderer()` | `Quittio::extend('renderer', …)`, `quittio.pdf.renderer` |
-| XML writer | `Xml\XmlSerializer` | `withSerializer()` (one per syntax) | `Quittio::extend('serializer', …)` |
-| Format choice | `Formats\FormatResolver` | `withFormatResolver()` | `Quittio::extend('format_resolver', …)`, `quittio.format_resolver.driver`; `peppol_lookup` for the default resolver |
-| Templates | `Templates\TemplateEngine` | `withTemplateEngine()` | Blade views, `php artisan make:quittio-template` |
-| Totals | `Calculation\TotalsCalculator` | constructor of `Quittio` | – |
+| Formats of a pack | `Countries\Capabilities\ProvidesFormats` (formats, aliases, serializers; `AbstractCountryPack` has empty defaults) | `registerCountry()` | the same |
+| Reference rates of a pack | `Countries\Capabilities\ProvidesReferenceRates` → `Dunning\ReferenceRates` | `Dunning\DefaultInterest::forCountry()` | the same |
+| Profile capabilities | `Profiles\Capabilities\*` (`SupportsSubLines`, `SupportsExtensionFields`, `SupportsThirdPartyPayments`, `DescribesEmbeddedXml`, …) | the profile class | the same |
+| Validation driver | `Validation\ValidationDriver` | `addValidator()` | `Quittio::extend('validator', $name, …)` plus the name in `quittio.validation.levels` |
+| Single rules | `Validation\RuleOverrides` (switch off, re-rate, replace by code) | `configureRules()`, `Config::$rules` | `quittio.validation.rules`, `Quittio::extend('rule', $code, …)` |
+| PDF renderer | `Pdf\PdfRenderer` | `setRenderer()` | `Quittio::extend('renderer', …)`, `quittio.pdf.renderer` |
+| XML writer | `Xml\XmlSerializer` | `addSerializer()` (one per syntax) | `Quittio::extend('serializer', …)` |
+| Format choice | `Formats\FormatResolver` | `setFormatResolver()` | `Quittio::extend('format_resolver', …)`, `quittio.format_resolver.driver`; `peppol_lookup` for the default resolver |
+| Templates | `Templates\TemplateEngine` | `setTemplateEngine()` | Blade views, `php artisan make:quittio-template` |
+| Totals | `Calculation\TotalsCalculator` (policy: `CalculationPolicy`) | `Quittio::create(calculator: …)` | `quittio.calculation.calculator`, `quittio.calculation.declared_amounts` |
 | Incoming formats | `Reading\FormatReader` | `CountryPack::readers()` | the same |
 | Stored snapshots | `Serialization\Snapshots\SnapshotUpcaster` | `SnapshotUpcasterChain` | `quittio.snapshots.upcasters` |
-| Payment QR code | `Pdf\Qr\PaymentQrGenerator` | `withPaymentQrGenerator()`, `CountryPack::paymentQr()` | `quittio.pdf.payment_qr.generator` |
-| Builder | `Support\Macroable` | `InvoiceBuilder::macro()` | the same |
+| Payment QR code | `Pdf\Qr\PaymentQrGenerator` | `setPaymentQrGenerator()`, `CountryPack::paymentQr()` | `quittio.pdf.payment_qr.generator` |
+| Builder | `Support\Macroable` (country packs register one macro named after their code, e.g. `de()`) | `InvoiceBuilder::macro()` | the same |
 
 A country pack may add or tighten rules, but never relax EN 16931 (`CountryPack` docblock). Profiles of a pack (e.g. XRechnung in `packages/country-de/src/Profiles`) are registered with the pack.
 
