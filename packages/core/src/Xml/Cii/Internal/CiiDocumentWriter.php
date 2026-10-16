@@ -21,6 +21,7 @@ use Quittio\Core\Data\Party\ElectronicAddress;
 use Quittio\Core\Data\Payment\CashDiscount;
 use Quittio\Core\Data\Payment\PaymentInstructions;
 use Quittio\Core\Data\References\DocumentReference;
+use Quittio\Core\Data\Totals\Totals;
 use Quittio\Core\Enums\DocumentReferenceTypeCode;
 use Quittio\Core\Enums\TaxPointDateCode;
 use Quittio\Core\Enums\VatCategory;
@@ -129,152 +130,178 @@ final readonly class CiiDocumentWriter
         $extended = $this->level === ProfileLevel::Extended;
 
         $x->required('ram:IncludedSupplyChainTradeLineItem', function (XmlBuilder $x) use ($line, $parentId, $extended): void {
-            $x->required('ram:AssociatedDocumentLineDocument', function (XmlBuilder $x) use ($line, $parentId, $extended): void {
-                $x->element('ram:LineID', $line->id);
-                if ($extended) {
-                    $x->element('ram:ParentLineID', $parentId);
-                    $x->element('ram:LineStatusReasonCode', $line->extended->lineStatusReasonCode
-                        ?? ($line->subLines !== [] ? 'GROUP' : ($parentId !== null ? 'DETAIL' : null)));
-                }
-                $x->group('ram:IncludedNote', fn (XmlBuilder $x) => $x->element('ram:Content', $line->note));
-            });
+            $x->required('ram:AssociatedDocumentLineDocument', fn (XmlBuilder $x) => $this->lineDocument($x, $line, $parentId, $extended));
+            $x->required('ram:SpecifiedTradeProduct', fn (XmlBuilder $x) => $this->lineProduct($x, $line, $extended));
+            $x->required('ram:SpecifiedLineTradeAgreement', fn (XmlBuilder $x) => $this->lineAgreement($x, $line, $extended));
+            $x->required('ram:SpecifiedLineTradeDelivery', fn (XmlBuilder $x) => $this->lineDelivery($x, $line, $extended));
+            $x->required('ram:SpecifiedLineTradeSettlement', fn (XmlBuilder $x) => $this->lineSettlement($x, $line, $extended));
+        });
+    }
 
-            $x->required('ram:SpecifiedTradeProduct', function (XmlBuilder $x) use ($line, $extended): void {
-                $item = $line->item;
-                $this->identifier($x, 'ram:GlobalID', $item->standardId, true);
-                if ($this->level->includes(ProfileLevel::En16931)) {
-                    $x->element('ram:SellerAssignedID', $item->sellerId);
-                    $x->element('ram:BuyerAssignedID', $item->buyerId);
-                }
-                $x->element('ram:Name', $item->name);
-                if ($this->level->includes(ProfileLevel::En16931)) {
-                    $x->element('ram:Description', $item->description);
-                    foreach ($item->attributes as $attribute) {
-                        $x->group('ram:ApplicableProductCharacteristic', function (XmlBuilder $x) use ($attribute): void {
-                            $x->element('ram:Description', $attribute->name);
-                            $x->element('ram:Value', $attribute->value);
-                        });
-                    }
-                    foreach ($item->classifications as $classification) {
-                        $x->group('ram:DesignatedProductClassification', fn (XmlBuilder $x) => $x->element('ram:ClassCode', $classification->code, [
-                            'listID' => $classification->listId->value,
-                            'listVersionID' => $classification->listVersion,
-                        ]));
-                    }
-                    $x->group('ram:OriginTradeCountry', fn (XmlBuilder $x) => $x->element('ram:ID', $item->originCountry));
-                }
-                if ($extended) {
-                    foreach ($line->extended->includedProducts ?? [] as $product) {
-                        $x->group('ram:IncludedReferencedProduct', function (XmlBuilder $x) use ($product): void {
-                            $x->element('ram:SellerAssignedID', $product->sellerId);
-                            $x->element('ram:Name', $product->name);
-                            $x->element('ram:Description', $product->description);
-                            if ($product->quantity !== null) {
-                                $x->element('ram:UnitQuantity', Format::quantity($product->quantity), ['unitCode' => $product->unit?->value]);
-                            }
-                        });
-                    }
-                }
-            });
+    /**
+     * Identifier, parent line and note of a line (BT-126, BT-127).
+     */
+    private function lineDocument(XmlBuilder $x, InvoiceLine $line, ?string $parentId, bool $extended): void
+    {
+        $x->element('ram:LineID', $line->id);
+        if ($extended) {
+            $x->element('ram:ParentLineID', $parentId);
+            $x->element('ram:LineStatusReasonCode', $line->extended->lineStatusReasonCode
+                ?? ($line->subLines !== [] ? 'GROUP' : ($parentId !== null ? 'DETAIL' : null)));
+        }
+        $x->group('ram:IncludedNote', fn (XmlBuilder $x) => $x->element('ram:Content', $line->note));
+    }
 
-            $x->required('ram:SpecifiedLineTradeAgreement', function (XmlBuilder $x) use ($line, $extended): void {
-                $references = $this->lineReferences($line, DocumentReference::TYPE_ORDER);
-                if ($this->level->includes(ProfileLevel::En16931) || $extended) {
-                    $orderReference = $references[0] ?? null;
-                    $x->group('ram:BuyerOrderReferencedDocument', function (XmlBuilder $x) use ($line, $orderReference, $extended): void {
-                        if ($extended) {
-                            $x->element('ram:IssuerAssignedID', $orderReference?->id);
-                        }
-                        $x->element('ram:LineID', $line->orderLineReference ?? $orderReference?->lineId);
-                    });
-                }
-                if ($extended) {
-                    foreach ($this->lineReferences($line, DocumentReference::TYPE_CONTRACT) as $contract) {
-                        $x->group('ram:ContractReferencedDocument', function (XmlBuilder $x) use ($contract): void {
-                            $x->element('ram:IssuerAssignedID', $contract->id);
-                            $x->element('ram:LineID', $contract->lineId);
-                        });
-                    }
-                }
-
-                $price = $line->price;
-                if ($price->grossPrice !== null) {
-                    $x->group('ram:GrossPriceProductTradePrice', function (XmlBuilder $x) use ($price): void {
-                        $x->element('ram:ChargeAmount', Format::price($price->grossPrice));
-                        if ($price->baseQuantity !== null) {
-                            $x->element('ram:BasisQuantity', Format::quantity($price->baseQuantity), ['unitCode' => $price->baseQuantityUnit?->value]);
-                        }
-                        if ($price->discount !== null && ! $price->discount->isZero()) {
-                            $x->group('ram:AppliedTradeAllowanceCharge', function (XmlBuilder $x) use ($price): void {
-                                $x->group('ram:ChargeIndicator', fn (XmlBuilder $x) => $x->element('udt:Indicator', 'false'));
-                                $x->element('ram:ActualAmount', Format::price($price->discount));
-                            });
-                        }
-                    });
-                }
-                $x->required('ram:NetPriceProductTradePrice', function (XmlBuilder $x) use ($price): void {
-                    $x->element('ram:ChargeAmount', Format::price($price->netPrice ?? throw new CalculationException('Missing net price.')));
-                    if ($price->baseQuantity !== null) {
-                        $x->element('ram:BasisQuantity', Format::quantity($price->baseQuantity), ['unitCode' => $price->baseQuantityUnit?->value]);
+    /**
+     * The item of a line (BG-31).
+     */
+    private function lineProduct(XmlBuilder $x, InvoiceLine $line, bool $extended): void
+    {
+        $item = $line->item;
+        $this->identifier($x, 'ram:GlobalID', $item->standardId, true);
+        if ($this->level->includes(ProfileLevel::En16931)) {
+            $x->element('ram:SellerAssignedID', $item->sellerId);
+            $x->element('ram:BuyerAssignedID', $item->buyerId);
+        }
+        $x->element('ram:Name', $item->name);
+        if ($this->level->includes(ProfileLevel::En16931)) {
+            $x->element('ram:Description', $item->description);
+            foreach ($item->attributes as $attribute) {
+                $x->group('ram:ApplicableProductCharacteristic', function (XmlBuilder $x) use ($attribute): void {
+                    $x->element('ram:Description', $attribute->name);
+                    $x->element('ram:Value', $attribute->value);
+                });
+            }
+            foreach ($item->classifications as $classification) {
+                $x->group('ram:DesignatedProductClassification', fn (XmlBuilder $x) => $x->element('ram:ClassCode', $classification->code, [
+                    'listID' => $classification->listId->value,
+                    'listVersionID' => $classification->listVersion,
+                ]));
+            }
+            $x->group('ram:OriginTradeCountry', fn (XmlBuilder $x) => $x->element('ram:ID', $item->originCountry));
+        }
+        if ($extended) {
+            foreach ($line->extended->includedProducts ?? [] as $product) {
+                $x->group('ram:IncludedReferencedProduct', function (XmlBuilder $x) use ($product): void {
+                    $x->element('ram:SellerAssignedID', $product->sellerId);
+                    $x->element('ram:Name', $product->name);
+                    $x->element('ram:Description', $product->description);
+                    if ($product->quantity !== null) {
+                        $x->element('ram:UnitQuantity', Format::quantity($product->quantity), ['unitCode' => $product->unit?->value]);
                     }
                 });
-            });
+            }
+        }
+    }
 
-            $x->required('ram:SpecifiedLineTradeDelivery', function (XmlBuilder $x) use ($line, $extended): void {
-                $x->element('ram:BilledQuantity', Format::quantity($line->quantity), ['unitCode' => $line->unit->value]);
+    /**
+     * Order and contract references and the prices of a line (BG-29).
+     */
+    private function lineAgreement(XmlBuilder $x, InvoiceLine $line, bool $extended): void
+    {
+        $references = $this->lineReferences($line, DocumentReference::TYPE_ORDER);
+        if ($this->level->includes(ProfileLevel::En16931) || $extended) {
+            $orderReference = $references[0] ?? null;
+            $x->group('ram:BuyerOrderReferencedDocument', function (XmlBuilder $x) use ($line, $orderReference, $extended): void {
                 if ($extended) {
-                    if ($line->extended?->shipTo !== null) {
-                        $x->group('ram:ShipToTradeParty', fn (XmlBuilder $x) => $this->extendedParty($x, $line->extended->shipTo));
-                    }
-                    if ($line->extended?->deliveryDate !== null) {
-                        $x->group('ram:ActualDeliverySupplyChainEvent', fn (XmlBuilder $x) => $x->required('ram:OccurrenceDateTime', fn (XmlBuilder $x) => $this->dateTime($x, $line->extended->deliveryDate)));
-                    }
-                    foreach ($this->lineReferences($line, DocumentReference::TYPE_DESPATCH_ADVICE) as $reference) {
-                        $x->group('ram:DespatchAdviceReferencedDocument', function (XmlBuilder $x) use ($reference): void {
-                            $x->element('ram:IssuerAssignedID', $reference->id);
-                            $x->element('ram:LineID', $reference->lineId);
-                        });
-                    }
-                    foreach ($this->lineReferences($line, DocumentReference::TYPE_RECEIVING_ADVICE) as $reference) {
-                        $x->group('ram:ReceivingAdviceReferencedDocument', function (XmlBuilder $x) use ($reference): void {
-                            $x->element('ram:IssuerAssignedID', $reference->id);
-                            $x->element('ram:LineID', $reference->lineId);
-                        });
-                    }
+                    $x->element('ram:IssuerAssignedID', $orderReference?->id);
                 }
+                $x->element('ram:LineID', $line->orderLineReference ?? $orderReference?->lineId);
             });
+        }
+        if ($extended) {
+            foreach ($this->lineReferences($line, DocumentReference::TYPE_CONTRACT) as $contract) {
+                $x->group('ram:ContractReferencedDocument', function (XmlBuilder $x) use ($contract): void {
+                    $x->element('ram:IssuerAssignedID', $contract->id);
+                    $x->element('ram:LineID', $contract->lineId);
+                });
+            }
+        }
 
-            $x->required('ram:SpecifiedLineTradeSettlement', function (XmlBuilder $x) use ($line, $extended): void {
-                $x->required('ram:ApplicableTradeTax', fn (XmlBuilder $x) => $this->categoryTax($x, $line->vat->category, $line->vat->rate));
-                if ($line->period !== null) {
-                    $this->period($x, 'ram:BillingSpecifiedPeriod', $line->period);
+        $price = $line->price;
+        if ($price->grossPrice !== null) {
+            $x->group('ram:GrossPriceProductTradePrice', function (XmlBuilder $x) use ($price): void {
+                $x->element('ram:ChargeAmount', Format::price($price->grossPrice));
+                if ($price->baseQuantity !== null) {
+                    $x->element('ram:BasisQuantity', Format::quantity($price->baseQuantity), ['unitCode' => $price->baseQuantityUnit?->value]);
                 }
-                foreach ([...$line->charges, ...$line->allowances] as $entry) {
-                    $this->lineAllowanceCharge($x, $entry);
-                }
-                $x->required('ram:SpecifiedTradeSettlementLineMonetarySummation', fn (XmlBuilder $x) => $x->element('ram:LineTotalAmount', $this->amount($line->netAmount)));
-                if ($this->level->includes(ProfileLevel::En16931)) {
-                    if ($line->objectId !== null) {
-                        $x->group('ram:AdditionalReferencedDocument', function (XmlBuilder $x) use ($line): void {
-                            $x->element('ram:IssuerAssignedID', $line->objectId?->value);
-                            $x->element('ram:TypeCode', DocumentReferenceTypeCode::InvoicedObject->value);
-                            $x->element('ram:ReferenceTypeCode', $line->objectId?->schemeValue());
-                        });
-                    }
-                    if ($extended) {
-                        foreach ($this->lineReferences($line, DocumentReference::TYPE_OTHER) as $reference) {
-                            $x->group('ram:AdditionalReferencedDocument', function (XmlBuilder $x) use ($reference): void {
-                                $x->element('ram:IssuerAssignedID', $reference->id);
-                                $x->element('ram:LineID', $reference->lineId);
-                                $x->element('ram:TypeCode', $reference->typeCode->value ?? DocumentReferenceTypeCode::AdditionalDocument->value);
-                                $x->element('ram:Name', $reference->description);
-                            });
-                        }
-                    }
-                    $x->group('ram:ReceivableSpecifiedTradeAccountingAccount', fn (XmlBuilder $x) => $x->element('ram:ID', $line->buyerAccountingReference));
+                if ($price->discount !== null && ! $price->discount->isZero()) {
+                    $x->group('ram:AppliedTradeAllowanceCharge', function (XmlBuilder $x) use ($price): void {
+                        $x->group('ram:ChargeIndicator', fn (XmlBuilder $x) => $x->element('udt:Indicator', 'false'));
+                        $x->element('ram:ActualAmount', Format::price($price->discount));
+                    });
                 }
             });
+        }
+        $x->required('ram:NetPriceProductTradePrice', function (XmlBuilder $x) use ($price): void {
+            $x->element('ram:ChargeAmount', Format::price($price->netPrice ?? throw new CalculationException('Missing net price.')));
+            if ($price->baseQuantity !== null) {
+                $x->element('ram:BasisQuantity', Format::quantity($price->baseQuantity), ['unitCode' => $price->baseQuantityUnit?->value]);
+            }
         });
+    }
+
+    /**
+     * Quantity and delivery of a line (BT-129).
+     */
+    private function lineDelivery(XmlBuilder $x, InvoiceLine $line, bool $extended): void
+    {
+        $x->element('ram:BilledQuantity', Format::quantity($line->quantity), ['unitCode' => $line->unit->value]);
+        if ($extended) {
+            if ($line->extended?->shipTo !== null) {
+                $x->group('ram:ShipToTradeParty', fn (XmlBuilder $x) => $this->extendedParty($x, $line->extended->shipTo));
+            }
+            if ($line->extended?->deliveryDate !== null) {
+                $x->group('ram:ActualDeliverySupplyChainEvent', fn (XmlBuilder $x) => $x->required('ram:OccurrenceDateTime', fn (XmlBuilder $x) => $this->dateTime($x, $line->extended->deliveryDate)));
+            }
+            foreach ($this->lineReferences($line, DocumentReference::TYPE_DESPATCH_ADVICE) as $reference) {
+                $x->group('ram:DespatchAdviceReferencedDocument', function (XmlBuilder $x) use ($reference): void {
+                    $x->element('ram:IssuerAssignedID', $reference->id);
+                    $x->element('ram:LineID', $reference->lineId);
+                });
+            }
+            foreach ($this->lineReferences($line, DocumentReference::TYPE_RECEIVING_ADVICE) as $reference) {
+                $x->group('ram:ReceivingAdviceReferencedDocument', function (XmlBuilder $x) use ($reference): void {
+                    $x->element('ram:IssuerAssignedID', $reference->id);
+                    $x->element('ram:LineID', $reference->lineId);
+                });
+            }
+        }
+    }
+
+    /**
+     * VAT, period, allowances, charges and the net amount of a line.
+     */
+    private function lineSettlement(XmlBuilder $x, InvoiceLine $line, bool $extended): void
+    {
+        $x->required('ram:ApplicableTradeTax', fn (XmlBuilder $x) => $this->categoryTax($x, $line->vat->category, $line->vat->rate));
+        if ($line->period !== null) {
+            $this->period($x, 'ram:BillingSpecifiedPeriod', $line->period);
+        }
+        foreach ([...$line->charges, ...$line->allowances] as $entry) {
+            $this->lineAllowanceCharge($x, $entry);
+        }
+        $x->required('ram:SpecifiedTradeSettlementLineMonetarySummation', fn (XmlBuilder $x) => $x->element('ram:LineTotalAmount', $this->amount($line->netAmount)));
+        if ($this->level->includes(ProfileLevel::En16931)) {
+            if ($line->objectId !== null) {
+                $x->group('ram:AdditionalReferencedDocument', function (XmlBuilder $x) use ($line): void {
+                    $x->element('ram:IssuerAssignedID', $line->objectId?->value);
+                    $x->element('ram:TypeCode', DocumentReferenceTypeCode::InvoicedObject->value);
+                    $x->element('ram:ReferenceTypeCode', $line->objectId?->schemeValue());
+                });
+            }
+            if ($extended) {
+                foreach ($this->lineReferences($line, DocumentReference::TYPE_OTHER) as $reference) {
+                    $x->group('ram:AdditionalReferencedDocument', function (XmlBuilder $x) use ($reference): void {
+                        $x->element('ram:IssuerAssignedID', $reference->id);
+                        $x->element('ram:LineID', $reference->lineId);
+                        $x->element('ram:TypeCode', $reference->typeCode->value ?? DocumentReferenceTypeCode::AdditionalDocument->value);
+                        $x->element('ram:Name', $reference->description);
+                    });
+                }
+            }
+            $x->group('ram:ReceivableSpecifiedTradeAccountingAccount', fn (XmlBuilder $x) => $x->element('ram:ID', $line->buyerAccountingReference));
+        }
     }
 
     private function agreement(XmlBuilder $x): void
@@ -285,52 +312,9 @@ final readonly class CiiDocumentWriter
 
         $x->element('ram:BuyerReference', $invoice->buyerReference);
 
-        $x->required('ram:SellerTradeParty', function (XmlBuilder $x) use ($invoice, $en16931): void {
-            $seller = $invoice->seller;
-            if ($this->level->includes(ProfileLevel::BasicWl)) {
-                $this->partyIdentifiers($x, $seller->identifiers);
-            }
-            $x->element('ram:Name', $seller->name);
-            if ($en16931) {
-                $x->element('ram:Description', $seller->additionalLegalInfo);
-            }
-            $x->group('ram:SpecifiedLegalOrganization', function (XmlBuilder $x) use ($seller): void {
-                $this->identifier($x, 'ram:ID', $seller->legalRegistration);
-                if ($this->level->includes(ProfileLevel::BasicWl)) {
-                    $x->element('ram:TradingBusinessName', $seller->tradingName);
-                }
-            });
-            if ($en16931 && $seller->contact !== null) {
-                $this->contact($x, $seller->contact);
-            }
-            // MINIMUM contains only the seller country code (BT-40) of the postal address.
-            $this->address($x, $seller->address, countryOnly: ! $this->level->includes(ProfileLevel::BasicWl));
-            $this->electronicAddress($x, $seller->electronicAddress);
-            $this->taxRegistration($x, $seller->vatId, 'VA');
-            $this->taxRegistration($x, $seller->taxNumber, 'FC');
-        });
+        $x->required('ram:SellerTradeParty', fn (XmlBuilder $x) => $this->sellerParty($x, $invoice, $en16931));
 
-        $x->required('ram:BuyerTradeParty', function (XmlBuilder $x) use ($invoice, $en16931): void {
-            $buyer = $invoice->buyer;
-            if ($this->level->includes(ProfileLevel::BasicWl) && $buyer->identifier !== null) {
-                $this->partyIdentifier($x, $buyer->identifier);
-            }
-            $x->element('ram:Name', $buyer->name);
-            $x->group('ram:SpecifiedLegalOrganization', function (XmlBuilder $x) use ($buyer, $en16931): void {
-                $this->identifier($x, 'ram:ID', $buyer->legalRegistration);
-                if ($en16931) {
-                    $x->element('ram:TradingBusinessName', $buyer->tradingName);
-                }
-            });
-            if ($en16931 && $buyer->contact !== null) {
-                $this->contact($x, $buyer->contact);
-            }
-            if ($this->level->includes(ProfileLevel::BasicWl)) {
-                $this->address($x, $buyer->address);
-                $this->electronicAddress($x, $buyer->electronicAddress);
-                $this->taxRegistration($x, $buyer->vatId, 'VA');
-            }
-        });
+        $x->required('ram:BuyerTradeParty', fn (XmlBuilder $x) => $this->buyerParty($x, $invoice, $en16931));
 
         if ($this->level->includes(ProfileLevel::BasicWl) && $invoice->sellerTaxRepresentative !== null) {
             $representative = $invoice->sellerTaxRepresentative;
@@ -405,6 +389,61 @@ final readonly class CiiDocumentWriter
                 $x->element('ram:ID', $project->id);
                 $x->element('ram:Name', $project->name ?? $project->id);
             });
+        }
+    }
+
+    /**
+     * The seller (BG-4) with its address, contact, identifiers and tax registrations.
+     */
+    private function sellerParty(XmlBuilder $x, InvoiceData $invoice, bool $en16931): void
+    {
+        $seller = $invoice->seller;
+        if ($this->level->includes(ProfileLevel::BasicWl)) {
+            $this->partyIdentifiers($x, $seller->identifiers);
+        }
+        $x->element('ram:Name', $seller->name);
+        if ($en16931) {
+            $x->element('ram:Description', $seller->additionalLegalInfo);
+        }
+        $x->group('ram:SpecifiedLegalOrganization', function (XmlBuilder $x) use ($seller): void {
+            $this->identifier($x, 'ram:ID', $seller->legalRegistration);
+            if ($this->level->includes(ProfileLevel::BasicWl)) {
+                $x->element('ram:TradingBusinessName', $seller->tradingName);
+            }
+        });
+        if ($en16931 && $seller->contact !== null) {
+            $this->contact($x, $seller->contact);
+        }
+        // MINIMUM contains only the seller country code (BT-40) of the postal address.
+        $this->address($x, $seller->address, countryOnly: ! $this->level->includes(ProfileLevel::BasicWl));
+        $this->electronicAddress($x, $seller->electronicAddress);
+        $this->taxRegistration($x, $seller->vatId, 'VA');
+        $this->taxRegistration($x, $seller->taxNumber, 'FC');
+    }
+
+    /**
+     * The buyer (BG-7) with its address, contact and identifiers.
+     */
+    private function buyerParty(XmlBuilder $x, InvoiceData $invoice, bool $en16931): void
+    {
+        $buyer = $invoice->buyer;
+        if ($this->level->includes(ProfileLevel::BasicWl) && $buyer->identifier !== null) {
+            $this->partyIdentifier($x, $buyer->identifier);
+        }
+        $x->element('ram:Name', $buyer->name);
+        $x->group('ram:SpecifiedLegalOrganization', function (XmlBuilder $x) use ($buyer, $en16931): void {
+            $this->identifier($x, 'ram:ID', $buyer->legalRegistration);
+            if ($en16931) {
+                $x->element('ram:TradingBusinessName', $buyer->tradingName);
+            }
+        });
+        if ($en16931 && $buyer->contact !== null) {
+            $this->contact($x, $buyer->contact);
+        }
+        if ($this->level->includes(ProfileLevel::BasicWl)) {
+            $this->address($x, $buyer->address);
+            $this->electronicAddress($x, $buyer->electronicAddress);
+            $this->taxRegistration($x, $buyer->vatId, 'VA');
         }
     }
 
@@ -527,26 +566,7 @@ final readonly class CiiDocumentWriter
             $this->paymentTerms($x);
         }
 
-        $x->required('ram:SpecifiedTradeSettlementHeaderMonetarySummation', function (XmlBuilder $x) use ($totals, $basicWl, $invoice): void {
-            if ($basicWl) {
-                $x->element('ram:LineTotalAmount', Format::amount($totals->lineNetSum));
-                $x->element('ram:ChargeTotalAmount', $this->amount($totals->chargeSum));
-                $x->element('ram:AllowanceTotalAmount', $this->amount($totals->allowanceSum));
-            }
-            $x->element('ram:TaxBasisTotalAmount', Format::amount($totals->netTotal));
-            $x->element('ram:TaxTotalAmount', $this->amount($totals->vatTotal), ['currencyID' => $invoice->currency]);
-            if ($basicWl && $totals->vatTotalInTaxCurrency !== null) {
-                $x->element('ram:TaxTotalAmount', Format::amount($totals->vatTotalInTaxCurrency), ['currencyID' => $invoice->taxCurrency]);
-            }
-            if ($basicWl) {
-                $x->element('ram:RoundingAmount', $this->amount($totals->roundingAmount));
-            }
-            $x->element('ram:GrandTotalAmount', Format::amount($totals->grossTotal));
-            if ($basicWl) {
-                $x->element('ram:TotalPrepaidAmount', $this->amount($totals->prepaidAmount));
-            }
-            $x->element('ram:DuePayableAmount', Format::amount($totals->amountDue));
-        });
+        $x->required('ram:SpecifiedTradeSettlementHeaderMonetarySummation', fn (XmlBuilder $x) => $this->monetarySummation($x, $totals, $basicWl, $invoice));
 
         if ($basicWl && $invoice->precedingInvoices !== []) {
             // The CII binding allows a single preceding invoice reference on header level.
@@ -563,6 +583,31 @@ final readonly class CiiDocumentWriter
         if ($basicWl) {
             $x->group('ram:ReceivableSpecifiedTradeAccountingAccount', fn (XmlBuilder $x) => $x->element('ram:ID', $invoice->buyerAccountingReference));
         }
+    }
+
+    /**
+     * The document totals (BG-22).
+     */
+    private function monetarySummation(XmlBuilder $x, Totals $totals, bool $basicWl, InvoiceData $invoice): void
+    {
+        if ($basicWl) {
+            $x->element('ram:LineTotalAmount', Format::amount($totals->lineNetSum));
+            $x->element('ram:ChargeTotalAmount', $this->amount($totals->chargeSum));
+            $x->element('ram:AllowanceTotalAmount', $this->amount($totals->allowanceSum));
+        }
+        $x->element('ram:TaxBasisTotalAmount', Format::amount($totals->netTotal));
+        $x->element('ram:TaxTotalAmount', $this->amount($totals->vatTotal), ['currencyID' => $invoice->currency]);
+        if ($basicWl && $totals->vatTotalInTaxCurrency !== null) {
+            $x->element('ram:TaxTotalAmount', Format::amount($totals->vatTotalInTaxCurrency), ['currencyID' => $invoice->taxCurrency]);
+        }
+        if ($basicWl) {
+            $x->element('ram:RoundingAmount', $this->amount($totals->roundingAmount));
+        }
+        $x->element('ram:GrandTotalAmount', Format::amount($totals->grossTotal));
+        if ($basicWl) {
+            $x->element('ram:TotalPrepaidAmount', $this->amount($totals->prepaidAmount));
+        }
+        $x->element('ram:DuePayableAmount', Format::amount($totals->amountDue));
     }
 
     private function paymentMeans(XmlBuilder $x, PaymentInstructions $instructions): void

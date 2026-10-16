@@ -98,6 +98,17 @@ final readonly class UblDocumentWriter
             });
         }
 
+        $this->documentReferences($x);
+    }
+
+    /**
+     * Order, preceding invoice, despatch, receipt, tender, contract, project and attached
+     * document references (BT-12 to BT-18, BG-3, BG-24), in the order of the UBL schema.
+     */
+    private function documentReferences(XmlBuilder $x): void
+    {
+        $i = $this->invoice;
+
         if ($i->purchaseOrderReference !== null || $i->salesOrderReference !== null) {
             $x->group('cac:OrderReference', function (XmlBuilder $x) use ($i): void {
                 $x->element('cbc:ID', $i->purchaseOrderReference ?? 'NA');
