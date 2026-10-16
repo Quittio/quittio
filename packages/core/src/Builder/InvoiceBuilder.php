@@ -9,6 +9,7 @@ use Brick\Money\Money;
 use Closure;
 use Quittio\Core\Builder\Concerns\BuildsAllowancesAndCharges;
 use Quittio\Core\Builder\Concerns\BuildsDelivery;
+use Quittio\Core\Builder\Concerns\BuildsExtensions;
 use Quittio\Core\Builder\Concerns\BuildsHeader;
 use Quittio\Core\Builder\Concerns\BuildsLines;
 use Quittio\Core\Builder\Concerns\BuildsNotesAndAttachments;
@@ -75,6 +76,7 @@ class InvoiceBuilder
 {
     use BuildsAllowancesAndCharges;
     use BuildsDelivery;
+    use BuildsExtensions;
     use BuildsHeader;
     use BuildsLines;
     use BuildsNotesAndAttachments;
@@ -308,28 +310,6 @@ class InvoiceBuilder
     private array $derivedChargeBases = [];
 
     private bool $linesChanged = false;
-
-    /**
-     * Data of the profile EXTENDED of ZUGFeRD/Factur-X (further parties, delivery terms,
-     * instalments …); other profiles do not write it.
-     */
-    public function extended(ExtendedData $extended): static
-    {
-        $this->extended = $extended;
-
-        return $this;
-    }
-
-    /**
-     * Data of the XRechnung extension (e.g. third party payments), written only with the
-     * profile xrechnung-extension.
-     */
-    public function xrechnungExtension(XRechnungExtensionData $extension): static
-    {
-        $this->xrechnungExtension = $extension;
-
-        return $this;
-    }
 
     /**
      * Applies the defaults of a seller, e.g. the seller of config/quittio.php with its bank
