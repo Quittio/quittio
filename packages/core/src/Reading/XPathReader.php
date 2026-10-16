@@ -16,10 +16,15 @@ use Quittio\Core\Codes\CodeList;
 use Quittio\Core\Codes\RawCode;
 use Quittio\Core\Data\AllowanceCharge\DocumentAllowance;
 use Quittio\Core\Data\AllowanceCharge\DocumentCharge;
+use Quittio\Core\Data\InvoiceData;
+use Quittio\Core\Data\Totals\Totals;
+use Quittio\Core\Data\Totals\VatBreakdown;
 use Quittio\Core\Enums\AllowanceReasonCode;
 use Quittio\Core\Enums\ChargeReasonCode;
 use Quittio\Core\Enums\VatCategory;
+use Quittio\Core\Enums\VatExemptionReasonCode;
 use Quittio\Core\Exceptions\InvalidArgumentException;
+use Quittio\Core\Profiles\Syntax;
 use Quittio\Core\Support\Amount;
 use Quittio\Core\Support\Date;
 use Quittio\Core\Support\Decimal;
@@ -160,6 +165,102 @@ abstract class XPathReader
     /**
      * Strict ISO date (UBL xs:date: YYYY-MM-DD with optional time zone).
      */
+    /**
+     * Document totals (BG-22) from the node $paths['node'] of $context; $paths names the
+     * elements of the syntax relative to that node. Missing required totals are reported
+     * (BR-12 to BR-15) and read as zero. With $vatWithoutCurrency, a total VAT amount (BT-110)
+     * without currencyID is read in the invoice currency and reported.
+     *
+     * @param  array{node: string, vat: string, lineNet: string, allowance: string, charge: string, net: string, gross: string, due: string, prepaid: string, rounding: string}  $paths
+     */
+    protected function totals(DOMElement $context, array $paths, ?string $taxCurrency, bool $hasLines, bool $vatWithoutCurrency = false): ?Totals
+    {
+        $node = $this->node($context, $paths['node']);
+        if ($node === null) {
+            $this->missingTotals($hasLines);
+
+            return null;
+        }
+
+        $c = $this->currency;
+        // BT-110 is the VAT total in the invoice currency only; BT-111 the one in the VAT accounting currency.
+        $vatTotal = $this->amountIn($node, $paths['vat'], $c);
+        if ($vatWithoutCurrency && $vatTotal === null && ($vatTotal = $this->amountIn($node, $paths['vat'], '')) !== null) {
+            $this->finding('QUITTIO-READER-CURRENCY', 'The total VAT amount (BT-110) has no currencyID; it was read in the invoice currency.', 'BT-110');
+        }
+        $vatInTaxCurrency = $taxCurrency !== null && $taxCurrency !== $c
+            ? $this->money($this->amountIn($node, $paths['vat'], $taxCurrency), $taxCurrency, 'BT-111')
+            : null;
+
+        $allowanceSum = $this->money($this->value($node, $paths['allowance']), $c, 'BT-107');
+        $chargeSum = $this->money($this->value($node, $paths['charge']), $c, 'BT-108');
+        $netTotal = $this->requiredTotal($node, $paths['net'], 'BT-109', 'BR-13', 'Invoice total amount without VAT');
+
+        return new Totals(
+            lineNetSum: $this->lineNetSum($this->money($this->value($node, $paths['lineNet']), $c, 'BT-106'), $hasLines, $netTotal, $allowanceSum, $chargeSum),
+            netTotal: $netTotal,
+            grossTotal: $this->requiredTotal($node, $paths['gross'], 'BT-112', 'BR-14', 'Invoice total amount with VAT'),
+            amountDue: $this->requiredTotal($node, $paths['due'], 'BT-115', 'BR-15', 'Amount due for payment'),
+            allowanceSum: $allowanceSum,
+            chargeSum: $chargeSum,
+            vatTotal: $this->money($vatTotal, $c, 'BT-110'),
+            vatTotalInTaxCurrency: $vatInTaxCurrency,
+            prepaidAmount: $this->money($this->value($node, $paths['prepaid']), $c, 'BT-113'),
+            roundingAmount: $this->money($this->value($node, $paths['rounding']), $c, 'BT-114'),
+        );
+    }
+
+    /**
+     * A required total; missing, it is reported with the rule and read as zero.
+     */
+    protected function requiredTotal(DOMElement $node, string $path, string $bt, string $rule, string $label): Money
+    {
+        return $this->money($this->value($node, $path), $this->currency, $bt) ?? $this->missingAmount($bt, $rule, $label);
+    }
+
+    /**
+     * The declared VAT breakdown (BG-23) among the nodes $paths['node'] of $context.
+     *
+     * @param  array{node: string, taxable: string, tax: string, category: string, rate: string, reason: string, reasonCode: string}  $paths
+     * @return list<VatBreakdown>
+     */
+    protected function vatBreakdown(DOMElement $context, array $paths): array
+    {
+        $result = [];
+        foreach ($this->nodes($context, $paths['node']) as $node) {
+            $result[] = new VatBreakdown(
+                taxableAmount: $this->money($this->value($node, $paths['taxable']), $this->currency, 'BT-116') ?? $this->missingAmount('BT-116', 'BR-45', 'VAT category taxable amount'),
+                taxAmount: $this->money($this->value($node, $paths['tax']), $this->currency, 'BT-117') ?? $this->missingAmount('BT-117', 'BR-46', 'VAT category tax amount'),
+                category: $this->category($this->value($node, $paths['category']), 'BT-118'),
+                rate: $this->decimal($this->value($node, $paths['rate']), 'BT-119'),
+                exemptionReason: $this->value($node, $paths['reason']),
+                exemptionReasonCode: $this->code($this->value($node, $paths['reasonCode']), VatExemptionReasonCode::class, 'BT-121'),
+            );
+        }
+
+        return $result;
+    }
+
+    /**
+     * The result of a read: exemption reasons that the breakdown declares are applied to the
+     * data, the findings of the read are attached.
+     *
+     * @param  list<VatBreakdown>  $breakdown
+     */
+    protected function result(InvoiceData $data, Syntax $syntax, ?string $specificationId, ?Totals $totals, array $breakdown, string $xml): ReadResult
+    {
+        return new ReadResult(
+            data: DeclaredExemptionReasons::apply($data),
+            syntax: $syntax->value,
+            specificationId: $specificationId,
+            profile: null,
+            declaredTotals: $totals,
+            declaredVatBreakdown: $breakdown,
+            findings: $this->findings,
+            xml: $xml,
+        );
+    }
+
     /**
      * Document level allowances (BG-20) among the nodes $paths['node'] of $parent; $paths names
      * the elements of the syntax relative to one node.

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Quittio\Core\Xml\Ubl;
 
 use Brick\Math\BigDecimal;
-use Brick\Money\Money;
 use DOMDocument;
 use DOMElement;
 use Quittio\Core\Codes\RawCode;
@@ -41,7 +40,6 @@ use Quittio\Core\Data\Payment\PaymentTerms;
 use Quittio\Core\Data\References\PrecedingInvoiceReference;
 use Quittio\Core\Data\References\ProjectReference;
 use Quittio\Core\Data\Totals\Totals;
-use Quittio\Core\Data\Totals\VatBreakdown;
 use Quittio\Core\Enums\AllowanceReasonCode;
 use Quittio\Core\Enums\ChargeReasonCode;
 use Quittio\Core\Enums\ElectronicAddressScheme;
@@ -53,10 +51,8 @@ use Quittio\Core\Enums\NoteSubjectCode;
 use Quittio\Core\Enums\PaymentMeansCode;
 use Quittio\Core\Enums\TaxPointDateCode;
 use Quittio\Core\Enums\UnitCode;
-use Quittio\Core\Enums\VatExemptionReasonCode;
 use Quittio\Core\Exceptions\InvalidArgumentException;
 use Quittio\Core\Profiles\Syntax;
-use Quittio\Core\Reading\DeclaredExemptionReasons;
 use Quittio\Core\Reading\FormatReader;
 use Quittio\Core\Reading\ReadResult;
 use Quittio\Core\Reading\XPathReader;
@@ -80,6 +76,30 @@ final class UblReader extends XPathReader implements FormatReader
         'percent' => 'cbc:MultiplierFactorNumeric',
         'reason' => 'cbc:AllowanceChargeReason',
         'reasonCode' => 'cbc:AllowanceChargeReasonCode',
+    ];
+
+    private const array TOTALS = [
+        'node' => 'cac:LegalMonetaryTotal',
+        // The VAT totals are siblings of the monetary totals.
+        'vat' => '../cac:TaxTotal/cbc:TaxAmount',
+        'lineNet' => 'cbc:LineExtensionAmount',
+        'allowance' => 'cbc:AllowanceTotalAmount',
+        'charge' => 'cbc:ChargeTotalAmount',
+        'net' => 'cbc:TaxExclusiveAmount',
+        'gross' => 'cbc:TaxInclusiveAmount',
+        'due' => 'cbc:PayableAmount',
+        'prepaid' => 'cbc:PrepaidAmount',
+        'rounding' => 'cbc:PayableRoundingAmount',
+    ];
+
+    private const array VAT_BREAKDOWN = [
+        'node' => 'cac:TaxTotal/cac:TaxSubtotal',
+        'taxable' => 'cbc:TaxableAmount',
+        'tax' => 'cbc:TaxAmount',
+        'category' => 'cac:TaxCategory/cbc:ID',
+        'rate' => 'cac:TaxCategory/cbc:Percent',
+        'reason' => 'cac:TaxCategory/cbc:TaxExemptionReason',
+        'reasonCode' => 'cac:TaxCategory/cbc:TaxExemptionReasonCode',
     ];
 
     private bool $creditNote = false;
@@ -110,8 +130,8 @@ final class UblReader extends XPathReader implements FormatReader
         $this->checkAmountCurrencies($document, $this->currency, $taxCurrency, $this->nodes($root, 'cac:TaxTotal/cbc:TaxAmount'));
         $specificationId = $this->value($root, 'cbc:CustomizationID');
         $lineElement = $this->creditNote ? 'cac:CreditNoteLine' : 'cac:InvoiceLine';
-        $totals = $this->totals($root, $taxCurrency, $this->nodes($root, $lineElement) !== []);
-        $breakdown = $this->vatBreakdown($root);
+        $totals = $this->totals($root, self::TOTALS, $taxCurrency, $this->nodes($root, $lineElement) !== []);
+        $breakdown = $this->vatBreakdown($root, self::VAT_BREAKDOWN);
         $project = $this->value($root, 'cac:ProjectReference/cbc:ID')
             ?? $this->value($root, 'cac:AdditionalDocumentReference[cbc:DocumentTypeCode="50"]/cbc:ID');
         $dueDate = $this->value($root, 'cbc:DueDate') ?? $this->value($root, 'cac:PaymentMeans/cbc:PaymentDueDate');
@@ -156,22 +176,10 @@ final class UblReader extends XPathReader implements FormatReader
             prepaidAmount: $totals?->prepaidAmount,
             roundingAmount: $totals?->roundingAmount,
             xrechnungExtension: $this->xrechnungExtension($root),
-            standardVersion: $specificationId !== null && str_starts_with($specificationId, 'urn:cen.eu:en16931:2026')
-                ? StandardVersion::En16931_2026
-                : StandardVersion::En16931_2017,
+            standardVersion: StandardVersion::fromSpecificationId($specificationId),
         );
-        $data = DeclaredExemptionReasons::apply($data);
 
-        return new ReadResult(
-            data: $data,
-            syntax: Syntax::Ubl->value,
-            specificationId: $specificationId,
-            profile: null,
-            declaredTotals: $totals,
-            declaredVatBreakdown: $breakdown,
-            findings: $this->findings,
-            xml: $xml,
-        );
+        return $this->result($data, Syntax::Ubl, $specificationId, $totals, $breakdown, $xml);
     }
 
     /**
@@ -460,45 +468,6 @@ final class UblReader extends XPathReader implements FormatReader
         );
     }
 
-    private function totals(DOMElement $root, ?string $taxCurrency, bool $hasLines): ?Totals
-    {
-        $node = $this->node($root, 'cac:LegalMonetaryTotal');
-        if ($node === null) {
-            $this->missingTotals($hasLines);
-
-            return null;
-        }
-
-        $c = $this->currency;
-        // BT-110 is the TaxAmount in the invoice currency only; BT-111 the one in the VAT accounting currency.
-        $vat = $this->amountIn($root, 'cac:TaxTotal/cbc:TaxAmount', $c);
-        $vatInTaxCurrency = $taxCurrency !== null && $taxCurrency !== $c
-            ? $this->money($this->amountIn($root, 'cac:TaxTotal/cbc:TaxAmount', $taxCurrency), $taxCurrency, 'BT-111')
-            : null;
-
-        $allowanceSum = $this->money($this->value($node, 'cbc:AllowanceTotalAmount'), $c, 'BT-107');
-        $chargeSum = $this->money($this->value($node, 'cbc:ChargeTotalAmount'), $c, 'BT-108');
-        $netTotal = $this->requiredTotal($node, 'cbc:TaxExclusiveAmount', 'BT-109', 'BR-13', 'Invoice total amount without VAT');
-
-        return new Totals(
-            lineNetSum: $this->lineNetSum($this->money($this->value($node, 'cbc:LineExtensionAmount'), $c, 'BT-106'), $hasLines, $netTotal, $allowanceSum, $chargeSum),
-            netTotal: $netTotal,
-            grossTotal: $this->requiredTotal($node, 'cbc:TaxInclusiveAmount', 'BT-112', 'BR-14', 'Invoice total amount with VAT'),
-            amountDue: $this->requiredTotal($node, 'cbc:PayableAmount', 'BT-115', 'BR-15', 'Amount due for payment'),
-            allowanceSum: $allowanceSum,
-            chargeSum: $chargeSum,
-            vatTotal: $this->money($vat, $c, 'BT-110'),
-            vatTotalInTaxCurrency: $vatInTaxCurrency,
-            prepaidAmount: $this->money($this->value($node, 'cbc:PrepaidAmount'), $c, 'BT-113'),
-            roundingAmount: $this->money($this->value($node, 'cbc:PayableRoundingAmount'), $c, 'BT-114'),
-        );
-    }
-
-    private function requiredTotal(DOMElement $node, string $path, string $bt, string $rule, string $label): Money
-    {
-        return $this->money($this->value($node, $path), $this->currency, $bt) ?? $this->missingAmount($bt, $rule, $label);
-    }
-
     private function taxPointDateCode(?string $value): TaxPointDateCode|RawCode|null
     {
         if ($value === null) {
@@ -511,26 +480,6 @@ final class UblReader extends XPathReader implements FormatReader
         }
 
         return $code;
-    }
-
-    /**
-     * @return list<VatBreakdown>
-     */
-    private function vatBreakdown(DOMElement $root): array
-    {
-        $result = [];
-        foreach ($this->nodes($root, 'cac:TaxTotal/cac:TaxSubtotal') as $node) {
-            $result[] = new VatBreakdown(
-                taxableAmount: $this->money($this->value($node, 'cbc:TaxableAmount'), $this->currency, 'BT-116') ?? $this->missingAmount('BT-116', 'BR-45', 'VAT category taxable amount'),
-                taxAmount: $this->money($this->value($node, 'cbc:TaxAmount'), $this->currency, 'BT-117') ?? $this->missingAmount('BT-117', 'BR-46', 'VAT category tax amount'),
-                category: $this->category($this->value($node, 'cac:TaxCategory/cbc:ID'), 'BT-118'),
-                rate: $this->decimal($this->value($node, 'cac:TaxCategory/cbc:Percent'), 'BT-119'),
-                exemptionReason: $this->value($node, 'cac:TaxCategory/cbc:TaxExemptionReason'),
-                exemptionReasonCode: $this->code($this->value($node, 'cac:TaxCategory/cbc:TaxExemptionReasonCode'), VatExemptionReasonCode::class, 'BT-121'),
-            );
-        }
-
-        return $result;
     }
 
     private function line(DOMElement $node, bool $subLine): InvoiceLine

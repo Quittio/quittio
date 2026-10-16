@@ -6,7 +6,6 @@ namespace Quittio\Core\Xml\Cii;
 
 use Brick\Math\BigDecimal;
 use Brick\Math\RoundingMode;
-use Brick\Money\Money;
 use DOMDocument;
 use DOMElement;
 use Quittio\Core\Codes\RawCode;
@@ -47,7 +46,6 @@ use Quittio\Core\Data\References\DocumentReference;
 use Quittio\Core\Data\References\PrecedingInvoiceReference;
 use Quittio\Core\Data\References\ProjectReference;
 use Quittio\Core\Data\Totals\Totals;
-use Quittio\Core\Data\Totals\VatBreakdown;
 use Quittio\Core\Enums\AllowanceReasonCode;
 use Quittio\Core\Enums\ChargeReasonCode;
 use Quittio\Core\Enums\ElectronicAddressScheme;
@@ -59,10 +57,8 @@ use Quittio\Core\Enums\NoteSubjectCode;
 use Quittio\Core\Enums\PaymentMeansCode;
 use Quittio\Core\Enums\TaxPointDateCode;
 use Quittio\Core\Enums\UnitCode;
-use Quittio\Core\Enums\VatExemptionReasonCode;
 use Quittio\Core\Exceptions\InvalidArgumentException;
 use Quittio\Core\Profiles\Syntax;
-use Quittio\Core\Reading\DeclaredExemptionReasons;
 use Quittio\Core\Reading\FormatReader;
 use Quittio\Core\Reading\ReadResult;
 use Quittio\Core\Reading\XPathReader;
@@ -89,6 +85,29 @@ final class CiiReader extends XPathReader implements FormatReader
         'percent' => 'ram:CalculationPercent',
         'reason' => 'ram:Reason',
         'reasonCode' => 'ram:ReasonCode',
+    ];
+
+    private const array TOTALS = [
+        'node' => 'ram:SpecifiedTradeSettlementHeaderMonetarySummation',
+        'vat' => 'ram:TaxTotalAmount',
+        'lineNet' => 'ram:LineTotalAmount',
+        'allowance' => 'ram:AllowanceTotalAmount',
+        'charge' => 'ram:ChargeTotalAmount',
+        'net' => 'ram:TaxBasisTotalAmount',
+        'gross' => 'ram:GrandTotalAmount',
+        'due' => 'ram:DuePayableAmount',
+        'prepaid' => 'ram:TotalPrepaidAmount',
+        'rounding' => 'ram:RoundingAmount',
+    ];
+
+    private const array VAT_BREAKDOWN = [
+        'node' => 'ram:ApplicableTradeTax',
+        'taxable' => 'ram:BasisAmount',
+        'tax' => 'ram:CalculatedAmount',
+        'category' => 'ram:CategoryCode',
+        'rate' => 'ram:RateApplicablePercent',
+        'reason' => 'ram:ExemptionReason',
+        'reasonCode' => 'ram:ExemptionReasonCode',
     ];
 
     /** Deepest accepted sub line hierarchy (ParentLineID chains). */
@@ -125,8 +144,8 @@ final class CiiReader extends XPathReader implements FormatReader
         $specificationId = $this->value($root, 'rsm:ExchangedDocumentContext/ram:GuidelineSpecifiedDocumentContextParameter/ram:ID');
 
         $hasLines = $this->nodes($root, 'rsm:SupplyChainTradeTransaction/ram:IncludedSupplyChainTradeLineItem') !== [];
-        $declaredTotals = $this->totals($settlement, $taxCurrency, $hasLines);
-        $declaredBreakdown = $this->vatBreakdown($settlement);
+        $declaredTotals = $this->totals($settlement, self::TOTALS, $taxCurrency, $hasLines, vatWithoutCurrency: true);
+        $declaredBreakdown = $this->vatBreakdown($settlement, self::VAT_BREAKDOWN);
 
         [$taxPointDate, $taxPointDateCode] = $this->taxPoint($settlement);
         $paymentTerms = $this->paymentTerms($settlement);
@@ -172,22 +191,10 @@ final class CiiReader extends XPathReader implements FormatReader
             roundingAmount: $declaredTotals?->roundingAmount,
             extended: $extended,
             meta: $this->meta($settlement, $taxCurrency),
-            standardVersion: $specificationId !== null && str_starts_with($specificationId, 'urn:cen.eu:en16931:2026')
-                ? StandardVersion::En16931_2026
-                : StandardVersion::En16931_2017,
+            standardVersion: StandardVersion::fromSpecificationId($specificationId),
         );
-        $data = DeclaredExemptionReasons::apply($data);
 
-        return new ReadResult(
-            data: $data,
-            syntax: Syntax::Cii->value,
-            specificationId: $specificationId,
-            profile: null,
-            declaredTotals: $declaredTotals,
-            declaredVatBreakdown: $declaredBreakdown,
-            findings: $this->findings,
-            xml: $xml,
-        );
+        return $this->result($data, Syntax::Cii, $specificationId, $declaredTotals, $declaredBreakdown, $xml);
     }
 
     /**
@@ -614,68 +621,6 @@ final class CiiReader extends XPathReader implements FormatReader
         }
 
         return $references;
-    }
-
-    private function totals(DOMElement $settlement, ?string $taxCurrency, bool $hasLines): ?Totals
-    {
-        $node = $this->node($settlement, 'ram:SpecifiedTradeSettlementHeaderMonetarySummation');
-        if ($node === null) {
-            $this->missingTotals($hasLines);
-
-            return null;
-        }
-
-        $c = $this->currency;
-        // BT-110 is the TaxTotalAmount in the invoice currency only; BT-111 the one in the VAT accounting currency.
-        $vatTotal = $this->amountIn($node, 'ram:TaxTotalAmount', $c);
-        if ($vatTotal === null && ($vatTotal = $this->amountIn($node, 'ram:TaxTotalAmount', '')) !== null) {
-            $this->finding('QUITTIO-READER-CURRENCY', 'The total VAT amount (BT-110) has no currencyID; it was read in the invoice currency.', 'BT-110');
-        }
-        $vatInTaxCurrency = $taxCurrency !== null && $taxCurrency !== $c
-            ? $this->money($this->amountIn($node, 'ram:TaxTotalAmount', $taxCurrency), $taxCurrency, 'BT-111')
-            : null;
-
-        $allowanceSum = $this->money($this->value($node, 'ram:AllowanceTotalAmount'), $c, 'BT-107');
-        $chargeSum = $this->money($this->value($node, 'ram:ChargeTotalAmount'), $c, 'BT-108');
-        $netTotal = $this->requiredTotal($node, 'ram:TaxBasisTotalAmount', 'BT-109', 'BR-13', 'Invoice total amount without VAT');
-
-        return new Totals(
-            lineNetSum: $this->lineNetSum($this->money($this->value($node, 'ram:LineTotalAmount'), $c, 'BT-106'), $hasLines, $netTotal, $allowanceSum, $chargeSum),
-            netTotal: $netTotal,
-            grossTotal: $this->requiredTotal($node, 'ram:GrandTotalAmount', 'BT-112', 'BR-14', 'Invoice total amount with VAT'),
-            amountDue: $this->requiredTotal($node, 'ram:DuePayableAmount', 'BT-115', 'BR-15', 'Amount due for payment'),
-            allowanceSum: $allowanceSum,
-            chargeSum: $chargeSum,
-            vatTotal: $this->money($vatTotal, $c, 'BT-110'),
-            vatTotalInTaxCurrency: $vatInTaxCurrency,
-            prepaidAmount: $this->money($this->value($node, 'ram:TotalPrepaidAmount'), $c, 'BT-113'),
-            roundingAmount: $this->money($this->value($node, 'ram:RoundingAmount'), $c, 'BT-114'),
-        );
-    }
-
-    private function requiredTotal(DOMElement $node, string $path, string $bt, string $rule, string $label): Money
-    {
-        return $this->money($this->value($node, $path), $this->currency, $bt) ?? $this->missingAmount($bt, $rule, $label);
-    }
-
-    /**
-     * @return list<VatBreakdown>
-     */
-    private function vatBreakdown(DOMElement $settlement): array
-    {
-        $result = [];
-        foreach ($this->nodes($settlement, 'ram:ApplicableTradeTax') as $node) {
-            $result[] = new VatBreakdown(
-                taxableAmount: $this->money($this->value($node, 'ram:BasisAmount'), $this->currency, 'BT-116') ?? $this->missingAmount('BT-116', 'BR-45', 'VAT category taxable amount'),
-                taxAmount: $this->money($this->value($node, 'ram:CalculatedAmount'), $this->currency, 'BT-117') ?? $this->missingAmount('BT-117', 'BR-46', 'VAT category tax amount'),
-                category: $this->category($this->value($node, 'ram:CategoryCode'), 'BT-118'),
-                rate: $this->decimal($this->value($node, 'ram:RateApplicablePercent'), 'BT-119'),
-                exemptionReason: $this->value($node, 'ram:ExemptionReason'),
-                exemptionReasonCode: $this->code($this->value($node, 'ram:ExemptionReasonCode'), VatExemptionReasonCode::class, 'BT-121'),
-            );
-        }
-
-        return $result;
     }
 
     /**

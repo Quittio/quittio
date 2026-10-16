@@ -20,6 +20,21 @@ enum StandardVersion: string
         };
     }
 
+    /**
+     * The version of a specification identifier (BT-24): EN 16931:2026 for identifiers that
+     * start with its URN, otherwise EN 16931:2017.
+     */
+    public static function fromSpecificationId(?string $specificationId): self
+    {
+        foreach (self::cases() as $version) {
+            if ($specificationId !== null && $version !== self::En16931_2017 && str_starts_with($specificationId, $version->specificationId())) {
+                return $version;
+            }
+        }
+
+        return self::En16931_2017;
+    }
+
     public static function default(): self
     {
         return self::En16931_2017;

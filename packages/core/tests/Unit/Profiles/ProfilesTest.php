@@ -209,3 +209,13 @@ it('accepts sub lines and extension fields in profiles that declare them', funct
         ->and(Validate::codes(Validate::data($invoice, 'en16931', options: ['syntax' => Syntax::Ubl])))
         ->toContain('QUITTIO-PROFILE-SUBLINES', 'QUITTIO-PROFILE-XRECHNUNG-EXTENSION-ONLY', 'QUITTIO-THIRD-PARTY-PAYMENTS');
 });
+
+it('tells the EN 16931 version from the specification identifier', function (?string $id, StandardVersion $version) {
+    expect(StandardVersion::fromSpecificationId($id))->toBe($version);
+})->with([
+    ['urn:cen.eu:en16931:2017', StandardVersion::En16931_2017],
+    ['urn:cen.eu:en16931:2017#compliant#urn:xeinkauf.de:kosit:xrechnung_3.0', StandardVersion::En16931_2017],
+    ['urn:cen.eu:en16931:2026#compliant#urn:factur-x.eu:1p0:basic', StandardVersion::En16931_2026],
+    ['urn:example:unknown', StandardVersion::En16931_2017],
+    [null, StandardVersion::En16931_2017],
+]);
