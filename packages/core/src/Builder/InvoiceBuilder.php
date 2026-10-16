@@ -529,6 +529,74 @@ class InvoiceBuilder
 
     private function assemble(bool $requireLines): InvoiceData
     {
+        $lines = $this->assembleLines($requireLines);
+        [$allowances, $charges] = $this->assembleAllowancesAndCharges($lines);
+        $seller = $this->seller instanceof PartyBuilder ? $this->seller->buildSeller() : $this->seller;
+        $buyer = $this->buyer instanceof PartyBuilder ? $this->buyer->buildBuyer() : $this->buyer;
+
+        [$meta, $keepDeclared, $amountsChanged] = $this->declaredAmountsMeta();
+        if ($amountsChanged) {
+            // Changed data is recalculated completely: line net amounts of the previous data must
+            // not be taken as declared later (e.g. by from() of a stored draft).
+            $lines = self::withoutNetAmounts($lines);
+        }
+
+        $invoice = new InvoiceData(
+            number: $this->number,
+            issueDate: $this->issueDate ?? Date::today($this->meta->timezone),
+            typeCode: $this->typeCode,
+            currency: $this->currency,
+            seller: $seller ?? throw InvalidInvoiceData::missing('BG-4', 'seller'),
+            buyer: $buyer ?? throw InvalidInvoiceData::missing('BG-7', 'buyer'),
+            lines: $lines,
+            taxCurrency: $this->taxCurrency,
+            taxPointDate: $this->taxPointDate,
+            taxPointDateCode: $this->taxPointDateCode,
+            dueDate: $this->dueDate,
+            buyerReference: $this->references['buyerReference'] ?? null,
+            projectReference: $this->projectReference,
+            contractReference: $this->references['contractReference'] ?? null,
+            purchaseOrderReference: $this->references['purchaseOrderReference'] ?? null,
+            salesOrderReference: $this->references['salesOrderReference'] ?? null,
+            receivingAdviceReference: $this->references['receivingAdviceReference'] ?? null,
+            despatchAdviceReference: $this->references['despatchAdviceReference'] ?? null,
+            tenderReference: $this->references['tenderReference'] ?? null,
+            invoicedObject: $this->invoicedObject,
+            buyerAccountingReference: $this->references['buyerAccountingReference'] ?? null,
+            paymentTerms: $this->paymentTerms instanceof PaymentTermsBuilder ? $this->paymentTerms->build($this->currency) : $this->paymentTerms,
+            notes: $this->notes,
+            businessProcess: $this->businessProcess,
+            precedingInvoices: $this->precedingInvoices,
+            payee: $this->payee instanceof PartyBuilder ? $this->payee->buildPayee() : $this->payee,
+            sellerTaxRepresentative: $this->taxRepresentative,
+            delivery: $this->delivery,
+            invoicingPeriod: $this->invoicingPeriod,
+            paymentInstructions: $this->paymentInstructions,
+            allowances: $allowances,
+            charges: $charges,
+            attachments: $this->attachments,
+            prepaidAmount: $this->money($this->prepaid),
+            roundingAmount: $this->money($this->rounding),
+            vatBreakdown: $keepDeclared ? $this->declaredBreakdown : [],
+            extended: $this->extended,
+            xrechnungExtension: $this->xrechnungExtension,
+            presentation: $this->presentation,
+            meta: $meta,
+            standardVersion: $this->standardVersion,
+        );
+
+        // Amounts taken over from the data given to from() belong to their inputs (fingerprint).
+        return DeclaredAmounts::hasAmounts($invoice) ? $invoice->with(['meta' => $meta->withAmountsFingerprint(DeclaredAmounts::fingerprint($invoice))]) : $invoice;
+    }
+
+    /**
+     * The lines: identifiers, VAT default and supply date for the builders, then checked for
+     * unique identifiers and, for build(), at least one line (BG-25).
+     *
+     * @return list<InvoiceLine>
+     */
+    private function assembleLines(bool $requireLines): array
+    {
         $locale = $this->meta->locale;
         // Decides the rate of presets that depend on the date (DatedTaxPreset); line periods win.
         $supplyDate = SupplyDate::resolve(null, $this->taxPointDate, $this->delivery?->actualDeliveryDate, $this->invoicingPeriod, $this->issueDate);
@@ -575,6 +643,19 @@ class InvoiceBuilder
             throw InvalidInvoiceData::missing('BG-25', 'invoice lines');
         }
 
+        return $lines;
+    }
+
+    /**
+     * Document level allowances and charges: those taken over by from() (with percentages and
+     * split discounts following changed lines), the added ones and the discounts split over the
+     * VAT groups of the lines.
+     *
+     * @param  list<InvoiceLine>  $lines
+     * @return array{list<DocumentAllowance>, list<DocumentCharge>}
+     */
+    private function assembleAllowancesAndCharges(array $lines): array
+    {
         $allowances = $this->existingAllowances;
         $charges = $this->existingCharges;
         $splitter = new AllowanceSplitter;
@@ -632,9 +713,17 @@ class InvoiceBuilder
             )];
         }
 
-        $seller = $this->seller instanceof PartyBuilder ? $this->seller->buildSeller() : $this->seller;
-        $buyer = $this->buyer instanceof PartyBuilder ? $this->buyer->buildBuyer() : $this->buyer;
+        return [array_values($allowances), array_values($charges)];
+    }
 
+    /**
+     * The meta data with the declared amounts flags of the result: declared amounts (from())
+     * stay as long as no amount-relevant input changed.
+     *
+     * @return array{Meta, bool, bool} meta, whether the declared amounts are kept, whether amounts changed
+     */
+    private function declaredAmountsMeta(): array
+    {
         // Declared amounts (from()) stay as long as no amount-relevant input changed; an implied
         // exchange rate is not applied to changed amounts or to another VAT accounting currency.
         $amountsChanged = $this->linesChanged || $this->allowanceCharges !== [] || $this->splitAllowanceCharges !== []
@@ -646,61 +735,11 @@ class InvoiceBuilder
             ->withFlag(Meta::FLAG_DECLARED_AMOUNTS_RECALCULATED, ! $amountsChanged && $this->meta->hasFlag(Meta::FLAG_DECLARED_AMOUNTS_RECALCULATED))
             ->withFlag(Meta::FLAG_CANCELLATION_VAT_ALIGNED, ! $amountsChanged && $this->meta->hasFlag(Meta::FLAG_CANCELLATION_VAT_ALIGNED))
             ->withDeclaredVatInTaxCurrency($keepDeclared ? $this->meta->declaredVatInTaxCurrency() : null);
-        if ($amountsChanged) {
-            // Changed data is recalculated completely: line net amounts of the previous data must
-            // not be taken as declared later (e.g. by from() of a stored draft).
-            $lines = self::withoutNetAmounts($lines);
-        }
         if ($this->impliedExchangeRate && ($amountsChanged || $this->taxCurrency !== $this->declaredTaxCurrency)) {
             $meta = $meta->with(['exchangeRate' => null, 'exchangeRateDate' => null]);
         }
 
-        $invoice = new InvoiceData(
-            number: $this->number,
-            issueDate: $this->issueDate ?? Date::today($this->meta->timezone),
-            typeCode: $this->typeCode,
-            currency: $this->currency,
-            seller: $seller ?? throw InvalidInvoiceData::missing('BG-4', 'seller'),
-            buyer: $buyer ?? throw InvalidInvoiceData::missing('BG-7', 'buyer'),
-            lines: $lines,
-            taxCurrency: $this->taxCurrency,
-            taxPointDate: $this->taxPointDate,
-            taxPointDateCode: $this->taxPointDateCode,
-            dueDate: $this->dueDate,
-            buyerReference: $this->references['buyerReference'] ?? null,
-            projectReference: $this->projectReference,
-            contractReference: $this->references['contractReference'] ?? null,
-            purchaseOrderReference: $this->references['purchaseOrderReference'] ?? null,
-            salesOrderReference: $this->references['salesOrderReference'] ?? null,
-            receivingAdviceReference: $this->references['receivingAdviceReference'] ?? null,
-            despatchAdviceReference: $this->references['despatchAdviceReference'] ?? null,
-            tenderReference: $this->references['tenderReference'] ?? null,
-            invoicedObject: $this->invoicedObject,
-            buyerAccountingReference: $this->references['buyerAccountingReference'] ?? null,
-            paymentTerms: $this->paymentTerms instanceof PaymentTermsBuilder ? $this->paymentTerms->build($this->currency) : $this->paymentTerms,
-            notes: $this->notes,
-            businessProcess: $this->businessProcess,
-            precedingInvoices: $this->precedingInvoices,
-            payee: $this->payee instanceof PartyBuilder ? $this->payee->buildPayee() : $this->payee,
-            sellerTaxRepresentative: $this->taxRepresentative,
-            delivery: $this->delivery,
-            invoicingPeriod: $this->invoicingPeriod,
-            paymentInstructions: $this->paymentInstructions,
-            allowances: $allowances,
-            charges: $charges,
-            attachments: $this->attachments,
-            prepaidAmount: $this->money($this->prepaid),
-            roundingAmount: $this->money($this->rounding),
-            vatBreakdown: $keepDeclared ? $this->declaredBreakdown : [],
-            extended: $this->extended,
-            xrechnungExtension: $this->xrechnungExtension,
-            presentation: $this->presentation,
-            meta: $meta,
-            standardVersion: $this->standardVersion,
-        );
-
-        // Amounts taken over from the data given to from() belong to their inputs (fingerprint).
-        return DeclaredAmounts::hasAmounts($invoice) ? $invoice->with(['meta' => $meta->withAmountsFingerprint(DeclaredAmounts::fingerprint($invoice))]) : $invoice;
+        return [$meta, $keepDeclared, $amountsChanged];
     }
 
     /**
