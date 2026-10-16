@@ -121,7 +121,9 @@ function publicApiOf(string $class): array
             continue;
         }
         $properties[] = implode(' ', array_filter([
-            ...Reflection::getModifierNames($property->getModifiers()),
+            $property->isPublic() ? 'public' : 'protected',
+            $property->isStatic() ? 'static' : '',
+            $property->isReadOnly() ? 'readonly' : '',
             (string) $property->getType(),
             '$'.$property->getName(),
         ]));
