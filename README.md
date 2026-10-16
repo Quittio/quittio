@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="art/banner-dark.svg">
-    <img src="art/banner-light.svg" alt="Quittio: Invoices, settled. E-invoicing for Laravel" width="1280">
+    <img src="art/banner-light.svg" alt="Quittio: Invoices, settled. E-invoicing for PHP and Laravel" width="1280">
   </picture>
 </p>
 
