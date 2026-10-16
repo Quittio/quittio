@@ -16,7 +16,7 @@ use Quittio\Core\Support\Date;
 /**
  * Delivery information (BG-13) and the invoicing period (BG-14).
  *
- * @internal part of {@see InvoiceBuilder}, which holds the state
+ * Part of {@see InvoiceBuilder}, which holds the state; use the builder, not the trait.
  */
 trait BuildsDelivery
 {

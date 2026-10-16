@@ -14,7 +14,7 @@ use Quittio\Core\Enums\NoteSubjectCode;
 /**
  * Invoice notes (BG-1) and supporting documents (BG-24).
  *
- * @internal part of {@see InvoiceBuilder}, which holds the state
+ * Part of {@see InvoiceBuilder}, which holds the state; use the builder, not the trait.
  */
 trait BuildsNotesAndAttachments
 {

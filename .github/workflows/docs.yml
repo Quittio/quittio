@@ -2,7 +2,8 @@ name: Docs
 
 # Builds the versioned documentation website (docs/_versioning/build.mjs): the latest release at
 # the root, the development version of master under /next/ and older minor versions under /X.Y/,
-# each with Jekyll, llms.txt, the Markdown pages and, for the root, the MCP index. Tests the MCP
+# each with Jekyll, llms.txt, the Markdown pages, the API reference under api/ (phpDocumentor)
+# and, for the root, the MCP index. Tests the MCP
 # server, checks the links and anchors of the built site, and deploys it to Cloudflare as a Worker
 # with static assets and the MCP server under /mcp (docs/wrangler.jsonc). Pull requests build only
 # /next/ and do not deploy. A published release rebuilds the site, so that the root shows it.
@@ -15,6 +16,8 @@ on:
     branches: [master]
     paths:
       - 'docs/**'
+      - 'packages/*/src/**'
+      - 'tools/docs/**'
       - '.github/workflows/docs.yml'
   pull_request:
     paths:
@@ -52,6 +55,12 @@ jobs:
           ruby-version: '4.0'
           bundler-cache: true
           working-directory: docs
+      # phpDocumentor builds the API reference of every version (tools/docs/phpdoc.sh, pinned SHA-256).
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php: '8.4'
+          coverage: none
+      - run: ../tools/docs/phpdoc.sh
       # Site address, repository link and "Edit this page" from the repository the workflow runs in.
       - run: |
           cat > _config.ci.yml <<CONFIG
@@ -71,7 +80,7 @@ jobs:
           DOCS_URL: ${{ vars.DOCS_URL }}
           REPOSITORY_URL: ${{ github.server_url }}/${{ github.repository }}
           EDIT_BRANCH: ${{ github.event.repository.default_branch }}
-      - run: node _versioning/build.mjs --config _config.ci.yml ${{ github.event_name == 'pull_request' && '--only-next' || '' }}
+      - run: node _versioning/build.mjs --config _config.ci.yml --api ../build/tools/phpDocumentor.phar ${{ github.event_name == 'pull_request' && '--only-next' || '' }}
         env:
           DOCS_URL: ${{ vars.DOCS_URL }}
           JEKYLL_ENV: production
@@ -81,7 +90,8 @@ jobs:
       - uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
         with:
           workingDirectory: docs/_site
-          args: --offline --include-fragments --root-dir ${{ github.workspace }}/docs/_site --no-progress './**/*.html'
+          # The generated API reference (api/) is not checked.
+          args: --offline --include-fragments --root-dir ${{ github.workspace }}/docs/_site --exclude-path '(^|/)api/' --no-progress './**/*.html'
           jobSummary: true
           # Outside of _site, which is deployed.
           output: ${{ runner.temp }}/lychee.md

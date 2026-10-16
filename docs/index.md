@@ -87,6 +87,7 @@ New to Quittio? Follow [Getting started](getting-started.md); new to e-invoicing
 | [Troubleshooting](troubleshooting.md) | Common errors with cause and fix |
 | [FAQ](faq.md) | Sending, the German e-invoicing obligation, Java, temporary files, queued invoices |
 | [Field reference](field-reference.md) | Every field of the data model with BT, cardinality and XML paths (generated) |
+| <a href="api/index.html">API reference</a> | Every public class and method with its parameters and doc comment (generated) |
 | [AI assistants](ai.md) | llms.txt, the MCP server of this documentation, Laravel Boost guidelines and skill |
 
 ## Licence

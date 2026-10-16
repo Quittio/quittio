@@ -89,6 +89,8 @@ These rules apply to every method on this page.
 
 ## Creating and building
 
+The tables of this page group the builder methods by topic and name their business terms. The <a href="api/classes/Quittio-Core-Builder-InvoiceBuilder.html">API reference</a> lists every method with its parameters.
+
 | Method | Description |
 |---|---|
 | `InvoiceBuilder::make()` | New, empty builder. Defaults: type code 380 (commercial invoice), currency `EUR`, EN 16931:2017. |

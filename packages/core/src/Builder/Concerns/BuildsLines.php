@@ -25,7 +25,7 @@ use Quittio\Core\Tax\TaxPreset;
 /**
  * Invoice lines (BG-25) and their groups.
  *
- * @internal part of {@see InvoiceBuilder}, which holds the state
+ * Part of {@see InvoiceBuilder}, which holds the state; use the builder, not the trait.
  */
 trait BuildsLines
 {

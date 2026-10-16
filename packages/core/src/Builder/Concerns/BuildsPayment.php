@@ -23,7 +23,7 @@ use Quittio\Core\Support\Decimal;
 /**
  * Payment instructions (BG-16 to BG-19), payment terms and the prepaid and rounding amounts (BT-113, BT-114).
  *
- * @internal part of {@see InvoiceBuilder}, which holds the state
+ * Part of {@see InvoiceBuilder}, which holds the state; use the builder, not the trait.
  */
 trait BuildsPayment
 {

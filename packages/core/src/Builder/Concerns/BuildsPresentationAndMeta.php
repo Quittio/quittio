@@ -15,7 +15,7 @@ use Quittio\Core\Support\Date;
 /**
  * Presentation, locale, time zone, custom values, flags and the source of the invoice.
  *
- * @internal part of {@see InvoiceBuilder}, which holds the state
+ * Part of {@see InvoiceBuilder}, which holds the state; use the builder, not the trait.
  */
 trait BuildsPresentationAndMeta
 {

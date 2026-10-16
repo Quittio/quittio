@@ -1,4 +1,114 @@
 {
+    "Quittio\\Core\\Builder\\Concerns\\BuildsAllowancesAndCharges": {
+        "kind": "trait",
+        "methods": [
+            "public allowance(Quittio\\Core\\Enums\\VatCategory $category, Brick\\Math\\BigDecimal|string|int|float|null $rate, ?string $amount = null, ?string $percent = null, ?string $reason = null, Quittio\\Core\\Enums\\AllowanceReasonCode|Quittio\\Core\\Codes\\RawCode|string|null $reasonCode = null, ?string $baseAmount = null, ?string $exemptionReason = null, Quittio\\Core\\Enums\\VatExemptionReasonCode|Quittio\\Core\\Codes\\RawCode|string|null $exemptionReasonCode = null): static",
+            "public charge(Quittio\\Core\\Enums\\VatCategory $category, Brick\\Math\\BigDecimal|string|int|float|null $rate, ?string $amount = null, ?string $percent = null, ?string $reason = null, Quittio\\Core\\Enums\\ChargeReasonCode|Quittio\\Core\\Codes\\RawCode|string|null $reasonCode = null, ?string $baseAmount = null, ?string $exemptionReason = null, Quittio\\Core\\Enums\\VatExemptionReasonCode|Quittio\\Core\\Codes\\RawCode|string|null $exemptionReasonCode = null): static",
+            "public discountAmount(Brick\\Math\\BigDecimal|string|int|float $amount, ?string $reason = null, Quittio\\Core\\Enums\\AllowanceReasonCode|Quittio\\Core\\Codes\\RawCode|string|null $reasonCode = Quittio\\Core\\Enums\\AllowanceReasonCode::Discount): static",
+            "public discountPercent(Brick\\Math\\BigDecimal|string|int|float $percent, ?string $reason = null, Quittio\\Core\\Enums\\AllowanceReasonCode|Quittio\\Core\\Codes\\RawCode|string|null $reasonCode = Quittio\\Core\\Enums\\AllowanceReasonCode::Discount): static"
+        ]
+    },
+    "Quittio\\Core\\Builder\\Concerns\\BuildsDelivery": {
+        "kind": "trait",
+        "methods": [
+            "public deliverTo(?string $recipientName, ?Quittio\\Core\\Data\\Party\\Address $address = null, ?Quittio\\Core\\Data\\Identifier $locationId = null): static",
+            "public delivery(Quittio\\Core\\Data\\Delivery\\Delivery $delivery): static",
+            "public deliveryDate(Quittio\\Core\\Support\\Date|DateTimeInterface|string $date): static",
+            "public invoicingPeriod(Quittio\\Core\\Support\\Date|string|null $start, Quittio\\Core\\Support\\Date|string|null $end = null): static"
+        ]
+    },
+    "Quittio\\Core\\Builder\\Concerns\\BuildsExtensions": {
+        "kind": "trait",
+        "methods": [
+            "public extended(Quittio\\Core\\Data\\Extensions\\ExtendedData $extended): static",
+            "public xrechnungExtension(Quittio\\Core\\Data\\Extensions\\XRechnungExtensionData $extension): static"
+        ]
+    },
+    "Quittio\\Core\\Builder\\Concerns\\BuildsHeader": {
+        "kind": "trait",
+        "methods": [
+            "public businessProcess(?string $process): static",
+            "public currency(string $currency): static",
+            "public dueDate(Quittio\\Core\\Support\\Date|DateTimeInterface|string $date): static",
+            "public exchangeRate(Brick\\Math\\BigDecimal|string|int|float $rate, Quittio\\Core\\Support\\Date|DateTimeInterface|string|null $date = null): static",
+            "public issueDate(Quittio\\Core\\Support\\Date|DateTimeInterface|string $date): static",
+            "public number(string $number): static",
+            "public standard(Quittio\\Core\\Standards\\StandardVersion $version): static",
+            "public taxCurrency(string $currency, Brick\\Math\\BigDecimal|string|int|float|null $exchangeRate = null, Quittio\\Core\\Support\\Date|DateTimeInterface|string|null $rateDate = null): static",
+            "public taxPointDate(Quittio\\Core\\Support\\Date|DateTimeInterface|string $date): static",
+            "public taxPointDateCode(Quittio\\Core\\Enums\\TaxPointDateCode $code): static",
+            "public type(Quittio\\Core\\Enums\\InvoiceTypeCode|Quittio\\Core\\Codes\\RawCode|string $type): static"
+        ]
+    },
+    "Quittio\\Core\\Builder\\Concerns\\BuildsLines": {
+        "kind": "trait",
+        "methods": [
+            "public group(string $id, string $title, bool $showSubtotal = true): static",
+            "public line(Quittio\\Core\\Data\\Lines\\InvoiceLine|Quittio\\Core\\Builder\\LineBuilder|Quittio\\Core\\Contracts\\ProvidesInvoiceLine|callable|array|string $line, Brick\\Math\\BigDecimal|string|int|float|null $netPrice = null, Brick\\Math\\BigDecimal|string|int|float|null $quantity = null, Quittio\\Core\\Enums\\UnitCode|Quittio\\Core\\Codes\\RawCode|string|null $unit = null, Quittio\\Core\\Tax\\TaxPreset|Quittio\\Core\\Enums\\VatCategory|null $vat = null, ?string $description = null, Brick\\Math\\BigDecimal|string|int|float|null $priceInclVat = null): static",
+            "public lines(iterable $lines): static",
+            "public removeLine(string $id): static",
+            "public updateLine(string $id, ?callable $change = null, Brick\\Math\\BigDecimal|string|int|float|null $netPrice = null, Brick\\Math\\BigDecimal|string|int|float|null $quantity = null, Brick\\Math\\BigDecimal|string|int|float|null $priceInclVat = null, ?string $name = null, ?string $description = null): static"
+        ]
+    },
+    "Quittio\\Core\\Builder\\Concerns\\BuildsNotesAndAttachments": {
+        "kind": "trait",
+        "methods": [
+            "public attachment(string $id, ?string $content = null, Quittio\\Core\\Enums\\MimeType|string|null $mimeType = null, ?string $filename = null, ?string $description = null, ?string $externalUri = null): static",
+            "public note(string $content, Quittio\\Core\\Enums\\NoteSubjectCode|Quittio\\Core\\Codes\\RawCode|string|null $subject = null): static"
+        ]
+    },
+    "Quittio\\Core\\Builder\\Concerns\\BuildsParties": {
+        "kind": "trait",
+        "methods": [
+            "public buyer(Quittio\\Core\\Data\\Party\\BuyerParty|Quittio\\Core\\Builder\\PartyBuilder|Quittio\\Core\\Contracts\\ProvidesParty|callable $buyer): static",
+            "public payee(Quittio\\Core\\Data\\Party\\PayeeParty|Quittio\\Core\\Builder\\PartyBuilder|callable|string $payee, ?string $identifier = null, ?string $legalRegistration = null, Quittio\\Core\\Enums\\IdentifierScheme|Quittio\\Core\\Codes\\RawCode|string|null $identifierScheme = null, Quittio\\Core\\Enums\\IdentifierScheme|Quittio\\Core\\Codes\\RawCode|string|null $legalRegistrationScheme = null): static",
+            "public seller(Quittio\\Core\\Data\\Party\\SellerParty|Quittio\\Core\\Builder\\PartyBuilder|Quittio\\Core\\Contracts\\ProvidesParty|callable $seller): static",
+            "public taxRepresentative(string $name, string $vatId, Quittio\\Core\\Data\\Party\\Address $address): static"
+        ]
+    },
+    "Quittio\\Core\\Builder\\Concerns\\BuildsPayment": {
+        "kind": "trait",
+        "methods": [
+            "public addPrepaid(Brick\\Math\\BigDecimal|string|int|float $amount): static",
+            "public cashDiscount(int $days, string $percent, ?string $baseAmount = null): static",
+            "public creditTransfer(string $accountId, ?string $bic = null, ?string $accountName = null): static",
+            "public directDebit(?string $mandateReference, ?string $creditorId = null, ?string $debitedIban = null): static",
+            "public dueInDays(int $days): static",
+            "public lateFee(?int $days = null, ?string $percent = null, ?string $text = null): static",
+            "public payment(Quittio\\Core\\Enums\\PaymentMeansCode|Quittio\\Core\\Codes\\RawCode|string $means, ?string $iban = null, ?string $bic = null, ?string $accountName = null, ?string $remittanceInformation = null, ?string $meansText = null): static",
+            "public paymentCard(string $lastDigits, ?string $holderName = null): static",
+            "public paymentTerms(Quittio\\Core\\Data\\Payment\\PaymentTerms|callable|string $terms): static",
+            "public prepaid(Brick\\Math\\BigDecimal|string|int|float $amount): static",
+            "public rounding(Brick\\Math\\BigDecimal|string|int|float $amount): static"
+        ]
+    },
+    "Quittio\\Core\\Builder\\Concerns\\BuildsPresentationAndMeta": {
+        "kind": "trait",
+        "methods": [
+            "public custom(string $key, mixed $value): static",
+            "public flag(string $flag, bool $enabled = true): static",
+            "public locale(string $locale): static",
+            "public presentation(Quittio\\Core\\Data\\Presentation\\Presentation|callable|array $presentation): static",
+            "public source(string $source): static",
+            "public timezone(string $timezone): static"
+        ]
+    },
+    "Quittio\\Core\\Builder\\Concerns\\BuildsReferences": {
+        "kind": "trait",
+        "methods": [
+            "public buyerAccountingReference(?string $reference): static",
+            "public buyerReference(?string $reference): static",
+            "public contractReference(?string $reference): static",
+            "public despatchAdviceReference(?string $reference): static",
+            "public invoicedObject(string $value, Quittio\\Core\\Codes\\RawCode|string|null $scheme = null): static",
+            "public precedingInvoice(string $number, Quittio\\Core\\Support\\Date|DateTimeInterface|string|null $issueDate = null): static",
+            "public projectReference(string $id, ?string $name = null): static",
+            "public purchaseOrderReference(?string $reference): static",
+            "public receivingAdviceReference(?string $reference): static",
+            "public salesOrderReference(?string $reference): static",
+            "public tenderReference(?string $reference): static"
+        ]
+    },
     "Quittio\\Core\\Builder\\InvoiceBuilder": {
         "kind": "class",
         "properties": [

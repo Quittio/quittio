@@ -17,7 +17,7 @@ use Quittio\Core\Support\Decimal;
 /**
  * Document level allowances and charges (BG-20, BG-21) and discounts split over the VAT rates.
  *
- * @internal part of {@see InvoiceBuilder}, which holds the state
+ * Part of {@see InvoiceBuilder}, which holds the state; use the builder, not the trait.
  */
 trait BuildsAllowancesAndCharges
 {

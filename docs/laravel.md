@@ -716,6 +716,8 @@ Issuer profiles replace the `seller` section, and the Managed archive uses its o
 
 ## Reference
 
+The tables below list the methods by purpose. The <a href="api/classes/Quittio-Laravel-QuittioManager.html">API reference</a> has every public class and method with its parameters, generated from the code of this version.
+
 ### Facade
 
 ```php

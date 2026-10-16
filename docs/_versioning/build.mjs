@@ -8,12 +8,14 @@
 // the version switcher (_includes/header_custom.html) of this checkout. /versions.json lists the
 // versions for the switcher, _headers keeps /next/ and old versions out of search engines.
 // llms.txt and the MCP index of the root (_worker/docs.generated.json) describe the latest release;
-// every version gets its own llms.txt as well.
+// every version gets its own llms.txt as well. With --api, every version also gets the API
+// reference of its public classes under api/ (phpDocumentor, tools/docs/phpdoc.sh downloads it).
 //
-// Usage (in docs/): node _versioning/build.mjs [--url https://docs.quittio.dev] [--only-next] [--config _config.ci.yml]
+// Usage (in docs/): node _versioning/build.mjs [--url https://docs.quittio.dev] [--only-next] [--config _config.ci.yml] [--api <phpDocumentor.phar>]
 
 import { execFileSync } from 'node:child_process';
-import { cpSync, existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
@@ -26,6 +28,7 @@ const { values: options } = parseArgs({
         next: { type: 'string' },
         'only-next': { type: 'boolean', default: false },
         config: { type: 'string', multiple: true, default: [] },
+        api: { type: 'string' },
     },
 });
 const url = options.url.replace(/\/+$/, '');
@@ -65,6 +68,9 @@ for (const version of versions) {
     // The AI files of every version; the MCP index (Worker) only for the root.
     run('node', [join(docs, '_worker', 'build.mjs'), '--docs', source, '--site', destination, '--base', `${url}${baseurl}`,
         '--index', version.prefix === '' || versions.length === 1 ? join(docs, '_worker', 'docs.generated.json') : 'none', '--mcp', `${url}/mcp`]);
+    if (options.api) {
+        api(version, destination);
+    }
     console.log(`${version.label}: ${version.ref ?? 'working tree'} → /${version.prefix}`);
 }
 
@@ -93,6 +99,27 @@ function sources(version) {
     cpSync(join(docs, '_includes', 'header_custom.html'), join(target, '_includes', 'header_custom.html'));
 
     return target;
+}
+
+/**
+ * The API reference of the public classes of a version (@internal is left out) under api/.
+ */
+function api(version, destination) {
+    let packages = join(repository, 'packages');
+    if (version.ref !== null) {
+        // Outside the repository: phpDocumentor skips paths that git ignores (build/).
+        packages = mkdtempSync(join(tmpdir(), `quittio-api-${version.name}-`));
+        mkdirSync(packages, { recursive: true });
+        const archive = execFileSync('git', ['-C', repository, 'archive', `${version.ref}:packages`], { maxBuffer: 256 * 1024 * 1024 });
+        execFileSync('tar', ['-xf', '-', '-C', packages], { input: archive });
+    }
+    const cache = mkdtempSync(join(tmpdir(), 'quittio-api-cache-'));
+    const label = version.channel === 'next' ? 'next' : version.name;
+    // Relative directories: phpDocumentor reads absolute ones as separate documentation sets.
+    execFileSync('php', [resolve(docs, options.api), 'run', '--quiet',
+        '-d', 'core/src', '-d', 'laravel/src', '-d', 'country-de/src',
+        '-t', join(destination, 'api'), '--cache-folder', cache,
+        '--title', `Quittio ${label} API`, '--visibility=public,protected', '--defaultpackagename=Quittio'], { cwd: packages, stdio: 'inherit' });
 }
 
 /**

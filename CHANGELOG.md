@@ -21,7 +21,7 @@ All notable changes to this project are documented in this file. The format foll
 - Lines without VAT treatment of a German seller get the preset key `de.standard` instead of `de.standard_19`, and `quittio.defaults.vat = 'de.reduced_7'` gives `de.reduced`. Applications that compare preset keys use `VatPreset::fromKey($key)?->canonical()`. Supplies from 2020-07-01 to 2020-12-31 get 16 % and 5 %.
 - `CiiWriter`, `UblWriter`, `CiiReader` and `UblReader` keep no state between calls: each call works with its own internal worker, so one instance can be used reentrantly. The readers no longer extend the internal `XPathReader` and therefore no longer expose its constants.
 - The render run resolves the logo of the presentation before it builds the view model (`ViewContext::$logo`, `ResolvedLogo`), so the view layer does no I/O; `ViewModelFactory` keeps no state between calls.
-- The documentation website is versioned: the root shows the latest release, `/next/` the development version and `/X.Y/` older minor versions, with a version switcher (`docs/_versioning/build.mjs`).
+- The documentation website is versioned: the root shows the latest release, `/next/` the development version and `/X.Y/` older minor versions, with a version switcher (`docs/_versioning/build.mjs`). Every version has a generated API reference under `api/` (phpDocumentor, `tools/docs/phpdoc.sh`); the builder traits under `Builder\Concerns` are no longer `@internal`, so their methods appear there.
 - Pull requests opened in the read-only split repositories `quittio/core`, `quittio/laravel` and `quittio/country-de` are closed automatically with a pointer to the monorepo.
 
 ### Deprecated

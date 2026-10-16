@@ -22,7 +22,7 @@ use Quittio\Core\Exceptions\InvalidArgumentException;
 /**
  * Seller, buyer, payee and tax representative (BG-4, BG-7, BG-10, BG-11).
  *
- * @internal part of {@see InvoiceBuilder}, which holds the state
+ * Part of {@see InvoiceBuilder}, which holds the state; use the builder, not the trait.
  */
 trait BuildsParties
 {

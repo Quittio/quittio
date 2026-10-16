@@ -16,7 +16,7 @@ use Quittio\Core\Support\Date;
 /**
  * Document references (BT-10 to BT-19, BG-3) and the invoiced object.
  *
- * @internal part of {@see InvoiceBuilder}, which holds the state
+ * Part of {@see InvoiceBuilder}, which holds the state; use the builder, not the trait.
  */
 trait BuildsReferences
 {

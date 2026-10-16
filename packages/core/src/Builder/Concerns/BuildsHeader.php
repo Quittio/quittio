@@ -21,7 +21,7 @@ use Quittio\Core\Support\Decimal;
 /**
  * Invoice number, dates, type, currencies, business process and standard version.
  *
- * @internal part of {@see InvoiceBuilder}, which holds the state
+ * Part of {@see InvoiceBuilder}, which holds the state; use the builder, not the trait.
  */
 trait BuildsHeader
 {

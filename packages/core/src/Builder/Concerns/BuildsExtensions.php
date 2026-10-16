@@ -13,7 +13,7 @@ use Quittio\Core\Data\Extensions\XRechnungExtensionData;
 /**
  * Data of the EXTENDED profile and of the XRechnung extension.
  *
- * @internal part of {@see InvoiceBuilder}, which holds the state
+ * Part of {@see InvoiceBuilder}, which holds the state; use the builder, not the trait.
  */
 trait BuildsExtensions
 {
