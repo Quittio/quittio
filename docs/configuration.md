@@ -77,7 +77,7 @@ The `defaults` section sets what an invoice uses when it does not set a value it
 | Key | Default | Change it when |
 |---|---|---|
 | `defaults.due_days` | `14` | Your invoices are due after another number of days. `null` = no due date unless the invoice sets one. |
-| `defaults.vat` | `null` (19 % for a German seller) | Most of your lines have another VAT rate, e.g. `'de.reduced_7'` (7 %) for a bookshop |
+| `defaults.vat` | `null` (19 % for a German seller) | Most of your lines have another VAT rate, e.g. `'de.reduced'` (7 %) for a bookshop |
 | `defaults.format` | `null` (automatic choice) | All your invoices need the same format, e.g. `'xrechnung-cii'` |
 | `defaults.locale` | `null` (German for a German seller) | Your invoices should be in another language, e.g. `'en'` |
 
@@ -163,7 +163,7 @@ Values used when an invoice or a render call does not set them itself.
 | `defaults.format` | string\|null | `null` | Format of a render call without `->format()`. `null` or `'auto'` = automatic choice by the format resolver: XRechnung for public buyers with a Leitweg-ID (the routing ID of a German public buyer, see [German terms](concepts.md#german-terms)), PDF for consumers, ZUGFeRD for businesses ([Automatic choice](formats.md#automatic-choice)). Keys: `zugferd` (PDF with embedded XML; aliases `factur-x`, `facturx`), `xrechnung-cii` (alias `xrechnung`), `xrechnung-ubl`, `cii`, `ubl`, `peppol`, `pdf`, `html`, `json`. |
 | `defaults.locale` | string\|null | `null` | Language of the invoice (labels, generated texts, number and date formats), e.g. `'de'` or `'en'`, when neither `->locale()` on the render call nor the invoice (`InvoiceBuilder::locale()`) sets one. `null` = the default of the seller's country pack (Germany: `de`). |
 | `defaults.due_days` | int\|numeric string\|null | `14` | Due date (BT-9) = issue date + this number of days. It applies to invoices that set neither a due date nor payment terms (`->dueInDays()`), never to credit notes. `null` or `''` switches it off. Other values fail with a `ConfigurationException`. |
-| `defaults.vat` | string\|null | `env('QUITTIO_DEFAULT_VAT')` | Tax preset of invoice lines without `->vat()`, by key, e.g. `'de.reduced_7'` for a bookshop. `null` = the standard rate of the seller's country pack (Germany: `de.standard_19`). Invoices of small businesses (`seller.small_business`) use the small business preset of the pack (`de.small_business`). An unknown key fails with a `ConfigurationException` when a line needs the default. See [Default VAT](building-invoices.md#default-vat). |
+| `defaults.vat` | string\|null | `env('QUITTIO_DEFAULT_VAT')` | Tax preset of invoice lines without `->vat()`, by key, e.g. `'de.reduced'` for a bookshop. `null` = the standard rate of the seller's country pack (Germany: `de.standard`). Invoices of small businesses (`seller.small_business`) use the small business preset of the pack (`de.small_business`). An unknown key fails with a `ConfigurationException` when a line needs the default. See [Default VAT](building-invoices.md#default-vat). |
 
 ## Country packs
 

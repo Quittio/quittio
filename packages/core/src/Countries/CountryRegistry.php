@@ -50,7 +50,7 @@ final class CountryRegistry
     }
 
     /**
-     * The tax preset with this key from the presets of the installed packs, e.g. "de.standard_19".
+     * The tax preset with this key from the presets of the installed packs, e.g. "de.standard".
      */
     public function taxPreset(string $key): ?TaxPreset
     {

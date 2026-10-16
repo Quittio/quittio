@@ -36,7 +36,7 @@ Amounts, prices, rates and quantities must be strings or integers: `netPrice: '1
 
 ### "Missing VAT information of line 1 (BG-30)"
 
-The line has no VAT rate. In Laravel every line without `vat:` gets the default VAT (19 % for a German seller, `quittio.defaults.vat`). Without Laravel there is no default: set the VAT per line (`vat: VatPreset::Standard19`), for the invoice with `->defaultVat(VatPreset::Standard19)`, or once for the application with `InvoiceBuilder::useDefaultVat(…)` ([Default VAT](building-invoices.md#default-vat)).
+The line has no VAT rate. In Laravel every line without `vat:` gets the default VAT (19 % for a German seller, `quittio.defaults.vat`). Without Laravel there is no default: set the VAT per line (`vat: VatPreset::Standard`), for the invoice with `->defaultVat(VatPreset::Standard)`, or once for the application with `InvoiceBuilder::useDefaultVat(…)` ([Default VAT](building-invoices.md#default-vat)).
 
 ### "Missing seller postal address (BG-5)" and other "Missing …"
 

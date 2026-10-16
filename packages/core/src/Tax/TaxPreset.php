@@ -16,7 +16,7 @@ use Quittio\Core\Enums\VatExemptionReasonCode;
 interface TaxPreset
 {
     /**
-     * Stable key, prefixed with the country code, e.g. "de.standard_19".
+     * Stable key, prefixed with the country code, e.g. "de.standard".
      */
     public function key(): string;
 

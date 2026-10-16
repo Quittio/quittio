@@ -9,10 +9,17 @@ All notable changes to this project are documented in this file. The format foll
 - Single PHP rules can be switched off, re-rated or replaced by their code: `validation.rules.disabled`, `validation.rules.severity` and `Quittio::extend('rule', …)` in Laravel, `RuleOverrides` with `Quittio::configureRules()` in the core. Official EN 16931 and Peppol rules need `allow_official`; unknown codes are refused. `Quittio::ruleCodes()` lists the known codes.
 - The calculation policy decides what happens with declared amounts of other systems: `calculation.declared_amounts` (`keep`, `recalculate`, `reject`), `CalculationPolicy` and `DeclaredAmountsMode` in the core. An own calculator is configured with `calculation.calculator` or passed to `Quittio::create(calculator: …)`; `Quittio::calculator()` returns it.
 - `Quittio::edit()` (core and Laravel) and `InvoiceBuilder::fromUsing()` continue existing invoice data with the calculator of the instance; cancellations and the document calculator of `QuittioFake` use it as well. `InvoiceFactory::calculated()` takes a calculator.
+- Tax presets whose rate depends on the date (`Quittio\Core\Tax\DatedTaxPreset`) are resolved with the supply date of each line (`SupplyDate`: line period, VAT point date, delivery date, invoicing period, issue date). `DatedValues` holds values that change on dates; `TaxPresetCollection::alias()` finds presets under further keys.
+- `VatPreset::Standard` (`de.standard`) and `VatPreset::Reduced` (`de.reduced`) take the German rate of the supply date (`TaxTables`), e.g. 16 % and 5 % from July to December 2020. The plausibility rule `DE-VAT-RATE` warns about rates that applied neither as standard nor as reduced rate on the supply date. The small amount limit of `DE-USTG-08` is that of the issue date (150.00 EUR before 2017).
 
 ### Changed
 
+- Lines without VAT treatment of a German seller get the preset key `de.standard` instead of `de.standard_19`, and `quittio.defaults.vat = 'de.reduced_7'` gives `de.reduced`. Applications that compare preset keys use `VatPreset::fromKey($key)?->canonical()`. Supplies from 2020-07-01 to 2020-12-31 get 16 % and 5 %.
 - Pull requests opened in the read-only split repositories `quittio/core`, `quittio/laravel` and `quittio/country-de` are closed automatically with a pointer to the monorepo.
+
+### Deprecated
+
+- `VatPreset::Standard19` and `VatPreset::Reduced7`: use `VatPreset::Standard` and `VatPreset::Reduced`; the keys `de.standard_19` and `de.reduced_7` stay readable. `Flags::SMALL_AMOUNT_LIMIT`: use `TaxTables::smallAmountLimitOn()`.
 
 ## [0.2.0] - 2026-10-16
 

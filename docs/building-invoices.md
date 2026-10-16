@@ -31,7 +31,7 @@ $invoice = Quittio::invoice()                                // seller and bank 
         ->address('Bahnhofstraße 5', '54321', 'Beispielstadt', 'DE')
         ->electronicAddress('ap@kunde.de', 'EM'))
     ->line('Web development', netPrice: '95.00', quantity: 24, unit: UnitCode::Hour)   // default VAT: 19 %
-    ->line('Handbook of VAT law', netPrice: '39.00', vat: VatPreset::Reduced7)
+    ->line('Handbook of VAT law', netPrice: '39.00', vat: VatPreset::Reduced)
     ->payment(PaymentMeansCode::SepaCreditTransfer, remittanceInformation: 'RE-2026-0042')   // keeps the configured account
     ->dueInDays(14)->cashDiscount(days: 7, percent: '2.00')
     ->build();                                               // or ->render() for PDF and XML
@@ -55,7 +55,7 @@ Most parts of an invoice can be written in several ways. This documentation uses
 | A line with more than that: item number, line discount, list price, period, sub lines, line group | `->line(Line::make('Pump', netPrice: '1450.00', quantity: 2)->sellerId('P-200'))`. `Line::make()` takes the same named values as `line()` and returns the line builder for the other methods. | [LineBuilder](#linebuilder) |
 | Many lines from your data | `->lines($order->items)` with models that implement `ProvidesInvoiceLine`, or `->lines($rows)` with arrays such as `['name' => 'Hosting', 'netPrice' => '49.00']` | [Lines](#lines), [Application models](#application-models) |
 | The customer | `->buyer($customer)` with a model that implements `ProvidesParty`, otherwise `->buyer(Party::make('Kunde AG')->address(…))` | [Seller and buyer](#seller-and-buyer) |
-| A VAT rate other than the default | `->line('Book', netPrice: '39.00', vat: VatPreset::Reduced7)` | [VAT](#vat) |
+| A VAT rate other than the default | `->line('Book', netPrice: '39.00', vat: VatPreset::Reduced)` | [VAT](#vat) |
 | Payment terms | `->dueInDays(14)->cashDiscount(days: 7, percent: '2.00')` | [Payment terms](#payment-terms) |
 | The result | `->render()` for PDF and XML, `->build()` for the data only, e.g. to store a draft | [Creating and building](#creating-and-building) |
 
@@ -354,7 +354,7 @@ use Quittio\Country\DE\Tax\VatPreset;
 $builder->lines([
     Line::make('Web development', netPrice: '95.00', quantity: 24, unit: UnitCode::Hour),   // in a list: Line::make()
     ['name' => 'Hosting', 'quantity' => [1, UnitCode::Month], 'netPrice' => '49.00'],
-    ['name' => 'Book', 'netPrice' => '39.00', 'vat' => VatPreset::Reduced7],
+    ['name' => 'Book', 'netPrice' => '39.00', 'vat' => VatPreset::Reduced],
 ]);
 ```
 
@@ -418,9 +418,9 @@ use Quittio\Core\Builder\Line;
 use Quittio\Core\Enums\UnitCode;
 use Quittio\Country\DE\Tax\VatPreset;
 
-->line(Line::make('Paper A4', quantity: 5000, unit: UnitCode::Piece, vat: VatPreset::Standard19)
+->line(Line::make('Paper A4', quantity: 5000, unit: UnitCode::Piece, vat: VatPreset::Standard)
     ->netPrice('12.50', baseQuantity: 1000))                 // 12.50 per 1000 sheets: 62.50
-->line(Line::make('Monitor', quantity: 2, vat: VatPreset::Standard19)
+->line(Line::make('Monitor', quantity: 2, vat: VatPreset::Standard)
     ->listPrice('299.00', discount: '30.00'))                // net price 269.00
 ```
 
@@ -437,14 +437,14 @@ use Quittio\Core\Enums\VatCategory;
 use Quittio\Core\Enums\VatExemptionReasonCode;
 use Quittio\Country\DE\Tax\VatPreset;
 
-->vat(VatPreset::Standard19)                                         // preset of the German pack
+->vat(VatPreset::Standard)                                         // preset of the German pack
 ->vat(VatCategory::StandardRate, '19')
 ->vat(VatCategory::ReverseCharge, '0', 'Reverse charge', VatExemptionReasonCode::ReverseCharge)
 ->vat(VatCategory::Exempt, '0', 'Exempt according to Art. 132 VAT Directive', 'VATEX-EU-132')
 ->vat(VatCategory::NotSubjectToVat)                                  // no rate
 ```
 
-`vat()` is a method of the `LineBuilder`; `line()` and `Line::make()` take a preset or a category without rate as named argument `vat:`. A tax preset is a ready-made VAT treatment of a country pack: category, rate and, for exemptions, the reason text and code, e.g. `VatPreset::Reduced7` for the German 7 % rate ([Tax presets](#tax-presets)). Reverse charge (category AE) means that the buyer, not the seller, owes the VAT.
+`vat()` is a method of the `LineBuilder`; `line()` and `Line::make()` take a preset or a category without rate as named argument `vat:`. A tax preset is a ready-made VAT treatment of a country pack: category, rate and, for exemptions, the reason text and code, e.g. `VatPreset::Reduced` for the German 7 % rate ([Tax presets](#tax-presets)). Reverse charge (category AE) means that the buyer, not the seller, owes the VAT.
 
 With a preset, category, rate, exemption reason and code come from the preset, and the other parameters are ignored. The preset key is kept on the line (`LineVat::$presetKey`). The exemption text of a preset is resolved in the locale of the invoice (`locale()`) when the line is built; the German presets use German without a locale.
 
@@ -452,12 +452,12 @@ With a preset, category, rate, exemption reason and code come from the preset, a
 
 Lines and sub lines without `vat()` take the default VAT of the invoice when it is built. The default is, in this order:
 
-1. `defaultVat()` of the builder, with the arguments of `LineBuilder::vat()`, e.g. `->defaultVat(VatPreset::Reduced7)` for a bookshop;
+1. `defaultVat()` of the builder, with the arguments of `LineBuilder::vat()`, e.g. `->defaultVat(VatPreset::Reduced)` for a bookshop;
 2. otherwise the application default, set once with `InvoiceBuilder::useDefaultVat(callable|TaxPreset|null $default)`. It is a preset, or a callable that receives the seller's country code (BT-40) and whether the invoice is flagged as small business invoice (`Meta::FLAG_SMALL_BUSINESS`), and returns a preset or `null`.
 
 `Quittio\Core\Tax\CountryDefaultVat` is such a callable: `new CountryDefaultVat(CountryRegistry $countries, ?TaxPreset $preset = null)`.
 
-- For normal invoices it returns `$preset`, otherwise the standard preset of the seller's country pack (`CountryDefaults::$vatPreset`, Germany `de.standard_19`).
+- For normal invoices it returns `$preset`, otherwise the standard preset of the seller's country pack (`CountryDefaults::$vatPreset`, Germany `de.standard`).
 - For small business invoices it returns the small business preset of the pack (`CountryDefaults::$smallBusinessVatPreset`, Germany `de.small_business`), otherwise `$preset`. A small business ("Kleinunternehmer" in Germany) charges no VAT ([German terms](concepts.md#german-terms)).
 
 The Laravel integration installs it with the preset of `quittio.defaults.vat` ([Configuration](configuration.md#defaults)). So in Laravel, lines without `vat()` get 19 % for a German seller. Without Laravel, install it yourself:
@@ -469,12 +469,12 @@ use Quittio\Core\Tax\CountryDefaultVat;
 use Quittio\Country\DE\Tax\VatPreset;
 
 // Without Laravel, once at start-up
-InvoiceBuilder::useDefaultVat(new CountryDefaultVat($quittio->countries()));   // or a preset: VatPreset::Standard19
+InvoiceBuilder::useDefaultVat(new CountryDefaultVat($quittio->countries()));   // or a preset: VatPreset::Standard
 
 $invoice = InvoiceBuilder::make()
     // ...
     ->line('Web development', netPrice: '95.00', quantity: 24, unit: UnitCode::Hour)   // 19 %
-    ->line('Book', netPrice: '39.00', vat: VatPreset::Reduced7)                         // 7 %
+    ->line('Book', netPrice: '39.00', vat: VatPreset::Reduced)                         // 7 %
     ->build();
 ```
 
@@ -514,10 +514,10 @@ You give the exemption reason per line, but the XML carries it per VAT breakdown
 A tax preset implements `Quittio\Core\Tax\TaxPreset` (`key()`, `category()`, `rate()`, `exemptionReasonCode()`, `exemptionReason(?string $locale = null)`). Country packs provide their presets as `TaxPresetCollection` (`$pack->taxPresets()`, with `get(string $key)`, `has()`, `add()`, `count()` and iteration), so a stored preset key can be resolved again:
 
 ```php
-$preset = $quittio->countries()->get('DE')?->taxPresets()->get('de.standard_19');
+$preset = $quittio->countries()->get('DE')?->taxPresets()->get('de.standard');
 ```
 
-The German presets (`VatPreset::Standard19`, `Reduced7`, `SmallBusiness`, `ReverseChargeEu`, `VatPreset::exempt('§ 4 Nr. 14 UStG')` …) are listed in [Tax presets](country-packs.md#tax-presets); [Presets of your pack](country-packs.md#presets-of-your-pack) shows how a pack provides its own.
+The German presets (`VatPreset::Standard`, `Reduced`, `SmallBusiness`, `ReverseChargeEu`, `VatPreset::exempt('§ 4 Nr. 14 UStG')` …) are listed in [Tax presets](country-packs.md#tax-presets); [Presets of your pack](country-packs.md#presets-of-your-pack) shows how a pack provides its own.
 
 Create your own presets with `CustomTaxPreset::make(string $key, VatCategory $category, BigDecimal|int|string|null $rate = null, VatExemptionReasonCode|RawCode|string|null $code = null, array|string|null $reason = null)`. Give the reason as text, or as an array of texts per locale (fallback `en`):
 
@@ -705,7 +705,7 @@ use Quittio\Country\DE\Tax\VatPreset;
 
 ->presentation(['introText' => 'Thank you for your order.', 'showGrossPrices' => true])
 ->group('hardware', 'Hardware')
-->line(Line::make('Notebook', netPrice: '1200.00', vat: VatPreset::Standard19)->group('hardware'))   // group(): Line::make()
+->line(Line::make('Notebook', netPrice: '1200.00', vat: VatPreset::Standard)->group('hardware'))   // group(): Line::make()
 ```
 
 Quittio sets some flags itself; do not set them: `declared_amounts`, `declared_amounts_recalculated`, `cancellation_vat_aligned` and those with the prefixes `amounts_fingerprint:` and `declared_vat_in_tax_currency:` ([Declared amounts](#declared-amounts)).
@@ -738,7 +738,7 @@ class OrderItem extends Model implements ProvidesInvoiceLine
             ->sellerId($this->sku)
             ->quantity((string) $this->quantity, UnitCode::Piece)
             ->netPrice($this->unit_price)                       // decimal string from the database
-            ->vat(VatPreset::from($this->tax_preset));          // stored preset key, e.g. "de.standard_19"
+            ->vat(VatPreset::from($this->tax_preset));          // stored preset key, e.g. "de.standard"
     }
 }
 
@@ -798,7 +798,7 @@ use Quittio\Core\Builder\Line;
 use Quittio\Country\DE\Tax\VatPreset;
 
 // Line allowances and charges need Line::make()
-->line(Line::make('Seminar', netPrice: '400.00', quantity: 3, vat: VatPreset::Standard19)
+->line(Line::make('Seminar', netPrice: '400.00', quantity: 3, vat: VatPreset::Standard)
     ->allowance(percent: '10', reason: 'Early bird')       // 120.00 of 1200.00
     ->charge('25.00', reason: 'Materials', reasonCode: 'ABK'))
 ```
@@ -845,9 +845,9 @@ Sub lines divide a line into parts, e.g. a workstation that consists of a comput
 use Quittio\Core\Builder\Line;
 use Quittio\Country\DE\Tax\VatPreset;
 
-->line(Line::make('Workstation', vat: VatPreset::Standard19)
-    ->subLine('Computer', netPrice: '900.00', vat: VatPreset::Standard19)
-    ->subLine('Monitor', netPrice: '250.00', quantity: 2, vat: VatPreset::Standard19))
+->line(Line::make('Workstation', vat: VatPreset::Standard)
+    ->subLine('Computer', netPrice: '900.00', vat: VatPreset::Standard)
+    ->subLine('Monitor', netPrice: '250.00', quantity: 2, vat: VatPreset::Standard))
 ```
 
 - A parent line without quantity has the quantity 1. Without its own price, it takes the sum of its sub lines as price.
@@ -864,9 +864,9 @@ use Quittio\Laravel\Facades\Quittio;
 
 Quittio::invoice()
     // ...
-    ->line('T-shirt', priceInclVat: '19.99', quantity: 3, vat: VatPreset::Standard19)
-    ->line('Shipping', priceInclVat: '4.90', vat: VatPreset::Standard19)
-    ->line('Voucher', priceInclVat: '5.00', quantity: -1, vat: VatPreset::Standard19)
+    ->line('T-shirt', priceInclVat: '19.99', quantity: 3, vat: VatPreset::Standard)
+    ->line('Shipping', priceInclVat: '4.90', vat: VatPreset::Standard)
+    ->line('Voucher', priceInclVat: '5.00', quantity: -1, vat: VatPreset::Standard)
     ->build();
 ```
 
@@ -896,7 +896,7 @@ $changed = InvoiceBuilder::from($draft)
     ->updateLine('2', netPrice: '80.00', description: 'Price adjusted')
     ->updateLine('4', fn (InvoiceLine $line) => $line->with(['note' => 'Delivered in two parts']))
     ->removeLine('3')
-    ->line('Travel expenses', netPrice: '120.00', vat: VatPreset::Standard19)
+    ->line('Travel expenses', netPrice: '120.00', vat: VatPreset::Standard)
     ->build();
 ```
 

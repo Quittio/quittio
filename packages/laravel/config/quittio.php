@@ -46,8 +46,8 @@ return [
         // without payment terms (->dueInDays()); never for credit notes. null = no due date.
         'due_days' => 14,
 
-        // Tax preset of invoice lines without ->vat(), e.g. 'de.reduced_7' for a bookshop.
-        // null = the standard rate of the seller's country (Germany: 'de.standard_19');
+        // Tax preset of invoice lines without ->vat(), e.g. 'de.reduced' for a bookshop.
+        // null = the standard rate of the seller's country (Germany: 'de.standard');
         // small businesses (seller.small_business) get the small business exemption.
         'vat' => env('QUITTIO_DEFAULT_VAT'),
     ],

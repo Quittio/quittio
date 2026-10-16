@@ -64,7 +64,7 @@ $result = Quittio::invoice()                             // your company from co
     ->line('Web development', netPrice: '95.00', quantity: 24, unit: UnitCode::Hour,
         description: 'Customer portal, sprint 3')
     ->line('Hosting', netPrice: '49.00', unit: UnitCode::Month)
-    ->line('Handbook of VAT law', netPrice: '39.00', vat: VatPreset::Reduced7)
+    ->line('Handbook of VAT law', netPrice: '39.00', vat: VatPreset::Reduced)
     ->dueInDays(14)->cashDiscount(days: 7, percent: '2.00')
     ->render();
 
@@ -97,7 +97,7 @@ Every part of an invoice has one usual form. The documentation and the examples 
 
 The seller comes from the configuration; set it in code only for another company (see [Starting invoices](laravel.md#starting-invoices)).
 
-References, notes, further parties, allowances and charges, direct debit, attachments, gross prices and all other options are described in [Building invoices](building-invoices.md); the German VAT presets (`VatPreset::Standard19`, `Reduced7`, `ReverseChargeEu` …) in [Tax presets](country-packs.md#tax-presets).
+References, notes, further parties, allowances and charges, direct debit, attachments, gross prices and all other options are described in [Building invoices](building-invoices.md); the German VAT presets (`VatPreset::Standard`, `Reduced`, `ReverseChargeEu` …) in [Tax presets](country-packs.md#tax-presets).
 
 ### Application models
 

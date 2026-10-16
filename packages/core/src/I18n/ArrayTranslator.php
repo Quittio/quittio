@@ -10,7 +10,7 @@ namespace Quittio\Core\I18n;
  * Keys follow Laravel's convention "namespace::group.key". Paths are registered
  * per namespace; later paths override earlier ones. Missing keys fall back to the
  * fallback locale and finally to the key itself. Item keys may contain dots
- * (e.g. "de.standard_19"); a flat key wins over a nested lookup.
+ * (e.g. "de.standard"); a flat key wins over a nested lookup.
  */
 final class ArrayTranslator implements Translator
 {

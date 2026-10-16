@@ -54,7 +54,7 @@ use Quittio\Country\DE\Tax\VatPreset;
 use Quittio\Laravel\Facades\Quittio;
 
 $builder = Quittio::invoice()
-    ->line('Web development', netPrice: '95.00', quantity: 24, unit: UnitCode::Hour, vat: VatPreset::Standard19)
+    ->line('Web development', netPrice: '95.00', quantity: 24, unit: UnitCode::Hour, vat: VatPreset::Standard)
     // an exemption without its own case: legal reference and VATEX code;
     // the invoice prints "Steuerfrei nach § 4 Nr. 14 UStG" (exempt under section 4 no. 14 UStG)
     ->line('Medical treatment', netPrice: '90.00', unit: UnitCode::Piece, vat: VatPreset::exempt('§ 4 Nr. 14 UStG', 'VATEX-EU-132-1C'));
@@ -62,8 +62,8 @@ $builder = Quittio::invoice()
 
 | Case | Key | Category | Rate | Code (BT-121) | Use |
 |---|---|---|---|---|---|
-| `Standard19` | `de.standard_19` | `S` | 19 | – | Standard rate |
-| `Reduced7` | `de.reduced_7` | `S` | 7 | – | Reduced rate |
+| `Standard` | `de.standard` | `S` | 19 (of the supply date) | – | Standard rate |
+| `Reduced` | `de.reduced` | `S` | 7 (of the supply date) | – | Reduced rate |
 | `ZeroRatedPv` | `de.zero_rated_pv` | `Z` | 0 | – | 0 % rate for photovoltaic systems (section 12 (3) UStG). The rate itself is the statement, so there is no exemption reason (BR-Z-10). |
 | `SmallBusiness` | `de.small_business` | `E` | 0 | – | Small business exemption (Kleinunternehmer, section 19 (1) UStG); see [Small businesses](#small-businesses) |
 | `ReverseChargeDomestic` | `de.reverse_charge_domestic` | `AE` | 0 | `VATEX-EU-AE` | Domestic reverse charge (section 13b UStG): the buyer in Germany owes the VAT |
@@ -80,7 +80,23 @@ $builder = Quittio::invoice()
 
 The codes in column BT-121 are VATEX codes: the standard codes for the reason of an exemption.
 
-`Standard19`, `Reduced7` and `ZeroRatedPv` carry no text, because EN 16931 forbids an exemption reason for these categories (BR-S-10, BR-Z-10). The other presets print an exemption reason (BT-120) in German or English, from `resources/lang/{de,en}/tax.php`:
+`Standard` and `Reduced` take the rate that applied on the supply date of the line (`TaxTables::STANDARD_RATE`, `TaxTables::REDUCED_RATE`). The supply date is the end of the line period (BT-135), its start, the VAT point date (BT-7), the delivery date (BT-72), the end of the invoicing period (BT-74) or the issue date, in this order (`Quittio\Core\Tax\SupplyDate`). A delivery in August 2020 gets 16 % and 5 %, a correction of it issued in 2021 as well:
+
+```php
+use Quittio\Core\Builder\InvoiceBuilder;
+use Quittio\Country\DE\Tax\VatPreset;
+
+InvoiceBuilder::make()
+    ->issueDate('2021-01-20')
+    ->deliveryDate('2020-08-15')
+    ->line('Desk', netPrice: '400.00', vat: VatPreset::Standard);   // 16 %
+```
+
+`VatPreset::Standard->rate()` returns the rate of today. The plausibility rule `DE-VAT-RATE` warns when a line of category `S` within the German VAT territory has a rate that applied neither as standard nor as reduced rate on its supply date. Average rates of agriculture and forestry (section 24 UStG) are a legitimate exception; switch the rule off for them with `validation.rules.disabled` ([Switching rules off](validation.md#switching-rules-off-and-changing-their-severity)).
+
+Up to version 0.2 the presets were called `Standard19` (`de.standard_19`) and `Reduced7` (`de.reduced_7`). These cases are deprecated and follow the dates as well; their keys stay readable: `taxPresets()->get('de.standard_19')` and `quittio.defaults.vat` find `Standard`, and lines of stored invoices keep their key. `VatPreset::fromKey($key)?->canonical()` turns an old key into the current case.
+
+`Standard`, `Reduced` and `ZeroRatedPv` carry no text, because EN 16931 forbids an exemption reason for these categories (BR-S-10, BR-Z-10). The other presets print an exemption reason (BT-120) in German or English, from `resources/lang/{de,en}/tax.php`:
 
 | Key | German | English |
 |---|---|---|
@@ -106,7 +122,7 @@ How presets behave:
 - **VAT breakdown.** Category, rate, code and text flow into the VAT breakdown (BG-23). When lines of one category and rate have different texts, the texts are joined in BT-120. The code (BT-121) is kept only when all codes agree; otherwise Quittio warns with `QUITTIO-EXEMPTION-CONFLICT`.
 - **PDF.** The PDF lists the BT-120 texts of all categories other than the standard rate in its legal notes (`legalNotes`). Margin scheme and travel agency rows show no VAT amount (section 14a (6) UStG).
 - **Allowances and charges.** Document level allowances and charges take a category and a rate, not a preset: `->charge(VatCategory::StandardRate, '19', amount: '10.00', reason: 'Shipping')`.
-- **Lookup by key**, e.g. from a database column: `VatPreset::from('de.standard_19')`, `(new CountryDE)->taxPresets()->get('de.standard_19')` or, across all installed packs, `$quittio->countries()->taxPreset('de.standard_19')`. `de.exempt` is not part of the collection.
+- **Lookup by key**, e.g. from a database column: `VatPreset::from('de.standard')`, `(new CountryDE)->taxPresets()->get('de.standard')` or, across all installed packs, `$quittio->countries()->taxPreset('de.standard')`. `de.exempt` is not part of the collection.
 
 ### Small businesses
 
@@ -240,7 +256,7 @@ The severity follows the flags of the official Schematron, the rule file of the 
 
 ### Small amount invoices
 
-German law allows a simplified invoice for small amounts (section 33 UStDV). `->smallAmount()` marks an invoice of at most 250.00 EUR gross (`Flags::SMALL_AMOUNT_LIMIT`) as such a small amount invoice. As long as no reverse charge (`AE`) or intra-community supply (`K`) is involved, it relaxes:
+German law allows a simplified invoice for small amounts (section 33 UStDV). `->smallAmount()` marks an invoice of at most 250.00 EUR gross as such a small amount invoice; the limit of the issue date applies (`TaxTables::SMALL_AMOUNT_LIMIT`: 150.00 EUR from 2007, 250.00 EUR from 2017). As long as no reverse charge (`AE`) or intra-community supply (`K`) is involved, it relaxes:
 
 - `DE-USTG-01`: the buyer's address is not required (the seller's still is);
 - `DE-USTG-02`: no tax number or VAT identifier is required;
@@ -290,7 +306,7 @@ $advance = $advanceResult->data();                 // the rendered advance invoi
 
 $final = Quittio::invoice()
     // number, dates, buyer, payment …
-    ->line('Website', netPrice: '3000.00', unit: UnitCode::Piece, vat: VatPreset::Standard19)
+    ->line('Website', netPrice: '3000.00', unit: UnitCode::Piece, vat: VatPreset::Standard)
     ->deductAdvance($advance);
 ```
 
@@ -634,7 +650,7 @@ The pack marks German special cases with meta flags on the invoice (`InvoiceData
 | `PROPERTY_RELATED_SERVICE` | `de.property_related_service` | `propertyRelatedService()` | `DE-USTG-05`, mandatory output |
 | `NEW_VEHICLE` | `de.new_vehicle` | `newVehicle()` | `DE-USTG-07`, `DE-USTG-13`, `DE-USTG-14` (exception) |
 | `SMALL_BUSINESS` | `small_business` (`Meta::FLAG_SMALL_BUSINESS`) | seller configuration, Managed issuer, `->flag()` | `DE-USTG-09`, `DE-USTG-14` |
-| `SMALL_AMOUNT_LIMIT` | `250.00` | – | limit of `DE-USTG-08` in EUR |
+| `SMALL_AMOUNT_LIMIT` | `250.00` | – | deprecated: the limit depends on the issue date, see `TaxTables::smallAmountLimitOn()` |
 
 ### Retention
 
@@ -684,7 +700,7 @@ For pack authors, this is how `CountryDE` fills the [`CountryPack` contract](#th
 
 | Hook | Germany |
 |---|---|
-| `defaults()` | currency `EUR`, time zone `Europe/Berlin`, locale `de`, paper `A4`, letter layout `din5008b`, profile `en16931`, payment QR `girocode`, default VAT presets `de.standard_19` and `de.small_business` |
+| `defaults()` | currency `EUR`, time zone `Europe/Berlin`, locale `de`, paper `A4`, letter layout `din5008b`, profile `en16931`, payment QR `girocode`, default VAT presets `de.standard` and `de.small_business` |
 | `profiles()` | [`XRechnung30`, `XRechnung30Extension`](#xrechnung-profiles) |
 | `taxPresets()` | every case of [`VatPreset`](#tax-presets) |
 | `rules()` | the [UStG rules](#ustg-rules) `DE-USTG-01` to `DE-USTG-15`, the [Leitweg-ID checks](#leitweg-id) `DE-LEITWEG-ID` and `DE-LEITWEG-ID-SUSPECT`, and the [tax number check](#tax-number) `DE-TAX-NUMBER` |
@@ -996,7 +1012,7 @@ Every method of `Quittio\Core\Countries\CountryPack`, its default in `AbstractCo
 | `currency`, `profile` | `EUR`, `en16931` | Shown by `quittio:countries`; not applied to invoices. |
 | `timezone`, `requiredLocales` | `UTC`, `[]` | Informational metadata for applications; not applied by the core. Set the time zone of dates with `->timezone()` on the builder. |
 | `paymentQr` | `girocode` | What the QR mode `auto` prints when no generator is registered with `setPaymentQrGenerator()`: `girocode` = the pack's `paymentQr()` generator, otherwise the EPC GiroCode; `none` = no code; another type (e.g. `swiss-qr-bill`) = the pack's generator, otherwise no code. See [Templates: payment QR codes](templates.md#payment-qr-codes). |
-| `vatPreset`, `smallBusinessVatPreset` | `null`, `null` | Keys of presets of `taxPresets()` for invoice lines without VAT treatment: the usual rate, and the rate of small business invoices (`Meta::FLAG_SMALL_BUSINESS`). Used by `CountryDefaultVat` for the seller's country ([Default VAT](building-invoices.md#default-vat)). Germany: `de.standard_19` and `de.small_business`. |
+| `vatPreset`, `smallBusinessVatPreset` | `null`, `null` | Keys of presets of `taxPresets()` for invoice lines without VAT treatment: the usual rate, and the rate of small business invoices (`Meta::FLAG_SMALL_BUSINESS`). Used by `CountryDefaultVat` for the seller's country ([Default VAT](building-invoices.md#default-vat)). Germany: `de.standard` and `de.small_business`. |
 
 ### CorrectionPolicy
 

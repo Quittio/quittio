@@ -108,7 +108,7 @@ $result = Quittio::invoice()
         ->vatId('DE987654321')
         ->address('Marktplatz 2', '54321', 'Beispielstadt', 'DE'))
     ->lines([
-        ['name' => 'Handbook of VAT law', 'quantity' => [3, UnitCode::Piece], 'netPrice' => '89.00', 'vat' => VatPreset::Reduced7],
+        ['name' => 'Handbook of VAT law', 'quantity' => [3, UnitCode::Piece], 'netPrice' => '89.00', 'vat' => VatPreset::Reduced],
         ['name' => 'Desk organiser', 'quantity' => [3, UnitCode::Piece], 'netPrice' => '24.90'],
     ])
     ->discountPercent('5', 'Customer discount')          // one allowance per VAT rate
@@ -125,7 +125,7 @@ foreach ($result->data()->vatBreakdown as $row) {
 ```
 
 - Each array key names a method of the line builder, and the value holds its arguments: `'quantity' => [3, UnitCode::Piece]` means 3 pieces ([Lines](building-invoices.md#lines)).
-- `VatPreset::Reduced7` is a tax preset of the German country pack: the reduced rate of 7 % ([Tax presets](country-packs.md#tax-presets)). The desk organiser has no `vat`, so it gets 19 %.
+- `VatPreset::Reduced` is a tax preset of the German country pack: the reduced rate of 7 % ([Tax presets](country-packs.md#tax-presets)). The desk organiser has no `vat`, so it gets 19 %.
 - VAT is calculated per VAT rate, never per line. So `discountPercent()` splits the discount of 17.09 into one allowance per rate, in proportion to the line sums: 13.35 at 7 % and 3.74 at 19 % ([Discount splitting](building-invoices.md#discount-splitting)).
 - For a discount on a single rate, use `allowance(VatCategory::StandardRate, '19', percent: '5', reason: '…')` instead ([Document level allowances and charges](building-invoices.md#document-level-allowances-and-charges)).
 
@@ -510,7 +510,7 @@ class OrderItem extends Model implements ProvidesInvoiceLine
             ->sellerId($this->sku)
             ->quantity($this->quantity, UnitCode::Piece)
             ->netPrice($this->unit_price)
-            ->vat(VatPreset::from($this->tax_preset));   // stored preset key, e.g. "de.reduced_7"
+            ->vat(VatPreset::from($this->tax_preset));   // stored preset key, e.g. "de.reduced"
     }
 }
 

@@ -25,7 +25,7 @@ Use this skill when code creates, renders, sends, validates, cancels or reads in
 
 ## German VAT (quittio/country-de)
 
-- Lines without `->vat()` get 19 % (`VatPreset::Standard19`), small business invoices (`quittio.seller.small_business`) `VatPreset::SmallBusiness`. For other cases use `Quittio\Country\DE\Tax\VatPreset`: `Standard19`, `Reduced7`, `ZeroRatedPv`, `SmallBusiness`, `ReverseChargeDomestic`, `ReverseChargeEu`, `IntraCommunitySupply`, `TriangularTransaction`, `Export`, `NotTaxableInGermany`, the margin schemes, `TravelAgency`, or `VatPreset::exempt('§ 4 Nr. 14 UStG')`. The presets add the mandatory notes.
+- Lines without `->vat()` get 19 % (`VatPreset::Standard`), small business invoices (`quittio.seller.small_business`) `VatPreset::SmallBusiness`. For other cases use `Quittio\Country\DE\Tax\VatPreset`: `Standard`, `Reduced`, `ZeroRatedPv`, `SmallBusiness`, `ReverseChargeDomestic`, `ReverseChargeEu`, `IntraCommunitySupply`, `TriangularTransaction`, `Export`, `NotTaxableInGermany`, the margin schemes, `TravelAgency`, or `VatPreset::exempt('§ 4 Nr. 14 UStG')`. The presets add the mandatory notes.
 - Mandatory: a delivery date or period (`->deliveryDate()`, `->invoicingPeriod()`), the seller's VAT identifier or tax number, full addresses. Reverse charge in another member state and triangular transactions need the VAT identifiers of both parties.
 - Special cases are builder macros: `->selfBilled()` (Gutschrift), `->smallAmount()` (up to 250 EUR), `->newVehicle()`, `->propertyRelatedService()`, `->deductAdvance($advanceInvoice)` for final invoices.
 - Small businesses: `VatPreset::SmallBusiness` on every line and `seller.small_business = true`; never VAT and never `IntraCommunitySupply` (except new vehicles).

@@ -13,7 +13,7 @@ use Quittio\Core\Countries\CountryRegistry;
  *   seller's country pack (CountryDefaults::$smallBusinessVatPreset, Germany: de.small_business),
  *   otherwise $preset;
  * - all other invoices: $preset, otherwise the preset of the seller's country pack
- *   (CountryDefaults::$vatPreset, Germany: de.standard_19).
+ *   (CountryDefaults::$vatPreset, Germany: de.standard).
  *
  * InvoiceBuilder::useDefaultVat(new CountryDefaultVat($quittio->countries()));
  */
