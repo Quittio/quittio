@@ -186,7 +186,7 @@ final class Cancellation
             $cancellation = self::alignVat($original, $cancellation, $history, $calculator, $note.' '.$translator->get('quittio::labels.cancellation_vat_aligned', [], $locale).$reasonNote);
         }
 
-        return InvoiceBuilder::from($cancellation);
+        return InvoiceBuilder::fromUsing($cancellation, $calculator);
     }
 
     /**
@@ -209,7 +209,7 @@ final class Cancellation
 
         // The taxable amounts as the calculator gets them for the cancelled lines (e.g. scaled
         // allowances): a declared VAT breakdown is kept only for these.
-        $calculated = $calculator->calculate(InvoiceBuilder::from($cancellation)->build());
+        $calculated = $calculator->calculate(InvoiceBuilder::fromUsing($cancellation, $calculator)->build());
         $aligned = $history->align($original, $calculated);
         $history->assertFits($original, $calculated, $aligned['breakdown']);
 

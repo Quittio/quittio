@@ -65,6 +65,7 @@
             "public static flushMacros(): void",
             "public static from(Quittio\\Core\\Data\\InvoiceData $data): static",
             "public static fromDocument(Quittio\\Core\\Documents\\DocumentData $document): static",
+            "public static fromUsing(Quittio\\Core\\Data\\InvoiceData $data, Quittio\\Core\\Calculation\\TotalsCalculator $calculator): static",
             "public static hasMacro(string $name): bool",
             "public static macro(string $name, callable $macro): void",
             "public static make(): static",
@@ -192,6 +193,16 @@
             "Throwable"
         ]
     },
+    "Quittio\\Core\\Calculation\\CalculationPolicy": {
+        "kind": "final readonly class",
+        "properties": [
+            "public readonly Quittio\\Core\\Calculation\\DeclaredAmountsMode $declaredAmounts"
+        ],
+        "methods": [
+            "public __construct(Quittio\\Core\\Calculation\\DeclaredAmountsMode $declaredAmounts = Quittio\\Core\\Calculation\\DeclaredAmountsMode::Keep)",
+            "public static fromArray(array $config): Quittio\\Core\\Calculation\\CalculationPolicy"
+        ]
+    },
     "Quittio\\Core\\Calculation\\DeclaredAmounts": {
         "kind": "final class",
         "constants": [
@@ -207,14 +218,37 @@
             "public static needed(Quittio\\Core\\Data\\InvoiceData $data, Quittio\\Core\\Calculation\\TotalsCalculator $calculator = new Quittio\\Core\\Calculation\\En16931Calculator): bool"
         ]
     },
+    "Quittio\\Core\\Calculation\\DeclaredAmountsMode": {
+        "kind": "enum",
+        "implements": [
+            "BackedEnum",
+            "UnitEnum"
+        ],
+        "cases": [
+            "Keep = \"keep\"",
+            "Recalculate = \"recalculate\"",
+            "Reject = \"reject\""
+        ],
+        "properties": [
+            "public readonly string $name",
+            "public readonly string $value"
+        ],
+        "methods": [
+            "public static cases(): array",
+            "public static from(string|int $value): static",
+            "public static tryFrom(string|int $value): ?static"
+        ]
+    },
     "Quittio\\Core\\Calculation\\En16931Calculator": {
         "kind": "final class",
         "implements": [
             "Quittio\\Core\\Calculation\\TotalsCalculator"
         ],
         "methods": [
-            "public __construct(Quittio\\Core\\Calculation\\LineCalculator $lineCalculator = new Quittio\\Core\\Calculation\\LineCalculator, Quittio\\Core\\Calculation\\GrossPriceConverter $grossPriceConverter = new Quittio\\Core\\Calculation\\GrossPriceConverter)",
-            "public calculate(Quittio\\Core\\Data\\InvoiceData $invoice): Quittio\\Core\\Data\\InvoiceData"
+            "public __construct(Quittio\\Core\\Calculation\\LineCalculator $lineCalculator = new Quittio\\Core\\Calculation\\LineCalculator, Quittio\\Core\\Calculation\\GrossPriceConverter $grossPriceConverter = new Quittio\\Core\\Calculation\\GrossPriceConverter, Quittio\\Core\\Calculation\\CalculationPolicy $policy = new Quittio\\Core\\Calculation\\CalculationPolicy)",
+            "public calculate(Quittio\\Core\\Data\\InvoiceData $invoice): Quittio\\Core\\Data\\InvoiceData",
+            "public policy(): Quittio\\Core\\Calculation\\CalculationPolicy",
+            "public withPolicy(Quittio\\Core\\Calculation\\CalculationPolicy $policy): Quittio\\Core\\Calculation\\En16931Calculator"
         ]
     },
     "Quittio\\Core\\Calculation\\GrossPriceConverter": {
@@ -314,6 +348,7 @@
             "public readonly ?string $profile",
             "public readonly ?string $tempDir",
             "public readonly ?string $validationLocale",
+            "public readonly Quittio\\Core\\Calculation\\CalculationPolicy $calculation",
             "public readonly Quittio\\Core\\Validation\\RuleOverrides $rules",
             "public readonly array $options",
             "public readonly array $templatePaths",
@@ -332,7 +367,7 @@
             "public readonly string $validation"
         ],
         "methods": [
-            "public __construct(?string $format = null, ?string $profile = null, ?string $locale = null, ?string $country = null, string $template = \"default\", array $templatePaths = [], string $filename = \"{title}_{number}.{ext}\", bool $pdfa = true, bool $b2cEmbedXml = false, bool $autoUpgradeProfile = true, string $validation = self::VALIDATION_ERROR, array $validationLevels = [\"L1\",\"L2\",\"L3\",\"L4\",\"L7\"], ?array $kosit = null, ?array $veraPdf = null, string $mandatoryFields = Quittio\\Core\\View\\MandatoryFieldGuard::MODE_EXCEPTION, string $girocodeAmount = \"due\", ?string $tempDir = null, array $options = [], ?Quittio\\Core\\Data\\Presentation\\Presentation $presentation = null, bool $blockOnWarnings = false, int $maxXmlBytes = Quittio\\Core\\Xml\\XmlSecurity::DEFAULT_MAX_BYTES, int $maxPdfBytes = 26214400, int $maxDecompressedBytes = 52428800, ?int $dueDays = null, ?string $cancellationStrategy = null, ?string $validationLocale = null, Quittio\\Core\\Validation\\RuleOverrides $rules = new Quittio\\Core\\Validation\\RuleOverrides)",
+            "public __construct(?string $format = null, ?string $profile = null, ?string $locale = null, ?string $country = null, string $template = \"default\", array $templatePaths = [], string $filename = \"{title}_{number}.{ext}\", bool $pdfa = true, bool $b2cEmbedXml = false, bool $autoUpgradeProfile = true, string $validation = self::VALIDATION_ERROR, array $validationLevels = [\"L1\",\"L2\",\"L3\",\"L4\",\"L7\"], ?array $kosit = null, ?array $veraPdf = null, string $mandatoryFields = Quittio\\Core\\View\\MandatoryFieldGuard::MODE_EXCEPTION, string $girocodeAmount = \"due\", ?string $tempDir = null, array $options = [], ?Quittio\\Core\\Data\\Presentation\\Presentation $presentation = null, bool $blockOnWarnings = false, int $maxXmlBytes = Quittio\\Core\\Xml\\XmlSecurity::DEFAULT_MAX_BYTES, int $maxPdfBytes = 26214400, int $maxDecompressedBytes = 52428800, ?int $dueDays = null, ?string $cancellationStrategy = null, ?string $validationLocale = null, Quittio\\Core\\Validation\\RuleOverrides $rules = new Quittio\\Core\\Validation\\RuleOverrides, Quittio\\Core\\Calculation\\CalculationPolicy $calculation = new Quittio\\Core\\Calculation\\CalculationPolicy)",
             "public static fromArray(array $config): Quittio\\Core\\Config",
             "public with(array $changes): Quittio\\Core\\Config"
         ]
@@ -2996,6 +3031,7 @@
             "public __construct(Quittio\\Core\\Config $config = new Quittio\\Core\\Config, Quittio\\Core\\Profiles\\ProfileRegistry $profiles = new Quittio\\Core\\Profiles\\ProfileRegistry, Quittio\\Core\\Countries\\CountryRegistry $countries = new Quittio\\Core\\Countries\\CountryRegistry, Quittio\\Core\\Formats\\FormatRegistry $formats = new Quittio\\Core\\Formats\\FormatRegistry, Quittio\\Core\\Pdf\\PdfRenderer $renderer = new Quittio\\Core\\Pdf\\Renderers\\MpdfRenderer, Quittio\\Core\\Templates\\TemplateEngine $templates = new Quittio\\Core\\Templates\\PhpTemplateEngine, Quittio\\Core\\Calculation\\TotalsCalculator $calculator = new Quittio\\Core\\Calculation\\En16931Calculator, Quittio\\Core\\View\\Formatter $formatter = new Quittio\\Core\\View\\IntlFormatter, ?Psr\\Log\\LoggerInterface $logger = null, ?Quittio\\Core\\Formats\\FormatResolver $formatResolver = null, ?Quittio\\Core\\Countries\\CountryResolver $countryResolver = null)",
             "public addSerializer(Quittio\\Core\\Xml\\XmlSerializer $serializer): Quittio\\Core\\Quittio",
             "public addValidator(Quittio\\Core\\Validation\\ValidationDriver $driver): Quittio\\Core\\Quittio",
+            "public calculator(): Quittio\\Core\\Calculation\\TotalsCalculator",
             "public cancellation(Quittio\\Core\\Data\\InvoiceData $original, string $number, ?string $reason = null, ?string $strategy = null, ?Quittio\\Core\\Support\\Date $issueDate = null, ?array $lines = null, ?Quittio\\Core\\Corrections\\CancellationHistory $history = null, ?string $title = null): Quittio\\Core\\Builder\\InvoiceBuilder",
             "public check(Quittio\\Core\\Data\\InvoiceData $data, Quittio\\Core\\Rendering\\RenderOptions $options = new Quittio\\Core\\Rendering\\RenderOptions): Quittio\\Core\\Validation\\ValidationResult",
             "public clearValidators(): Quittio\\Core\\Quittio",
@@ -3003,6 +3039,7 @@
             "public configureRules(Quittio\\Core\\Validation\\RuleOverrides $overrides): Quittio\\Core\\Quittio",
             "public countries(): Quittio\\Core\\Countries\\CountryRegistry",
             "public document(Quittio\\Core\\Documents\\DocumentData $document): Quittio\\Core\\Rendering\\PendingDocument",
+            "public edit(Quittio\\Core\\Data\\InvoiceData $data): Quittio\\Core\\Builder\\InvoiceBuilder",
             "public formats(): Quittio\\Core\\Formats\\FormatRegistry",
             "public make(Quittio\\Core\\Data\\InvoiceData|Quittio\\Core\\Contracts\\ProvidesInvoiceData|Quittio\\Core\\Builder\\InvoiceBuilder $data): Quittio\\Core\\Rendering\\PendingInvoice",
             "public onMandatoryFieldsMissing(Closure $listener): Quittio\\Core\\Quittio",
@@ -3019,7 +3056,7 @@
             "public setPostProcessor(?Quittio\\Core\\Pdf\\PostProcessing\\PdfPostProcessor $postProcessor): Quittio\\Core\\Quittio",
             "public setRenderer(Quittio\\Core\\Pdf\\PdfRenderer $renderer): Quittio\\Core\\Quittio",
             "public setTemplateEngine(Quittio\\Core\\Templates\\TemplateEngine $templates): Quittio\\Core\\Quittio",
-            "public static create(Quittio\\Core\\Config|array $config = [], iterable $countryPacks = [], ?Quittio\\Core\\Pdf\\PdfRenderer $renderer = null, ?Quittio\\Core\\Templates\\TemplateEngine $templates = null, ?Psr\\Log\\LoggerInterface $logger = null, ?Quittio\\Core\\Formats\\FormatResolver $formatResolver = null): Quittio\\Core\\Quittio",
+            "public static create(Quittio\\Core\\Config|array $config = [], iterable $countryPacks = [], ?Quittio\\Core\\Pdf\\PdfRenderer $renderer = null, ?Quittio\\Core\\Templates\\TemplateEngine $templates = null, ?Psr\\Log\\LoggerInterface $logger = null, ?Quittio\\Core\\Formats\\FormatResolver $formatResolver = null, ?Quittio\\Core\\Calculation\\TotalsCalculator $calculator = null): Quittio\\Core\\Quittio",
             "public static onResetState(string $key, Closure $reset): void",
             "public static resetState(): void",
             "public validateFile(string $content): Quittio\\Core\\Validation\\ValidationResult",
@@ -3462,7 +3499,7 @@
         "methods": [
             "public b2c(): Quittio\\Core\\Testing\\InvoiceFactory",
             "public builder(): Quittio\\Core\\Builder\\InvoiceBuilder",
-            "public calculated(): Quittio\\Core\\Data\\InvoiceData",
+            "public calculated(?Quittio\\Core\\Calculation\\TotalsCalculator $calculator = null): Quittio\\Core\\Data\\InvoiceData",
             "public creditNote(): Quittio\\Core\\Testing\\InvoiceFactory",
             "public currency(string $currency): Quittio\\Core\\Testing\\InvoiceFactory",
             "public export(): Quittio\\Core\\Testing\\InvoiceFactory",
@@ -4770,6 +4807,7 @@
             "public static flushMacros(): void",
             "public static from(Quittio\\Core\\Data\\InvoiceData $data): static",
             "public static fromDocument(Quittio\\Core\\Documents\\DocumentData $document): static",
+            "public static fromUsing(Quittio\\Core\\Data\\InvoiceData $data, Quittio\\Core\\Calculation\\TotalsCalculator $calculator): static",
             "public static hasMacro(string $name): bool",
             "public static macro(string $name, callable $macro): void",
             "public static make(): static",
@@ -4994,6 +5032,7 @@
             "public defaultVat(?string $sellerCountry, bool $smallBusiness): ?Quittio\\Core\\Tax\\TaxPreset",
             "public deliveryNote(): Quittio\\Laravel\\Builder\\RenderableDocumentBuilder",
             "public document(Quittio\\Core\\Documents\\DocumentData|Quittio\\Core\\Documents\\DocumentBuilder $document): Quittio\\Laravel\\Rendering\\PendingDocument",
+            "public edit(Quittio\\Core\\Data\\InvoiceData $data): Quittio\\Laravel\\Builder\\RenderableInvoiceBuilder",
             "public extend(string $type, string $name, Closure $factory): static",
             "public flush(): static",
             "public formats(): Quittio\\Core\\Formats\\FormatRegistry",
@@ -5237,6 +5276,7 @@
             "public deliveryNote(): Quittio\\Laravel\\Builder\\RenderableDocumentBuilder",
             "public document(Quittio\\Core\\Documents\\DocumentData|Quittio\\Core\\Documents\\DocumentBuilder $document): Quittio\\Laravel\\Rendering\\PendingDocument",
             "public documents(): array",
+            "public edit(Quittio\\Core\\Data\\InvoiceData $data): Quittio\\Laravel\\Builder\\RenderableInvoiceBuilder",
             "public extend(string $type, string $name, Closure $factory): static",
             "public flush(): static",
             "public formats(): Quittio\\Core\\Formats\\FormatRegistry",

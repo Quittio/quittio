@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Quittio\Core;
 
+use Quittio\Core\Calculation\CalculationPolicy;
 use Quittio\Core\Corrections\Cancellation;
 use Quittio\Core\Data\Presentation\Presentation;
 use Quittio\Core\Exceptions\ConfigurationException;
@@ -41,6 +42,7 @@ final readonly class Config
      * @param  string|null  $validationLocale  language of validation messages: null or "invoice" = the language of the
      *         invoice, "app" = the language of the application translator (Laravel: app()->getLocale()), or a locale
      * @param  RuleOverrides  $rules  PHP rules switched off, re-rated or replaced by code
+     * @param  CalculationPolicy  $calculation  what the calculator does with declared amounts
      */
     public function __construct(
         public ?string $format = null,
@@ -70,6 +72,7 @@ final readonly class Config
         public ?string $cancellationStrategy = null,
         public ?string $validationLocale = null,
         public RuleOverrides $rules = new RuleOverrides,
+        public CalculationPolicy $calculation = new CalculationPolicy,
     ) {
         if ($cancellationStrategy !== null && ! in_array($cancellationStrategy, Cancellation::STRATEGIES, true)) {
             throw new ConfigurationException(sprintf('Unknown cancellation strategy "%s".', $cancellationStrategy));
@@ -95,6 +98,7 @@ final readonly class Config
      * - presentation (a Presentation object)
      * - reader.max_xml_bytes, reader.max_pdf_bytes, reader.max_decompressed_bytes
      * - corrections.cancellation_strategy
+     * - calculation.declared_amounts (keep, recalculate, reject; see DeclaredAmountsMode)
      *
      * The Laravel names differ, e.g. defaults.format, format_resolver.b2c_embed_xml,
      * validation.levels php/xsd/kosit/verapdf, validation.mandatory_field_guard and pdf.cache_path.
@@ -144,6 +148,7 @@ final readonly class Config
             cancellationStrategy: self::str(self::arr($config, 'corrections'), 'cancellation_strategy'),
             validationLocale: self::str($validation, 'locale'),
             rules: RuleOverrides::fromArray(self::arr($validation, 'rules')),
+            calculation: CalculationPolicy::fromArray(self::arr($config, 'calculation')),
         );
     }
 

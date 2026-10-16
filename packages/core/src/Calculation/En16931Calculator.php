@@ -37,6 +37,7 @@ use Quittio\Core\Support\Decimal;
  * within 0.01 of round2(BT-110 × exchange rate), e.g. the BT-111 of a partial cancellation
  * aligned with the earlier ones (Corrections\CancellationHistory). In gross price mode the rounding amount (BT-114) follows
  * the amounts finally used, so that the amount due stays the gross amount of the lines.
+ * The CalculationPolicy decides whether declared amounts are kept, recalculated or rejected.
  *
  * @phpstan-type VatGroup array{category: VatCategory, rate: ?BigDecimal, lines: BigDecimal, allowances: BigDecimal, charges: BigDecimal, reasons: list<string>, codes: array<string, VatExemptionReasonCode|RawCode|null>}
  */
@@ -45,7 +46,24 @@ final class En16931Calculator implements TotalsCalculator
     public function __construct(
         private readonly LineCalculator $lineCalculator = new LineCalculator,
         private readonly GrossPriceConverter $grossPriceConverter = new GrossPriceConverter,
+        private readonly CalculationPolicy $policy = new CalculationPolicy,
     ) {}
+
+    /**
+     * The same calculator with another policy.
+     */
+    public function withPolicy(CalculationPolicy $policy): self
+    {
+        return new self($this->lineCalculator, $this->grossPriceConverter, $policy);
+    }
+
+    /**
+     * The policy of this calculator.
+     */
+    public function policy(): CalculationPolicy
+    {
+        return $this->policy;
+    }
 
     public function calculate(InvoiceData $invoice): InvoiceData
     {
@@ -53,6 +71,12 @@ final class En16931Calculator implements TotalsCalculator
         $flagged = $invoice->meta->hasFlag(Meta::FLAG_DECLARED_AMOUNTS);
         $declared = $flagged && DeclaredAmounts::isTrusted($invoice);
         $deviates = false;
+        // Recalculate ignores declared amounts, except the VAT of a partial cancellation aligned with the earlier ones.
+        $replaced = $declared && $this->policy->declaredAmounts === DeclaredAmountsMode::Recalculate
+            && ! $invoice->meta->hasFlag(Meta::FLAG_CANCELLATION_VAT_ALIGNED);
+        if ($replaced) {
+            $declared = false;
+        }
 
         [$lines, $gross] = $this->convertGrossPrices($invoice, $declared);
         $lines = $this->lineAmounts($invoice, $lines, $declared, $deviates);
@@ -63,9 +87,14 @@ final class En16931Calculator implements TotalsCalculator
         $allowanceSum = $this->addToGroups($allowances, 'allowances', $groups);
         $chargeSum = $this->addToGroups($charges, 'charges', $groups);
         [$breakdown, $vatTotal] = $this->vatBreakdown($invoice, $groups, $declared, $deviates);
+        if ($deviates && $this->policy->declaredAmounts === DeclaredAmountsMode::Reject) {
+            throw new CalculationException(sprintf('The declared amounts of invoice "%s" differ from the recalculation by more than the tolerances of EN 16931 (declared amounts mode "reject").', $invoice->number));
+        }
 
         $totals = $this->totals($invoice, $lineNetSum, $allowanceSum, $chargeSum, $vatTotal, $gross, $allowances !== [], $charges !== [], $declared);
-        $meta = self::meta($invoice, $flagged, $declared, $deviates);
+        $meta = $replaced
+            ? $invoice->meta->withFlag(Meta::FLAG_DECLARED_AMOUNTS, false)->withDeclaredVatInTaxCurrency(null)->withFlag(Meta::FLAG_DECLARED_AMOUNTS_RECALCULATED)
+            : self::meta($invoice, $flagged, $declared, $deviates);
 
         $result = $invoice->with([
             'lines' => $lines,

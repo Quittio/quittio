@@ -9,6 +9,7 @@ use Quittio\Core\Builder\InvoiceBuilder;
 use Quittio\Core\Builder\LineBuilder;
 use Quittio\Core\Builder\PartyBuilder;
 use Quittio\Core\Calculation\En16931Calculator;
+use Quittio\Core\Calculation\TotalsCalculator;
 use Quittio\Core\Data\InvoiceData;
 use Quittio\Core\Enums\InvoiceTypeCode;
 use Quittio\Core\Enums\PaymentMeansCode;
@@ -142,11 +143,11 @@ final class InvoiceFactory
     }
 
     /**
-     * Invoice data with totals and VAT breakdown.
+     * Invoice data with totals and VAT breakdown, calculated with $calculator (default: En16931Calculator).
      */
-    public function calculated(): InvoiceData
+    public function calculated(?TotalsCalculator $calculator = null): InvoiceData
     {
-        return (new En16931Calculator)->calculate($this->make());
+        return ($calculator ?? new En16931Calculator)->calculate($this->make());
     }
 
     private function line(LineBuilder $line, int $index): LineBuilder

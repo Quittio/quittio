@@ -20,8 +20,10 @@ use Quittio\Core\Builder\Concerns\BuildsReferences;
 use Quittio\Core\Calculation\AllowanceSplitter;
 use Quittio\Core\Calculation\CalculationException;
 use Quittio\Core\Calculation\DeclaredAmounts;
+use Quittio\Core\Calculation\En16931Calculator;
 use Quittio\Core\Calculation\LargestRemainder;
 use Quittio\Core\Calculation\LineCalculator;
+use Quittio\Core\Calculation\TotalsCalculator;
 use Quittio\Core\Codes\RawCode;
 use Quittio\Core\Data\AllowanceCharge\DocumentAllowance;
 use Quittio\Core\Data\AllowanceCharge\DocumentAllowanceCharge;
@@ -208,8 +210,20 @@ class InvoiceBuilder
      * by the calculator (Meta::FLAG_DECLARED_AMOUNTS with a fingerprint of the amount inputs).
      * Data flagged earlier whose amount inputs no longer match its fingerprint (e.g. changed with
      * with() or in stored JSON) is treated as changed lines and recalculated.
+     *
+     * The declared amounts are compared with the result of the default En16931Calculator; use
+     * fromUsing() or Quittio::edit() to compare with another calculator.
      */
     public static function from(InvoiceData $data): static
+    {
+        return static::fromUsing($data, new En16931Calculator);
+    }
+
+    /**
+     * Like from(), with the calculator that decides whether the declared amounts of the data
+     * differ from a recalculation, e.g. the calculator of the Quittio instance.
+     */
+    public static function fromUsing(InvoiceData $data, TotalsCalculator $calculator): static
     {
         $builder = new static;
         $builder->number = $data->number;
@@ -254,7 +268,7 @@ class InvoiceBuilder
         $builder->meta = $withRate->meta;
         $builder->impliedExchangeRate = $data->meta->exchangeRate === null && $withRate->meta->exchangeRate !== null;
         $stale = DeclaredAmounts::isStale($data);
-        $builder->declaredAmounts = ! $stale && DeclaredAmounts::needed($data);
+        $builder->declaredAmounts = ! $stale && DeclaredAmounts::needed($data, $calculator);
         $builder->linesChanged = $stale;
         $builder->declaredBreakdown = $data->vatBreakdown;
         $builder->declaredCurrency = $data->currency;

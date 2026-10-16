@@ -157,6 +157,8 @@ final class Quittio
 
     /**
      * Instance with default registries, the configured validators and the given country packs.
+     * Without $calculator the En16931Calculator with the calculation policy of the configuration
+     * calculates.
      *
      * @param  Config|array<string, mixed>  $config
      * @param  iterable<CountryPack>  $countryPacks
@@ -168,6 +170,7 @@ final class Quittio
         ?TemplateEngine $templates = null,
         ?LoggerInterface $logger = null,
         ?FormatResolver $formatResolver = null,
+        ?TotalsCalculator $calculator = null,
     ): self {
         $config = is_array($config) ? Config::fromArray($config) : $config;
 
@@ -177,6 +180,7 @@ final class Quittio
             formats: FormatRegistry::withDefaults(),
             renderer: $renderer ?? new MpdfRenderer(tempDir: $config->tempDir),
             templates: $templates ?? new PhpTemplateEngine($config->templatePaths),
+            calculator: $calculator ?? new En16931Calculator(policy: $config->calculation),
             logger: $logger,
             formatResolver: $formatResolver,
         );
@@ -266,6 +270,16 @@ final class Quittio
             policy: $policy,
             history: $history,
         );
+    }
+
+    /**
+     * Builder that continues existing invoice data, e.g. to correct a draft or an invoice read
+     * from XML: like InvoiceBuilder::from(), but the declared amounts are compared with the
+     * calculator of this instance.
+     */
+    public function edit(InvoiceData $data): InvoiceBuilder
+    {
+        return InvoiceBuilder::fromUsing($data, $this->calculator);
     }
 
     /**
@@ -640,6 +654,14 @@ final class Quittio
     public function config(): Config
     {
         return $this->config;
+    }
+
+    /**
+     * The calculator of the render runs, cancellations and the reader.
+     */
+    public function calculator(): TotalsCalculator
+    {
+        return $this->calculator;
     }
 
     /**
