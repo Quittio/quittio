@@ -111,6 +111,7 @@ cd docs && bundle install && bundle exec jekyll serve
 
 - A new page needs an entry in `defaults` of `docs/_config.yml` (title and navigation order); `docs/_worker/build.mjs` fails without it.
 - PHP code blocks in `docs/*.md` and the README must parse and import every class they use (`tests/Monorepo/DocsCodeBlocksTest.php`; fragments such as builder chains, configuration excerpts and class members are recognised). The code of `docs/examples.md` is executed (`tests/Monorepo/DocsExamplesTest.php`).
+- The website is versioned: `node _versioning/build.mjs` (in `docs/`) builds the latest release at the root, the working tree under `/next/` and older minor versions under `/X.Y/` into `docs/_site` (see `RELEASING.md`). Changes to `docs/` appear under `/next/` until the next release.
 - Contributor documents (this file, `ARCHITECTURE.md`, `RELEASING.md`, `docs/adr`) are not part of the website.
 
 ## Rules

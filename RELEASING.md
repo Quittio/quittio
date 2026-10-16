@@ -40,7 +40,13 @@ If the split of a tag failed (e.g. an expired `SPLIT_TOKEN`), fix the cause and 
 
 ## Documentation
 
-`.github/workflows/docs.yml` builds the website from `docs/` and deploys it to Cloudflare on every push to `master` that changes `docs/`, and on manual runs. The website therefore shows `master`, not the latest release. Pull requests build and check the website without deploying it.
+`.github/workflows/docs.yml` builds the versioned website with `docs/_versioning/build.mjs` and deploys it to Cloudflare on every push to `master` that changes `docs/`, on every published release and on manual runs:
+
+- `/` shows the latest release tag `vX.Y.Z`, built from the `docs/` of that tag.
+- `/next/` shows `master`, with a banner that it is unreleased.
+- `/X.Y/` shows every older minor version at its newest patch release.
+
+`llms.txt`, `llms-full.txt` and the MCP index at the root describe the latest release; every version has its own `llms.txt`. Publishing the GitHub release (step 7) triggers the build, so the root switches to the new version only once the release exists. Pull requests build and check `/next/` only, without deploying it. Locally: `cd docs && node _versioning/build.mjs` builds all versions into `docs/_site`.
 
 Secrets and variables: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` and the variable `DOCS_URL`.
 

@@ -1,9 +1,11 @@
 name: Docs
 
-# Builds the documentation website from docs/ (Jekyll, then llms.txt, the Markdown pages and the
-# MCP index with _worker/build.mjs), tests the MCP server, checks the links and anchors of the
-# built site, and deploys it to Cloudflare as a Worker with static assets and the MCP server under
-# /mcp (docs/wrangler.jsonc). Pull requests run every step except the deployment.
+# Builds the versioned documentation website (docs/_versioning/build.mjs): the latest release at
+# the root, the development version of master under /next/ and older minor versions under /X.Y/,
+# each with Jekyll, llms.txt, the Markdown pages and, for the root, the MCP index. Tests the MCP
+# server, checks the links and anchors of the built site, and deploys it to Cloudflare as a Worker
+# with static assets and the MCP server under /mcp (docs/wrangler.jsonc). Pull requests build only
+# /next/ and do not deploy. A published release rebuilds the site, so that the root shows it.
 # Repository secrets: CLOUDFLARE_API_TOKEN (token template "Edit Cloudflare Workers") and
 # CLOUDFLARE_ACCOUNT_ID. Repository variable: DOCS_URL, the address of the website
 # (e.g. https://docs.quittio.dev), used for absolute links such as the preview image.
@@ -18,6 +20,8 @@ on:
     paths:
       - 'docs/**'
       - '.github/workflows/docs.yml'
+  release:
+    types: [published]
   workflow_dispatch:
 
 permissions:
@@ -39,6 +43,10 @@ jobs:
         working-directory: docs
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The tags of the releases; on a release, /next/ is still built from master.
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'release' && github.event.repository.default_branch || '' }}
       - uses: ruby/setup-ruby@651ff0d62c5c79bed6d53ec518387aae20e72c1a # v1.329.0
         with:
           ruby-version: '4.0'
@@ -55,19 +63,18 @@ jobs:
           gh_edit_link: true
           gh_edit_link_text: Edit this page on GitHub
           gh_edit_repository: "${REPOSITORY_URL}"
-          gh_edit_branch: "${GITHUB_REF_NAME}"
+          gh_edit_branch: "${EDIT_BRANCH}"
           gh_edit_source: docs
           gh_edit_view_mode: edit
           CONFIG
         env:
           DOCS_URL: ${{ vars.DOCS_URL }}
           REPOSITORY_URL: ${{ github.server_url }}/${{ github.repository }}
-      - run: bundle exec jekyll build --config _config.yml,_config.ci.yml
-        env:
-          JEKYLL_ENV: production
-      - run: node _worker/build.mjs
+          EDIT_BRANCH: ${{ github.event.repository.default_branch }}
+      - run: node _versioning/build.mjs --config _config.ci.yml ${{ github.event_name == 'pull_request' && '--only-next' || '' }}
         env:
           DOCS_URL: ${{ vars.DOCS_URL }}
+          JEKYLL_ENV: production
       - run: node --test _worker/index.test.mjs
       # Links and anchors between the pages of the built site; external links are not checked, so
       # that the build does not depend on other websites.

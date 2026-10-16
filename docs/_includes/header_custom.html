@@ -1,0 +1,43 @@
+{%- comment -%}
+  Version switcher and banner of the versioned website (_versioning/build.mjs): the build sets
+  docs_version and docs_channel (latest, next or old); a plain `jekyll serve` shows nothing.
+  The list of versions is read from /versions.json at the root, so that old versions know the
+  newer ones.
+{%- endcomment -%}
+{%- if site.docs_version -%}
+<style>
+  .quittio-version { display: flex; align-items: center; gap: .4rem; padding: 0 1rem; font-size: .8rem; }
+  .quittio-version-select { font: inherit; padding: .1rem .3rem; border: 1px solid #d0d7de; border-radius: 4px; background: #fff; }
+  .quittio-version-banner { position: fixed; bottom: 0; left: 0; right: 0; z-index: 100; padding: .5rem 1rem; background: #fff8c5; border-top: 1px solid #d4a72c; font-size: .85rem; text-align: center; }
+</style>
+<div class="quittio-version">
+  <label for="quittio-version-select" class="quittio-version-label">Version</label>
+  <select id="quittio-version-select" class="quittio-version-select" data-current="{{ site.docs_version }}" data-base="{{ site.baseurl }}">
+    <option value="{{ site.baseurl }}/" selected>{{ site.docs_version }}</option>
+  </select>
+</div>
+{%- if site.docs_channel == 'next' -%}
+<div class="quittio-version-banner" role="note">You are reading the documentation of the unreleased development version. <a href="/">Latest release</a></div>
+{%- elsif site.docs_channel == 'old' -%}
+<div class="quittio-version-banner" role="note">You are reading the documentation of version {{ site.docs_version }}. <a href="/">Latest release</a></div>
+{%- endif -%}
+<script>
+(function () {
+  var select = document.getElementById('quittio-version-select');
+  if (!select) { return; }
+  var base = select.dataset.base || '';
+  var page = window.location.pathname.slice(base.length).replace(/^\/+/, '');
+  fetch('/versions.json').then(function (r) { return r.ok ? r.json() : []; }).then(function (versions) {
+    select.innerHTML = '';
+    versions.forEach(function (v) {
+      var option = document.createElement('option');
+      option.value = v.path;
+      option.textContent = v.label;
+      option.selected = v.name === select.dataset.current;
+      select.appendChild(option);
+    });
+  }).catch(function () {});
+  select.addEventListener('change', function () { window.location.href = select.value + page; });
+})();
+</script>
+{%- endif -%}

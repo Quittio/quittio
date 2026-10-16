@@ -6,14 +6,34 @@
 // Preview pages of unreleased packages (PREVIEW) and the legal pages (LEGAL) are left out of all of them.
 //
 // Usage (in docs/): DOCS_URL=https://docs.quittio.dev node _worker/build.mjs
+//
+// For one version of the versioned website (_versioning/build.mjs) the sources, the built site, the
+// address and the MCP index are passed as options:
+//
+//     node _worker/build.mjs --docs <sources> --site <built site> --base <address> --index <file|none> --mcp <address>
 
 import { mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { parseArgs } from 'node:util';
 
-const docs = join(dirname(fileURLToPath(import.meta.url)), '..');
-const site = join(docs, '_site');
-const base = (process.env.DOCS_URL || 'https://docs.quittio.dev').replace(/\/+$/, '');
+const here = join(dirname(fileURLToPath(import.meta.url)), '..');
+const { values: options } = parseArgs({
+    options: {
+        docs: { type: 'string' },
+        site: { type: 'string' },
+        base: { type: 'string' },
+        index: { type: 'string' },
+        mcp: { type: 'string' },
+    },
+});
+const docs = options.docs ? resolve(options.docs) : here;
+const site = options.site ? resolve(options.site) : join(docs, '_site');
+const base = (options.base || process.env.DOCS_URL || 'https://docs.quittio.dev').replace(/\/+$/, '');
+// The MCP index of the Worker; "none" for versions the Worker does not search.
+// The MCP server; the versioned website has one, at the root.
+const mcp = options.mcp || `${base}/mcp`;
+const index = options.index === 'none' ? null : options.index ? resolve(options.index) : join(here, '_worker', 'docs.generated.json');
 
 // Pages that AI tools may skip (llms.txt section "Optional").
 const OPTIONAL = new Set(['field-reference']);
@@ -53,13 +73,9 @@ for (const page of pages) {
 }
 writeFileSync(join(site, 'llms.txt'), llmsTxt(pages));
 writeFileSync(join(site, 'llms-full.txt'), llmsFullTxt(pages));
-writeFileSync(
-    join(docs, '_worker', 'docs.generated.json'),
-    JSON.stringify({
-        base,
-        pages,
-    }),
-);
+if (index !== null) {
+    writeFileSync(index, JSON.stringify({ base, pages }));
+}
 
 console.log(`${pages.length} pages, ${pages.reduce((n, p) => n + p.sections.length, 0)} sections, base ${base}`);
 
@@ -168,7 +184,7 @@ function llmsTxt(pages) {
         '',
         'Install with `composer require quittio/quittio` (core, Laravel integration and country pack Germany) or `quittio/core` without Laravel. '
             + `Every page below is plain Markdown; ${base}/llms-full.txt contains all of them. `
-            + `The MCP server ${base}/mcp (Streamable HTTP, no authentication) searches this documentation.`,
+            + `The MCP server ${mcp} (Streamable HTTP, no authentication) searches the documentation of the latest release.`,
         '',
         '## Docs',
         '',
