@@ -26,6 +26,7 @@ use Quittio\Country\DE\CountryDE;
 use Quittio\Country\DE\Dunning\BaseRateTable;
 use Quittio\Country\DE\Dunning\DefaultInterest;
 use Quittio\Country\DE\Formats\GermanFormatRule;
+use Quittio\Country\DE\Formats\XRechnungFormats;
 use Quittio\Country\DE\Layouts\Din5008;
 use Quittio\Country\DE\Rules\BmfErrorClass;
 use Quittio\Country\DE\Tax\VatPreset;
@@ -287,4 +288,12 @@ it('adds the business flat rate in the money context of the documents', function
 
     expect($flat)->not->toBeNull()
         ->and($flat?->plus(Amount::of('5.00', 'EUR'))->getAmount()->toString())->toBe('45.00');
+});
+
+it('provides the XRechnung formats', function () {
+    $pack = new CountryDE;
+
+    expect(array_map(fn ($format) => $format->key, $pack->formats()))->toBe([XRechnungFormats::CII, XRechnungFormats::UBL])
+        ->and($pack->formatAliases())->toBe(['xrechnung' => XRechnungFormats::CII])
+        ->and(Quittio::create([], [$pack])->formats()->get('xrechnung')->defaultProfile)->toBe('xrechnung');
 });

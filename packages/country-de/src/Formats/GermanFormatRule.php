@@ -36,7 +36,7 @@ final readonly class GermanFormatRule implements FormatRule
         $endpoint = $invoice->buyer->electronicAddress;
         // Only a Leitweg-ID with valid check digits counts: ordinary order numbers such as "4711-01" share its shape.
         if (LeitwegId::isValid($invoice->buyerReference) || ($endpoint !== null && (string) $endpoint->scheme->value === self::LEITWEG_SCHEME)) {
-            return new FormatChoice(FormatRegistry::XRECHNUNG_CII, 'xrechnung', 'Public buyer with Leitweg-ID: XRechnung (E-Rechnungsverordnung).');
+            return new FormatChoice(XRechnungFormats::CII, 'xrechnung', 'Public buyer with Leitweg-ID: XRechnung (E-Rechnungsverordnung).');
         }
 
         if (UstgRules::isSmallAmountInvoice($invoice) && self::inland($invoice->seller->address) && self::inland($invoice->buyer->address)) {

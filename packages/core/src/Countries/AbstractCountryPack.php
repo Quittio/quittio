@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Quittio\Core\Countries;
 
+use Quittio\Core\Countries\Capabilities\ProvidesFormats;
 use Quittio\Core\Data\InvoiceData;
 use Quittio\Core\Pdf\Qr\PaymentQrGenerator;
 use Quittio\Core\Tax\TaxPresetCollection;
@@ -14,7 +15,7 @@ use Quittio\Core\View\LetterLayout;
 /**
  * Base class with neutral defaults, so that country packs only override what differs.
  */
-abstract class AbstractCountryPack implements CountryPack
+abstract class AbstractCountryPack implements CountryPack, ProvidesFormats
 {
     /**
      * Default: neutral CountryDefaults.
@@ -159,5 +160,29 @@ abstract class AbstractCountryPack implements CountryPack
     public function translationPath(): ?string
     {
         return null;
+    }
+
+    /**
+     * Default: no own formats.
+     */
+    public function formats(): array
+    {
+        return [];
+    }
+
+    /**
+     * Default: no aliases.
+     */
+    public function formatAliases(): array
+    {
+        return [];
+    }
+
+    /**
+     * Default: no serializers; CII and UBL are built in.
+     */
+    public function serializers(): array
+    {
+        return [];
     }
 }

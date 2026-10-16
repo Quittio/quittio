@@ -422,6 +422,7 @@
     "Quittio\\Core\\Countries\\AbstractCountryPack": {
         "kind": "abstract class",
         "implements": [
+            "Quittio\\Core\\Countries\\Capabilities\\ProvidesFormats",
             "Quittio\\Core\\Countries\\CountryPack"
         ],
         "methods": [
@@ -432,7 +433,9 @@
             "public defaults(): Quittio\\Core\\Countries\\CountryDefaults",
             "public dunningLaw(): Quittio\\Core\\Countries\\DunningLaw",
             "public exporters(): array",
+            "public formatAliases(): array",
             "public formatRules(): array",
+            "public formats(): array",
             "public legalTexts(): Quittio\\Core\\Countries\\LegalTextCatalog",
             "public letterLayouts(): array",
             "public mandatoryOutput(Quittio\\Core\\Data\\InvoiceData $invoice): Quittio\\Core\\Countries\\MandatoryFieldList",
@@ -442,8 +445,17 @@
             "public readers(): array",
             "public retention(): Quittio\\Core\\Countries\\RetentionRule",
             "public rules(): array",
+            "public serializers(): array",
             "public taxPresets(): Quittio\\Core\\Tax\\TaxPresetCollection",
             "public translationPath(): ?string"
+        ]
+    },
+    "Quittio\\Core\\Countries\\Capabilities\\ProvidesFormats": {
+        "kind": "interface",
+        "methods": [
+            "abstract public formatAliases(): array",
+            "abstract public formats(): array",
+            "abstract public serializers(): array"
         ]
     },
     "Quittio\\Core\\Countries\\CorrectionPolicy": {
@@ -487,6 +499,7 @@
         "kind": "final class",
         "extends": "Quittio\\Core\\Countries\\AbstractCountryPack",
         "implements": [
+            "Quittio\\Core\\Countries\\Capabilities\\ProvidesFormats",
             "Quittio\\Core\\Countries\\CountryPack"
         ],
         "methods": [
@@ -498,7 +511,9 @@
             "public defaults(): Quittio\\Core\\Countries\\CountryDefaults",
             "public dunningLaw(): Quittio\\Core\\Countries\\DunningLaw",
             "public exporters(): array",
+            "public formatAliases(): array",
             "public formatRules(): array",
+            "public formats(): array",
             "public isGeneric(): bool",
             "public legalTexts(): Quittio\\Core\\Countries\\LegalTextCatalog",
             "public letterLayouts(): array",
@@ -509,6 +524,7 @@
             "public readers(): array",
             "public retention(): Quittio\\Core\\Countries\\RetentionRule",
             "public rules(): array",
+            "public serializers(): array",
             "public taxPresets(): Quittio\\Core\\Tax\\TaxPresetCollection",
             "public translationPath(): ?string"
         ]
@@ -4383,6 +4399,7 @@
         "kind": "class",
         "extends": "Quittio\\Core\\Countries\\AbstractCountryPack",
         "implements": [
+            "Quittio\\Core\\Countries\\Capabilities\\ProvidesFormats",
             "Quittio\\Core\\Countries\\CountryPack"
         ],
         "constants": [
@@ -4399,7 +4416,9 @@
             "public dunningLaw(): Quittio\\Core\\Countries\\DunningLaw",
             "public errorClassification(Quittio\\Core\\Validation\\ValidationResult $result): array",
             "public exporters(): array",
+            "public formatAliases(): array",
             "public formatRules(): array",
+            "public formats(): array",
             "public legalTexts(): Quittio\\Core\\Countries\\LegalTextCatalog",
             "public letterLayouts(): array",
             "public mandatoryOutput(Quittio\\Core\\Data\\InvoiceData $invoice): Quittio\\Core\\Countries\\MandatoryFieldList",
@@ -4409,6 +4428,7 @@
             "public readers(): array",
             "public retention(): Quittio\\Core\\Countries\\RetentionRule",
             "public rules(): array",
+            "public serializers(): array",
             "public static locales(): array",
             "public static registerTranslations(): void",
             "public taxPresets(): Quittio\\Core\\Tax\\TaxPresetCollection",
@@ -4468,6 +4488,17 @@
         ],
         "methods": [
             "public resolve(Quittio\\Core\\Data\\InvoiceData $invoice): ?Quittio\\Core\\Formats\\FormatChoice"
+        ]
+    },
+    "Quittio\\Country\\DE\\Formats\\XRechnungFormats": {
+        "kind": "final class",
+        "constants": [
+            "ALIAS",
+            "CII",
+            "UBL"
+        ],
+        "methods": [
+            "public static all(): array"
         ]
     },
     "Quittio\\Country\\DE\\Laravel\\GermanyServiceProvider": {

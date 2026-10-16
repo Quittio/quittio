@@ -26,6 +26,7 @@ use Quittio\Core\View\MandatoryFieldGuard;
 use Quittio\Core\View\ViewModelFactory;
 use Quittio\Country\DE\Builder\GermanInvoiceMacros;
 use Quittio\Country\DE\Formats\GermanFormatRule;
+use Quittio\Country\DE\Formats\XRechnungFormats;
 use Quittio\Country\DE\Layouts\Din5008;
 use Quittio\Country\DE\Profiles\XRechnung\XRechnung30;
 use Quittio\Country\DE\Profiles\XRechnung\XRechnung30Extension;
@@ -77,6 +78,19 @@ class CountryDE extends AbstractCountryPack
     public function profiles(): array
     {
         return [new XRechnung30, new XRechnung30Extension];
+    }
+
+    /**
+     * XRechnung in CII and UBL; "xrechnung" names the CII variant.
+     */
+    public function formats(): array
+    {
+        return XRechnungFormats::all();
+    }
+
+    public function formatAliases(): array
+    {
+        return [XRechnungFormats::ALIAS => XRechnungFormats::CII];
     }
 
     public function taxPresets(): TaxPresetCollection

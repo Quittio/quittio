@@ -13,6 +13,7 @@ use Quittio\Core\Calculation\TotalsCalculator;
 use Quittio\Core\Contracts\ProvidesInvoiceData;
 use Quittio\Core\Corrections\Cancellation;
 use Quittio\Core\Corrections\CancellationHistory;
+use Quittio\Core\Countries\Capabilities\ProvidesFormats;
 use Quittio\Core\Countries\CountryPack;
 use Quittio\Core\Countries\CountryRegistry;
 use Quittio\Core\Countries\CountryResolver;
@@ -434,14 +435,26 @@ final class Quittio
     }
 
     /**
-     * Registers a country pack with its profiles and translations; a pack with the same code
-     * replaces the earlier one. Changes this instance.
+     * Registers a country pack with its profiles and translations and, for packs that provide
+     * them (ProvidesFormats), its formats, format aliases and serializers; a pack with the same
+     * code replaces the earlier one. Changes this instance.
      */
     public function registerCountry(CountryPack $pack): self
     {
         $this->countries->register($pack);
         foreach ($pack->profiles() as $profile) {
             $this->profiles->register($profile);
+        }
+        if ($pack instanceof ProvidesFormats) {
+            foreach ($pack->formats() as $format) {
+                $this->formats->register($format);
+            }
+            foreach ($pack->formatAliases() as $alias => $key) {
+                $this->formats->alias($alias, $key);
+            }
+            foreach ($pack->serializers() as $serializer) {
+                $this->addSerializer($serializer);
+            }
         }
         $path = $pack->translationPath();
         if ($path !== null && is_dir($path)) {
