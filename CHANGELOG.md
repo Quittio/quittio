@@ -4,6 +4,8 @@ All notable changes to this project are documented in this file. The format foll
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-16
+
 ### Added
 
 - Single PHP rules can be switched off, re-rated or replaced by their code: `validation.rules.disabled`, `validation.rules.severity` and `Quittio::extend('rule', …)` in Laravel, `RuleOverrides` with `Quittio::configureRules()` in the core. Official EN 16931 and Peppol rules need `allow_official`; unknown codes are refused. `Quittio::ruleCodes()` lists the known codes.
@@ -220,6 +222,7 @@ First release.
 - `pdf.paper` and the VIES verification (`validation.drivers.vies.enabled`) take effect; file names of XML-only formats no longer contain a raw translation key.
 - Watermarks (draft and preview PDFs) were never printed: mPDF needs `showWatermarkText`, and PDF/A forbids their transparency. Watermarked PDFs without embedded XML are now rendered without PDF/A.
 
-[Unreleased]: https://github.com/Quittio/quittio/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/Quittio/quittio/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/Quittio/quittio/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/Quittio/quittio/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/Quittio/quittio/releases/tag/v0.1.0
