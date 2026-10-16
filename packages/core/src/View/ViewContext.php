@@ -29,6 +29,8 @@ final readonly class ViewContext
         public ?PaymentQrGenerator $paymentQr = null,
         public ?Presentation $defaults = null,
         public array $options = [],
+        /** The logo of the presentation, resolved by the render run; null = the factory resolves it */
+        public ?ResolvedLogo $logo = null,
     ) {}
 
     public function translator(): Translator

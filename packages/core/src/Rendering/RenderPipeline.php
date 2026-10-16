@@ -12,6 +12,7 @@ use Quittio\Core\Countries\CountryResolver;
 use Quittio\Core\Countries\MandatoryField;
 use Quittio\Core\Countries\ResolvedCountries;
 use Quittio\Core\Data\InvoiceData;
+use Quittio\Core\Data\Presentation\Presentation;
 use Quittio\Core\Documents\DocumentCalculator;
 use Quittio\Core\Documents\DocumentData;
 use Quittio\Core\Exceptions\ConfigurationException;
@@ -19,6 +20,7 @@ use Quittio\Core\Formats\FormatChooser;
 use Quittio\Core\Formats\OutputFormat;
 use Quittio\Core\I18n\Translations;
 use Quittio\Core\Pdf\EmbeddedXml;
+use Quittio\Core\Pdf\LogoCache;
 use Quittio\Core\Pdf\PdfException;
 use Quittio\Core\Pdf\PdfRenderer;
 use Quittio\Core\Pdf\PostProcessing\MpdfPostProcessor;
@@ -44,6 +46,7 @@ use Quittio\Core\View\Formatter;
 use Quittio\Core\View\InvoiceTitle;
 use Quittio\Core\View\MandatoryFieldGuard;
 use Quittio\Core\View\MandatoryFieldMissing;
+use Quittio\Core\View\ResolvedLogo;
 use Quittio\Core\View\ViewContext;
 use Quittio\Core\View\ViewModelFactory;
 use Quittio\Core\Xml\SerializationOptions;
@@ -140,7 +143,7 @@ final readonly class RenderPipeline
         $htmlOnly = in_array('html', $options->formats, true);
         // PDF/A forbids the transparency of watermarks: watermarked documents are plain PDF.
         $pdfa = ! $htmlOnly && $this->config->pdfa && ! $this->presentation->hasWatermark($document->presentation, $options);
-        $view = (new ViewModelFactory)->buildDocument($document, $this->viewContext($locale, $countries, null, $options, $pdfa));
+        $view = (new ViewModelFactory)->buildDocument($document, $this->viewContext($locale, $countries, null, $options, $pdfa, $document->presentation));
         $html = $this->templates->render($this->presentation->template($document->presentation, $options), $view);
         $pdf = $htmlOnly ? null : $this->renderPdf(new RenderRequest(
             html: $html,
@@ -214,7 +217,7 @@ final readonly class RenderPipeline
         if ($format->pdf || $format->html) {
             // PDF/A for embedded XML, otherwise as configured; watermarks need transparency (no PDF/A).
             $pdfa = $format->pdf && ($xml !== null || ($this->config->pdfa && ! $watermarked));
-            $view = (new ViewModelFactory)->build($invoice, $this->viewContext($locale, $countries, $profile, $options, $pdfa));
+            $view = (new ViewModelFactory)->build($invoice, $this->viewContext($locale, $countries, $profile, $options, $pdfa, $invoice->presentation));
             $html = $this->templates->render($this->presentation->template($invoice->presentation, $options), $view);
             $title = $view->title();
 
@@ -368,23 +371,32 @@ final readonly class RenderPipeline
         );
     }
 
-    private function viewContext(string $locale, ResolvedCountries $countries, ?Profile $profile, RenderOptions $options, bool $pdfa = false): ViewContext
+    /**
+     * The context of the view model, with the logo of the presentation already resolved
+     * (downloaded, checked, scaled and prepared for PDF/A), so that the view layer does no I/O.
+     */
+    private function viewContext(string $locale, ResolvedCountries $countries, ?Profile $profile, RenderOptions $options, bool $pdfa, ?Presentation $own): ViewContext
     {
+        $defaults = $this->presentation->defaults($options);
+        $logo = ($own === null ? $defaults : ViewModelFactory::mergePresentation($own, $defaults ?? new Presentation))?->logo;
+        $cache = ($this->config->tempDir ?? sys_get_temp_dir().'/quittio-mpdf').'/logos';
+
         return new ViewContext(
             locale: $locale,
             country: $countries->leading,
             profile: $profile,
             formatter: $this->formatter,
-            defaults: $this->presentation->defaults($options),
+            defaults: $defaults,
             paymentQr: $this->paymentQr,
             options: [
                 'girocode_amount' => $this->config->girocodeAmount,
-                'logo_cache' => ($this->config->tempDir ?? sys_get_temp_dir().'/quittio-mpdf').'/logos',
+                'logo_cache' => $cache,
                 ...$this->config->options,
                 ...$options->options,
                 // Set by the run, not configurable: logos are prepared for PDF/A (no transparency, no SVG).
                 'pdfa' => $pdfa,
             ],
+            logo: $logo === null || $logo === '' ? null : new ResolvedLogo($logo, (new LogoCache($cache, pdfa: $pdfa))->resolve($logo)),
         );
     }
 

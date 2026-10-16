@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Quittio\Core\Calculation\En16931Calculator;
 use Quittio\Core\Data\Presentation\Presentation;
 use Quittio\Core\Enums\PaymentMeansCode;
 use Quittio\Core\Enums\UnitCode;
@@ -14,6 +15,8 @@ use Quittio\Core\Pdf\RenderRequest;
 use Quittio\Core\Quittio;
 use Quittio\Core\Tests\Support\Invoices;
 use Quittio\Core\View\MandatoryFieldMissing;
+use Quittio\Core\View\ResolvedLogo;
+use Quittio\Core\View\ViewContext;
 use Quittio\Core\View\ViewModelFactory;
 
 it('renders line groups with subtotals to PDF without PHP warnings', function () {
@@ -267,4 +270,12 @@ it('stops mPDF from fetching remote resources referenced in the template HTML', 
     $pdf = (new MpdfRenderer)->render(new RenderRequest(html: $html, title: 'Deny'));
 
     expect($pdf)->toStartWith('%PDF');
+});
+
+it('takes the logo that the render run resolved instead of reading it again', function () {
+    $invoice = (new En16931Calculator)->calculate(Invoices::simple()->presentation(new Presentation(logo: '/does/not/exist.png'))->build());
+    $context = new ViewContext(locale: 'en', logo: new ResolvedLogo('/does/not/exist.png', 'data:image/png;base64,AAAA'));
+
+    expect((new ViewModelFactory)->build($invoice, $context)->design->logo)->toBe('data:image/png;base64,AAAA')
+        ->and(fn () => (new ViewModelFactory)->build($invoice, new ViewContext(locale: 'en')))->toThrow(ConfigurationException::class, 'does not exist');
 });

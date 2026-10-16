@@ -1055,8 +1055,14 @@ final class ViewModelRun
         $marks = ($this->context->options['fold_marks'] ?? true) === true;
         $watermark = $p->watermark ?? (is_string($this->context->options['watermark'] ?? null) ? $this->context->options['watermark'] : null);
         // Always prepared: mPDF never fetches a logo itself (remote URLs are downloaded from public hosts only).
-        $cache = is_string($this->context->options['logo_cache'] ?? null) ? $this->context->options['logo_cache'] : sys_get_temp_dir().'/quittio-mpdf/logos';
-        $logo = (new LogoCache($cache, pdfa: ($this->context->options['pdfa'] ?? false) === true))->resolve($p->logo);
+        $resolved = $this->context->logo;
+        if ($resolved !== null && $resolved->logo === $p->logo) {
+            $logo = $resolved->src;
+        } else {
+            // Called directly, without a render run that resolved the logo.
+            $cache = is_string($this->context->options['logo_cache'] ?? null) ? $this->context->options['logo_cache'] : sys_get_temp_dir().'/quittio-mpdf/logos';
+            $logo = (new LogoCache($cache, pdfa: ($this->context->options['pdfa'] ?? false) === true))->resolve($p->logo);
+        }
         // Own footer columns, also none at all when set explicitly to [].
         $customFooter = $p->footerColumns !== [] || $p->isExplicit('footerColumns');
         [$footer, $this->footerAliases] = $customFooter ? [$p->footerColumns, []] : $this->footerColumns($issuer);

@@ -4239,6 +4239,16 @@
             "public static toHtml(?string $text): string"
         ]
     },
+    "Quittio\\Core\\View\\ResolvedLogo": {
+        "kind": "final readonly class",
+        "properties": [
+            "public readonly ?string $src",
+            "public readonly string $logo"
+        ],
+        "methods": [
+            "public __construct(string $logo, ?string $src)"
+        ]
+    },
     "Quittio\\Core\\View\\ViewContext": {
         "kind": "final readonly class",
         "properties": [
@@ -4247,12 +4257,13 @@
             "public readonly ?Quittio\\Core\\I18n\\Translator $translator",
             "public readonly ?Quittio\\Core\\Pdf\\Qr\\PaymentQrGenerator $paymentQr",
             "public readonly ?Quittio\\Core\\Profiles\\Profile $profile",
+            "public readonly ?Quittio\\Core\\View\\ResolvedLogo $logo",
             "public readonly ?string $locale",
             "public readonly Quittio\\Core\\View\\Formatter $formatter",
             "public readonly array $options"
         ],
         "methods": [
-            "public __construct(?string $locale = null, ?Quittio\\Core\\Countries\\CountryPack $country = null, ?Quittio\\Core\\Profiles\\Profile $profile = null, Quittio\\Core\\View\\Formatter $formatter = new Quittio\\Core\\View\\IntlFormatter, ?Quittio\\Core\\I18n\\Translator $translator = null, ?Quittio\\Core\\Pdf\\Qr\\PaymentQrGenerator $paymentQr = null, ?Quittio\\Core\\Data\\Presentation\\Presentation $defaults = null, array $options = [])",
+            "public __construct(?string $locale = null, ?Quittio\\Core\\Countries\\CountryPack $country = null, ?Quittio\\Core\\Profiles\\Profile $profile = null, Quittio\\Core\\View\\Formatter $formatter = new Quittio\\Core\\View\\IntlFormatter, ?Quittio\\Core\\I18n\\Translator $translator = null, ?Quittio\\Core\\Pdf\\Qr\\PaymentQrGenerator $paymentQr = null, ?Quittio\\Core\\Data\\Presentation\\Presentation $defaults = null, array $options = [], ?Quittio\\Core\\View\\ResolvedLogo $logo = null)",
             "public translator(): Quittio\\Core\\I18n\\Translator"
         ]
     },
