@@ -49,7 +49,7 @@ final class MpdfRenderer implements PdfRenderer
             // the carry rows reserved, then split at the resulting page breaks (see CarryOver).
             $carryOver = CarryOver::parse($request->html);
             $mpdf = $this->write($request, $carryOver?->anchored() ?? $request->html);
-            if ($carryOver !== null && $carryOver->breaks(CarryOver::pages($mpdf->internallink)) !== []) {
+            if ($carryOver !== null && $carryOver->breaks(CarryOver::pages(MpdfAnchors::pages($mpdf))) !== []) {
                 $first = $carryOver->breaks($this->layout($request, $carryOver->firstPage()));
                 $break = array_key_first($first);
                 if ($break !== null) {
@@ -111,7 +111,7 @@ final class MpdfRenderer implements PdfRenderer
         $mpdf = $this->create($request);
         $mpdf->WriteHTML($html);
 
-        return CarryOver::pages($mpdf->internallink);
+        return CarryOver::pages(MpdfAnchors::pages($mpdf));
     }
 
     private function create(RenderRequest $request): Mpdf

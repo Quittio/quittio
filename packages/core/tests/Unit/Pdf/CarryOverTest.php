@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Quittio\Core\Pdf\Renderers\CarryOver;
+use Quittio\Core\Pdf\Renderers\MpdfAnchors;
 use Quittio\Core\Quittio;
 use Quittio\Core\Testing\Scenarios;
 
@@ -63,7 +64,7 @@ it('ends a page only after a row with a running total', function () {
         // A sub line carries the running total of its line.
         ->and($carry?->breaks([0 => 1, 1 => 1, 2 => 2]))->toBe([1 => 1])
         ->and($carry?->breaks([0 => 1, 1 => 1, 2 => 2], from: 2))->toBe([])
-        ->and(CarryOver::pages(['quittio-row-1' => ['PAGE' => 2], 'other' => ['PAGE' => 1], 'quittio-row-0' => ['PAGE' => 1]]))->toBe([0 => 1, 1 => 2]);
+        ->and(CarryOver::pages(['quittio-row-1' => 2, 'other' => 1, 'quittio-row-0' => 1]))->toBe([0 => 1, 1 => 2]);
 });
 
 it('reserves the carry rows for the layout and inserts them at the page breaks', function () {
@@ -111,3 +112,10 @@ it('renders a single page without carry-over', function () {
     expect($pages)->toHaveCount(1)
         ->and(implode('', $pages))->not->toContain('Übertrag');
 })->skip(fn () => trim((string) shell_exec('command -v pdftotext')) === '', 'pdftotext is not available.');
+
+it('reads the pages of named anchors from mPDF', function () {
+    $mpdf = new Mpdf\Mpdf(['tempDir' => sys_get_temp_dir().'/quittio-mpdf-anchors']);
+    $mpdf->WriteHTML('<a name="first"></a><p>One</p><pagebreak /><a name="second"></a><p>Two</p>');
+
+    expect(MpdfAnchors::pages($mpdf))->toMatchArray(['first' => 1, 'second' => 2]);
+});

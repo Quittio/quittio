@@ -187,16 +187,17 @@ final readonly class CarryOver
     }
 
     /**
-     * Page of each row from the anchors mPDF recorded (Mpdf::$internallink: name => [PAGE => …]).
+     * Page of each row from the pages of the anchors (MpdfAnchors::pages()).
      *
+     * @param  array<string, int>  $anchorPages  anchor name => page
      * @return array<int, int>
      */
-    public static function pages(mixed $links): array
+    public static function pages(array $anchorPages): array
     {
         $pages = [];
-        foreach (is_array($links) ? $links : [] as $name => $link) {
-            if (is_string($name) && str_starts_with($name, self::ANCHOR) && is_array($link) && is_int($link['PAGE'] ?? null)) {
-                $pages[(int) substr($name, strlen(self::ANCHOR))] = $link['PAGE'];
+        foreach ($anchorPages as $name => $page) {
+            if (str_starts_with($name, self::ANCHOR)) {
+                $pages[(int) substr($name, strlen(self::ANCHOR))] = $page;
             }
         }
         ksort($pages);
