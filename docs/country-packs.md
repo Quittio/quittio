@@ -820,7 +820,7 @@ Registering a pack does three things:
 
 1. Create a Composer package that requires `quittio/core`.
 2. Extend `AbstractCountryPack` and override only what differs. `code()` is the one required method.
-3. Add tax presets, rules, format rules, mandatory output, layouts and texts as needed.
+3. Add tax presets, rules, format rules, mandatory output, layouts and texts as needed, and national output formats with `formats()` ([Formats of your pack](#formats-of-your-pack)).
 4. Ship translations in `resources/lang/{locale}/rules.php` and return the directory from `translationPath()`.
 5. Declare the pack in `composer.json` (`extra.quittio.country-packs`), so that the Laravel integration finds it.
 6. Test it with example invoices and, where they exist, the official validation artefacts of the country. Have the legal content reviewed by a local tax adviser.
@@ -968,11 +968,38 @@ The rules of a pack run in every format, also for a plain PDF. Profile specific 
 - An explicit format always wins.
 - A choice of `zugferd` or `cii` is upgraded to EXTENDED when EXTENDED features are used.
 
+### Formats of your pack
+
+`AbstractCountryPack` implements `Quittio\Core\Countries\Capabilities\ProvidesFormats` with empty defaults. `Quittio::registerCountry()` registers what a pack returns:
+
+- `formats()`: `list<OutputFormat>`, e.g. a national format with its syntax and allowed profiles; a format with the key of a registered one replaces it.
+- `formatAliases()`: further names, e.g. `['xrechnung' => 'xrechnung-cii']`.
+- `serializers()`: `list<XmlSerializer>` for syntaxes the core does not write; a serializer replaces the one of its syntax.
+
+Germany brings XRechnung this way (`Quittio\Country\DE\Formats\XRechnungFormats`).
+
+### Capabilities of your profiles
+
+Profiles declare what they can transmit with interfaces in `Quittio\Core\Profiles\Capabilities`, instead of the core checking profile keys:
+
+| Capability | Effect |
+|---|---|
+| `SupportsSubLines` | sub lines are allowed (no `QUITTIO-PROFILE-SUBLINES`) and the invoice is not upgraded to EXTENDED |
+| `SupportsExtensionFields` | `extensions()` names the extensions whose fields the profile carries, e.g. `['xrechnung']` for the fields of `XRechnungExtensionData` |
+| `SupportsThirdPartyPayments` | UBL invoices of the profile may carry third party payments (BG-DEX-09) |
+| `DescribesEmbeddedXml` | XMP description and version of the embedded XML |
+| `RequiresVatBreakdownRate`, `StructuredCashDiscountText`, `ExtendsCodeLists` | rate in every VAT breakdown, structured cash discount texts, additional codes |
+
+### Builder macros of your pack
+
+A pack that offers builder helpers registers one macro named after its code, which returns an object with the helpers: `InvoiceBuilder::macro('at', fn () => new AustrianInvoice($this))`, used as `->at()->…`. Germany uses `->de()` ([`GermanInvoice`](#germany-quittiocountry-de)). Ship an IDE stub for the macro, as `packages/country-de/stubs/InvoiceBuilder.stub.php` does.
+
 ### Other hooks of your pack
 
 - `paymentQr()`: a `Quittio\Core\Pdf\Qr\PaymentQrGenerator` (`key()`, `supports(InvoiceData)`, `payload(InvoiceData, array $options = []): ?string`) for the QR mode `auto`.
 - `addressFormatter()`: a `Quittio\Core\View\AddressFormatter` (`format(Address $address, array $nameLines = [], ?string $senderCountry = null, ?string $locale = null): list<string>`).
 - `profiles()`: national profiles, usually extending `Quittio\Core\Profiles\AbstractProfile`. They are registered with the pack.
+- `referenceRates()` (capability `ProvidesReferenceRates`): the reference interest rate of the late payment law, so that `Quittio\Core\Dunning\DefaultInterest::forCountry($pack)` calculates default interest ([DunningLaw](#dunninglaw)).
 
 ## The `CountryPack` contract
 
@@ -991,13 +1018,20 @@ Every method of `Quittio\Core\Countries\CountryPack`, its default in `AbstractCo
 | `legalTexts()` | [`LegalTextCatalog`](#legaltextcatalog) | empty | the pack's own helpers and your code; Quittio itself does not read it |
 | `numberingRules()` | [`NumberingRules`](#numberingrules) | `new NumberingRules` | Managed numbering |
 | `retention()` | [`RetentionRule`](#retentionrule) | `new RetentionRule(10)` | Managed retention |
-| `dunningLaw()` | [`DunningLaw`](#dunninglaw) | `new DunningLaw` | informational; not read by Quittio in this release |
+| `dunningLaw()` | [`DunningLaw`](#dunninglaw) | `new DunningLaw` | `Dunning\DefaultInterest::forCountry()`; reminders take fees and interest explicitly |
 | `correctionPolicy()` | [`CorrectionPolicy`](#correctionpolicy) | `new CorrectionPolicy` | `Quittio::cancellation()`, Managed corrections |
 | `paymentQr()` | `?PaymentQrGenerator` | `null` | payment QR code of the QR mode `auto`, after a generator registered with `setPaymentQrGenerator()` and unless `CountryDefaults::$paymentQr` is `none`; null falls back to the EPC GiroCode for `girocode` (see [`CountryDefaults`](#countrydefaults)) |
 | `addressFormatter()` | `AddressFormatter` | `InternationalAddressFormatter` | address lines of the view model |
 | `letterLayouts()` | `array<string, LetterLayout>` | `['free' => LetterLayout::free()]` | position of the address field and marks |
 | `exporters()` | `list<Exporter>` | `[]` | declared for accounting exports of the Managed layer (`Exporter::key()`); not read in this release |
 | `readers()` | `list<FormatReader>` | `[]` | readers for national formats. `read()`, `readFile()` and `validateFile()` try them after the built-in CII and UBL readers, for every registered pack. |
+
+Optional capabilities (the interface gets new methods only in a major release, new abilities come as capabilities):
+
+| Capability | Methods | Default in `AbstractCountryPack` | Used by |
+|---|---|---|---|
+| `Capabilities\ProvidesFormats` | `formats()`, `formatAliases()`, `serializers()` | implemented, empty | `Quittio::registerCountry()` ([Formats of your pack](#formats-of-your-pack)) |
+| `Capabilities\ProvidesReferenceRates` | `referenceRates(): Dunning\ReferenceRates` | not implemented | `Dunning\DefaultInterest::forCountry()` |
 | `translationPath()` | `?string` | `null` | directory with `{locale}/{group}.php` files, registered as namespace `quittio-{code}` |
 
 ### CountryDefaults
