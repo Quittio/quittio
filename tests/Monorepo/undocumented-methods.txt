@@ -308,7 +308,6 @@ Quittio\Core\View\InvoiceTitle::keyFor
 Quittio\Core\View\InvoiceViewModel::accessLog
 Quittio\Core\View\Markdown::toHtml
 Quittio\Core\View\ViewContext::translator
-Quittio\Core\View\ViewModelFactory::build
 Quittio\Core\View\ViewNode::count
 Quittio\Core\View\ViewNode::isEmpty
 Quittio\Core\View\ViewNode::jsonSerialize
