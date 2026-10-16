@@ -7,6 +7,8 @@ All notable changes to this project are documented in this file. The format foll
 ### Added
 
 - Single PHP rules can be switched off, re-rated or replaced by their code: `validation.rules.disabled`, `validation.rules.severity` and `Quittio::extend('rule', …)` in Laravel, `RuleOverrides` with `Quittio::configureRules()` in the core. Official EN 16931 and Peppol rules need `allow_official`; unknown codes are refused. `Quittio::ruleCodes()` lists the known codes.
+- The calculation policy decides what happens with declared amounts of other systems: `calculation.declared_amounts` (`keep`, `recalculate`, `reject`), `CalculationPolicy` and `DeclaredAmountsMode` in the core. An own calculator is configured with `calculation.calculator` or passed to `Quittio::create(calculator: …)`; `Quittio::calculator()` returns it.
+- `Quittio::edit()` (core and Laravel) and `InvoiceBuilder::fromUsing()` continue existing invoice data with the calculator of the instance; cancellations and the document calculator of `QuittioFake` use it as well. `InvoiceFactory::calculated()` takes a calculator.
 
 ### Changed
 

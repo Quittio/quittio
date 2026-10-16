@@ -144,6 +144,7 @@ The Managed layer has its own file, `config/quittio-managed.php`, with the datab
 | `QUITTIO_MANDATORY_FIELD_GUARD` | `validation.mandatory_field_guard` | – (`exception`, in production `log`) |
 | `QUITTIO_KOSIT_URL` | `validation.drivers.kosit.url` | `http://127.0.0.1:8081` (start the validator with `-P 8081`; its own default port is 8080) |
 | `QUITTIO_CANCELLATION_STRATEGY` | `corrections.cancellation_strategy` | – (country pack) |
+| `QUITTIO_DECLARED_AMOUNTS` | `calculation.declared_amounts` | `keep` |
 | `QUITTIO_STORAGE_DISK` | `storage.disk` | `local` |
 | `QUITTIO_PREVIEW_ENABLED` | `preview.enabled` | – (local environment only) |
 
@@ -313,6 +314,13 @@ The KoSIT and veraPDF drivers run only when `kosit` and `verapdf` are listed in 
 | Key | Type | Default | Effect |
 |---|---|---|---|
 | `corrections.cancellation_strategy` | string\|null | `env('QUITTIO_CANCELLATION_STRATEGY')` | How cancellations (`$result->cancel()`, `Quittio::cancellation()` and Managed cancellations) are written. `credit_note`: type code 381 with positive amounts. `negative_invoice`: type code 380 with negative amounts. `null` = the default of the country pack (Germany: `credit_note`; both are permitted). The `strategy:` argument wins. An unknown value fails with a `ConfigurationException`. See [Cancellations and corrections](building-invoices.md#cancellations-and-corrections). |
+
+## Calculation
+
+| Key | Type | Default | Effect |
+|---|---|---|---|
+| `calculation.declared_amounts` | string | `env('QUITTIO_DECLARED_AMOUNTS', 'keep')` | What happens with amounts another system declared and rounded differently, in invoices continued with `Quittio::edit()` or `InvoiceBuilder::from()` and in their cancellations. `keep`: keep them within the tolerances of EN 16931. `recalculate`: always recalculate. `reject`: throw a `CalculationException` when they are outside the tolerances. Replaced amounts are reported as `QUITTIO-DECLARED-AMOUNTS`. See [Declared amounts](building-invoices.md#declared-amounts). |
+| `calculation.calculator` | string\|null | `null` | Class of an own calculator (`Quittio\Core\Calculation\TotalsCalculator`), resolved from the container. It calculates renders, cancellations, documents, read invoices and `Quittio::edit()`. `null` = the EN 16931 calculator with `declared_amounts`. |
 
 ## Snapshots
 

@@ -93,6 +93,7 @@ These rules apply to every method on this page.
 |---|---|
 | `InvoiceBuilder::make()` | New, empty builder. Defaults: type code 380 (commercial invoice), currency `EUR`, EN 16931:2017. |
 | `InvoiceBuilder::from(InvoiceData $data)` | Builder with all values of existing data, e.g. to change a draft, a stored invoice or a read invoice ([Changing existing data](#changing-existing-data)). |
+| `Quittio::edit(InvoiceData $data)` | Like `from()`, but declared amounts are compared with the configured calculator and its policy ([Declared amounts](#declared-amounts)). `InvoiceBuilder::fromUsing($data, $calculator)` does the same with a calculator of your own. |
 | `InvoiceBuilder::fromDocument(DocumentData $document)` | Invoice from a quote, order confirmation, delivery note or proforma invoice. Parties, billable lines, document allowances and charges and payment data are taken over; number, issue date and notes are not. The number of an order confirmation becomes the sales order reference (BT-14), that of a delivery note the despatch advice reference (BT-16). See [From document to invoice](documents.md#from-document-to-invoice). |
 | `build(): InvoiceData` | Builds the data. Requires at least one line. |
 | `buildDraft(): InvoiceData` | Builds without requiring lines, e.g. for drafts or as the basis of payment reminders or account statements. Data without lines can be calculated (its line sum is zero), but it is not a valid invoice (BR-16). |
@@ -1215,6 +1216,16 @@ The builder then sets `Meta::FLAG_DECLARED_AMOUNTS` with a fingerprint of the am
 - Amounts beyond these tolerances are recalculated, and the data gets `Meta::FLAG_DECLARED_AMOUNTS_RECALCULATED`. The validation reports it as `QUITTIO-DECLARED-AMOUNTS` (the document may not reverse the original exactly).
 - Data whose amount inputs no longer match the fingerprint, e.g. changed with `with()` or edited in stored JSON, is recalculated completely.
 - Data calculated by Quittio never needs declared amounts. The calculator also writes a fingerprint to every result, so `from()`, cancellations and the calculator never keep amounts that were changed afterwards.
+
+The calculation policy decides what happens with declared amounts (`calculation.declared_amounts` in Laravel, `calculation.declared_amounts` in `Quittio::create()`, or `new En16931Calculator(policy: new CalculationPolicy(DeclaredAmountsMode::Recalculate))`):
+
+| Mode | Declared amounts |
+|---|---|
+| `keep` (default) | kept within the tolerances above |
+| `recalculate` | always recalculated, reported as `QUITTIO-DECLARED-AMOUNTS`; the aligned VAT of partial cancellations is kept |
+| `reject` | kept within the tolerances, otherwise a `CalculationException` |
+
+The policy belongs to the run, not to the data: the same stored invoice gives other amounts under another policy. `InvoiceBuilder::from()` compares the declared amounts with the default calculator; `Quittio::edit()` and cancellations use the calculator of the instance.
 
 The helpers are public: `DeclaredAmounts::needed(InvoiceData $data)` (the recalculation does not reproduce the declared amounts), `isStale()` (changed after the amounts were calculated or declared), `isTrusted()` (flagged and fingerprint matches), `hasAmounts()` and `breakdownKey(VatCategory $category, ?BigDecimal $rate)` (VAT group key, e.g. `S|19.00`).
 

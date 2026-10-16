@@ -255,7 +255,7 @@ With the German country pack the automatic choice renders these invoices as ZUGF
 | `state(callable $state)` | Calls `$state(InvoiceBuilder $builder)` for free changes; several states run in order |
 | `builder(): InvoiceBuilder` | The prepared builder |
 | `make(): InvoiceData` | Invoice data, not calculated (as passed to `Quittio::make()`) |
-| `calculated(): InvoiceData` | Invoice data with totals and VAT breakdown (`En16931Calculator`) |
+| `calculated(?TotalsCalculator $calculator = null): InvoiceData` | Invoice data with totals and VAT breakdown, calculated with `$calculator` (default `En16931Calculator`) |
 
 `VATEX-EU-…` are the codes of the VAT exemption reasons ([Exemption reasons in the VAT breakdown](building-invoices.md#exemption-reasons-in-the-vat-breakdown)).
 
