@@ -490,6 +490,10 @@ final class UstgRules
         return $lines !== [];
     }
 
+    /**
+     * Whether the invoice states the date of the supply (section 14 (4) no. 6 UStG): a delivery
+     * date, an invoicing period or a period on every line.
+     */
     public static function hasServiceDate(InvoiceData $invoice): bool
     {
         if ($invoice->delivery?->actualDeliveryDate !== null || $invoice->invoicingPeriod !== null) {

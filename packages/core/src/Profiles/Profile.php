@@ -18,6 +18,9 @@ interface Profile
      */
     public function key(): string;
 
+    /**
+     * Display name, e.g. "EN 16931" or "XRechnung 3.0".
+     */
     public function name(): string;
 
     /**

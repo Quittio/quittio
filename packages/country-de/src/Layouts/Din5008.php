@@ -20,6 +20,9 @@ final class Din5008
 
     public const string FORM_B = 'din5008b';
 
+    /**
+     * DIN 5008 form A: address field 27 mm from the top, fold marks at 87 and 192 mm.
+     */
     public static function formA(): LetterLayout
     {
         return new LetterLayout(
@@ -33,6 +36,9 @@ final class Din5008
         );
     }
 
+    /**
+     * DIN 5008 form B (the default): address field 45 mm from the top, fold marks at 105 and 210 mm.
+     */
     public static function formB(): LetterLayout
     {
         return new LetterLayout(

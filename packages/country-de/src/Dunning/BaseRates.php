@@ -46,6 +46,9 @@ final class BaseRates
         return self::$rates;
     }
 
+    /**
+     * Forgets the registered rates; the shipped table stays. Quittio::resetState() calls it.
+     */
     public static function reset(): void
     {
         self::$rates = [];

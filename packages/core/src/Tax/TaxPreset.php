@@ -20,10 +20,19 @@ interface TaxPreset
      */
     public function key(): string;
 
+    /**
+     * VAT category (BT-151).
+     */
     public function category(): VatCategory;
 
+    /**
+     * VAT rate in percent (BT-152); null for categories without a rate (e.g. O).
+     */
     public function rate(): ?BigDecimal;
 
+    /**
+     * VATEX code of the exemption reason (BT-121); null for taxed supplies.
+     */
     public function exemptionReasonCode(): VatExemptionReasonCode|RawCode|null;
 
     /**

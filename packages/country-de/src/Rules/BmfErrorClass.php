@@ -21,6 +21,10 @@ enum BmfErrorClass: string
     /** Content errors (marginal no. 35a): mandatory information is wrong or missing. */
     case Content = 'content';
 
+    /**
+     * The error class of a finding: the UStG rules are content errors, the other findings are
+     * format, business rule or content errors by their validation level.
+     */
     public static function of(ValidationMessage $message): self
     {
         if (str_starts_with($message->code, 'DE-USTG-')) {
@@ -34,6 +38,9 @@ enum BmfErrorClass: string
         };
     }
 
+    /**
+     * The name of the class with the marginal number of the BMF letter, German or English.
+     */
     public function label(string $locale = 'de'): string
     {
         return match ($this) {

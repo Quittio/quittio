@@ -17,11 +17,17 @@ use Quittio\Country\DE\Dunning\BaseRates;
  */
 final class GermanyServiceProvider extends ServiceProvider
 {
+    /**
+     * Merges the configuration quittio-de.
+     */
     public function register(): void
     {
         $this->mergeConfigFrom(self::path('config/quittio-de.php'), 'quittio-de');
     }
 
+    /**
+     * Registers the configured and the updated base rates, the command and the publishable configuration.
+     */
     public function boot(): void
     {
         if ($this->app->runningInConsole()) {

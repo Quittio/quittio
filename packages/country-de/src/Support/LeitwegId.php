@@ -13,11 +13,18 @@ final class LeitwegId
 {
     private const string PATTERN = '/^(\d{2,12})(?:-([A-Za-z0-9]{1,30}))?-(\d{2})$/';
 
+    /**
+     * Whether the value has the shape of a Leitweg-ID (coarse address, optional fine address,
+     * two check digits, separated by dashes), whatever its check digits.
+     */
     public static function looksLike(?string $value): bool
     {
         return $value !== null && preg_match(self::PATTERN, trim($value)) === 1;
     }
 
+    /**
+     * Whether the value is a Leitweg-ID with correct check digits.
+     */
     public static function isValid(?string $value): bool
     {
         if ($value === null || preg_match(self::PATTERN, trim($value), $m) !== 1) {
@@ -27,6 +34,10 @@ final class LeitwegId
         return self::checkDigits($m[1].$m[2]) === $m[3];
     }
 
+    /**
+     * The two check digits (ISO 7064 MOD 97-10) of a Leitweg-ID, computed over the coarse and the
+     * fine address concatenated without the dash, e.g. checkDigits('04011000'.'1234512345').
+     */
     public static function checkDigits(string $address): string
     {
         $digits = '';
