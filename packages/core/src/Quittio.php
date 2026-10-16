@@ -56,6 +56,7 @@ use Quittio\Core\Validation\Drivers\KositValidator;
 use Quittio\Core\Validation\Drivers\PhpRulesDriver;
 use Quittio\Core\Validation\Drivers\VeraPdfValidator;
 use Quittio\Core\Validation\Drivers\XsdValidator;
+use Quittio\Core\Validation\RuleOverrides;
 use Quittio\Core\Validation\ValidationDriver;
 use Quittio\Core\Validation\ValidationException;
 use Quittio\Core\Validation\ValidationLevel;
@@ -186,6 +187,9 @@ final class Quittio
         $levels = $config->validationLevels;
         $phpLevels = array_values(array_filter($levels, static fn (ValidationLevel $l): bool => in_array($l, [ValidationLevel::L1, ValidationLevel::L2, ValidationLevel::L3, ValidationLevel::L7], true)));
         $quittio->addValidator(new PhpRulesDriver(levels: $phpLevels));
+        if (! $config->rules->isEmpty()) {
+            $quittio->configureRules($config->rules);
+        }
         if (in_array(ValidationLevel::L4, $levels, true)) {
             $quittio->addValidator(new XsdValidator);
         }
@@ -528,6 +532,50 @@ final class Quittio
         $this->postProcessor = $postProcessor;
 
         return $this;
+    }
+
+    /**
+     * Switches PHP rules off, changes the severity of their findings or replaces them, by rule
+     * code (see RuleOverrides); replaces the overrides of every PHP rules driver. Changes this
+     * instance.
+     *
+     * @throws ConfigurationException for a code or pattern that no known rule has
+     */
+    public function configureRules(RuleOverrides $overrides): self
+    {
+        $known = $this->ruleCodes();
+        foreach ($overrides->patterns() as $pattern) {
+            $matches = array_filter($known, static fn (string $code): bool => RuleOverrides::matches($pattern, $code));
+            if ($matches === []) {
+                throw new ConfigurationException(sprintf('No rule has the code "%s"; check the spelling (codes as in the validation messages, a trailing * matches by prefix).', $pattern));
+            }
+        }
+
+        $this->validators = array_map(
+            static fn (ValidationDriver $driver): ValidationDriver => $driver instanceof PhpRulesDriver ? $driver->withOverrides($overrides) : $driver,
+            $this->validators,
+        );
+
+        return $this;
+    }
+
+    /**
+     * Codes of every PHP rule and finding with the registered profiles and country packs.
+     *
+     * @return list<string>
+     */
+    public function ruleCodes(): array
+    {
+        $codes = [];
+        foreach ($this->validators as $driver) {
+            if ($driver instanceof PhpRulesDriver) {
+                $codes = [...$codes, ...$driver->knownCodes($this->profiles->all(), $this->countries->all())];
+            }
+        }
+        $codes = array_values(array_unique($codes));
+        sort($codes);
+
+        return $codes;
     }
 
     /**

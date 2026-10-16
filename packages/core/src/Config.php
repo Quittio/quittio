@@ -7,6 +7,7 @@ namespace Quittio\Core;
 use Quittio\Core\Corrections\Cancellation;
 use Quittio\Core\Data\Presentation\Presentation;
 use Quittio\Core\Exceptions\ConfigurationException;
+use Quittio\Core\Validation\RuleOverrides;
 use Quittio\Core\Validation\ValidationLevel;
 use Quittio\Core\View\MandatoryFieldGuard;
 use Quittio\Core\Xml\XmlSecurity;
@@ -39,6 +40,7 @@ final readonly class Config
      * @param  string|null  $cancellationStrategy  credit_note or negative_invoice; null = default of the country pack
      * @param  string|null  $validationLocale  language of validation messages: null or "invoice" = the language of the
      *         invoice, "app" = the language of the application translator (Laravel: app()->getLocale()), or a locale
+     * @param  RuleOverrides  $rules  PHP rules switched off, re-rated or replaced by code
      */
     public function __construct(
         public ?string $format = null,
@@ -67,6 +69,7 @@ final readonly class Config
         public ?int $dueDays = null,
         public ?string $cancellationStrategy = null,
         public ?string $validationLocale = null,
+        public RuleOverrides $rules = new RuleOverrides,
     ) {
         if ($cancellationStrategy !== null && ! in_array($cancellationStrategy, Cancellation::STRATEGIES, true)) {
             throw new ConfigurationException(sprintf('Unknown cancellation strategy "%s".', $cancellationStrategy));
@@ -85,7 +88,7 @@ final readonly class Config
      * - pdf.pdfa, pdf.b2c_embed_xml, pdf.girocode_amount (due, discounted)
      * - auto_upgrade_profile
      * - validation.mode (error, warn, off), validation.levels (enum names L1 … L7, e.g. ['L1', 'L4']),
-     *   validation.block_on_warnings
+     *   validation.block_on_warnings, validation.rules (disabled, severity, allow_official; see RuleOverrides)
      * - validation.kosit, validation.verapdf: ['enabled' => true, …] switches the driver on; the other keys
      *   are those of the $kosit and $veraPdf parameters (KoSIT scenario sets only in "configurations")
      * - mandatory_fields (exception, log, off), temp_dir, options (e.g. paper, markdown, fold_marks, watermark)
@@ -140,6 +143,7 @@ final readonly class Config
             dueDays: self::int($config, 'due_days'),
             cancellationStrategy: self::str(self::arr($config, 'corrections'), 'cancellation_strategy'),
             validationLocale: self::str($validation, 'locale'),
+            rules: RuleOverrides::fromArray(self::arr($validation, 'rules')),
         );
     }
 

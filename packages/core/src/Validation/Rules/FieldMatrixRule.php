@@ -25,6 +25,9 @@ use Quittio\Core\Validation\ValidationMessage;
  */
 final class FieldMatrixRule implements Rule
 {
+    /** The codes of the findings this rule reports. */
+    public const array CODES = ['QUITTIO-PROFILE-REQUIRED', 'QUITTIO-PROFILE-NOT-ALLOWED', 'QUITTIO-PROFILE-EXTENDED-ONLY', 'QUITTIO-PROFILE-XRECHNUNG-EXTENSION-ONLY', 'QUITTIO-PROFILE-SUBLINES'];
+
     public function code(): string
     {
         return 'QUITTIO-PROFILE';

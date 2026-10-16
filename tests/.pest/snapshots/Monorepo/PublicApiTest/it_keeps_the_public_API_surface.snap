@@ -314,6 +314,7 @@
             "public readonly ?string $profile",
             "public readonly ?string $tempDir",
             "public readonly ?string $validationLocale",
+            "public readonly Quittio\\Core\\Validation\\RuleOverrides $rules",
             "public readonly array $options",
             "public readonly array $templatePaths",
             "public readonly array $validationLevels",
@@ -331,7 +332,7 @@
             "public readonly string $validation"
         ],
         "methods": [
-            "public __construct(?string $format = null, ?string $profile = null, ?string $locale = null, ?string $country = null, string $template = \"default\", array $templatePaths = [], string $filename = \"{title}_{number}.{ext}\", bool $pdfa = true, bool $b2cEmbedXml = false, bool $autoUpgradeProfile = true, string $validation = self::VALIDATION_ERROR, array $validationLevels = [\"L1\",\"L2\",\"L3\",\"L4\",\"L7\"], ?array $kosit = null, ?array $veraPdf = null, string $mandatoryFields = Quittio\\Core\\View\\MandatoryFieldGuard::MODE_EXCEPTION, string $girocodeAmount = \"due\", ?string $tempDir = null, array $options = [], ?Quittio\\Core\\Data\\Presentation\\Presentation $presentation = null, bool $blockOnWarnings = false, int $maxXmlBytes = Quittio\\Core\\Xml\\XmlSecurity::DEFAULT_MAX_BYTES, int $maxPdfBytes = 26214400, int $maxDecompressedBytes = 52428800, ?int $dueDays = null, ?string $cancellationStrategy = null, ?string $validationLocale = null)",
+            "public __construct(?string $format = null, ?string $profile = null, ?string $locale = null, ?string $country = null, string $template = \"default\", array $templatePaths = [], string $filename = \"{title}_{number}.{ext}\", bool $pdfa = true, bool $b2cEmbedXml = false, bool $autoUpgradeProfile = true, string $validation = self::VALIDATION_ERROR, array $validationLevels = [\"L1\",\"L2\",\"L3\",\"L4\",\"L7\"], ?array $kosit = null, ?array $veraPdf = null, string $mandatoryFields = Quittio\\Core\\View\\MandatoryFieldGuard::MODE_EXCEPTION, string $girocodeAmount = \"due\", ?string $tempDir = null, array $options = [], ?Quittio\\Core\\Data\\Presentation\\Presentation $presentation = null, bool $blockOnWarnings = false, int $maxXmlBytes = Quittio\\Core\\Xml\\XmlSecurity::DEFAULT_MAX_BYTES, int $maxPdfBytes = 26214400, int $maxDecompressedBytes = 52428800, ?int $dueDays = null, ?string $cancellationStrategy = null, ?string $validationLocale = null, Quittio\\Core\\Validation\\RuleOverrides $rules = new Quittio\\Core\\Validation\\RuleOverrides)",
             "public static fromArray(array $config): Quittio\\Core\\Config",
             "public with(array $changes): Quittio\\Core\\Config"
         ]
@@ -2999,6 +3000,7 @@
             "public check(Quittio\\Core\\Data\\InvoiceData $data, Quittio\\Core\\Rendering\\RenderOptions $options = new Quittio\\Core\\Rendering\\RenderOptions): Quittio\\Core\\Validation\\ValidationResult",
             "public clearValidators(): Quittio\\Core\\Quittio",
             "public config(): Quittio\\Core\\Config",
+            "public configureRules(Quittio\\Core\\Validation\\RuleOverrides $overrides): Quittio\\Core\\Quittio",
             "public countries(): Quittio\\Core\\Countries\\CountryRegistry",
             "public document(Quittio\\Core\\Documents\\DocumentData $document): Quittio\\Core\\Rendering\\PendingDocument",
             "public formats(): Quittio\\Core\\Formats\\FormatRegistry",
@@ -3011,6 +3013,7 @@
             "public registerCountry(Quittio\\Core\\Countries\\CountryPack $pack): Quittio\\Core\\Quittio",
             "public render(Quittio\\Core\\Data\\InvoiceData $data, Quittio\\Core\\Rendering\\RenderOptions $options = new Quittio\\Core\\Rendering\\RenderOptions): Quittio\\Core\\Rendering\\RenderedInvoice",
             "public renderDocument(Quittio\\Core\\Documents\\DocumentData $document, Quittio\\Core\\Rendering\\RenderOptions $options = new Quittio\\Core\\Rendering\\RenderOptions): Quittio\\Core\\Rendering\\RenderedDocument",
+            "public ruleCodes(): array",
             "public setFormatResolver(Quittio\\Core\\Formats\\FormatResolver $resolver): Quittio\\Core\\Quittio",
             "public setPaymentQrGenerator(?Quittio\\Core\\Pdf\\Qr\\PaymentQrGenerator $generator): Quittio\\Core\\Quittio",
             "public setPostProcessor(?Quittio\\Core\\Pdf\\PostProcessing\\PdfPostProcessor $postProcessor): Quittio\\Core\\Quittio",
@@ -3551,13 +3554,16 @@
             "Quittio\\Core\\Validation\\ValidationDriver"
         ],
         "methods": [
-            "public __construct(array $additionalRules = [], ?Quittio\\Core\\Validation\\Plausibility\\VatIdVerifier $vatIdVerifier = null, array $levels = [\"L1\",\"L2\",\"L3\",\"L7\"])",
+            "public __construct(array $additionalRules = [], ?Quittio\\Core\\Validation\\Plausibility\\VatIdVerifier $vatIdVerifier = null, array $levels = [\"L1\",\"L2\",\"L3\",\"L7\"], Quittio\\Core\\Validation\\RuleOverrides $overrides = new Quittio\\Core\\Validation\\RuleOverrides)",
+            "public knownCodes(iterable $profiles, iterable $packs): array",
             "public levels(): array",
             "public name(): string",
+            "public overrides(): Quittio\\Core\\Validation\\RuleOverrides",
             "public rules(Quittio\\Core\\Validation\\ValidationSubject $subject): array",
             "public supports(Quittio\\Core\\Validation\\ValidationSubject $subject): bool",
             "public validate(Quittio\\Core\\Validation\\ValidationSubject $subject): Quittio\\Core\\Validation\\ValidationResult",
             "public withLevels(array $levels): Quittio\\Core\\Validation\\Drivers\\PhpRulesDriver",
+            "public withOverrides(Quittio\\Core\\Validation\\RuleOverrides $overrides): Quittio\\Core\\Validation\\Drivers\\PhpRulesDriver",
             "public withVatIdVerifier(?Quittio\\Core\\Validation\\Plausibility\\VatIdVerifier $verifier): Quittio\\Core\\Validation\\Drivers\\PhpRulesDriver"
         ]
     },
@@ -3670,6 +3676,26 @@
             "abstract public level(): Quittio\\Core\\Validation\\ValidationLevel"
         ]
     },
+    "Quittio\\Core\\Validation\\RuleOverrides": {
+        "kind": "final readonly class",
+        "properties": [
+            "public readonly array $disabled",
+            "public readonly array $replacements",
+            "public readonly array $severities",
+            "public readonly bool $allowOfficial"
+        ],
+        "methods": [
+            "public __construct(array $disabled = [], array $severities = [], array $replacements = [], bool $allowOfficial = false)",
+            "public apply(array $rules): array",
+            "public applyToMessages(array $messages): array",
+            "public isDisabled(string $code): bool",
+            "public isEmpty(): bool",
+            "public merge(Quittio\\Core\\Validation\\RuleOverrides $other): Quittio\\Core\\Validation\\RuleOverrides",
+            "public patterns(): array",
+            "public static fromArray(array $config): Quittio\\Core\\Validation\\RuleOverrides",
+            "public static matches(string $pattern, string $code): bool"
+        ]
+    },
     "Quittio\\Core\\Validation\\Rules\\CallbackRule": {
         "kind": "final readonly class",
         "implements": [
@@ -3702,6 +3728,9 @@
         "kind": "final class",
         "implements": [
             "Quittio\\Core\\Validation\\Rule"
+        ],
+        "constants": [
+            "CODES"
         ],
         "methods": [
             "public check(Quittio\\Core\\Data\\InvoiceData $invoice, Quittio\\Core\\Validation\\ValidationContext $context): iterable",
