@@ -30,6 +30,16 @@ final class QuittioRules
      */
     public static function all(): array
     {
+        return [...self::linesAndTotals(), ...self::syntaxAndDeclaredData(), ...self::rounding(), ...self::attachmentsAndTexts(), ...self::documentKind()];
+    }
+
+    /**
+     * Totals, lines and sub lines.
+     *
+     * @return list<Rule>
+     */
+    private static function linesAndTotals(): array
+    {
         $r = CallbackRule::l3(...);
 
         return [
@@ -70,6 +80,19 @@ final class QuittioRules
                     self::checkSubLineVat($line, $report);
                 }
             }),
+        ];
+    }
+
+    /**
+     * Data that a syntax or profile cannot carry as given, and amounts declared by the sender.
+     *
+     * @return list<Rule>
+     */
+    private static function syntaxAndDeclaredData(): array
+    {
+        $r = CallbackRule::l3(...);
+
+        return [
             $r('QUITTIO-PRECEDING-INVOICES-CII', 'The invoice refers to :value preceding invoices (BG-3). CII (ZUGFeRD/Factur-X, XRechnung CII) transmits only the first reference; UBL transmits all of them.', function (InvoiceData $i, RuleReporter $report): void {
                 if (count($i->precedingInvoices) > 1 && in_array(Syntax::Cii, $report->context()->profile->syntaxes(), true)) {
                     $report->warning('BT-25', 'precedingInvoices', ['value' => count($i->precedingInvoices)]);
@@ -122,6 +145,19 @@ final class QuittioRules
             }),
             // Also for a partial cancellation aligned with the earlier ones when its VAT differs by more
             // than 0.01 or has the sign of neither its taxable amount nor zero.
+        ];
+    }
+
+    /**
+     * Rounding of VAT and line amounts.
+     *
+     * @return list<Rule>
+     */
+    private static function rounding(): array
+    {
+        $r = CallbackRule::l3(...);
+
+        return [
             $r('QUITTIO-VAT-ROUNDING', 'The VAT amount of category :category (:rate %) differs from taxable amount × rate by :value. The official rules tolerate this, but the amount is not rounded commercially.', function (InvoiceData $i, RuleReporter $report): void {
                 self::vatRounding($i, $report->warning(...), self::vatAligned($i) ? false : null);
             }),
@@ -154,6 +190,19 @@ final class QuittioRules
                     }
                 }
             }),
+        ];
+    }
+
+    /**
+     * Attachments and texts that the XML cannot carry.
+     *
+     * @return list<Rule>
+     */
+    private static function attachmentsAndTexts(): array
+    {
+        $r = CallbackRule::l3(...);
+
+        return [
             $r('QUITTIO-ATTACHMENT-FILENAME', 'The file name ":value" of an attached document (BT-125-2) is used more than once.', function (InvoiceData $i, RuleReporter $report): void {
                 $seen = [];
                 foreach ($i->attachments as $index => $attachment) {
@@ -190,6 +239,19 @@ final class QuittioRules
                     $report->error(null, $path, ['value' => $path]);
                 }
             }),
+        ];
+    }
+
+    /**
+     * Country pack, profile, standard version and kind of document.
+     *
+     * @return list<Rule>
+     */
+    private static function documentKind(): array
+    {
+        $r = CallbackRule::l3(...);
+
+        return [
             $r('QUITTIO-GENERIC-COUNTRY', 'No country pack is installed for the seller country :value. Only EN 16931 rules are checked; national mandatory information is not validated.', function (InvoiceData $i, RuleReporter $report): void {
                 $leading = $report->context()->countryPacks[0] ?? null;
                 if ($leading instanceof CountryGeneric) {

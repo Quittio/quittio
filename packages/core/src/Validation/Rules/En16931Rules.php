@@ -35,6 +35,16 @@ final class En16931Rules
      */
     private static function mandatory(): array
     {
+        return [...self::mandatoryDocumentAndParties(), ...self::mandatoryLineFields(), ...self::mandatoryReasons(), ...self::mandatoryVatPaymentAndReferences()];
+    }
+
+    /**
+     * Mandatory fields of the document and its parties.
+     *
+     * @return list<Rule>
+     */
+    private static function mandatoryDocumentAndParties(): array
+    {
         $r = CallbackRule::l3(...);
 
         return [
@@ -93,6 +103,19 @@ final class En16931Rules
                     $report->error('BT-69', 'sellerTaxRepresentative.address.countryCode');
                 }
             }),
+        ];
+    }
+
+    /**
+     * Mandatory fields of the invoice lines.
+     *
+     * @return list<Rule>
+     */
+    private static function mandatoryLineFields(): array
+    {
+        $r = CallbackRule::l3(...);
+
+        return [
             $r('BR-21', 'Each invoice line (BG-25) shall have an invoice line identifier (BT-126).', function (InvoiceData $i, RuleReporter $report): void {
                 foreach ($i->allLines() as $index => $line) {
                     if (! Inspect::filled($line->id)) {
@@ -133,6 +156,19 @@ final class En16931Rules
                     }
                 }
             }),
+        ];
+    }
+
+    /**
+     * Mandatory reasons of allowances and charges on document and line level.
+     *
+     * @return list<Rule>
+     */
+    private static function mandatoryReasons(): array
+    {
+        $r = CallbackRule::l3(...);
+
+        return [
             $r('BR-33', 'Each document level allowance (BG-20) shall have a reason (BT-97) or a reason code (BT-98).', function (InvoiceData $i, RuleReporter $report): void {
                 foreach ($i->allowances as $index => $allowance) {
                     if (! Inspect::filled($allowance->reason) && $allowance->reasonCode === null) {
@@ -165,6 +201,19 @@ final class En16931Rules
                     }
                 }
             }),
+        ];
+    }
+
+    /**
+     * Mandatory fields of the VAT breakdown, the payment instructions, references, item attributes and delivery.
+     *
+     * @return list<Rule>
+     */
+    private static function mandatoryVatPaymentAndReferences(): array
+    {
+        $r = CallbackRule::l3(...);
+
+        return [
             $r('BR-48', 'Each VAT breakdown (BG-23) shall have a VAT category rate (BT-119), except if the invoice is not subject to VAT.', function (InvoiceData $i, RuleReporter $report): void {
                 foreach ($i->vatBreakdown as $index => $breakdown) {
                     if ($breakdown->category->requiresRate() && $breakdown->rate === null) {

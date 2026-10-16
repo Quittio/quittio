@@ -22,6 +22,16 @@ final class CodeListRules
      */
     public static function all(): array
     {
+        return [...self::documentCodes(), ...self::identifierAndCountryCodes(), ...self::paymentAndReasonCodes(), ...self::itemAndAddressCodes()];
+    }
+
+    /**
+     * Codes of the document: type, currencies, VAT point date, object identifiers and note subjects.
+     *
+     * @return list<Rule>
+     */
+    private static function documentCodes(): array
+    {
         return [
             self::rule('BR-CL-01', 'The document type code (BT-3) ":value" is not part of the invoice and credit note related code lists of UNTDID 1001.', CodeList::INVOICE_TYPES,
                 static fn (InvoiceData $i): array => ['typeCode' => ['BT-3', $i->typeCode]]),
@@ -52,6 +62,17 @@ final class CodeListRules
 
                     return $codes;
                 }),
+        ];
+    }
+
+    /**
+     * Schemes of party identifiers, item classifications and country codes.
+     *
+     * @return list<Rule>
+     */
+    private static function identifierAndCountryCodes(): array
+    {
+        return [
             self::rule('BR-CL-10', 'The identifier scheme ":value" is not part of ISO/IEC 6523.', CodeList::ICD,
                 static function (InvoiceData $i): array {
                     $codes = ['buyer.identifier.scheme' => ['BT-46-1', $i->buyer->identifier?->scheme]];
@@ -93,6 +114,17 @@ final class CodeListRules
 
                     return $codes;
                 }),
+        ];
+    }
+
+    /**
+     * Payment means and the reasons of allowances and charges.
+     *
+     * @return list<Rule>
+     */
+    private static function paymentAndReasonCodes(): array
+    {
+        return [
             self::rule('BR-CL-16', 'The payment means code (BT-81) ":value" is not part of UNTDID 4461.', CodeList::PAYMENT_MEANS,
                 static fn (InvoiceData $i): array => ['paymentInstructions.meansCode' => ['BT-81', $i->paymentInstructions?->meansCode]]),
             self::rule('BR-CL-19', 'The allowance reason code ":value" is not part of UNTDID 5189.', CodeList::ALLOWANCE_REASONS,
@@ -123,6 +155,17 @@ final class CodeListRules
 
                     return $codes;
                 }),
+        ];
+    }
+
+    /**
+     * Item identifier schemes, VAT exemption reasons, units and electronic addresses.
+     *
+     * @return list<Rule>
+     */
+    private static function itemAndAddressCodes(): array
+    {
+        return [
             self::rule('BR-CL-21', 'The item standard identifier scheme ":value" is not part of ISO/IEC 6523.', CodeList::ICD,
                 static function (InvoiceData $i): array {
                     $codes = [];
