@@ -12,6 +12,7 @@ use Quittio\Core\Data\Party\Address;
 use Quittio\Core\Enums\InvoiceTypeCode;
 use Quittio\Core\Enums\VatCategory;
 use Quittio\Core\Support\Date;
+use Quittio\Core\Tax\SupplyDate;
 use Quittio\Core\Validation\Rule;
 use Quittio\Core\Validation\Rules\CallbackRule;
 use Quittio\Core\Validation\Rules\Inspect;
@@ -21,6 +22,7 @@ use Quittio\Country\DE\Formats\GermanFormatRule;
 use Quittio\Country\DE\Support\Flags;
 use Quittio\Country\DE\Support\LeitwegId;
 use Quittio\Country\DE\Support\TaxNumber;
+use Quittio\Country\DE\Tax\TaxTables;
 use Quittio\Country\DE\Tax\VatPreset;
 
 /**
@@ -136,8 +138,9 @@ final class UstgRules
                 $gross = $i->totals->grossTotal->getAmount();
                 $rate = $i->meta->exchangeRate;
                 $euro = $i->currency === 'EUR' ? $gross : ($rate !== null && $i->taxCurrency === 'EUR' ? $gross->multipliedBy($rate) : null);
-                if ($euro === null || $euro->isGreaterThan(Flags::SMALL_AMOUNT_LIMIT)) {
-                    $report->error('BT-112', 'totals.grossTotal', ['limit' => Flags::SMALL_AMOUNT_LIMIT.' EUR']);
+                $limit = TaxTables::smallAmountLimitOn($i->issueDate);
+                if ($euro === null || $euro->isGreaterThan($limit)) {
+                    $report->error('BT-112', 'totals.grossTotal', ['limit' => $limit.' EUR']);
                 }
             }),
             $r('DE-USTG-09', 'A small business (section 19 UStG) must not charge VAT in the same invoice.', function (InvoiceData $i, RuleReporter $report) use ($smallBusinessSeller): void {
@@ -437,6 +440,36 @@ final class UstgRules
                 $number = $i->seller->taxNumber;
                 if ($number !== null && trim($number) !== '' && $i->seller->address->countryCode === CountryDE::CODE && TaxNumber::validate($number) === false) {
                     $report->warning('BT-32', 'seller.taxNumber', ['value' => $number]);
+                }
+            }, self::NS),
+            CallbackRule::l7('DE-VAT-RATE', 'The VAT rate :rate % of line :line is neither the standard rate (:standard %) nor the reduced rate (:reduced %) that applied on its supply date :date.', function (InvoiceData $i, RuleReporter $report): void {
+                // Only supplies within the German VAT territory: distance sales carry the rates of the
+                // country of destination, Büsingen and Heligoland are outside of it.
+                foreach (array_filter([$i->buyer->address, $i->delivery?->address]) as $address) {
+                    if ($address->countryCode !== '' && VatTerritory::memberState($address->countryCode, $address->postcode) !== CountryDE::CODE) {
+                        return;
+                    }
+                }
+                foreach ($i->lines as $index => $line) {
+                    $rate = $line->vat->rate;
+                    if ($line->vat->category !== VatCategory::StandardRate || $rate === null) {
+                        continue;
+                    }
+                    $date = SupplyDate::ofLine($i, $line);
+                    $standard = TaxTables::standardRateOn($date);
+                    $reduced = TaxTables::reducedRateOn($date);
+                    // A preset of the pack names its rate; any other rate is a change after the build.
+                    $expected = match (VatPreset::fromKey($line->vat->presetKey ?? '')?->canonical()) {
+                        VatPreset::Standard => [$standard],
+                        VatPreset::Reduced => [$reduced],
+                        default => [$standard, $reduced],
+                    };
+                    if (array_filter($expected, static fn ($allowed): bool => $rate->isEqualTo($allowed)) === []) {
+                        $report->warning('BT-152', 'lines['.$index.'].vat.rate', [
+                            'rate' => (string) $rate->strippedOfTrailingZeros(), 'line' => $line->id, 'date' => $date->toIsoString(),
+                            'standard' => (string) $standard, 'reduced' => (string) $reduced,
+                        ]);
+                    }
                 }
             }, self::NS),
         ];

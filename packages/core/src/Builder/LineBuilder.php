@@ -33,6 +33,8 @@ use Quittio\Core\Support\Amount;
 use Quittio\Core\Support\Date;
 use Quittio\Core\Support\Decimal;
 use Quittio\Core\Support\Macroable;
+use Quittio\Core\Tax\DatedTaxPreset;
+use Quittio\Core\Tax\SupplyDate;
 use Quittio\Core\Tax\TaxPreset;
 
 /**
@@ -543,9 +545,12 @@ final class LineBuilder
     /**
      * Builds the line; called by InvoiceBuilder. $vatDefault is a builder whose VAT treatment
      * applies to this line and its sub lines when they have none (InvoiceBuilder::defaultVat()).
+     * $supplyDate is the supply date of the document (SupplyDate); a line period wins. It resolves
+     * presets whose rate depends on the date (DatedTaxPreset).
      */
-    public function build(string $currency, string $defaultId, ?string $locale = null, ?self $vatDefault = null): InvoiceLine
+    public function build(string $currency, string $defaultId, ?string $locale = null, ?self $vatDefault = null, ?Date $supplyDate = null): InvoiceLine
     {
+        $supplyDate = SupplyDate::resolve($this->period, null, null, null, $supplyDate);
         $name = $this->name ?? throw InvalidInvoiceData::missing('BT-153', sprintf('item name of line %s', $this->id ?? $defaultId));
         $id = $this->id ?? $defaultId;
 
@@ -558,7 +563,7 @@ final class LineBuilder
 
         $subLines = [];
         foreach ($this->subLines as $index => $subLine) {
-            $subLines[] = $subLine->build($currency, $id.'.'.($index + 1), $locale, $vatDefault);
+            $subLines[] = $subLine->build($currency, $id.'.'.($index + 1), $locale, $vatDefault, $supplyDate);
         }
 
         return new InvoiceLine(
@@ -573,7 +578,7 @@ final class LineBuilder
                 baseQuantityUnit: $this->baseQuantityUnit ?? ($this->baseQuantity !== null ? $this->unit : null),
                 priceInclVat: Decimal::ofNullable($this->priceInclVat),
             ),
-            vat: ($this->hasVat() || $vatDefault === null ? $this : $vatDefault)->buildVat($id, $locale),
+            vat: ($this->hasVat() || $vatDefault === null ? $this : $vatDefault)->buildVat($id, $locale, $supplyDate),
             item: new Item(
                 name: $name,
                 description: $this->description,
@@ -616,15 +621,17 @@ final class LineBuilder
         );
     }
 
-    private function buildVat(string $id, ?string $locale): LineVat
+    private function buildVat(string $id, ?string $locale, ?Date $supplyDate): LineVat
     {
         if ($this->preset !== null) {
+            $preset = $this->preset instanceof DatedTaxPreset && $supplyDate !== null ? $this->preset->on($supplyDate) : $this->preset;
+
             return new LineVat(
-                category: $this->preset->category(),
-                rate: $this->preset->rate(),
-                exemptionReason: $this->preset->exemptionReason($locale),
-                exemptionReasonCode: $this->preset->exemptionReasonCode(),
-                presetKey: $this->preset->key(),
+                category: $preset->category(),
+                rate: $preset->rate(),
+                exemptionReason: $preset->exemptionReason($locale),
+                exemptionReasonCode: $preset->exemptionReasonCode(),
+                presetKey: $preset->key(),
             );
         }
 

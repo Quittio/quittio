@@ -40,7 +40,7 @@ it('points the process-wide state to the application booted last', function () {
             ->and(bridgedTranslator())->not->toBe($first->make('translator'))
             ->and(BaseRates::registered())->toHaveKey('2099-01-01')
             // Lines without VAT use the default VAT of the second application.
-            ->and($second->make(QuittioManager::class)->defaultVat('DE', false)?->key())->toBe('de.reduced_7')
+            ->and($second->make(QuittioManager::class)->defaultVat('DE', false)?->key())->toBe('de.reduced')
             ->and(InvoiceBuilder::make()->seller(fn ($s) => $s->name('S')->address('Weg 1', '12345', 'Stadt', 'DE'))->buyer(fn ($b) => $b->name('B')->address('Weg 2', '12345', 'Stadt', 'DE'))
                 ->number('1')->issueDate('2026-10-01')->line('Buch', '10.00', 1)->build()->lines[0]->vat->rate?->isEqualTo('7'))->toBeTrue();
     } finally {

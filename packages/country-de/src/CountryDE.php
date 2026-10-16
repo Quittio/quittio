@@ -69,7 +69,7 @@ class CountryDE extends AbstractCountryPack
             letterLayout: 'din5008b',
             profile: 'en16931',
             paymentQr: 'girocode',
-            vatPreset: VatPreset::Standard19->value,
+            vatPreset: VatPreset::Standard->value,
             smallBusinessVatPreset: VatPreset::SmallBusiness->value,
         );
     }
@@ -81,7 +81,12 @@ class CountryDE extends AbstractCountryPack
 
     public function taxPresets(): TaxPresetCollection
     {
-        return new TaxPresetCollection(VatPreset::cases());
+        $presets = array_filter(VatPreset::cases(), static fn (VatPreset $preset): bool => $preset->canonical() === $preset);
+
+        // Keys of earlier versions, e.g. in stored invoices or quittio.defaults.vat.
+        return (new TaxPresetCollection($presets))
+            ->alias('de.standard_19', VatPreset::Standard)
+            ->alias('de.reduced_7', VatPreset::Reduced);
     }
 
     /**

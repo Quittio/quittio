@@ -64,6 +64,7 @@ use Quittio\Core\Support\Amount;
 use Quittio\Core\Support\Date;
 use Quittio\Core\Support\Decimal;
 use Quittio\Core\Support\Macroable;
+use Quittio\Core\Tax\SupplyDate;
 use Quittio\Core\Tax\TaxPreset;
 use ReflectionClass;
 use Throwable;
@@ -529,6 +530,8 @@ class InvoiceBuilder
     private function assemble(bool $requireLines): InvoiceData
     {
         $locale = $this->meta->locale;
+        // Decides the rate of presets that depend on the date (DatedTaxPreset); line periods win.
+        $supplyDate = SupplyDate::resolve(null, $this->taxPointDate, $this->delivery?->actualDeliveryDate, $this->invoicingPeriod, $this->issueDate);
         // Default line identifiers (BT-126) count the position and skip the identifiers of
         // existing lines and those set with id(), which must stay unique, e.g. after from() and
         // removeLine().
@@ -555,7 +558,7 @@ class InvoiceBuilder
                         $default++;
                     }
                 }
-                $line = $line->build($this->currency, (string) $default, $locale, $vatDefault);
+                $line = $line->build($this->currency, (string) $default, $locale, $vatDefault, $supplyDate);
                 $taken[$line->id] = true;
             }
             $lines[] = $line;

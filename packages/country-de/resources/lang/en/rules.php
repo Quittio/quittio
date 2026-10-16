@@ -181,6 +181,10 @@ return [
         'message' => 'The tax number ":value" (BT-32) of the seller is not a valid German tax number: it matches neither the 13-digit ELSTER format nor the notation of a federal state, or its check digit is wrong.',
         'hint' => 'Copy the tax number from a notice of the tax office (e.g. 181/815/08155) or use the 13-digit ELSTER format. A VAT identifier (DE…) belongs in ->vatId().',
     ],
+    'DE-VAT-RATE' => [
+        'message' => 'The VAT rate :rate % of line :line is neither the standard rate (:standard %) nor the reduced rate (:reduced %) that applied on its supply date :date.',
+        'hint' => 'Check the line period, the delivery date or the VAT point date: the rate of the date of the supply applies, e.g. 16 % and 5 % from July to December 2020. Average rates of agriculture and forestry (section 24 UStG) are a legitimate exception; switch the rule off for them with validation.rules.',
+    ],
     'DE-LEITWEG-ID-SUSPECT' => [
         'message' => 'The buyer reference ":value" (BT-10) is shaped like a Leitweg-ID, but its check digits are wrong. It is not treated as a Leitweg-ID, so the invoice is not issued as XRechnung automatically.',
         'hint' => 'If it is the Leitweg-ID of a public buyer, correct it (XRechnung is then chosen automatically) or set the format explicitly. An order number can be ignored.',

@@ -61,7 +61,7 @@ it('starts documents with the seller of the configuration', function () {
 
     expect($rendered->data()->seller->name)->toBe('Muster GmbH')
         ->and($rendered->filename())->toBe('Angebot_AN-2026-0031.pdf')
-        ->and($rendered->data()->lines[0]->vat->presetKey)->toBe('de.standard_19')
+        ->and($rendered->data()->lines[0]->vat->presetKey)->toBe('de.standard')
         ->and($reminder->build()->paymentInstructions?->primaryCreditTransfer()?->accountId)->toBe('DE02120300000000202051')
         ->and(Quittio::deliveryNote()->buyer(Party::make('Kunde AG')->address('Weg 1', '54321', 'Beispielstadt', 'DE'))
             ->line(['name' => 'Router'])->build()->seller->name)->toBe('Muster GmbH');
@@ -99,6 +99,6 @@ it('gives another seller nothing of the seller of the configuration', function (
     expect($invoice->seller->name)->toBe('Lisa Klein')
         ->and($invoice->paymentInstructions)->toBeNull()
         ->and($invoice->meta->hasFlag(Meta::FLAG_SMALL_BUSINESS))->toBeFalse()
-        ->and($invoice->lines[0]->vat->presetKey)->toBe('de.standard_19')
+        ->and($invoice->lines[0]->vat->presetKey)->toBe('de.standard')
         ->and($quote->paymentInstructions)->toBeNull();
 });

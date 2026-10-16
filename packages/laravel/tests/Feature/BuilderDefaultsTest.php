@@ -21,13 +21,13 @@ function invoiceWithoutVat(): InvoiceBuilder
 }
 
 it('gives lines without VAT the standard rate of the seller country', function () {
-    expect(invoiceWithoutVat()->build()->lines[0]->vat->presetKey)->toBe('de.standard_19');
+    expect(invoiceWithoutVat()->build()->lines[0]->vat->presetKey)->toBe('de.standard');
 });
 
 it('uses quittio.defaults.vat', function () {
     config()->set('quittio.defaults.vat', 'de.reduced_7');
 
-    expect(invoiceWithoutVat()->build()->lines[0]->vat->presetKey)->toBe('de.reduced_7');
+    expect(invoiceWithoutVat()->build()->lines[0]->vat->presetKey)->toBe('de.reduced');
 });
 
 it('uses the small business preset for small business sellers', function () {

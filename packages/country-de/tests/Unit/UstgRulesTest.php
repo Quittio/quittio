@@ -516,3 +516,32 @@ it('writes the messages in the configured language', function (?string $configur
     'the invoice language' => ['invoice', 'Die Anschrift des Leistungsempfängers'],
     'a fixed language' => ['en', 'The address of the buyer'],
 ]);
+
+it('applies the small amount limit of the issue date', function () {
+    $invoice = fn (string $issueDate) => Scenarios::base()->issueDate($issueDate)->deliveryDate($issueDate)->smallAmount()
+        ->buyer(fn ($b) => $b->name('Barkunde')->address(null, null, null, 'DE'))
+        ->line(fn ($l) => $l->name('Werkzeug')->quantity(1, UnitCode::Piece)->netPrice('170.00')->vat(VatPreset::Standard));
+
+    // 202.30 EUR gross: above the 150 EUR of 2016, below the 250 EUR from 2017.
+    expect(ustgCodes(ustg($invoice('2016-12-30'))))->toContain('DE-USTG-08')
+        ->and(ustgCodes(ustg($invoice('2017-01-02'))))->not->toContain('DE-USTG-08');
+});
+
+it('warns about VAT rates that did not apply on the supply date', function () {
+    $invoice = fn (string $delivery, VatPreset|string $vat, string $buyerCountry = 'DE') => Scenarios::base()->issueDate('2021-01-20')->deliveryDate($delivery)
+        ->buyer(fn ($b) => $b->name('Kunde GmbH')->address('Weg 1', '12345', 'Stadt', $buyerCountry))
+        ->line(fn ($l) => is_string($vat)
+            ? $l->name('Leistung')->quantity(1, UnitCode::Piece)->netPrice('100.00')->vat(VatCategory::StandardRate, $vat)
+            : $l->name('Leistung')->quantity(1, UnitCode::Piece)->netPrice('100.00')->vat($vat));
+    $warning = array_values(array_filter(ustg($invoice('2020-08-15', '19'))->messages, static fn ($m): bool => $m->code === 'DE-VAT-RATE'))[0];
+
+    expect($warning->severity->value)->toBe('warning')
+        ->and($warning->path)->toBe('lines[0].vat.rate')
+        ->and($warning->message)->toContain('19 %')->toContain('2020-08-15')->toContain('(16 %)')->toContain('(5 %)')
+        ->and(ustgCodes(ustg($invoice('2020-08-15', '16'))))->not->toContain('DE-VAT-RATE')
+        ->and(ustgCodes(ustg($invoice('2020-08-15', '5'))))->not->toContain('DE-VAT-RATE')
+        ->and(ustgCodes(ustg($invoice('2020-08-15', VatPreset::Standard))))->not->toContain('DE-VAT-RATE')
+        ->and(ustgCodes(ustg($invoice('2021-01-05', '16'))))->toContain('DE-VAT-RATE')
+        // Distance sales carry the rates of the buyer's country.
+        ->and(ustgCodes(ustg($invoice('2021-01-05', '20', 'FR'))))->not->toContain('DE-VAT-RATE');
+});

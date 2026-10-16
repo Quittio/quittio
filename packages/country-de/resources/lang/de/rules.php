@@ -181,6 +181,10 @@ return [
         'message' => 'Die Steuernummer „:value“ (BT-32) des Verkäufers ist keine gültige deutsche Steuernummer: Sie entspricht weder dem 13-stelligen ELSTER-Format noch der Schreibweise eines Bundeslandes, oder ihre Prüfziffer ist falsch.',
         'hint' => 'Übernehmen Sie die Steuernummer aus einem Bescheid des Finanzamts (z. B. 181/815/08155) oder im 13-stelligen ELSTER-Format. Eine USt-IdNr. (DE…) gehört in ->vatId().',
     ],
+    'DE-VAT-RATE' => [
+        'message' => 'Der Steuersatz :rate % der Position :line ist weder der Regelsteuersatz (:standard %) noch der ermäßigte Steuersatz (:reduced %), der am Leistungsdatum :date galt.',
+        'hint' => 'Prüfen Sie Leistungszeitraum, Lieferdatum oder Steuerzeitpunkt: Es gilt der Steuersatz am Tag der Leistung, z. B. 16 % und 5 % von Juli bis Dezember 2020. Durchschnittssätze der Land- und Forstwirtschaft (§ 24 UStG) sind eine zulässige Ausnahme; schalten Sie die Regel dafür mit validation.rules ab.',
+    ],
     'DE-LEITWEG-ID-SUSPECT' => [
         'message' => 'Die Käuferreferenz „:value“ (BT-10) hat die Form einer Leitweg-ID, aber ihre Prüfziffer ist falsch. Sie wird nicht als Leitweg-ID behandelt, die Rechnung wird daher nicht automatisch als XRechnung ausgegeben.',
         'hint' => 'Ist es die Leitweg-ID eines öffentlichen Auftraggebers, korrigieren Sie sie (dann wird automatisch XRechnung gewählt) oder geben Sie das Format ausdrücklich an. Eine Bestellnummer können Sie ignorieren.',

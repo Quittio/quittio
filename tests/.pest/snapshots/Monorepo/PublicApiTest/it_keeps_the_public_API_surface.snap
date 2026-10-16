@@ -97,7 +97,7 @@
             "public __call(string $method, array $parameters): mixed",
             "public allowance(?string $amount = null, ?string $percent = null, ?string $reason = null, Quittio\\Core\\Enums\\AllowanceReasonCode|Quittio\\Core\\Codes\\RawCode|string|null $reasonCode = null, ?string $baseAmount = null): Quittio\\Core\\Builder\\LineBuilder",
             "public attribute(string $name, string $value): Quittio\\Core\\Builder\\LineBuilder",
-            "public build(string $currency, string $defaultId, ?string $locale = null, ?Quittio\\Core\\Builder\\LineBuilder $vatDefault = null): Quittio\\Core\\Data\\Lines\\InvoiceLine",
+            "public build(string $currency, string $defaultId, ?string $locale = null, ?Quittio\\Core\\Builder\\LineBuilder $vatDefault = null, ?Quittio\\Core\\Support\\Date $supplyDate = null): Quittio\\Core\\Data\\Lines\\InvoiceLine",
             "public buyerAccountingReference(?string $reference): Quittio\\Core\\Builder\\LineBuilder",
             "public buyerId(?string $id): Quittio\\Core\\Builder\\LineBuilder",
             "public charge(?string $amount = null, ?string $percent = null, ?string $reason = null, Quittio\\Core\\Enums\\ChargeReasonCode|Quittio\\Core\\Codes\\RawCode|string|null $reasonCode = null, ?string $baseAmount = null): Quittio\\Core\\Builder\\LineBuilder",
@@ -3396,6 +3396,17 @@
             "public toIsoString(): string"
         ]
     },
+    "Quittio\\Core\\Support\\DatedValues": {
+        "kind": "final readonly class",
+        "methods": [
+            "public __construct(array $values)",
+            "public changes(): array",
+            "public lastChange(): ?Quittio\\Core\\Support\\Date",
+            "public on(Quittio\\Core\\Support\\Date $date): ?string",
+            "public periods(Quittio\\Core\\Support\\Date $from, Quittio\\Core\\Support\\Date $until): array",
+            "public withValue(Quittio\\Core\\Support\\Date|string $from, string $value): Quittio\\Core\\Support\\DatedValues"
+        ]
+    },
     "Quittio\\Core\\Support\\Decimal": {
         "kind": "final class",
         "constants": [
@@ -3452,6 +3463,27 @@
             "public static make(string $key, Quittio\\Core\\Enums\\VatCategory $category, Brick\\Math\\BigDecimal|string|int|float|null $rate = null, Quittio\\Core\\Enums\\VatExemptionReasonCode|Quittio\\Core\\Codes\\RawCode|string|null $code = null, array|string|null $reason = null): Quittio\\Core\\Tax\\CustomTaxPreset"
         ]
     },
+    "Quittio\\Core\\Tax\\DatedTaxPreset": {
+        "kind": "interface",
+        "implements": [
+            "Quittio\\Core\\Tax\\TaxPreset"
+        ],
+        "methods": [
+            "abstract public category(): Quittio\\Core\\Enums\\VatCategory",
+            "abstract public exemptionReason(?string $locale = null): ?string",
+            "abstract public exemptionReasonCode(): Quittio\\Core\\Enums\\VatExemptionReasonCode|Quittio\\Core\\Codes\\RawCode|null",
+            "abstract public key(): string",
+            "abstract public on(Quittio\\Core\\Support\\Date $date): Quittio\\Core\\Tax\\TaxPreset",
+            "abstract public rate(): ?Brick\\Math\\BigDecimal"
+        ]
+    },
+    "Quittio\\Core\\Tax\\SupplyDate": {
+        "kind": "final class",
+        "methods": [
+            "public static ofLine(Quittio\\Core\\Data\\InvoiceData $invoice, Quittio\\Core\\Data\\Lines\\InvoiceLine $line): Quittio\\Core\\Support\\Date",
+            "public static resolve(?Quittio\\Core\\Data\\Delivery\\Period $linePeriod, ?Quittio\\Core\\Support\\Date $taxPointDate, ?Quittio\\Core\\Support\\Date $deliveryDate, ?Quittio\\Core\\Data\\Delivery\\Period $invoicingPeriod, ?Quittio\\Core\\Support\\Date $issueDate): ?Quittio\\Core\\Support\\Date"
+        ]
+    },
     "Quittio\\Core\\Tax\\TaxPreset": {
         "kind": "interface",
         "methods": [
@@ -3472,6 +3504,7 @@
         "methods": [
             "public __construct(iterable $presets = [])",
             "public add(Quittio\\Core\\Tax\\TaxPreset $preset): Quittio\\Core\\Tax\\TaxPresetCollection",
+            "public alias(string $key, Quittio\\Core\\Tax\\TaxPreset $preset): Quittio\\Core\\Tax\\TaxPresetCollection",
             "public count(): int",
             "public get(string $key): Quittio\\Core\\Tax\\TaxPreset",
             "public getIterator(): Traversable",
@@ -4613,14 +4646,30 @@
             "public rate(): ?Brick\\Math\\BigDecimal"
         ]
     },
+    "Quittio\\Country\\DE\\Tax\\TaxTables": {
+        "kind": "final class",
+        "constants": [
+            "REDUCED_RATE",
+            "SMALL_AMOUNT_LIMIT",
+            "STANDARD_RATE"
+        ],
+        "methods": [
+            "public static reducedRateOn(Quittio\\Core\\Support\\Date $date): Brick\\Math\\BigDecimal",
+            "public static smallAmountLimitOn(Quittio\\Core\\Support\\Date $date): Brick\\Math\\BigDecimal",
+            "public static standardRateOn(Quittio\\Core\\Support\\Date $date): Brick\\Math\\BigDecimal"
+        ]
+    },
     "Quittio\\Country\\DE\\Tax\\VatPreset": {
         "kind": "enum",
         "implements": [
             "BackedEnum",
+            "Quittio\\Core\\Tax\\DatedTaxPreset",
             "Quittio\\Core\\Tax\\TaxPreset",
             "UnitEnum"
         ],
         "cases": [
+            "Standard = \"de.standard\"",
+            "Reduced = \"de.reduced\"",
             "Standard19 = \"de.standard_19\"",
             "Reduced7 = \"de.reduced_7\"",
             "ZeroRatedPv = \"de.zero_rated_pv\"",
@@ -4641,14 +4690,17 @@
             "public readonly string $value"
         ],
         "methods": [
+            "public canonical(): Quittio\\Country\\DE\\Tax\\VatPreset",
             "public category(): Quittio\\Core\\Enums\\VatCategory",
             "public exemptionReason(?string $locale = null): ?string",
             "public exemptionReasonCode(): ?Quittio\\Core\\Enums\\VatExemptionReasonCode",
             "public key(): string",
+            "public on(Quittio\\Core\\Support\\Date $date): Quittio\\Core\\Tax\\TaxPreset",
             "public rate(): ?Brick\\Math\\BigDecimal",
             "public static cases(): array",
             "public static exempt(string $paragraph, Quittio\\Core\\Enums\\VatExemptionReasonCode|Quittio\\Core\\Codes\\RawCode|string|null $code = null): Quittio\\Core\\Tax\\TaxPreset",
             "public static from(string|int $value): static",
+            "public static fromKey(string $key): ?Quittio\\Country\\DE\\Tax\\VatPreset",
             "public static tryFrom(string|int $value): ?static"
         ]
     },

@@ -10,6 +10,7 @@ use Quittio\Core\Enums\UnitCode;
 use Quittio\Core\Enums\VatCategory;
 use Quittio\Core\Enums\VatExemptionReasonCode;
 use Quittio\Core\Support\Amount;
+use Quittio\Core\Testing\Scenarios;
 use Quittio\Country\DE\CountryDE;
 use Quittio\Country\DE\Tax\VatPreset;
 
@@ -129,4 +130,37 @@ it('exposes German defaults and retention rules', function () {
         ->and($pack->defaults()->letterLayout)->toBe('din5008b')
         ->and($pack->taxPresets()->has('de.small_business'))->toBeTrue()
         ->and($pack->retention()->until(Quittio\Core\Support\Date::parse('2026-10-03'))->toIsoString())->toBe('2034-12-31');
+});
+
+it('takes the standard and the reduced rate of the supply date', function (string $date, string $standard, string $reduced) {
+    $rate = fn (VatPreset $preset): string => (string) Scenarios::base()->issueDate('2021-03-01')->deliveryDate($date)
+        ->line(fn ($l) => $l->name('Leistung')->quantity(1, UnitCode::Piece)->netPrice('100.00')->vat($preset))
+        ->build()->lines[0]->vat->rate;
+
+    expect($rate(VatPreset::Standard))->toBe($standard)
+        ->and($rate(VatPreset::Reduced))->toBe($reduced)
+        // The deprecated cases follow the dates as well and keep their keys.
+        ->and($rate(VatPreset::from('de.standard_19')))->toBe($standard)
+        ->and($rate(VatPreset::from('de.reduced_7')))->toBe($reduced);
+})->with([
+    ['2020-06-30', '19', '7'],
+    ['2020-07-01', '16', '5'],
+    ['2020-12-31', '16', '5'],
+    ['2021-01-01', '19', '7'],
+    ['2006-12-31', '16', '7'],
+]);
+
+it('keeps the keys of the presets and of earlier versions', function () {
+    $line = fn (VatPreset $preset) => Scenarios::base()->line(fn ($l) => $l->name('Leistung')->quantity(1, UnitCode::Piece)->netPrice('100.00')->vat($preset))->build()->lines[0]->vat;
+    $presets = (new CountryDE)->taxPresets();
+
+    expect($line(VatPreset::Standard)->presetKey)->toBe('de.standard')
+        ->and($line(VatPreset::from('de.standard_19'))->presetKey)->toBe('de.standard_19')
+        ->and(VatPreset::fromKey('de.reduced_7')?->canonical())->toBe(VatPreset::Reduced)
+        ->and(VatPreset::fromKey('xx.unknown'))->toBeNull()
+        ->and($presets->get('de.standard_19'))->toBe(VatPreset::Standard)
+        ->and($presets->has('de.reduced'))->toBeTrue()
+        ->and(array_keys(iterator_to_array($presets)))->not->toContain('de.standard_19', 'de.reduced_7')
+        ->and((string) VatPreset::Standard->rate())->toBe('19')
+        ->and(VatPreset::Standard->exemptionReason())->toBeNull();
 });
