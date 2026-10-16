@@ -283,6 +283,9 @@ Every invoice is checked before it is created: against EN 16931, the rules of th
 | `validation.block_on_warnings` | bool | `false` | In mode `error`, warnings block like errors |
 | `validation.locale` | string\|null | `env('QUITTIO_VALIDATION_LOCALE')` | Language of the validation messages and hints. `null` = the language of the application (`app()->getLocale()`), `'invoice'` = the language of the invoice, or a locale such as `'de'`. The invoice itself keeps its language. |
 | `validation.mandatory_field_guard` | string\|null | `env('QUITTIO_MANDATORY_FIELD_GUARD')` | Check that the PDF shows every legally required value (the template could leave one out): `exception`, `log` or `off`. `null` = `exception` outside production, `log` in production. See [Mandatory field guard](validation.md#mandatory-field-guard). |
+| `validation.rules.disabled` | list | `[]` | Codes of PHP rules to switch off, e.g. `['DE-USTG-15']`; a trailing `*` matches by prefix. See [Switching rules off](validation.md#switching-rules-off-and-changing-their-severity). |
+| `validation.rules.severity` | array | `[]` | Severity of the findings per code or prefix: `error`, `warning` or `info`, e.g. `['DE-USTG-08' => 'warning']` |
+| `validation.rules.allow_official` | bool | `false` | `true` allows changing the official EN 16931 and Peppol rules (`BR-…`, `PEPPOL-…`) |
 | `validation.drivers.kosit.mode` | string | `'daemon'` | `daemon` (a running validator via HTTP, fast) or `cli` (one Java call per file) |
 | `validation.drivers.kosit.url` | string | `env('QUITTIO_KOSIT_URL', 'http://127.0.0.1:8081')` | Address of the validator daemon. The validator listens on port 8080 unless started with `-P 8081` (or mapped, `docker run -p 8081:8080`). `quittio:schemas:download` prints a start command for the port of this URL. |
 | `validation.drivers.kosit.jar` | string\|null | `null` | Validator JAR (mode `cli`) |

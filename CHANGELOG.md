@@ -4,6 +4,10 @@ All notable changes to this project are documented in this file. The format foll
 
 ## [Unreleased]
 
+### Added
+
+- Single PHP rules can be switched off, re-rated or replaced by their code: `validation.rules.disabled`, `validation.rules.severity` and `Quittio::extend('rule', …)` in Laravel, `RuleOverrides` with `Quittio::configureRules()` in the core. Official EN 16931 and Peppol rules need `allow_official`; unknown codes are refused. `Quittio::ruleCodes()` lists the known codes.
+
 ### Changed
 
 - Pull requests opened in the read-only split repositories `quittio/core`, `quittio/laravel` and `quittio/country-de` are closed automatically with a pointer to the monorepo.

@@ -109,6 +109,7 @@ In Laravel (keys of `config/quittio.php`, see [Configuration](configuration.md#v
 | `validation.block_on_warnings` | `true`: warnings block like errors | `false` |
 | `validation.locale` | language of the messages: `null` = the language of the application, `'invoice'` = the language of the invoice, or a locale | `null` (`QUITTIO_VALIDATION_LOCALE`) |
 | `validation.mandatory_field_guard` | `exception`, `log`, `off`; `null` = `exception` outside production, `log` in production | `null` (`QUITTIO_MANDATORY_FIELD_GUARD`) |
+| `validation.rules` | single PHP rules switched off or re-rated by code, see [Switching rules off](#switching-rules-off-and-changing-their-severity) | nothing changed |
 | `validation.drivers.kosit` | see [KoSIT validator](#kosit-validator-l5) | |
 | `validation.drivers.verapdf` | see [veraPDF](#verapdf-l6) | |
 | `validation.drivers.vies` | see [VIES](#vat-identifiers-and-vies) | |
@@ -548,6 +549,52 @@ Other ways to add rules:
 - Return them from a country pack (`rules()`, `buyerCountryRules()`) or a profile (`rules()`). Country packs may only add or tighten rules.
 
 `Quittio\Core\Validation\InvoiceValidator` runs a list of drivers on a `ValidationSubject` outside a render run.
+
+## Switching rules off and changing their severity
+
+Every PHP rule is addressed by the code of its messages, e.g. `DE-USTG-15` or `QUITTIO-PRECISION`. `validation.rules` switches rules off, changes the severity of their findings or, with an own implementation, replaces them. A trailing `*` matches by prefix:
+
+```php
+// config/quittio.php
+'validation' => [
+    'rules' => [
+        'disabled' => ['QUITTIO-GENERIC-COUNTRY', 'DE-USTG-1*'],
+        'severity' => ['DE-USTG-08' => 'warning', 'QUITTIO-*' => 'info'],
+        'allow_official' => false,
+    ],
+],
+```
+
+- `disabled` drops the rules and every finding with a matching code. Rules that report several codes are covered too, e.g. `QUITTIO-PROFILE-NOT-ALLOWED` of the field matrix.
+- `severity` sets `error`, `warning` or `info`. An exact code wins over a prefix, a longer prefix over a shorter one.
+- A code that no rule has throws a `ConfigurationException` when the core is built, so typing errors do not switch nothing off silently. `$quittio->ruleCodes()` lists the known codes.
+- The rules of EN 16931 (`BR-…`) and Peppol (`PEPPOL-…`) are official: receivers and the KoSIT validator reject invoices that break them. Changing them needs `'allow_official' => true`.
+- The overrides change the PHP rules only (L1, L2, L3, L7). The findings of the XML schema, KoSIT and veraPDF are never changed.
+
+A rule of your own replaces a rule with the same code:
+
+```php
+use Quittio\Core\Validation\Rules\CallbackRule;
+use Quittio\Core\Validation\Rules\RuleReporter;
+use Quittio\Laravel\Facades\Quittio;
+
+Quittio::extend('rule', 'DE-USTG-15', fn ($app) => CallbackRule::l7('DE-USTG-15', 'Own check of the service date.', function ($invoice, RuleReporter $report): void {
+    // …
+}, namespace: 'quittio-de'));
+```
+
+Without Laravel, `Quittio::create()` reads the same keys under `validation.rules`, and `configureRules()` sets them on an instance:
+
+```php
+use Quittio\Core\Validation\RuleOverrides;
+use Quittio\Core\Validation\Severity;
+
+$quittio->configureRules(new RuleOverrides(
+    disabled: ['QUITTIO-GENERIC-COUNTRY'],
+    severities: ['DE-USTG-08' => Severity::Warning],
+    replacements: ['DE-USTG-15' => $ownRule],
+));
+```
 
 ## Incoming files
 
