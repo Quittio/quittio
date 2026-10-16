@@ -123,7 +123,7 @@
         ],
         "test:mutation": [
             "Composer\\Config::disableProcessTimeout",
-            "pest -c phpunit.mutation.xml --mutate --everything --parallel --exclude-group=official,visual --path=packages/core/src/Calculation,packages/core/src/Validation/Rules,packages/core/src/Xml,packages/country-de/src/Rules --min=85"
+            "pest -c phpunit.mutation.xml --mutate --everything --parallel --exclude-group=official,visual --path=packages/core/src/Calculation,packages/core/src/Validation/Rules,packages/core/src/Xml,packages/core/src/Reading,packages/country-de/src/Rules --min=85"
         ],
         "analyse": "phpstan analyse --memory-limit=1G",
         "lint": "pint --test",

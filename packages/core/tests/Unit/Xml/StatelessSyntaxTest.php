@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use Quittio\Core\Calculation\En16931Calculator;
 use Quittio\Core\Profiles\ProfileRegistry;
+use Quittio\Core\Reading\FormatReader;
+use Quittio\Core\Reading\InvoiceReader;
 use Quittio\Core\Standards\StandardVersion;
 use Quittio\Core\Testing\Scenarios;
 use Quittio\Core\Xml\Cii\CiiWriter;
@@ -60,8 +62,8 @@ it('writes reentrantly: a nested call does not change the outer document', funct
     'UBL' => fn () => new UblWriter,
 ]);
 
-it('keeps no mutable state in the serializers of the core', function () {
-    $classes = [CiiWriter::class, UblWriter::class];
+it('keeps no mutable state in the serializers and readers of the core', function () {
+    $classes = [CiiWriter::class, UblWriter::class, ...array_map(fn (FormatReader $reader) => $reader::class, InvoiceReader::defaultReaders())];
     $mutable = [];
     foreach ($classes as $class) {
         foreach ((new ReflectionClass($class))->getProperties() as $property) {

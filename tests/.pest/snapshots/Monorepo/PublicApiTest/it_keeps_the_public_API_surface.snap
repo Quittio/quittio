@@ -4305,15 +4305,11 @@
     },
     "Quittio\\Core\\Xml\\Cii\\CiiReader": {
         "kind": "final class",
-        "extends": "Quittio\\Core\\Reading\\XPathReader",
         "implements": [
             "Quittio\\Core\\Reading\\FormatReader"
         ],
         "constants": [
-            "DECIMAL_RULES",
-            "MAX_NUMBER_LENGTH",
-            "MAX_SUBLINE_DEPTH",
-            "MISSING_DATE"
+            "MAX_SUBLINE_DEPTH"
         ],
         "methods": [
             "public canRead(DOMDocument $document): bool",
@@ -4365,14 +4361,8 @@
     },
     "Quittio\\Core\\Xml\\Ubl\\UblReader": {
         "kind": "final class",
-        "extends": "Quittio\\Core\\Reading\\XPathReader",
         "implements": [
             "Quittio\\Core\\Reading\\FormatReader"
-        ],
-        "constants": [
-            "DECIMAL_RULES",
-            "MAX_NUMBER_LENGTH",
-            "MISSING_DATE"
         ],
         "methods": [
             "public canRead(DOMDocument $document): bool",
