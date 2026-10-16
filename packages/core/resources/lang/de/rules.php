@@ -467,6 +467,10 @@ return [
         'message' => 'Die elektronische Adresse des Verkäufers (BT-34) muss angegeben werden.',
         'hint' => 'Setzen Sie die Peppol-Teilnehmerkennung des Verkäufers mit ->electronicAddress(Wert, Schema).',
     ],
+    'PEPPOL-EN16931-CL008' => [
+        'message' => 'Das Schema ":value" der elektronischen Adresse ist in Peppol nicht zulässig.',
+        'hint' => 'Peppol stellt an die elektronische Adresse zu, eine E-Mail-Adresse (EM) ist deshalb nicht möglich. Verwenden Sie die Peppol-Teilnehmerkennung, z. B. ->electronicAddress(\'DE123456789\', ElectronicAddressScheme::GermanVatNumber) (9930) oder eine GLN (0088).',
+    ],
     'PEPPOL-EN16931-R040' => [
         'message' => 'Der Betrag eines Nachlasses oder Zuschlags muss Basisbetrag × Prozentsatz / 100 entsprechen, wenn beide angegeben sind.',
     ],

@@ -54,7 +54,12 @@ it('applies the configured profile to a requested format', function () {
 });
 
 it('keeps the profile of the format when the configured one does not fit', function () {
-    $result = Quittio::create(['profile' => 'basic'])->make(Invoices::simple()->buyerReference('PO-1')->build())->format('peppol')->render();
+    $invoice = Invoices::simple()
+        ->buyerReference('PO-1')
+        ->seller(fn ($s) => $s->electronicAddress('DE123456789', '9930'))
+        ->buyer(fn ($b) => $b->electronicAddress('4000001000005', '0088'))
+        ->build();
+    $result = Quittio::create(['profile' => 'basic'])->make($invoice)->format('peppol')->render();
 
     expect($result->profile()?->key())->toBe('peppol');
 });

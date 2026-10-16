@@ -467,6 +467,10 @@ return [
         'message' => 'The seller electronic address (BT-34) must be provided.',
         'hint' => 'Set the seller\'s Peppol participant identifier with ->electronicAddress(value, scheme).',
     ],
+    'PEPPOL-EN16931-CL008' => [
+        'message' => 'The electronic address scheme ":value" is not allowed in Peppol.',
+        'hint' => 'Peppol delivers to the electronic address, so an e-mail address (EM) is not possible. Use the Peppol participant identifier, e.g. ->electronicAddress(\'DE123456789\', ElectronicAddressScheme::GermanVatNumber) (9930) or a GLN (0088).',
+    ],
     'PEPPOL-EN16931-R040' => [
         'message' => 'An allowance or charge amount must equal base amount × percentage / 100 if base amount and percentage are given.',
     ],

@@ -16,6 +16,15 @@ it('knows the official code lists', function () {
         ->and(CodeList::contains(CodeList::CURRENCIES, 'EUR'))->toBeTrue();
 });
 
+it('keeps the Peppol electronic address schemes a subset of the EAS list without letter codes', function () {
+    $peppol = CodeList::codes(CodeList::PEPPOL_EAS);
+
+    expect(array_diff($peppol, CodeList::codes(CodeList::EAS)))->toBe([])
+        ->and(CodeList::contains(CodeList::PEPPOL_EAS, '9930'))->toBeTrue()
+        ->and(CodeList::contains(CodeList::PEPPOL_EAS, '0088'))->toBeTrue()
+        ->and(array_filter($peppol, fn (string $code) => preg_match('/^[0-9]{4}$/', $code) !== 1))->toBe([]);
+});
+
 it('only contains enum cases that are valid codes', function (string $enum, string $list) {
     foreach ($enum::cases() as $case) {
         expect(CodeList::contains($list, $case->value))->toBeTrue("{$enum}::{$case->name} ({$case->value}) is not in {$list}");

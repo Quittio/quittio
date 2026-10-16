@@ -6,6 +6,7 @@ namespace Quittio\Core\Validation\Rules;
 
 use Brick\Math\RoundingMode;
 use Quittio\Core\Calculation\LineCalculator;
+use Quittio\Core\Codes\CodeList;
 use Quittio\Core\Data\InvoiceData;
 use Quittio\Core\Enums\PaymentMeansCode;
 use Quittio\Core\Profiles\PeppolBis3;
@@ -54,6 +55,20 @@ final class PeppolRules
             $r('PEPPOL-EN16931-R020', 'The seller electronic address (BT-34) must be provided.', function (InvoiceData $i, RuleReporter $report): void {
                 if ($i->seller->electronicAddress === null) {
                     $report->error('BT-34', 'seller.electronicAddress');
+                }
+            }),
+            // Narrower than BR-CL-25: Peppol delivers to the electronic address, so EM (e-mail) and the
+            // other letter schemes of the EAS list are not allowed.
+            $r('PEPPOL-EN16931-CL008', 'The electronic address scheme ":value" is not allowed in Peppol.', function (InvoiceData $i, RuleReporter $report): void {
+                $addresses = [
+                    'seller.electronicAddress.scheme' => ['BT-34-1', $i->seller->electronicAddress],
+                    'buyer.electronicAddress.scheme' => ['BT-49-1', $i->buyer->electronicAddress],
+                ];
+                foreach ($addresses as $path => [$bt, $address]) {
+                    $scheme = $address === null ? '' : $address->scheme->value;
+                    if ($scheme !== '' && ! CodeList::contains(CodeList::PEPPOL_EAS, $scheme)) {
+                        $report->error($bt, $path, ['value' => $scheme]);
+                    }
                 }
             }),
             $r('PEPPOL-EN16931-R040', 'An allowance or charge amount must equal base amount × percentage / 100 if base amount and percentage are given.', function (InvoiceData $i, RuleReporter $report): void {

@@ -102,6 +102,34 @@ it('reports PEPPOL-EN16931-R005 when the tax currency equals the invoice currenc
     expect(array_values(array_map(fn ($m) => $m->severity, array_filter($result->messages, fn ($m) => $m->code === 'PEPPOL-EN16931-R005'))))->toBe([Severity::Warning]);
 });
 
+it('reports PEPPOL-EN16931-CL008 for electronic address schemes Peppol does not accept', function () {
+    $email = Invoices::simple()->build();
+    $result = Validate::data($email, 'peppol');
+    $messages = array_values(array_filter($result->messages, fn ($m) => $m->code === 'PEPPOL-EN16931-CL008'));
+
+    expect(array_map(fn ($m) => $m->path, $messages))->toBe(['seller.electronicAddress.scheme', 'buyer.electronicAddress.scheme'])
+        ->and($messages[0]->severity)->toBe(Severity::Error)
+        ->and($messages[0]->message)->toContain('"EM"')
+        ->and(Validate::codes(Validate::data($email)))->not->toContain('PEPPOL-EN16931-CL008');
+
+    $participant = Invoices::simple()
+        ->seller(fn ($s) => $s->electronicAddress('DE123456789', '9930'))
+        ->buyer(fn ($b) => $b->electronicAddress('4000001000005', '0088'))
+        ->build();
+
+    expect(Validate::codes(Validate::data($participant, 'peppol')))->not->toContain('PEPPOL-EN16931-CL008');
+});
+
+it('reports PEPPOL-EN16931-CL008 for EAS codes that Peppol has not adopted yet', function () {
+    $invoice = Invoices::simple()
+        ->seller(fn ($s) => $s->electronicAddress('DE123456789', '9930'))
+        ->buyer(fn ($b) => $b->electronicAddress('12345', '0242'))
+        ->build();
+
+    expect(Validate::codes(Validate::data($invoice)))->not->toContain('BR-CL-25')
+        ->and(Validate::codes(Validate::data($invoice, 'peppol')))->toContain('PEPPOL-EN16931-CL008');
+});
+
 it('reports BR-61 for credit transfer without account', function () {
     $invoice = InvoiceBuilder::from(Invoices::simple()->build())
         ->payment(PaymentMeansCode::SepaCreditTransfer)

@@ -8,8 +8,8 @@ use BackedEnum;
 use Quittio\Core\Exceptions\InvalidArgumentException;
 
 /**
- * Access to the official code lists generated from the EN 16931 rules
- * (resources/codelists/*.json, see tools/codelists/update.php).
+ * Access to the official code lists generated from the EN 16931 rules and, for Peppol,
+ * the Peppol BIS rules (resources/codelists/*.json, see tools/codelists/update.php).
  */
 final class CodeList
 {
@@ -22,6 +22,9 @@ final class CodeList
     public const string ICD = 'icd-schemes';
 
     public const string EAS = 'eas-codes';
+
+    /** The electronic address schemes Peppol accepts (PEPPOL-EN16931-CL008): EAS without EM and other letter codes. */
+    public const string PEPPOL_EAS = 'peppol-eas-codes';
 
     public const string UNITS = 'unit-codes';
 

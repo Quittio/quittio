@@ -5,9 +5,9 @@ declare(strict_types=1);
 /**
  * Generates the code list files in packages/core/resources/codelists from the
  * official EN 16931 Schematron rules (BR-CL-*), as shipped with the KoSIT
- * validator configuration.
+ * validator configuration, and the Peppol lists from the Peppol BIS rules.
  *
- * Usage: php tools/codelists/update.php [path/to/EN16931-CII-validation.xsl]
+ * Usage: php tools/codelists/update.php [path/to/EN16931-CII-validation.xsl] [path/to/PEPPOL-EN16931-UBL.sch]
  *
  * Run tools/schemas/download.sh first if no path is given.
  */
@@ -19,8 +19,11 @@ require $root.'/vendor/autoload.php';
 
 $xsl = $argv[1] ?? $root.'/tools/validators/xrechnung/resources/cii/16b/xsl/EN16931-CII-validation.xsl';
 
+$peppol = $argv[2] ?? $root.'/tools/validators/peppol/PEPPOL-EN16931-UBL.sch';
+
 try {
-    foreach ((new CodeListGenerator)->generate($xsl) as $name => $count) {
+    $generator = new CodeListGenerator;
+    foreach ($generator->generate($xsl) + $generator->generatePeppol($peppol) as $name => $count) {
         printf("%-30s %5d codes\n", $name, $count);
     }
 } catch (RuntimeException $e) {

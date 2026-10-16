@@ -405,6 +405,7 @@
             "NOTE_SUBJECTS",
             "OBJECT_IDENTIFIERS",
             "PAYMENT_MEANS",
+            "PEPPOL_EAS",
             "UNITS",
             "VATEX",
             "VAT_CATEGORIES"
@@ -421,6 +422,7 @@
         ],
         "methods": [
             "public generate(string $xslPath, ?string $target = null): array",
+            "public generatePeppol(string $schematronPath, ?string $target = null): array",
             "public static defaultTarget(): string"
         ]
     },

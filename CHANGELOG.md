@@ -4,6 +4,10 @@ All notable changes to this project are documented in this file. The format foll
 
 ## [Unreleased]
 
+### Fixed
+
+- Peppol invoices with an electronic address scheme that Peppol does not accept, e.g. `EM` (e-mail), are rejected with the new rule `PEPPOL-EN16931-CL008` instead of passing the PHP rules and failing the official Peppol validation. The allowed schemes are the code list `CodeList::PEPPOL_EAS` (`peppol-eas-codes.json`, from the Peppol BIS rules 3.0.20); `tools/codelists/update.php` regenerates it with `CodeListGenerator::generatePeppol()`.
+
 ## [0.3.0] - 2026-10-16
 
 ### Added

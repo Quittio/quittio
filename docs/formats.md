@@ -310,7 +310,7 @@ Peppol BIS Billing 3.0 is the invoice specification of the Peppol network. The f
 - CustomizationID (the specification identifier, BT-24): `urn:cen.eu:en16931:2017#compliant#urn:fdc:peppol.eu:2017:poacc:billing:3.0`,
 - ProfileID (the business process, BT-23): `urn:fdc:peppol.eu:2017:poacc:billing:01:1.0`, unless the invoice sets BT-23.
 
-Seller and buyer need an electronic address (BT-34, BT-49), and the Peppol rules apply ([Validation](validation.md)). Credit note type codes produce a `CreditNote` document.
+Seller and buyer need an electronic address (BT-34, BT-49), and the Peppol rules apply ([Validation](validation.md)). The electronic address is the Peppol participant identifier, so its scheme must be one Peppol accepts (`PEPPOL-EN16931-CL008`): e.g. `9930` (German VAT number) or `0088` (GLN), not `EM` (e-mail), which EN 16931 allows. Credit note type codes produce a `CreditNote` document.
 
 Quittio produces the document. Sending it through an access point, the service provider that connects you to the Peppol network, is not part of the core.
 

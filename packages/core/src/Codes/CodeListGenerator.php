@@ -80,6 +80,41 @@ final class CodeListGenerator
     }
 
     /**
+     * Generates the Peppol code lists (PEPPOL-EN16931-CL…) that are narrower than the EN 16931
+     * lists, from the Peppol BIS Billing 3.0 Schematron (PEPPOL-EN16931-UBL.sch).
+     *
+     * @return array<string, int> code list name => number of codes
+     */
+    public function generatePeppol(string $schematronPath, ?string $target = null): array
+    {
+        $content = is_file($schematronPath) ? file_get_contents($schematronPath) : false;
+        if ($content === false) {
+            throw new RuntimeException(sprintf('The Peppol Schematron "%s" could not be read.', $schematronPath));
+        }
+        if (preg_match('/<let name="eaid" value="tokenize\(\'([^\']*)\'/', $content, $list) !== 1) {
+            throw new RuntimeException(sprintf('The Peppol Schematron "%s" defines no code list "eaid".', $schematronPath));
+        }
+
+        $parts = preg_split('/\s+/', trim($list[1]));
+        $codes = array_values(array_unique($parts === false ? [] : $parts));
+        sort($codes, SORT_STRING);
+        preg_match('/release ([0-9]+(?:\.[0-9]+)*)/', $content, $version);
+        preg_match('/id="PEPPOL-EN16931-CL008".*?>([^<]+)<\/assert>/s', $content, $message);
+
+        $target ??= self::defaultTarget();
+        $data = [
+            'name' => CodeList::PEPPOL_EAS,
+            'rule' => 'PEPPOL-EN16931-CL008',
+            'description' => trim($message[1] ?? ''),
+            'source' => 'Peppol BIS Billing 3.0 Schematron '.($version[1] ?? 'unknown'),
+            'codes' => $codes,
+        ];
+        file_put_contents($target.'/'.CodeList::PEPPOL_EAS.'.json', json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)."\n");
+
+        return [CodeList::PEPPOL_EAS => count($codes)];
+    }
+
+    /**
      * @return list<string>|null
      */
     private function codes(string $content, string $rule, string $name): ?array
