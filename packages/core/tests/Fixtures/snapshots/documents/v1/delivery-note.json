@@ -1,0 +1,77 @@
+{
+    "_version": 1,
+    "type": "delivery_note",
+    "number": "DOC-1",
+    "issueDate": "2026-10-01",
+    "currency": "EUR",
+    "seller": {
+        "name": "Seller Ltd",
+        "address": {
+            "countryCode": "DE",
+            "line1": "Main Street 1",
+            "city": "Sample City",
+            "postcode": "12345"
+        },
+        "vatId": "DE123456789"
+    },
+    "buyer": {
+        "name": "Buyer Inc",
+        "address": {
+            "countryCode": "DE",
+            "line1": "Station Road 5",
+            "city": "Example Town",
+            "postcode": "54321"
+        }
+    },
+    "lines": [
+        {
+            "id": "1",
+            "quantity": "2",
+            "unit": "H87",
+            "price": {
+                "netPrice": "0"
+            },
+            "vat": {
+                "category": "O"
+            },
+            "item": {
+                "name": "Laptop"
+            },
+            "netAmount": "0.00"
+        }
+    ],
+    "lineOptions": {
+        "1": {
+            "serialNumbers": [
+                "SN-1",
+                "SN-2"
+            ]
+        }
+    },
+    "reference": "ORDER-7",
+    "referenceDate": "2026-09-28",
+    "delivery": {
+        "actualDeliveryDate": "2026-10-01"
+    },
+    "packages": [
+        {
+            "id": "1",
+            "type": "Box",
+            "weightKg": "4.2"
+        }
+    ],
+    "totals": {
+        "lineNetSum": "0.00",
+        "netTotal": "0.00",
+        "grossTotal": "0.00",
+        "amountDue": "0.00",
+        "vatTotal": "0.00"
+    },
+    "vatBreakdown": [
+        {
+            "taxableAmount": "0.00",
+            "taxAmount": "0.00",
+            "category": "O"
+        }
+    ]
+}

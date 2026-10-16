@@ -1596,6 +1596,9 @@
     },
     "Quittio\\Core\\Documents\\DocumentData": {
         "kind": "final readonly class",
+        "constants": [
+            "SNAPSHOT_VERSION"
+        ],
         "properties": [
             "public readonly ?Quittio\\Core\\Data\\Delivery\\Delivery $delivery",
             "public readonly ?Quittio\\Core\\Data\\Payment\\PaymentInstructions $paymentInstructions",
@@ -1629,7 +1632,13 @@
             "public billableLines(): array",
             "public isCalculated(): bool",
             "public options(string $lineId): Quittio\\Core\\Documents\\DocumentLineOptions",
+            "public static fromArray(array $data): Quittio\\Core\\Documents\\DocumentData",
+            "public static fromJson(string $json): Quittio\\Core\\Documents\\DocumentData",
+            "public static fromSnapshot(array $snapshot, ?Quittio\\Core\\Serialization\\Snapshots\\SnapshotUpcasterChain $chain = null): Quittio\\Core\\Documents\\DocumentData",
+            "public toArray(): array",
             "public toInvoiceDraft(bool $billableOnly = true): Quittio\\Core\\Data\\InvoiceData",
+            "public toJson(int $flags = 0): string",
+            "public toSnapshot(): array",
             "public with(array $changes): static"
         ]
     },
@@ -2542,6 +2551,15 @@
             "public __construct(string $type)"
         ]
     },
+    "Quittio\\Core\\Mapping\\Attributes\\MapOf": {
+        "kind": "final readonly class",
+        "properties": [
+            "public readonly string $type"
+        ],
+        "methods": [
+            "public __construct(string $type)"
+        ]
+    },
     "Quittio\\Core\\Mapping\\Attributes\\PdfOnly": {
         "kind": "final readonly class"
     },
@@ -3367,7 +3385,9 @@
             "public __construct(iterable $upcasters = [])",
             "public register(Quittio\\Core\\Serialization\\Snapshots\\SnapshotUpcaster $upcaster): Quittio\\Core\\Serialization\\Snapshots\\SnapshotUpcasterChain",
             "public static default(): Quittio\\Core\\Serialization\\Snapshots\\SnapshotUpcasterChain",
+            "public static documentDefault(): Quittio\\Core\\Serialization\\Snapshots\\SnapshotUpcasterChain",
             "public static useDefault(?Quittio\\Core\\Serialization\\Snapshots\\SnapshotUpcasterChain $chain): void",
+            "public static useDocumentDefault(?Quittio\\Core\\Serialization\\Snapshots\\SnapshotUpcasterChain $chain): void",
             "public upcast(array $snapshot, int $from, int $to = Quittio\\Core\\Data\\InvoiceData::SNAPSHOT_VERSION): array"
         ]
     },

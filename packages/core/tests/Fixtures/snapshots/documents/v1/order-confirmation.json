@@ -1,0 +1,59 @@
+{
+    "_version": 1,
+    "type": "order_confirmation",
+    "number": "DOC-1",
+    "issueDate": "2026-10-01",
+    "currency": "EUR",
+    "seller": {
+        "name": "Seller Ltd",
+        "address": {
+            "countryCode": "DE",
+            "line1": "Main Street 1",
+            "city": "Sample City",
+            "postcode": "12345"
+        },
+        "vatId": "DE123456789"
+    },
+    "buyer": {
+        "name": "Buyer Inc",
+        "address": {
+            "countryCode": "DE",
+            "line1": "Station Road 5",
+            "city": "Example Town",
+            "postcode": "54321"
+        }
+    },
+    "lines": [
+        {
+            "id": "1",
+            "quantity": "1",
+            "unit": "H87",
+            "price": {
+                "netPrice": "5000.00"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "19"
+            },
+            "item": {
+                "name": "Machine"
+            },
+            "netAmount": "5000.00"
+        }
+    ],
+    "totals": {
+        "lineNetSum": "5000.00",
+        "netTotal": "5000.00",
+        "grossTotal": "5950.00",
+        "amountDue": "5950.00",
+        "vatTotal": "950.00"
+    },
+    "vatBreakdown": [
+        {
+            "taxableAmount": "5000.00",
+            "taxAmount": "950.00",
+            "category": "S",
+            "rate": "19"
+        }
+    ]
+}

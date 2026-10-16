@@ -1,0 +1,48 @@
+{
+    "_version": 1,
+    "type": "account_statement",
+    "number": "DOC-1",
+    "issueDate": "2026-10-01",
+    "currency": "EUR",
+    "seller": {
+        "name": "Seller Ltd",
+        "address": {
+            "countryCode": "DE",
+            "line1": "Main Street 1",
+            "city": "Sample City",
+            "postcode": "12345"
+        },
+        "vatId": "DE123456789"
+    },
+    "buyer": {
+        "name": "Buyer Inc",
+        "address": {
+            "countryCode": "DE",
+            "line1": "Station Road 5",
+            "city": "Example Town",
+            "postcode": "54321"
+        }
+    },
+    "statement": {
+        "period": {
+            "start": "2026-09-01",
+            "end": "2026-09-30"
+        },
+        "items": [
+            {
+                "invoiceNumber": "INV-40",
+                "invoiceDate": "2026-09-02",
+                "amount": "500.00",
+                "dueDate": "2026-09-16",
+                "paid": "500.00"
+            },
+            {
+                "invoiceNumber": "INV-42",
+                "invoiceDate": "2026-09-20",
+                "amount": "1190.00",
+                "dueDate": "2026-10-04"
+            }
+        ],
+        "openingBalance": "100.00"
+    }
+}

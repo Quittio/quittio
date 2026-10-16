@@ -7,6 +7,7 @@ namespace Quittio\Core\Documents;
 use Brick\Money\Money;
 use Quittio\Core\Data\Delivery\Period;
 use Quittio\Core\Exceptions\InvalidArgumentException;
+use Quittio\Core\Mapping\Attributes as Q;
 use Quittio\Core\Support\Amount;
 
 /**
@@ -25,6 +26,7 @@ final readonly class AccountStatement
      */
     public function __construct(
         public Period $period,
+        #[Q\ListOf(OpenItem::class)]
         public array $items,
         public ?Money $openingBalance = null,
     ) {

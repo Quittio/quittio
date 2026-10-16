@@ -128,7 +128,7 @@ final class Quittio
 
     /**
      * Resets the process-wide state: the translator of Translations, the default snapshot
-     * upcasters of SnapshotUpcasterChain::default(), the application default VAT of
+     * upcasters of SnapshotUpcasterChain::default() and documentDefault(), the application default VAT of
      * InvoiceBuilder::useDefaultVat() and the state that extensions registered with
      * onResetState() (e.g. the base rates of quittio/country-de).
      *
@@ -139,6 +139,7 @@ final class Quittio
     {
         Translations::reset();
         SnapshotUpcasterChain::useDefault(null);
+        SnapshotUpcasterChain::useDocumentDefault(null);
         InvoiceBuilder::useDefaultVat(null);
         foreach (self::$stateResetters as $reset) {
             $reset();

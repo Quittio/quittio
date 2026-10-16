@@ -11,6 +11,7 @@ use Quittio\Core\Codes\RawCode;
 use Quittio\Core\Exceptions\HydrationException;
 use Quittio\Core\Mapping\Attributes\Binary;
 use Quittio\Core\Mapping\Attributes\ListOf;
+use Quittio\Core\Mapping\Attributes\MapOf;
 use Quittio\Core\Mapping\Attributes\TaxCurrency;
 use Quittio\Core\Support\Amount;
 use Quittio\Core\Support\Date;
@@ -130,6 +131,7 @@ final class ArrayHydrator
         $names = array_values(array_filter($names, static fn (string $n): bool => $n !== 'null'));
 
         $listOf = $parameter->getAttributes(ListOf::class)[0] ?? null;
+        $mapOf = $parameter->getAttributes(MapOf::class)[0] ?? null;
         $taxCurrency = $parameter->getAttributes(TaxCurrency::class) !== [];
 
         if ($parameter->getAttributes(Binary::class) !== []) {
@@ -144,6 +146,15 @@ final class ArrayHydrator
         if ($names === ['array']) {
             if (! is_array($value)) {
                 throw HydrationException::at($path, 'Expected a list.');
+            }
+            if ($mapOf !== null) {
+                $elementType = $mapOf->newInstance()->type;
+                $result = [];
+                foreach ($value as $key => $element) {
+                    $result[(string) $key] = $this->convert([$elementType], $element, $path.'['.$key.']', false);
+                }
+
+                return $result;
             }
             if ($listOf === null) {
                 return $value;

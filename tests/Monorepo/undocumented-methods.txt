@@ -186,7 +186,6 @@ Quittio\Core\Serialization\JsonSchemaGenerator::defaultPath
 Quittio\Core\Serialization\JsonSchemaGenerator::toJson
 Quittio\Core\Serialization\JsonSchemaValidator::available
 Quittio\Core\Serialization\Snapshots\SnapshotUpcasterChain::register
-Quittio\Core\Serialization\Snapshots\SnapshotUpcasterChain::useDefault
 Quittio\Core\Standards\StandardVersion::default
 Quittio\Core\Standards\StandardVersion::specificationId
 Quittio\Core\Support\Amount::context

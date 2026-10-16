@@ -1,0 +1,100 @@
+{
+    "_version": 1,
+    "type": "quote",
+    "number": "DOC-1",
+    "issueDate": "2026-10-01",
+    "currency": "EUR",
+    "seller": {
+        "name": "Seller Ltd",
+        "address": {
+            "countryCode": "DE",
+            "line1": "Main Street 1",
+            "city": "Sample City",
+            "postcode": "12345"
+        },
+        "vatId": "DE123456789"
+    },
+    "buyer": {
+        "name": "Buyer Inc",
+        "address": {
+            "countryCode": "DE",
+            "line1": "Station Road 5",
+            "city": "Example Town",
+            "postcode": "54321"
+        }
+    },
+    "lines": [
+        {
+            "id": "1",
+            "quantity": "10",
+            "unit": "H87",
+            "price": {
+                "netPrice": "100.00"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "19"
+            },
+            "item": {
+                "name": "Consulting"
+            },
+            "netAmount": "1000.00"
+        },
+        {
+            "id": "2",
+            "quantity": "1",
+            "unit": "H87",
+            "price": {
+                "netPrice": "500.00"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "19"
+            },
+            "item": {
+                "name": "Training"
+            },
+            "netAmount": "500.00"
+        },
+        {
+            "id": "3",
+            "quantity": "10",
+            "unit": "H87",
+            "price": {
+                "netPrice": "80.00"
+            },
+            "vat": {
+                "category": "S",
+                "rate": "19"
+            },
+            "item": {
+                "name": "Remote consulting"
+            },
+            "netAmount": "800.00"
+        }
+    ],
+    "lineOptions": {
+        "2": {
+            "optional": true
+        },
+        "3": {
+            "alternativeTo": "1"
+        }
+    },
+    "validUntil": "2026-10-31",
+    "totals": {
+        "lineNetSum": "1000.00",
+        "netTotal": "1000.00",
+        "grossTotal": "1190.00",
+        "amountDue": "1190.00",
+        "vatTotal": "190.00"
+    },
+    "vatBreakdown": [
+        {
+            "taxableAmount": "1000.00",
+            "taxAmount": "190.00",
+            "category": "S",
+            "rate": "19"
+        }
+    ]
+}

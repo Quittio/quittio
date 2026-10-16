@@ -13,6 +13,8 @@ final class SnapshotUpcasterChain
 {
     private static ?self $default = null;
 
+    private static ?self $documentDefault = null;
+
     /** @var array<int, SnapshotUpcaster> keyed by the version they read */
     private array $upcasters = [];
 
@@ -34,9 +36,28 @@ final class SnapshotUpcasterChain
         return self::$default ??= new self;
     }
 
+    /**
+     * Replaces the shared instance of InvoiceData::fromSnapshot(); null resets it.
+     */
     public static function useDefault(?self $chain): void
     {
         self::$default = $chain;
+    }
+
+    /**
+     * Shared instance used by DocumentData::fromSnapshot(). Documents have their own versions.
+     */
+    public static function documentDefault(): self
+    {
+        return self::$documentDefault ??= new self;
+    }
+
+    /**
+     * Replaces the shared instance of DocumentData::fromSnapshot(); null resets it.
+     */
+    public static function useDocumentDefault(?self $chain): void
+    {
+        self::$documentDefault = $chain;
     }
 
     public function register(SnapshotUpcaster $upcaster): self

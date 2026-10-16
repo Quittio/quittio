@@ -6,6 +6,7 @@ namespace Quittio\Core\Documents;
 
 use Brick\Money\Money;
 use Quittio\Core\Exceptions\InvalidArgumentException;
+use Quittio\Core\Mapping\Attributes as Q;
 use Quittio\Core\Support\Amount;
 use Quittio\Core\Support\Date;
 
@@ -27,9 +28,12 @@ final readonly class Dunning
      */
     public function __construct(
         public int $level,
+        #[Q\ListOf(OpenItem::class)]
         public array $openItems,
         public ?Date $deadline = null,
+        #[Q\ListOf(DunningFee::class)]
         public array $fees = [],
+        #[Q\ListOf(InterestCharge::class)]
         public array $interest = [],
     ) {
         if ($level < 0) {

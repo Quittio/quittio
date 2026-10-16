@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Quittio\Core\Documents;
 
 use Quittio\Core\Data\Concerns\Immutable;
+use Quittio\Core\Mapping\Attributes as Q;
 
 /**
  * Document specific line details, keyed by line identifier in {@see DocumentData}.
@@ -21,6 +22,7 @@ final readonly class DocumentLineOptions
     public function __construct(
         public bool $optional = false,
         public ?string $alternativeTo = null,
+        #[Q\ListOf('string')]
         public array $serialNumbers = [],
     ) {}
 

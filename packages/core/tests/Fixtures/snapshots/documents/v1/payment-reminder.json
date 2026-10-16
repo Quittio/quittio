@@ -1,0 +1,54 @@
+{
+    "_version": 1,
+    "type": "payment_reminder",
+    "number": "DOC-1",
+    "issueDate": "2026-10-01",
+    "currency": "EUR",
+    "seller": {
+        "name": "Seller Ltd",
+        "address": {
+            "countryCode": "DE",
+            "line1": "Main Street 1",
+            "city": "Sample City",
+            "postcode": "12345"
+        },
+        "vatId": "DE123456789"
+    },
+    "buyer": {
+        "name": "Buyer Inc",
+        "address": {
+            "countryCode": "DE",
+            "line1": "Station Road 5",
+            "city": "Example Town",
+            "postcode": "54321"
+        }
+    },
+    "dunning": {
+        "level": 2,
+        "openItems": [
+            {
+                "invoiceNumber": "INV-42",
+                "invoiceDate": "2026-08-01",
+                "amount": "1190.00",
+                "dueDate": "2026-08-15",
+                "paid": "190.00"
+            }
+        ],
+        "deadline": "2026-10-17",
+        "fees": [
+            {
+                "description": "Reminder fee",
+                "amount": "5.00"
+            }
+        ],
+        "interest": [
+            {
+                "base": "1000.00",
+                "ratePercent": "9.27",
+                "from": "2026-08-16",
+                "until": "2026-10-03",
+                "dayCount": 365
+            }
+        ]
+    }
+}
