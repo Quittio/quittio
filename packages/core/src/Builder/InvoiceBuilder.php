@@ -8,6 +8,7 @@ use Brick\Math\BigDecimal;
 use Brick\Money\Money;
 use Closure;
 use DateTimeInterface;
+use Quittio\Core\Builder\Concerns\BuildsDelivery;
 use Quittio\Core\Builder\Concerns\BuildsHeader;
 use Quittio\Core\Builder\Concerns\BuildsParties;
 use Quittio\Core\Builder\Concerns\BuildsReferences;
@@ -33,7 +34,6 @@ use Quittio\Core\Data\Lines\InvoiceLine;
 use Quittio\Core\Data\Lines\LineVat;
 use Quittio\Core\Data\Meta;
 use Quittio\Core\Data\Note;
-use Quittio\Core\Data\Party\Address;
 use Quittio\Core\Data\Party\BuyerParty;
 use Quittio\Core\Data\Party\PayeeParty;
 use Quittio\Core\Data\Party\SellerParty;
@@ -79,6 +79,7 @@ use Throwable;
  */
 class InvoiceBuilder
 {
+    use BuildsDelivery;
     use BuildsHeader;
     use BuildsParties;
     use BuildsReferences;
@@ -319,50 +320,6 @@ class InvoiceBuilder
             $content,
             is_string($subject) ? (NoteSubjectCode::tryFrom($subject) ?? new RawCode($subject)) : $subject,
         );
-
-        return $this;
-    }
-
-    /**
-     * Actual delivery or service date (BT-72).
-     */
-    public function deliveryDate(Date|DateTimeInterface|string $date): static
-    {
-        $this->delivery = ($this->delivery ?? new Delivery)->with(['actualDeliveryDate' => Date::parse($date, $this->meta->timezone)]);
-
-        return $this;
-    }
-
-    /**
-     * Deliver-to party and address (BT-70, BG-15).
-     */
-    public function deliverTo(?string $recipientName, ?Address $address = null, ?Identifier $locationId = null): static
-    {
-        $this->delivery = ($this->delivery ?? new Delivery)->with([
-            'recipientName' => $recipientName,
-            'address' => $address,
-            'locationId' => $locationId,
-        ]);
-
-        return $this;
-    }
-
-    /**
-     * Replaces the whole delivery information (BG-13), including the delivery date (BT-72).
-     */
-    public function delivery(Delivery $delivery): static
-    {
-        $this->delivery = $delivery;
-
-        return $this;
-    }
-
-    /**
-     * Invoicing period (BG-14).
-     */
-    public function invoicingPeriod(Date|string|null $start, Date|string|null $end = null): static
-    {
-        $this->invoicingPeriod = Period::between($start, $end);
 
         return $this;
     }
