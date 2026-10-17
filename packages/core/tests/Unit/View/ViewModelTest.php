@@ -260,6 +260,21 @@ it('names reverse charge, zero rate and non-taxable rows correctly', function (V
     'exempt' => [VatCategory::Exempt, '0', 'Umsatzsteuerfrei (Steuerbefreit) auf 50,00 €'],
 ]);
 
+it('names IGIC and IPSI rows after their tax instead of VAT', function (VatCategory $category, string $locale, string $label) {
+    $invoice = (new En16931Calculator)->calculate(Invoices::simple()
+        ->line(fn ($l) => $l->name('Other')->quantity(1, 'H87')->netPrice('50.00')->vat($category, '7'))
+        ->build());
+    $labels = array_map(static fn ($row): string => spaces((string) $row->label), iterator_to_array((new ViewModelFactory)->build($invoice, new ViewContext(locale: $locale))->vatRows));
+
+    expect($labels)->toContain($label)
+        ->and($labels[0])->toBe($locale === 'de' ? '19 % USt. auf 1.000,00 €' : '19% VAT on 1,000.00 €');
+})->with([
+    'IGIC German' => [VatCategory::CanaryIslands, 'de', '7 % IGIC auf 50,00 €'],
+    'IGIC English' => [VatCategory::CanaryIslands, 'en', '7% IGIC on 50.00 €'],
+    'IPSI German' => [VatCategory::CeutaMelilla, 'de', '7 % IPSI auf 50,00 €'],
+    'IPSI English' => [VatCategory::CeutaMelilla, 'en', '7% IPSI on 50.00 €'],
+]);
+
 it('names the VAT rate of split document allowances', function () {
     $invoice = (new En16931Calculator)->calculate(Invoices::simple()
         ->line(fn ($l) => $l->name('Book')->quantity(1, 'H87')->netPrice('20.00')->vat(VatCategory::StandardRate, '7'))

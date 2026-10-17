@@ -58,6 +58,8 @@ return [
     'vat_row_zero_rated' => '0% VAT (zero rate) on :base',
     'vat_row_not_subject' => 'Not subject to VAT: :base',
     'vat_row_special_scheme' => 'Special scheme, no separate VAT statement: :base',
+    'vat_row_igic' => ':rate IGIC on :base',
+    'vat_row_ipsi' => ':rate IPSI on :base',
     'allowance_vat_rate' => ':rate VAT',
     'vat_total' => 'VAT',
     'gross_total' => 'Total incl. VAT',

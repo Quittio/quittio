@@ -8,6 +8,10 @@ All notable changes to this project are documented in this file. The format foll
 
 - `MimeType::Xml` (`application/xml`) for supporting documents (BT-125-1) in the profile `xrechnung-extension`, which allows XML attachments (BR-DEX-01). The PHP rules now check the MIME code with `BR-CL-24`: other profiles report `MimeType::Xml` as error, as the official Schematron does (`BR-CL-24`, in Peppol also `PEPPOL-EN16931-CL001`); the extension accepts it through `ExtendsCodeLists::additionalCodes()`.
 
+### Changed
+
+- The VAT rows of the PDF and HTML name IGIC (category L, Canary Islands) and IPSI (category M, Ceuta and Melilla) instead of VAT, e.g. "7 % IGIC auf 50,00 €" or "7% IGIC on 50.00 €" (labels `vat_row_igic` and `vat_row_ipsi`). Rows of the other categories are unchanged.
+
 ## [0.4.0] - 2026-10-17
 
 ### Added

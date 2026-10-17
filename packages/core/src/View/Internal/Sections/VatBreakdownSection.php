@@ -40,8 +40,11 @@ final readonly class VatBreakdownSection
             // (section 14a (6) sentence 2 UStG forbids a separate VAT statement).
             $special = $scope->isSpecialScheme($row->category);
             // Reverse charge, zero rate and "not subject to VAT" are no tax exemptions and are named as such.
+            // IGIC (Canary Islands) and IPSI (Ceuta, Melilla) are taxes of their own, not VAT.
             $template = match (true) {
                 $special => $labels['vat_row_special_scheme'],
+                $row->category === VatCategory::CanaryIslands => $labels['vat_row_igic'],
+                $row->category === VatCategory::CeutaMelilla => $labels['vat_row_ipsi'],
                 $row->category === VatCategory::ReverseCharge => $labels['vat_row_reverse_charge'],
                 $row->category === VatCategory::ZeroRated => $labels['vat_row_zero_rated'],
                 $row->category === VatCategory::NotSubjectToVat => $labels['vat_row_not_subject'],
