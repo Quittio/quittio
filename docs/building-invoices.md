@@ -710,7 +710,7 @@ use Quittio\Country\DE\Tax\VatPreset;
 ->line(Line::make('Notebook', netPrice: '1200.00', vat: VatPreset::Standard)->group('hardware'))   // group(): Line::make()
 ```
 
-Quittio sets some flags itself; do not set them: `declared_amounts`, `declared_amounts_recalculated`, `cancellation_vat_aligned` and those with the prefixes `amounts_fingerprint:` and `declared_vat_in_tax_currency:` ([Declared amounts](#declared-amounts)).
+Quittio sets some flags itself; do not set them: `declared_amounts`, `declared_amounts_recalculated`, `cancellation_vat_aligned` and those with the prefixes `amounts_fingerprint:` and `declared_vat_in_tax_currency:` ([Declared amounts](#declared-amounts)). They are the stored format of the declared amounts: Quittio reads them in any order and writes them after the other flags in a fixed order, the fingerprint last.
 
 ## Application models
 

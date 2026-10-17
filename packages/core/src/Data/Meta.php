@@ -12,6 +12,10 @@ use Quittio\Core\Support\Decimal;
 
 /**
  * Package-internal metadata: locale, time zone, exchange rate, free data for templates and flags for country packs.
+ *
+ * The flags of the declared amounts (FLAG_DECLARED_AMOUNTS, FLAG_DECLARED_AMOUNTS_RECALCULATED,
+ * FLAG_CANCELLATION_VAT_ALIGNED, amountsFingerprint(), declaredVatInTaxCurrency()) are their stored
+ * format; Quittio reads and writes them together as Calculation\DeclaredAmountsState.
  */
 final readonly class Meta
 {

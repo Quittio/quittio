@@ -54,7 +54,7 @@ final class DeclaredAmounts
 
         try {
             $calculated = $calculator->calculate($data->with([
-                'meta' => $data->meta->withFlag(Meta::FLAG_DECLARED_AMOUNTS, false)->withAmountsFingerprint(null),
+                'meta' => DeclaredAmountsState::fromMeta($data->meta)->withDeclared(false)->withFingerprint(null)->applyTo($data->meta),
             ]));
         } catch (Exception) {
             // Data the calculator rejects (e.g. amounts in another currency) cannot be reproduced;
@@ -94,11 +94,11 @@ final class DeclaredAmounts
      */
     public static function isStale(InvoiceData $data): bool
     {
-        $fingerprint = $data->meta->amountsFingerprint();
+        $state = DeclaredAmountsState::fromMeta($data->meta);
 
-        return $fingerprint === null
-            ? $data->meta->hasFlag(Meta::FLAG_DECLARED_AMOUNTS)
-            : $fingerprint !== self::fingerprint($data);
+        return $state->fingerprint === null
+            ? $state->isDeclared()
+            : $state->fingerprint !== self::fingerprint($data);
     }
 
     /**
@@ -106,7 +106,9 @@ final class DeclaredAmounts
      */
     public static function isTrusted(InvoiceData $data): bool
     {
-        return $data->meta->hasFlag(Meta::FLAG_DECLARED_AMOUNTS) && $data->meta->amountsFingerprint() === self::fingerprint($data);
+        $state = DeclaredAmountsState::fromMeta($data->meta);
+
+        return $state->isDeclared() && $state->fingerprint === self::fingerprint($data);
     }
 
     public static function fingerprint(InvoiceData $data): string
@@ -162,7 +164,7 @@ final class DeclaredAmounts
      */
     private static function taxCurrencyDiffers(InvoiceData $declared, InvoiceData $calculated): bool
     {
-        $amount = $declared->meta->declaredVatInTaxCurrency();
+        $amount = DeclaredAmountsState::fromMeta($declared->meta)->vatInTaxCurrency;
         $vat = $declared->totals?->vatTotal;
         $recalculated = $calculated->totals?->vatTotal;
         if ($amount === null && $vat !== null && $recalculated !== null && $vat->getAmount()->isEqualTo($recalculated->getAmount())) {

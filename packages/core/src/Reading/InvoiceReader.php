@@ -7,6 +7,7 @@ namespace Quittio\Core\Reading;
 use Brick\Money\Money;
 use Exception;
 use Quittio\Core\Calculation\DeclaredAmounts;
+use Quittio\Core\Calculation\DeclaredAmountsState;
 use Quittio\Core\Calculation\En16931Calculator;
 use Quittio\Core\Calculation\TotalsCalculator;
 use Quittio\Core\Data\InvoiceData;
@@ -173,7 +174,7 @@ final class InvoiceReader
         }
 
         // Stamps the declared amounts so that edits made before from() or a cancellation are detected.
-        $data = $result->data->with(['meta' => $result->data->meta->withAmountsFingerprint(DeclaredAmounts::fingerprint($result->data))]);
+        $data = $result->data->with(['meta' => DeclaredAmountsState::fromMeta($result->data->meta)->withFingerprint(DeclaredAmounts::fingerprint($result->data))->applyTo($result->data->meta)]);
 
         return new ReadResult(
             data: $data,

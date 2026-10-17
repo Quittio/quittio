@@ -9,6 +9,7 @@ use Brick\Math\RoundingMode;
 use Brick\Money\Money;
 use Quittio\Core\Builder\InvoiceBuilder;
 use Quittio\Core\Calculation\DeclaredAmounts;
+use Quittio\Core\Calculation\DeclaredAmountsState;
 use Quittio\Core\Calculation\En16931Calculator;
 use Quittio\Core\Calculation\GrossPriceConverter;
 use Quittio\Core\Calculation\LineCalculator;
@@ -176,9 +177,7 @@ final class Cancellation
             // InvoiceBuilder::from() keeps the declared amounts only if the recalculation does not
             // reproduce them. Amounts of an original changed after they were declared (fingerprint
             // mismatch) are stale: the flag without fingerprint lets from() recalculate everything.
-            'meta' => $original->meta->withFlag(Meta::FLAG_DECLARED_AMOUNTS, DeclaredAmounts::isStale($original))
-                ->withAmountsFingerprint(null)->withFlag(Meta::FLAG_DECLARED_AMOUNTS_RECALCULATED, false)
-                ->withFlag(Meta::FLAG_CANCELLATION_VAT_ALIGNED, false)->withDeclaredVatInTaxCurrency(null),
+            'meta' => DeclaredAmountsState::none()->withDeclared(DeclaredAmounts::isStale($original))->applyTo($original->meta),
         ]);
 
         // Amounts of a stale original are recalculated completely: nothing to align them with.
@@ -218,12 +217,14 @@ final class Cancellation
             $deviates = $deviates || ! $entry->taxAmount->isEqualTo($calculated->vatBreakdown[$index]->taxAmount);
         }
 
-        $meta = $cancellation->meta->withFlag(Meta::FLAG_CANCELLATION_VAT_ALIGNED);
+        $state = DeclaredAmountsState::fromMeta($cancellation->meta)->withVatAligned();
+        $meta = $cancellation->meta;
         if ($aligned['taxInTaxCurrency'] !== null) {
             // At the exchange rate of the original, also when implied by its declared amounts.
-            $meta = $meta->withDeclaredVatInTaxCurrency($aligned['taxInTaxCurrency'])
-                ->with(['exchangeRate' => $original->withImpliedExchangeRate()->meta->exchangeRate]);
+            $state = $state->withVatInTaxCurrency($aligned['taxInTaxCurrency']);
+            $meta = $meta->with(['exchangeRate' => $original->withImpliedExchangeRate()->meta->exchangeRate]);
         }
+        $meta = $state->applyTo($meta);
 
         $notes = $cancellation->notes;
         if ($deviates) {

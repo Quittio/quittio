@@ -38,6 +38,7 @@ use Quittio\Core\Support\Decimal;
  * aligned with the earlier ones (Corrections\CancellationHistory). In gross price mode the rounding amount (BT-114) follows
  * the amounts finally used, so that the amount due stays the gross amount of the lines.
  * The CalculationPolicy decides whether declared amounts are kept, recalculated or rejected.
+ * The flags are read and written as DeclaredAmountsState.
  *
  * @phpstan-type VatGroup array{category: VatCategory, rate: ?BigDecimal, lines: BigDecimal, allowances: BigDecimal, charges: BigDecimal, reasons: list<string>, codes: array<string, VatExemptionReasonCode|RawCode|null>}
  */
@@ -68,17 +69,17 @@ final class En16931Calculator implements TotalsCalculator
     public function calculate(InvoiceData $invoice): InvoiceData
     {
         $currency = $invoice->currency;
-        $flagged = $invoice->meta->hasFlag(Meta::FLAG_DECLARED_AMOUNTS);
+        $state = DeclaredAmountsState::fromMeta($invoice->meta);
+        $flagged = $state->isDeclared();
         $declared = $flagged && DeclaredAmounts::isTrusted($invoice);
         $deviates = false;
         // Recalculate ignores declared amounts, except the VAT of a partial cancellation aligned with the earlier ones.
-        $replaced = $declared && $this->policy->declaredAmounts === DeclaredAmountsMode::Recalculate
-            && ! $invoice->meta->hasFlag(Meta::FLAG_CANCELLATION_VAT_ALIGNED);
+        $replaced = $declared && $this->policy->declaredAmounts === DeclaredAmountsMode::Recalculate && ! $state->vatAligned;
         if ($replaced) {
             $declared = false;
         }
 
-        [$lines, $gross] = $this->convertGrossPrices($invoice, $declared);
+        [$lines, $gross] = $this->convertGrossPrices($invoice, $declared && $state->vatAligned);
         $lines = $this->lineAmounts($invoice, $lines, $declared, $deviates);
         [$groups, $lineNetSum] = $this->lineGroups($lines);
         // 7.3 Document allowances and charges, both resolved against the line groups.
@@ -91,10 +92,16 @@ final class En16931Calculator implements TotalsCalculator
             throw new CalculationException(sprintf('The declared amounts of invoice "%s" differ from the recalculation by more than the tolerances of EN 16931 (declared amounts mode "reject").', $invoice->number));
         }
 
-        $totals = $this->totals($invoice, $lineNetSum, $allowanceSum, $chargeSum, $vatTotal, $gross, $allowances !== [], $charges !== [], $declared);
-        $meta = $replaced
-            ? $invoice->meta->withFlag(Meta::FLAG_DECLARED_AMOUNTS, false)->withDeclaredVatInTaxCurrency(null)->withFlag(Meta::FLAG_DECLARED_AMOUNTS_RECALCULATED)
-            : self::meta($invoice, $flagged, $declared, $deviates);
+        $totals = $this->totals($invoice, $lineNetSum, $allowanceSum, $chargeSum, $vatTotal, $gross, $allowances !== [], $charges !== [], $declared ? $state : null);
+        $state = match (true) {
+            $replaced => $state->withDeclared(false)->withVatInTaxCurrency(null)->withRecalculated(),
+            // Sticky: calculating the result again (e.g. when rendering calculated data) finds no
+            // deviation from the already recalculated amounts, but the original is still not reversed.
+            $declared => $state->withRecalculated($deviates || $state->isRecalculated()),
+            // Amount inputs changed after the amounts were declared: a changed document.
+            $flagged => DeclaredAmountsState::none(),
+            default => $state,
+        };
 
         $result = $invoice->with([
             'lines' => $lines,
@@ -103,12 +110,11 @@ final class En16931Calculator implements TotalsCalculator
             'vatBreakdown' => $breakdown,
             'totals' => $totals,
             'dueDate' => $invoice->dueDate ?? $this->dueDate($invoice),
-            'meta' => $meta,
         ]);
 
         // Fingerprint of the amount inputs of the result: later changes (with(), stored JSON) make
         // its amounts stale, so that from(), Cancellation and the calculator never keep them.
-        return $result->with(['meta' => $meta->withAmountsFingerprint(DeclaredAmounts::fingerprint($result))]);
+        return $result->with(['meta' => $state->withFingerprint(DeclaredAmounts::fingerprint($result))->applyTo($invoice->meta)]);
     }
 
     /**
@@ -117,7 +123,7 @@ final class En16931Calculator implements TotalsCalculator
      *
      * @return array{list<InvoiceLine>, ?BigDecimal}
      */
-    private function convertGrossPrices(InvoiceData $invoice, bool $declared): array
+    private function convertGrossPrices(InvoiceData $invoice, bool $alignedNets): array
     {
         if (! $this->grossPriceConverter->appliesTo($invoice)) {
             return [$invoice->lines, null];
@@ -126,7 +132,7 @@ final class En16931Calculator implements TotalsCalculator
         // The net amounts of a partial cancellation aligned with the earlier ones (taxable amounts of
         // its declared VAT breakdown) replace N = round2(G / (1 + rate)) within 0.01.
         $nets = [];
-        if ($declared && $invoice->meta->hasFlag(Meta::FLAG_CANCELLATION_VAT_ALIGNED)) {
+        if ($alignedNets) {
             foreach ($invoice->vatBreakdown as $entry) {
                 $nets[DeclaredAmounts::breakdownKey($entry->category, $entry->rate)] = $entry->taxableAmount->getAmount();
             }
@@ -258,9 +264,9 @@ final class En16931Calculator implements TotalsCalculator
     }
 
     /**
-     * 7.7 Totals.
+     * 7.7 Totals; $declared is the state of data whose declared amounts are kept.
      */
-    private function totals(InvoiceData $invoice, BigDecimal $lineNetSum, BigDecimal $allowanceSum, BigDecimal $chargeSum, BigDecimal $vatTotal, ?BigDecimal $gross, bool $hasAllowances, bool $hasCharges, bool $declared): Totals
+    private function totals(InvoiceData $invoice, BigDecimal $lineNetSum, BigDecimal $allowanceSum, BigDecimal $chargeSum, BigDecimal $vatTotal, ?BigDecimal $gross, bool $hasAllowances, bool $hasCharges, ?DeclaredAmountsState $declared): Totals
     {
         $currency = $invoice->currency;
         $netTotal = $lineNetSum->minus($allowanceSum)->plus($chargeSum);
@@ -292,22 +298,6 @@ final class En16931Calculator implements TotalsCalculator
             prepaidAmount: $prepaid === null ? null : Amount::fromDecimal($prepaid, $currency),
             roundingAmount: $rounding === null || $rounding->isZero() ? null : Amount::fromDecimal($rounding, $currency),
         );
-    }
-
-    /**
-     * The declared amounts flags of the result.
-     */
-    private static function meta(InvoiceData $invoice, bool $flagged, bool $declared, bool $deviates): Meta
-    {
-        return match (true) {
-            // Sticky: calculating the result again (e.g. when rendering calculated data) finds no
-            // deviation from the already recalculated amounts, but the original is still not reversed.
-            $declared => $invoice->meta->withFlag(Meta::FLAG_DECLARED_AMOUNTS_RECALCULATED, $deviates || $invoice->meta->hasFlag(Meta::FLAG_DECLARED_AMOUNTS_RECALCULATED)),
-            // Amount inputs changed after the amounts were declared: a changed document.
-            $flagged => $invoice->meta->withFlag(Meta::FLAG_DECLARED_AMOUNTS, false)->withAmountsFingerprint(null)->withDeclaredVatInTaxCurrency(null)
-                ->withFlag(Meta::FLAG_DECLARED_AMOUNTS_RECALCULATED, false)->withFlag(Meta::FLAG_CANCELLATION_VAT_ALIGNED, false),
-            default => $invoice->meta,
-        };
     }
 
     /**
@@ -456,14 +446,14 @@ final class En16931Calculator implements TotalsCalculator
      * A declared BT-111 in the totals belongs to the declared BT-110: it is kept only as long as the
      * recalculated BT-110 equals the declared one, otherwise it would be stale. Without an exchange
      * rate (e.g. for data read from XML) it is kept as it is. With declared amounts
-     * (Meta::FLAG_DECLARED_AMOUNTS) it, or the one of Meta::declaredVatInTaxCurrency(), is kept within
+     * (Meta::FLAG_DECLARED_AMOUNTS) it, or the one of DeclaredAmountsState::$vatInTaxCurrency, is kept within
      * 0.01 of round2(BT-110 × exchange rate). EN 16931 does not check BT-111 against BT-110 (BR-53
      * requires it, BR-DEC-15 two decimals); 0.01 is what the cumulative rounding of partial
      * cancellations needs (Corrections\CancellationHistory). A VAT total of zero is zero in every
      * currency. InvoiceData::withImpliedExchangeRate() derives the rate from declared totals, e.g.
      * before read data is changed.
      */
-    private function vatInTaxCurrency(InvoiceData $invoice, BigDecimal $vatTotal, bool $declaredAmounts): ?\Brick\Money\Money
+    private function vatInTaxCurrency(InvoiceData $invoice, BigDecimal $vatTotal, ?DeclaredAmountsState $declaredAmounts): ?\Brick\Money\Money
     {
         if ($invoice->taxCurrency === null || $invoice->taxCurrency === $invoice->currency) {
             return null;
@@ -484,7 +474,7 @@ final class En16931Calculator implements TotalsCalculator
         }
 
         $calculated = Amount::fromDecimal($vatTotal->multipliedBy($rate), $invoice->taxCurrency);
-        $kept = $declaredAmounts ? ($invoice->meta->declaredVatInTaxCurrency() ?? $declared?->getAmount()) : null;
+        $kept = $declaredAmounts === null ? null : ($declaredAmounts->vatInTaxCurrency ?? $declared?->getAmount());
         if ($kept !== null && $kept->minus($calculated->getAmount())->abs()->isLessThanOrEqualTo(DeclaredAmounts::TAX_CURRENCY_TOLERANCE)) {
             return Amount::fromDecimal($kept, $invoice->taxCurrency);
         }

@@ -20,6 +20,8 @@ use Quittio\Core\Builder\Concerns\BuildsReferences;
 use Quittio\Core\Calculation\AllowanceSplitter;
 use Quittio\Core\Calculation\CalculationException;
 use Quittio\Core\Calculation\DeclaredAmounts;
+use Quittio\Core\Calculation\DeclaredAmountsState;
+use Quittio\Core\Calculation\DeclaredAmountsStatus;
 use Quittio\Core\Calculation\En16931Calculator;
 use Quittio\Core\Calculation\LargestRemainder;
 use Quittio\Core\Calculation\LineCalculator;
@@ -534,7 +536,7 @@ class InvoiceBuilder
         $seller = $this->seller instanceof PartyBuilder ? $this->seller->buildSeller() : $this->seller;
         $buyer = $this->buyer instanceof PartyBuilder ? $this->buyer->buildBuyer() : $this->buyer;
 
-        [$meta, $keepDeclared, $amountsChanged] = $this->declaredAmountsMeta();
+        [$meta, $state, $amountsChanged] = $this->declaredAmountsMeta();
         if ($amountsChanged) {
             // Changed data is recalculated completely: line net amounts of the previous data must
             // not be taken as declared later (e.g. by from() of a stored draft).
@@ -577,7 +579,7 @@ class InvoiceBuilder
             attachments: $this->attachments,
             prepaidAmount: $this->money($this->prepaid),
             roundingAmount: $this->money($this->rounding),
-            vatBreakdown: $keepDeclared ? $this->declaredBreakdown : [],
+            vatBreakdown: $state->isDeclared() ? $this->declaredBreakdown : [],
             extended: $this->extended,
             xrechnungExtension: $this->xrechnungExtension,
             presentation: $this->presentation,
@@ -586,7 +588,7 @@ class InvoiceBuilder
         );
 
         // Amounts taken over from the data given to from() belong to their inputs (fingerprint).
-        return DeclaredAmounts::hasAmounts($invoice) ? $invoice->with(['meta' => $meta->withAmountsFingerprint(DeclaredAmounts::fingerprint($invoice))]) : $invoice;
+        return DeclaredAmounts::hasAmounts($invoice) ? $invoice->with(['meta' => $state->withFingerprint(DeclaredAmounts::fingerprint($invoice))->applyTo($meta)]) : $invoice;
     }
 
     /**
@@ -720,7 +722,7 @@ class InvoiceBuilder
      * The meta data with the declared amounts flags of the result: declared amounts (from())
      * stay as long as no amount-relevant input changed.
      *
-     * @return array{Meta, bool, bool} meta, whether the declared amounts are kept, whether amounts changed
+     * @return array{Meta, DeclaredAmountsState, bool} meta, its declared amounts state (without fingerprint), whether amounts changed
      */
     private function declaredAmountsMeta(): array
     {
@@ -731,15 +733,18 @@ class InvoiceBuilder
         $keepDeclared = $this->declaredAmounts && ! $amountsChanged;
         // Unchanged data keeps the information that declared amounts had to be recalculated, and
         // that the VAT of a partial cancellation is aligned with the earlier ones.
-        $meta = $this->meta->withFlag(Meta::FLAG_DECLARED_AMOUNTS, $keepDeclared)->withAmountsFingerprint(null)
-            ->withFlag(Meta::FLAG_DECLARED_AMOUNTS_RECALCULATED, ! $amountsChanged && $this->meta->hasFlag(Meta::FLAG_DECLARED_AMOUNTS_RECALCULATED))
-            ->withFlag(Meta::FLAG_CANCELLATION_VAT_ALIGNED, ! $amountsChanged && $this->meta->hasFlag(Meta::FLAG_CANCELLATION_VAT_ALIGNED))
-            ->withDeclaredVatInTaxCurrency($keepDeclared ? $this->meta->declaredVatInTaxCurrency() : null);
+        $previous = DeclaredAmountsState::fromMeta($this->meta);
+        $state = new DeclaredAmountsState(
+            status: DeclaredAmountsStatus::of($keepDeclared, ! $amountsChanged && $previous->isRecalculated()),
+            vatAligned: ! $amountsChanged && $previous->vatAligned,
+            vatInTaxCurrency: $keepDeclared ? $previous->vatInTaxCurrency : null,
+        );
+        $meta = $state->applyTo($this->meta);
         if ($this->impliedExchangeRate && ($amountsChanged || $this->taxCurrency !== $this->declaredTaxCurrency)) {
             $meta = $meta->with(['exchangeRate' => null, 'exchangeRateDate' => null]);
         }
 
-        return [$meta, $keepDeclared, $amountsChanged];
+        return [$meta, $state, $amountsChanged];
     }
 
     /**
