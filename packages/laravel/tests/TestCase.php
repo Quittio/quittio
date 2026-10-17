@@ -33,9 +33,10 @@ abstract class TestCase extends Orchestra
     protected function defineEnvironment($app): void
     {
         $app['config']->set('app.key', 'base64:'.base64_encode(str_repeat('q', 32)));
-        $app['config']->set('quittio.countries', ['DE' => CountryDE::class]);
+        // Beside the configuration of the German pack (quittio.countries.de), merged when the provider registered.
+        $app['config']->set('quittio.countries.DE', CountryDE::class);
         // A file of this process: parallel test processes must not share it.
-        $app['config']->set('quittio-de.base_rate_file', sys_get_temp_dir().'/quittio-base-rates-'.getmypid().'.json');
+        $app['config']->set('quittio.countries.de.base_rate_file', sys_get_temp_dir().'/quittio-base-rates-'.getmypid().'.json');
         $app['config']->set('quittio.pdf.cache_path', sys_get_temp_dir().'/quittio-mpdf');
         $app['config']->set('quittio.validation.mandatory_field_guard', 'exception');
         $app['config']->set('quittio.seller', [

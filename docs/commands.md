@@ -14,7 +14,7 @@ Every command returns exit code `0` on success and `1` on failure. The failure c
 
 | Group | Command | Package | Purpose |
 |---|---|---|---|
-| Setup | [`quittio:install`](#quittioinstall) | laravel | Publish the configuration, optionally templates and fonts; `--managed` installs the Managed layer |
+| Setup | [`quittio:install`](#quittioinstall) | laravel | Publish the configuration (with that of the country packs), optionally templates and fonts; `--managed` installs the Managed layer |
 | Setup | [`quittio:countries`](#quittiocountries) | laravel | Show the installed country packs |
 | Setup | [`make:quittio-template`](#makequittio-template) | laravel | Create a template from the default template |
 | Setup | [`quittio:schemas:download`](#quittioschemasdownload) | laravel | Download the KoSIT validator and the XRechnung configuration, compile the Peppol rules |
@@ -52,7 +52,7 @@ php artisan quittio:install {--views} {--fonts} {--managed} {--force}
 | `--managed` | Also install the Managed layer (needs `quittio/managed`) |
 | `--force` | Overwrite existing files |
 
-The command publishes `config/quittio.php` (tag `quittio-config`) and the selected tags. Then it prints the next steps: set the seller, install a country pack, run the preview. It exits with `1` when `--managed` is given without `quittio/managed`.
+The command publishes `config/quittio.php` (tag `quittio-config`), the settings of every installed country pack that has some (tags `quittio-{code}-config`, e.g. `quittio-de-config`: `config/quittio/countries/de.php`) and the selected tags. Then it prints the next steps: set the seller, install a country pack, run the preview. It exits with `1` when `--managed` is given without `quittio/managed`.
 
 With `--managed`, the Managed installer then:
 
@@ -353,17 +353,17 @@ php artisan quittio:base-rate:update [--dry-run]
 
 German default interest on late payments is the base rate (Basiszinssatz) under section 247 of the German Civil Code (BGB) plus a surcharge. The base rate changes on 1 January and 1 July. Quittio ships the rates up to its release; this command fetches the later ones, so that default interest (`DefaultInterest`) covers periods after the shipped table without a new release.
 
-The command fetches the base rate from the statistics API of the Deutsche Bundesbank (series `BBIN1.M.DE.BBK.BBKBAS2.EUR.ME`). It stores the rates that the shipped table does not contain, and values that differ from it, in `quittio-de.base_rate_file` (default `storage/app/quittio/base-rates.json`). The German country pack registers it (`GermanyServiceProvider`).
+The command fetches the base rate from the statistics API of the Deutsche Bundesbank (series `BBIN1.M.DE.BBK.BBKBAS2.EUR.ME`). It stores the rates that the shipped table does not contain, and values that differ from it, in `quittio.countries.de.base_rate_file` (default `storage/app/quittio/base-rates.json`). The German country pack registers it (`GermanyServiceProvider`).
 
 It prints the latest rate and the rates after the shipped table. It warns when a value differs from the shipped table; the Bundesbank value is then used. It writes the file only when something changed.
 
 Exit code `1` when:
 
 - the API cannot be reached or returns no rates,
-- `quittio-de.base_rate_file` is empty (not with `--dry-run`),
+- `quittio.countries.de.base_rate_file` is empty (not with `--dry-run`),
 - the directory of the file cannot be created.
 
-See [Country packs: base rate table](country-packs.md#base-rate-table) and [Country pack Germany](configuration.md#country-pack-germany-configquittio-dephp).
+See [Country packs: base rate table](country-packs.md#base-rate-table) and [Country pack Germany](configuration.md#country-pack-germany-quittiocountriesde).
 
 ## Package development
 
@@ -421,6 +421,6 @@ php artisan vendor:publish --tag=quittio-config
 | `quittio-managed-triggers` | managed | `database/migrations` (immutability triggers, recommended for production) |
 | `quittio-managed-views` | managed | `resources/views/vendor/quittio-managed` (mail view) |
 | `quittio-managed-lang` | managed | `lang/vendor/quittio-managed` (mail and invoice texts) |
-| `quittio-de-config` | country-de | `config/quittio-de.php` (base rates) |
+| `quittio-de-config` | country-de | `config/quittio/countries/de.php` (`quittio.countries.de`: base rates; published by `quittio:install` as well) |
 
 Publishing is only registered in the console.

@@ -15,7 +15,7 @@ use Symfony\Component\Console\Attribute\AsCommand;
 
 /**
  * Fetches the base rates (section 247 BGB) from the Deutsche Bundesbank and stores them in
- * quittio-de.base_rate_file, so that default interest can be calculated for periods after the
+ * quittio.countries.de.base_rate_file, so that default interest can be calculated for periods after the
  * table shipped with Quittio. Schedule it, e.g. weekly: it writes the file only when the
  * Bundesbank has published something new.
  *
@@ -31,10 +31,10 @@ final class UpdateBaseRateCommand extends Command
 
     public function handle(Repository $config, BundesbankBaseRates $bundesbank): int
     {
-        $file = $config->get('quittio-de.base_rate_file');
+        $file = GermanyServiceProvider::setting($config, 'base_rate_file');
         $file = is_string($file) && $file !== '' ? $file : null;
         if (! $this->option('dry-run') && $file === null) {
-            $this->components->error('quittio-de.base_rate_file is not set: there is nowhere to store the rates. Set it or add the rates to quittio-de.base_rates.');
+            $this->components->error('quittio.countries.de.base_rate_file is not set: there is nowhere to store the rates. Set it or add the rates to quittio.countries.de.base_rates.');
 
             return self::FAILURE;
         }

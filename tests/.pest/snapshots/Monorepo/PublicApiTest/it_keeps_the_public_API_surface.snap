@@ -4695,6 +4695,9 @@
     "Quittio\\Country\\DE\\Laravel\\GermanyServiceProvider": {
         "kind": "final class",
         "extends": "Illuminate\\Support\\ServiceProvider",
+        "constants": [
+            "CONFIG_KEY"
+        ],
         "methods": [
             "public boot(): void",
             "public register(): void",

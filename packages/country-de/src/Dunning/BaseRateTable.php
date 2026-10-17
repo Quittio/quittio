@@ -12,7 +12,7 @@ use Quittio\Core\Support\Date;
 /**
  * Basiszinssatz according to section 247 BGB, published by the Deutsche Bundesbank and
  * changed on 1 January and 1 July. Rates after the last entry are added with withRate(),
- * BaseRates::register() or, in Laravel, the configuration quittio-de.base_rates and the
+ * BaseRates::register() or, in Laravel, the configuration quittio.countries.de.base_rates and the
  * command quittio:base-rate:update (BundesbankBaseRates).
  */
 final readonly class BaseRateTable implements ReferenceRates
@@ -58,7 +58,7 @@ final readonly class BaseRateTable implements ReferenceRates
     public function rateOn(Date $date): BigDecimal
     {
         if (! $date->isBefore($this->validUntil())) {
-            throw new InvalidArgumentException(sprintf('No base rate is known for %s: the table ends before %s. Add the published rate with withRate() or BaseRates::register() (Laravel: quittio-de.base_rates or php artisan quittio:base-rate:update).', $date->toIsoString(), $this->validUntil()->toIsoString()));
+            throw new InvalidArgumentException(sprintf('No base rate is known for %s: the table ends before %s. Add the published rate with withRate() or BaseRates::register() (Laravel: quittio.countries.de.base_rates or php artisan quittio:base-rate:update).', $date->toIsoString(), $this->validUntil()->toIsoString()));
         }
 
         $rate = null;
@@ -80,7 +80,7 @@ final readonly class BaseRateTable implements ReferenceRates
     public function periods(Date $from, Date $until): array
     {
         if ($until->isAfter($this->validUntil())) {
-            throw new InvalidArgumentException(sprintf('No base rate is known after %s. Add the published rate with withRate() or BaseRates::register() (Laravel: quittio-de.base_rates or php artisan quittio:base-rate:update).', $this->validUntil()->addDays(-1)->toIsoString()));
+            throw new InvalidArgumentException(sprintf('No base rate is known after %s. Add the published rate with withRate() or BaseRates::register() (Laravel: quittio.countries.de.base_rates or php artisan quittio:base-rate:update).', $this->validUntil()->addDays(-1)->toIsoString()));
         }
 
         $boundaries = [$from->toIsoString()];

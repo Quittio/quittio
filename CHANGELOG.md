@@ -4,6 +4,14 @@ All notable changes to this project are documented in this file. The format foll
 
 ## [Unreleased]
 
+### Changed
+
+- The Laravel settings of the German pack live under `quittio.countries.de` (`config('quittio.countries.de.base_rates')`, `….base_rate_file`) instead of the configuration `quittio-de`. `php artisan vendor:publish --tag=quittio-de-config` publishes them to `config/quittio/countries/de.php`, which Laravel loads as `quittio.countries.de`; they can also be set in `config/quittio.php` under `'countries' => ['de' => […]]`. `quittio:install` publishes the tag `quittio-{code}-config` of every installed country pack with `config/quittio.php`. `GermanyServiceProvider` no longer fills `quittio-de` with defaults: code that reads `config('quittio-de.…')` reads `quittio.countries.de`. Lower-case codes under `quittio.countries` hold the settings of a pack, the convention for further packs (`quittio.countries.{code}`); a pack class listed under `'de'` is moved to a numeric key.
+
+### Deprecated
+
+- The configuration `quittio-de` (`config/quittio-de.php`): move its keys to `quittio.countries.de` and delete the file. Until 1.0 it is still read: its keys fill those that `quittio.countries.de` leaves out or keeps at the default, and the provider reports an `E_USER_DEPRECATED` on every start while it is set ([The old file](docs/configuration.md#the-old-file-configquittio-dephp)).
+
 ### Fixed
 
 - The official validation in CI now checks PDF/A-3b with veraPDF: the job pulls the `verapdf/cli` image (pinned by digest), and the veraPDF tests fail instead of being skipped when the image is missing in CI. `tools/validate-fixtures.sh` also renders every EN 16931 scenario as ZUGFeRD PDF and checks the PDFs with veraPDF; before, it generated no PDFs, and its veraPDF call would have received no files.

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Quittio\Laravel\Commands;
 
+use Illuminate\Support\ServiceProvider;
 use Quittio\Laravel\Contracts\ManagedInstaller;
 use Symfony\Component\Console\Attribute\AsCommand;
 
@@ -19,7 +20,7 @@ final class InstallCommand extends QuittioCommand
         {--managed : Also install the Managed layer (requires quittio/managed)}
         {--force : Overwrite existing files}';
 
-    protected $description = 'Publish the Quittio configuration and optionally templates and fonts';
+    protected $description = 'Publish the Quittio configuration (with that of the country packs) and optionally templates and fonts';
 
     public function handle(): int
     {
@@ -30,7 +31,9 @@ final class InstallCommand extends QuittioCommand
             return self::FAILURE;
         }
 
-        $tags = ['quittio-config'];
+        // The configuration of the installed country packs (quittio.countries.{code}) comes with it,
+        // e.g. quittio-de-config: config/quittio/countries/de.php.
+        $tags = ['quittio-config', ...self::countryConfigTags()];
         if ($this->flag('views')) {
             $tags[] = 'quittio-views';
         }
@@ -58,5 +61,23 @@ final class InstallCommand extends QuittioCommand
         ]);
 
         return self::SUCCESS;
+    }
+
+    /**
+     * The publish tags quittio-{code}-config of the country packs, e.g. quittio-de-config.
+     *
+     * @return list<string>
+     */
+    private static function countryConfigTags(): array
+    {
+        $tags = [];
+        foreach (ServiceProvider::publishableGroups() as $tag) {
+            if (is_string($tag) && preg_match('/^quittio-[a-z]{2}-config$/', $tag) === 1) {
+                $tags[] = $tag;
+            }
+        }
+        sort($tags);
+
+        return $tags;
     }
 }

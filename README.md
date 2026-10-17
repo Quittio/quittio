@@ -120,7 +120,7 @@ php tools/docs/generate.php        # JSON schema and field reference after model
 
 ## Keeping data current
 
-- Base rate (Basiszinssatz, section 247 BGB): the values up to 1 July 2026 are included. Later values come from `php artisan quittio:base-rate:update` (Deutsche Bundesbank) or from `base_rates` in `config/quittio-de.php`, without a new release ([Base rate table](docs/country-packs.md#base-rate-table)).
+- Base rate (Basiszinssatz, section 247 BGB): the values up to 1 July 2026 are included. Later values come from `php artisan quittio:base-rate:update` (Deutsche Bundesbank) or from `quittio.countries.de.base_rates` (`config/quittio/countries/de.php`), without a new release ([Base rate table](docs/country-packs.md#base-rate-table)).
 - Code lists follow the EN 16931 Schematron 1.3.16 of the XRechnung configuration 2026-08-31 (`quittio:codelists:update`).
 
 ## Legal review

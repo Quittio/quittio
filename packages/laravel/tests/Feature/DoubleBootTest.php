@@ -22,7 +22,7 @@ function bridgedTranslator(): object
 
 it('points the process-wide state to the application booted last', function () {
     $first = $this->app;
-    $rates = (string) config('quittio-de.base_rate_file');
+    $rates = (string) config('quittio.countries.de.base_rate_file');
     file_put_contents($rates, (string) json_encode(['2099-01-01' => '9.99']));
     putenv('QUITTIO_DEFAULT_VAT=de.reduced_7');
 

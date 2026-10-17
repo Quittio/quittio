@@ -431,7 +431,7 @@ The base rate (Basiszinssatz, section 247 BGB) changes on 1 January and 1 July. 
 
 Rates after the last entry are unknown until they are published. Interest for days from 1 January 2027 is therefore rejected instead of silently using the old rate. There are three ways to add new rates without a new Quittio release:
 
-1. **Laravel configuration.** Add the rate to `config/quittio-de.php` (publish it with `php artisan vendor:publish --tag=quittio-de-config`; see [Configuration](configuration.md#country-pack-germany-configquittio-dephp)):
+1. **Laravel configuration.** Add the rate to `quittio.countries.de.base_rates` in `config/quittio/countries/de.php` (publish it with `php artisan vendor:publish --tag=quittio-de-config`; see [Configuration](configuration.md#country-pack-germany-quittiocountriesde)). Up to 0.3 this was `config/quittio-de.php`, which is still read until 1.0.
 
    ```php
    'base_rates' => ['2027-01-01' => '1.77'],
@@ -439,7 +439,7 @@ Rates after the last entry are unknown until they are published. Interest for da
 
 2. **Automatic update from the Deutsche Bundesbank (Laravel).** `php artisan quittio:base-rate:update` fetches the series `BBIN1.M.DE.BBK.BBKBAS2.EUR.ME` ("Basiszinssatz gemäß BGB", the base rate under the BGB) from the Bundesbank's statistics API ([command](commands.md#quittiobase-rateupdate)).
 
-   - It stores the rates the shipped table does not contain in `quittio-de.base_rate_file` (default `storage/app/quittio/base-rates.json`), also those before 2023 for older claims.
+   - It stores the rates the shipped table does not contain in `quittio.countries.de.base_rate_file` (default `storage/app/quittio/base-rates.json`), also those before 2023 for older claims.
    - It writes the file only when something changed; `--dry-run` shows the rates without writing.
    - A value that differs from the shipped table is reported, and the Bundesbank value is used.
    - Without a file (`base_rate_file` set to null) the command fails, except with `--dry-run`.
@@ -458,7 +458,7 @@ Rates after the last entry are unknown until they are published. Interest for da
    $interest = new DefaultInterest($rates);
    ```
 
-`DefaultInterest` without a table uses `BaseRates::table()`: the shipped table, then the rates of the file, then those of `quittio-de.base_rates`. The configuration wins for the same date. The service provider `Quittio\Country\DE\Laravel\GermanyServiceProvider` registers file and configuration at boot; Laravel discovers it automatically.
+`DefaultInterest` without a table uses `BaseRates::table()`: the shipped table, then the rates of the file, then those of `quittio.countries.de.base_rates`. The configuration wins for the same date. The service provider `Quittio\Country\DE\Laravel\GermanyServiceProvider` registers file and configuration at boot; Laravel discovers it automatically.
 
 `BaseRateTable`:
 
@@ -721,7 +721,7 @@ For pack authors, this is how `CountryDE` fills the [`CountryPack` contract](#th
 
 - The legal wording and references of presets, rules and texts are proposals that must be confirmed by a tax adviser (see the legal review in the README). The default correction strategy and the cancellation of self-billed invoices are under review as well.
 - Final invoices: only the EN 16931 variant (`deductAdvance()`) exists. The EXTENDED variant and the handling of unpaid advance invoices are open.
-- The shipped base rate table ends with 1 July 2026. Later rates come from `quittio-de.base_rates` or `php artisan quittio:base-rate:update` (see [Base rate table](#base-rate-table)).
+- The shipped base rate table ends with 1 July 2026. Later rates come from `quittio.countries.de.base_rates` or `php artisan quittio:base-rate:update` (see [Base rate table](#base-rate-table)).
 - Default dunning fees and flat rates are under review. The documents layer does not track the section 288 (5) BGB flat rate per claim.
 - Distance sales (section 3c UStG) cannot be told from the data; `DE-USTG-12` only warns about possible ones.
 - Tax numbers are checked for format and check digit, not against the list of tax offices. Territories without a distinct postcode cannot be detected.
@@ -782,7 +782,7 @@ Laravel finds packs in three places. All of them are instantiated through the co
    "extra": { "quittio": { "country-packs": ["Acme\\CountryAT\\CountryAT"] } }
    ```
 
-2. **Configuration.** `quittio.countries` lists further pack classes; keys are ignored (see [Configuration](configuration.md#country-packs)).
+2. **Configuration.** `quittio.countries` lists further pack classes; keys are ignored (see [Configuration](configuration.md#country-packs)). Arrays under lower-case codes are the settings of a pack, not classes ([Settings of your pack](#settings-of-your-pack)).
 
    ```php
    'countries' => [
@@ -823,6 +823,7 @@ Registering a pack does three things:
 3. Add tax presets, rules, format rules, mandatory output, layouts and texts as needed, and national output formats with `formats()` ([Formats of your pack](#formats-of-your-pack)).
 4. Ship translations in `resources/lang/{locale}/rules.php` and return the directory from `translationPath()`.
 5. Declare the pack in `composer.json` (`extra.quittio.country-packs`), so that the Laravel integration finds it.
+   If the pack has Laravel settings, keep them under `quittio.countries.{code}` ([Settings of your pack](#settings-of-your-pack)).
 6. Test it with example invoices and, where they exist, the official validation artefacts of the country. Have the legal content reviewed by a local tax adviser.
 
 A minimal pack (values for illustration only):
@@ -1000,6 +1001,38 @@ A pack that offers builder helpers registers one macro named after its code, whi
 - `addressFormatter()`: a `Quittio\Core\View\AddressFormatter` (`format(Address $address, array $nameLines = [], ?string $senderCountry = null, ?string $locale = null): list<string>`).
 - `profiles()`: national profiles, usually extending `Quittio\Core\Profiles\AbstractProfile`. They are registered with the pack.
 - `referenceRates()` (capability `ProvidesReferenceRates`): the reference interest rate of the late payment law, so that `Quittio\Core\Dunning\DefaultInterest::forCountry($pack)` calculates default interest ([DunningLaw](#dunninglaw)).
+
+### Settings of your pack
+
+A pack that needs settings in Laravel (rates, credentials of a national portal, …) keeps them under `quittio.countries.{code}` with its lower-case code, as the German pack does with `quittio.countries.de` ([Configuration](configuration.md#settings-of-a-pack-quittiocountriescode)). Do not add a top-level configuration such as `quittio-at`. In the pack's service provider:
+
+```php
+namespace Acme\CountryAT\Laravel;
+
+use Illuminate\Support\ServiceProvider;
+
+final class AustriaServiceProvider extends ServiceProvider
+{
+    public function register(): void
+    {
+        // Defaults; the keys of config/quittio/countries/at.php or of 'countries' => ['at' => […]] win.
+        $this->mergeConfigFrom(__DIR__.'/../../config/countries/at.php', 'quittio.countries.at');
+    }
+
+    public function boot(): void
+    {
+        if ($this->app->runningInConsole()) {
+            // quittio:install publishes every tag quittio-{code}-config.
+            $this->publishes([__DIR__.'/../../config/countries/at.php' => $this->app->configPath('quittio/countries/at.php')], 'quittio-at-config');
+        }
+    }
+}
+```
+
+- Ship the defaults as `config/countries/{code}.php` and publish them to `config/quittio/countries/{code}.php`; Laravel loads that file as `quittio.countries.{code}`.
+- Name the publish tag `quittio-{code}-config`, so that `php artisan quittio:install` publishes it with `config/quittio.php`.
+- Read the settings with `config('quittio.countries.at.…')`, and only in Laravel code (the service provider, commands); the pack class itself takes its values as constructor arguments or through `Quittio\Core` contracts, so it works without Laravel.
+- Declare the provider in `composer.json` (`extra.laravel.providers`), as `quittio/country-de` does with `GermanyServiceProvider`.
 
 ## The `CountryPack` contract
 

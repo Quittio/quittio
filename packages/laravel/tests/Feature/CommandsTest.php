@@ -229,13 +229,19 @@ it('publishes the fonts so that the renderer finds them', function () {
     File::deleteDirectory($base);
 });
 
-it('publishes the configuration', function () {
+it('publishes the configuration with that of the country packs', function () {
     File::delete(config_path('quittio.php'));
+    File::deleteDirectory(config_path('quittio'));
 
-    $this->artisan('quittio:install')->assertSuccessful();
+    try {
+        $this->artisan('quittio:install')->assertSuccessful();
 
-    expect(config_path('quittio.php'))->toBeFile();
-    File::delete(config_path('quittio.php'));
+        expect(config_path('quittio.php'))->toBeFile()
+            ->and(config_path('quittio/countries/de.php'))->toBeFile();
+    } finally {
+        File::delete(config_path('quittio.php'));
+        File::deleteDirectory(config_path('quittio'));
+    }
 });
 
 it('downloads the validator artifacts and compiles the Peppol rules', function () {
@@ -345,4 +351,5 @@ it('delegates to the Managed layer when it is installed', function () {
 
     expect($calls)->toBe(['install', 'render RE-2026-0042']);
     File::delete(config_path('quittio.php'));
+    File::deleteDirectory(config_path('quittio'));
 });

@@ -9,8 +9,8 @@ The terms used here (format, profile, BT numbers, rule codes) are explained in [
 Publish the file once:
 
 ```bash
-php artisan quittio:install                              # config/quittio.php, with hints for the next steps
-php artisan vendor:publish --tag=quittio-config           # the same file, without the hints
+php artisan quittio:install                              # config/quittio.php and the files of the country packs, with hints for the next steps
+php artisan vendor:publish --tag=quittio-config           # only config/quittio.php, without the hints
 ```
 
 The options of the installer are described in [Artisan commands](commands.md#quittioinstall).
@@ -173,8 +173,11 @@ A country pack brings the tax presets, legal rules and texts of one country ([Ho
 ```php
 'countries' => [
     // 'AT' => \App\Quittio\CountryAT::class,
+    // 'de' => ['base_rates' => ['2027-01-01' => '1.77']],
 ],
 ```
+
+`countries` holds two kinds of entries: pack classes (strings) and the settings of a pack (arrays under the lower-case country code, see [Settings of a pack](#settings-of-a-pack-quittiocountriescode)).
 
 Country packs are found in three ways, and all of them are combined:
 
@@ -190,7 +193,7 @@ Country packs are found in three ways, and all of them are combined:
 
    The result is kept in `bootstrap/cache/quittio-countries.php` until Composer rewrites `vendor/composer/installed.json` or your `composer.json` changes, so requests do not read the package list. After editing `extra.quittio.country-packs` of the root `composer.json` by hand, the next request picks it up as well.
 
-2. **Configuration**: `countries` lists further pack classes. The array keys are ignored; the pack's `code()` counts. Classes are resolved through the container.
+2. **Configuration**: `countries` lists further pack classes. The array keys are ignored; the pack's `code()` counts. Classes are resolved through the container. Arrays are not pack classes but settings and are skipped here.
 3. **At runtime**: `Quittio::registerCountry(new CountryAT)`, e.g. in a service provider. It wins over the other two for the same country code and survives `Quittio::flush()`.
 
 Every pack must implement `Quittio\Core\Countries\CountryPack`, otherwise building the core fails with a `ConfigurationException`.
@@ -199,18 +202,44 @@ For the same country code the last one wins, in this order: discovered packs, th
 
 `php artisan quittio:countries` and `php artisan about` list the active packs. To write your own pack, see [Country packs](country-packs.md).
 
-### Country pack Germany (`config/quittio-de.php`)
+### Settings of a pack (`quittio.countries.{code}`)
 
-The German pack has a small configuration of its own. Publish it with `php artisan vendor:publish --tag=quittio-de-config`.
+A pack with settings of its own keeps them under `quittio.countries.{code}`, with the lower-case country code: `quittio.countries.de` for Germany. Its service provider merges the defaults, so `config('quittio.countries.de.base_rate_file')` works without a published file. You set the keys in one of two places:
 
-It holds the base rate (Basiszinssatz) under section 247 of the German Civil Code (BGB). `DefaultInterest` needs it to calculate the statutory interest on late payments, e.g. for payment reminders ([German default interest](documents.md#german-default-interest)).
+- **The file of the pack**, `config/quittio/countries/{code}.php`. `php artisan quittio:install` publishes it for every installed pack, `php artisan vendor:publish --tag=quittio-{code}-config` (e.g. `quittio-de-config`) publishes it alone. Laravel loads files in subdirectories of `config/` under the dotted path, so `config/quittio/countries/de.php` becomes `quittio.countries.de`.
+- **A section in `config/quittio.php`**: `'countries' => ['de' => ['base_rates' => […]]]`. When the file of the pack exists as well, the file wins as a whole.
+
+Keys you leave out keep the defaults of the pack. A pack class must not be listed under a lower-case code that holds settings (`'de' => CountryDE::class`): use the upper-case code or no key. A class listed under `'de'` by an older configuration is moved to a numeric key when the German pack registers.
+
+### Country pack Germany (`quittio.countries.de`)
+
+The German pack's settings are the base rate (Basiszinssatz) under section 247 of the German Civil Code (BGB). `DefaultInterest` needs it to calculate the statutory interest on late payments, e.g. for payment reminders ([German default interest](documents.md#german-default-interest)). Publish the file with `php artisan vendor:publish --tag=quittio-de-config` (`config/quittio/countries/de.php`) or let `php artisan quittio:install` do it.
 
 | Key | Type | Default | Effect |
 |---|---|---|---|
-| `base_rates` | array | `[]` | Base rates in addition to the table shipped with Quittio: ISO date (1 January or 1 July) => percent, e.g. `['2027-01-01' => '1.77']`. They win over the file below. |
-| `base_rate_file` | string\|null | `storage_path('app/quittio/base-rates.json')` | JSON file written by `php artisan quittio:base-rate:update` with the rates of the Deutsche Bundesbank. `null` = not used. |
+| `countries.de.base_rates` | array | `[]` | Base rates in addition to the table shipped with Quittio: ISO date (1 January or 1 July) => percent, e.g. `['2027-01-01' => '1.77']`. They win over the file below. |
+| `countries.de.base_rate_file` | string\|null | `storage_path('app/quittio/base-rates.json')` | JSON file written by `php artisan quittio:base-rate:update` with the rates of the Deutsche Bundesbank. `null` = not used. |
 
 See [Country packs: base rate table](country-packs.md#base-rate-table) and [quittio:base-rate:update](commands.md#quittiobase-rateupdate).
+
+#### The old file `config/quittio-de.php`
+
+Up to 0.3 the German settings were a configuration of their own, `quittio-de` (`config/quittio-de.php`). It is deprecated and still read until 1.0:
+
+| Situation | Value used for a key |
+|---|---|
+| only `config/quittio-de.php` | the key of `quittio-de` |
+| only `quittio.countries.de` | the key of `quittio.countries.de` |
+| both set the key | `quittio.countries.de`, unless it still has the default of the pack: then `quittio-de`. A newly published `config/quittio/countries/de.php` therefore does not hide the rates of the old file. |
+| neither | the default of the pack |
+
+The values are merged when the German service provider registers, so `config('quittio.countries.de.…')` returns the result; the old key is no longer filled with defaults. As long as `quittio-de` is set, every start of the application reports a deprecation (`E_USER_DEPRECATED`; Laravel writes it to the `deprecations` log channel when one is configured) that names the keys `quittio.countries.de` overrides.
+
+To migrate, publish the new file, move the values of `config/quittio-de.php` into it and delete the old file:
+
+```bash
+php artisan vendor:publish --tag=quittio-de-config   # config/quittio/countries/de.php
+```
 
 ## Seller
 

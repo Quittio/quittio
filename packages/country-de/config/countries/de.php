@@ -2,6 +2,16 @@
 
 declare(strict_types=1);
 
+/*
+|--------------------------------------------------------------------------
+| Country pack Germany (quittio.countries.de)
+|--------------------------------------------------------------------------
+| Laravel loads this file as config('quittio.countries.de'), because it lies in
+| config/quittio/countries/. Instead of this file, the same keys may be set in
+| config/quittio.php under 'countries' => ['de' => [...]]; the file wins.
+| Before 0.4 this was config/quittio-de.php (config('quittio-de')).
+*/
+
 return [
 
     /*

@@ -6,7 +6,7 @@ This page explains how Quittio works in a Laravel application: you start an invo
 
 ```bash
 composer require quittio/quittio        # core, Laravel integration and country pack Germany
-php artisan quittio:install             # publishes config/quittio.php
+php artisan quittio:install             # publishes config/quittio.php (and config/quittio/countries/de.php for Germany)
 ```
 
 Then set your company in `config/quittio.php` ([The keys you set first](configuration.md#the-keys-you-set-first)).
@@ -790,3 +790,5 @@ The package registers itself through Laravel's package discovery (`composer.json
 | Commands | `quittio:*` and `make:quittio-template` (console only, see [Artisan commands](commands.md)) |
 | Publish tags | `quittio-config`, `quittio-views`, `quittio-lang`, `quittio-fonts` (see [Artisan commands](commands.md#publish-tags)) |
 | `php artisan about` | Section "Quittio" with the active country packs and profiles |
+
+Country packs bring their own provider. The German pack registers `Quittio\Country\DE\Laravel\GermanyServiceProvider` (discovered as well): it merges the defaults of its settings into `quittio.countries.de`, registers the configured base rates, the command `quittio:base-rate:update` and the publish tag `quittio-de-config` (`config/quittio/countries/de.php`, see [Country pack Germany](configuration.md#country-pack-germany-quittiocountriesde)).

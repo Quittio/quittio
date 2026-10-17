@@ -59,9 +59,14 @@ return [
     | A country pack brings the tax presets, legal rules and texts of a country.
     | Installed packs register themselves (composer.json: extra.quittio.country-packs),
     | quittio/quittio includes Germany. List additional or replacing pack classes here.
+    |
+    | Lower-case codes hold the settings of a pack (quittio.countries.{code}), e.g. 'de'
+    | for Germany. Packs ship them as config/quittio/countries/{code}.php, published by
+    | php artisan quittio:install or vendor:publish --tag=quittio-{code}-config.
     */
     'countries' => [
         // 'AT' => \App\Quittio\CountryAT::class,
+        // 'de' => ['base_rates' => ['2027-01-01' => '1.77']],
     ],
 
     /*

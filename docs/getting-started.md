@@ -8,7 +8,7 @@ You need PHP 8.3 or newer and Laravel 13. Without Laravel, see [Without Laravel]
 
 ```bash
 composer require quittio/quittio          # core, Laravel integration and country pack Germany
-php artisan quittio:install               # publishes config/quittio.php
+php artisan quittio:install               # publishes config/quittio.php (and config/quittio/countries/de.php for Germany)
 ```
 
 ## Set up your company
