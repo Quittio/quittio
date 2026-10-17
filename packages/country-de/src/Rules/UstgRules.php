@@ -419,7 +419,7 @@ final class UstgRules
         $publicBuyer = static function (InvoiceData $i, RuleReporter $report): bool {
             $endpoint = $i->buyer->electronicAddress;
 
-            return $report->context()->profileIs('xrechnung', 'xrechnung-extension')
+            return $report->context()->profileIs('xrechnung', 'xrechnung-extension', 'xrechnung-cvd')
                 || ($endpoint !== null && (string) $endpoint->scheme->value === GermanFormatRule::LEITWEG_SCHEME);
         };
         $wrongCheckDigits = static fn (?string $reference): bool => LeitwegId::looksLike($reference) && ! LeitwegId::isValid($reference);

@@ -49,8 +49,8 @@ final class FormatRegistry
         $registry = new self;
         $registry->register(new OutputFormat(self::ZUGFERD, Syntax::Cii, pdf: true, embedsXml: true, defaultProfile: 'en16931'));
         // Until 1.0 also without the German pack, which registers the same formats (ProvidesFormats).
-        $registry->register(new OutputFormat('xrechnung-cii', Syntax::Cii, defaultProfile: 'xrechnung', profiles: ['xrechnung', 'xrechnung-extension']));
-        $registry->register(new OutputFormat('xrechnung-ubl', Syntax::Ubl, defaultProfile: 'xrechnung', profiles: ['xrechnung', 'xrechnung-extension']));
+        $registry->register(new OutputFormat('xrechnung-cii', Syntax::Cii, defaultProfile: 'xrechnung', profiles: ['xrechnung', 'xrechnung-extension', 'xrechnung-cvd']));
+        $registry->register(new OutputFormat('xrechnung-ubl', Syntax::Ubl, defaultProfile: 'xrechnung', profiles: ['xrechnung', 'xrechnung-extension', 'xrechnung-cvd']));
         $registry->register(new OutputFormat(self::CII, Syntax::Cii, defaultProfile: 'en16931'));
         $registry->register(new OutputFormat(self::UBL, Syntax::Ubl, defaultProfile: 'en16931'));
         $registry->register(new OutputFormat(self::PEPPOL, Syntax::Ubl, defaultProfile: 'peppol', profiles: ['peppol']));

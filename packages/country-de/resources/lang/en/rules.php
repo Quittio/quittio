@@ -137,6 +137,30 @@ return [
         'message' => 'The XRechnung extension has no credit note in UBL. Cancel with the strategy negative_invoice (type code 380 with negative amounts).',
         'hint' => 'Set corrections.cancellation_strategy to negative_invoice or pass the strategy when cancelling.',
     ],
+    'BR-DE-CVD-01' => [
+        'message' => 'The contract reference (BT-12) must be provided.',
+        'hint' => 'Set the contract reference with ->contractReference(…).',
+    ],
+    'BR-DE-CVD-02' => [
+        'message' => 'The tender or lot reference (BT-17) must be provided.',
+        'hint' => 'Set the tender or lot reference with ->tenderReference(…).',
+    ],
+    'BR-DE-CVD-03' => [
+        'message' => 'At least one invoice line (BG-25) must contain an item classification identifier (BT-158) with the scheme identifier CVD and an item attribute named cva (BT-160).',
+        'hint' => 'Describe the vehicle on its line with ->classification(\'M1\', \'CVD\') and ->attribute(\'cva\', \'clean\').',
+    ],
+    'BR-DE-CVD-04' => [
+        'message' => 'The item classification identifier (BT-158) ":value" with the scheme identifier CVD must be one of the vehicle categories M1, M2, M3, N1, N2 or N3. Line :line.',
+    ],
+    'BR-DE-CVD-05' => [
+        'message' => 'The value ":value" (BT-161) of the item attribute cva must be clean, zero-emission or other. Line :line.',
+    ],
+    'BR-DE-CVD-06-a' => [
+        'message' => 'An invoice line with an item classification identifier (BT-158) with the scheme identifier CVD must contain exactly one item attribute named cva (BT-160). Line :line.',
+    ],
+    'BR-DE-CVD-06-b' => [
+        'message' => 'An invoice line with an item attribute named cva (BT-160) must contain exactly one item classification identifier (BT-158) with the scheme identifier CVD. Line :line.',
+    ],
     'DE-USTG-01' => [
         'message' => 'The address :party is incomplete; missing: :fields (section 14 (4) no. 1 UStG).',
         'hint' => ':advice',

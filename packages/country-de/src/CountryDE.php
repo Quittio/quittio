@@ -32,6 +32,7 @@ use Quittio\Country\DE\Formats\GermanFormatRule;
 use Quittio\Country\DE\Formats\XRechnungFormats;
 use Quittio\Country\DE\Layouts\Din5008;
 use Quittio\Country\DE\Profiles\XRechnung\XRechnung30;
+use Quittio\Country\DE\Profiles\XRechnung\XRechnung30Cvd;
 use Quittio\Country\DE\Profiles\XRechnung\XRechnung30Extension;
 use Quittio\Country\DE\Rules\BmfErrorClass;
 use Quittio\Country\DE\Rules\UstgRules;
@@ -80,7 +81,7 @@ class CountryDE extends AbstractCountryPack implements ProvidesReferenceRates
 
     public function profiles(): array
     {
-        return [new XRechnung30, new XRechnung30Extension];
+        return [new XRechnung30, new XRechnung30Extension, new XRechnung30Cvd];
     }
 
     /**

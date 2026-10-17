@@ -23,7 +23,7 @@ $cases = $files === [] ? ['test suite not downloaded' => ['']] : $files;
 it('reads every official test file', function (string $file) {
     $result = German::reader()->readFile($file);
 
-    expect($result->profile)->toBeIn(['xrechnung', 'xrechnung-extension'])
+    expect($result->profile)->toBeIn(['xrechnung', 'xrechnung-extension', 'xrechnung-cvd'])
         ->and(array_filter($result->findings, fn ($f) => $f->isError()))->toBe([]);
 })->with($cases)->group('official')->skip($files === [], 'XRechnung test suite not downloaded (tools/fixtures/download.sh).');
 

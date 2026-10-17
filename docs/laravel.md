@@ -171,7 +171,7 @@ All formats of one call share the same calculation.
 |---|---|
 | `format(string $format)` | One output format: `zugferd` (`factur-x`, `facturx`), `xrechnung-cii` (`xrechnung`), `xrechnung-ubl`, `cii`, `ubl`, `peppol`, `pdf`, `html`, `json`. Replaces earlier formats. |
 | `formats(array $formats)` | Several formats from one calculation; duplicates are removed. The first is the main result. |
-| `profile(Profile\|string $profile)` | Profile key (`minimum`, `basic-wl`, `basic`, `en16931`, `extended`, `peppol`; `xrechnung` and `xrechnung-extension` with the German country pack; aliases such as `comfort`) or a `Profile` object. Every requested format must allow it, otherwise the run throws a `ConfigurationException`. |
+| `profile(Profile\|string $profile)` | Profile key (`minimum`, `basic-wl`, `basic`, `en16931`, `extended`, `peppol`; `xrechnung`, `xrechnung-extension` and `xrechnung-cvd` with the German country pack; aliases such as `comfort`) or a `Profile` object. Every requested format must allow it, otherwise the run throws a `ConfigurationException`. |
 | `locale(string $locale)` | Locale of labels and formatting |
 | `country(string $country)` | Leading country pack (upper-cased), instead of the seller's country |
 | `template(string $template)` | Blade view or plain PHP template name; only allowed views (see [Blade templates](#blade-templates)) |

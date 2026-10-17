@@ -196,17 +196,17 @@ A complete invoice to a public buyer is in [Examples: Public sector](examples.md
 
 ### XRechnung profiles
 
-XRechnung is the German e-invoice standard for public buyers: EN 16931 with additional German rules, as an XML file in the CII or UBL syntax (see [Formats](concepts.md#formats)). The pack registers two profiles for it. XRechnung 3.0 is the one you normally use. The extension allows data that XRechnung 3.0 does not, such as sub lines. How Quittio writes XRechnung files is described in [Formats: XRechnung](formats.md#xrechnung).
+XRechnung is the German e-invoice standard for public buyers: EN 16931 with additional German rules, as an XML file in the CII or UBL syntax (see [Formats](concepts.md#formats)). The pack registers three profiles for it. XRechnung 3.0 is the one you normally use. The extension allows data that XRechnung 3.0 does not, such as sub lines. XRechnung CVD is XRechnung 3.0 for the procurement of road vehicles under the Clean Vehicles Directive (CVD, Directive (EU) 2019/1161). How Quittio writes XRechnung files is described in [Formats: XRechnung](formats.md#xrechnung).
 
-| | `XRechnung30` | `XRechnung30Extension` |
-|---|---|---|
-| Key, name | `xrechnung`, XRechnung 3.0 | `xrechnung-extension`, XRechnung 3.0 Extension |
-| Specification identifier (BT-24), which names the profile in the XML | `urn:cen.eu:en16931:2017#compliant#urn:xeinkauf.de:kosit:xrechnung_3.0` | `urn:cen.eu:en16931:2017#compliant#urn:xeinkauf.de:kosit:xrechnung_3.0#conformant#urn:xeinkauf.de:kosit:extension:xrechnung_3.0` |
-| Level, syntaxes | EN 16931; CII and UBL | as XRechnung 3.0; sub lines only in UBL |
-| Default business process (BT-23) | `urn:fdc:peppol.eu:2017:poacc:billing:01:1.0` | same |
-| Additionally required | buyer reference (BT-10), seller electronic address (BT-34), buyer electronic address (BT-49), seller contact (BG-6), payment instructions (BG-16) | same |
-| Embedded in a PDF | `xrechnung.xml`, XMP conformance level `XRECHNUNG`, `fx:Version` `3.0` | same |
-| Extras | VAT rate written in every breakdown, 0 for category `O` (BR-DE-14); cash discounts as `#SKONTO#` lines in the payment terms (BT-20); the [XRechnung rules](#xrechnung-rules) | sub lines, third party payments (BG-DEX-09, UBL invoices only), identifier schemes `XR01` to `XR03` in the ICD and EAS code lists |
+| | `XRechnung30` | `XRechnung30Extension` | `XRechnung30Cvd` |
+|---|---|---|---|
+| Key, name | `xrechnung`, XRechnung 3.0 | `xrechnung-extension`, XRechnung 3.0 Extension | `xrechnung-cvd`, XRechnung 3.0 CVD |
+| Specification identifier (BT-24), which names the profile in the XML | `urn:cen.eu:en16931:2017#compliant#urn:xeinkauf.de:kosit:xrechnung_3.0` | `urn:cen.eu:en16931:2017#compliant#urn:xeinkauf.de:kosit:xrechnung_3.0#conformant#urn:xeinkauf.de:kosit:extension:xrechnung_3.0` | `urn:cen.eu:en16931:2017#compliant#urn:xeinkauf.de:kosit:xrechnung_3.0#compliant#urn:xeinkauf.de:kosit:xrechnung:cvd_0.9` |
+| Level, syntaxes | EN 16931; CII and UBL | as XRechnung 3.0; sub lines only in UBL | as XRechnung 3.0 |
+| Default business process (BT-23) | `urn:fdc:peppol.eu:2017:poacc:billing:01:1.0` | same | same |
+| Additionally required | buyer reference (BT-10), seller electronic address (BT-34), buyer electronic address (BT-49), seller contact (BG-6), payment instructions (BG-16) | same | as XRechnung 3.0, plus contract reference (BT-12), tender or lot reference (BT-17) and at least one vehicle line (`BR-DE-CVD-…`) |
+| Embedded in a PDF | `xrechnung.xml`, XMP conformance level `XRECHNUNG`, `fx:Version` `3.0` | same | same |
+| Extras | VAT rate written in every breakdown, 0 for category `O` (BR-DE-14); cash discounts as `#SKONTO#` lines in the payment terms (BT-20); the [XRechnung rules](#xrechnung-rules) | sub lines, third party payments (BG-DEX-09, UBL invoices only), identifier schemes `XR01` to `XR03` in the ICD and EAS code lists | the item classification scheme `CVD` (BT-158-1) in the UNTDID 7143 code list; the [CVD rules](#xrechnung-cvd) |
 
 The profiles exist only when the pack is registered. Without it, the formats `xrechnung-cii` and `xrechnung-ubl` cannot be rendered, and incoming XRechnung files are reported as an unknown profile (`QUITTIO-READER-UNKNOWN-PROFILE`).
 
@@ -215,14 +215,39 @@ use Quittio\Laravel\Facades\Quittio;
 
 Quittio::make($invoice)->format('xrechnung-ubl')->render();                                   // XRechnung 3.0, UBL
 Quittio::make($invoice)->format('xrechnung-ubl')->profile('xrechnung-extension')->render();   // extension
+Quittio::make($invoice)->format('xrechnung-cii')->profile('xrechnung-cvd')->render();         // Clean Vehicles Directive
 Quittio::make($invoice)->format('zugferd')->profile('xrechnung')->render();                   // PDF/A-3 with xrechnung.xml
 ```
 
-The automatic choice always uses `xrechnung`, also when the invoice carries extension data: the specification identifier never switches by itself. Choose `xrechnung-extension` explicitly for extension data. With `xrechnung`, third party payments fail with `QUITTIO-PROFILE-XRECHNUNG-EXTENSION-ONLY`.
+The automatic choice always uses `xrechnung`, also when the invoice carries extension data: the specification identifier never switches by itself. Choose `xrechnung-extension` explicitly for extension data. With `xrechnung`, third party payments fail with `QUITTIO-PROFILE-XRECHNUNG-EXTENSION-ONLY`. The same holds for `xrechnung-cvd`: request it when the buyer asks for an XRechnung CVD.
+
+#### XRechnung CVD
+
+A public buyer that procures road vehicles reports them under the Clean Vehicles Directive. The invoice then names the contract and the tender or lot, and every vehicle line carries the vehicle category as item classification with the scheme `CVD` (BT-158, `M1`, `M2`, `M3`, `N1`, `N2` or `N3`) and the vehicle type as item attribute `cva` (BT-160, BT-161: `clean`, `zero-emission` or `other`):
+
+```php
+use Quittio\Core\Enums\UnitCode;
+use Quittio\Country\DE\Tax\VatPreset;
+use Quittio\Laravel\Facades\Quittio;
+
+$invoice = Quittio::invoice()
+    ->buyerReference('04011000-12345-03')
+    ->contractReference('V-2026-0017')                       // BT-12
+    ->tenderReference('LOS-3')                               // BT-17
+    ->line(fn ($line) => $line->name('Elektro-Kleinbus')->quantity(1)->netPrice('68000.00')->vat(VatPreset::Standard)
+        ->classification('M2', 'CVD')                        // vehicle category (BT-158)
+        ->attribute('cva', 'zero-emission'))                 // vehicle type (BT-160, BT-161)
+    ->line(fn ($line) => $line->name('Einweisung')->quantity(2, UnitCode::Hour)->netPrice('95.00')->vat(VatPreset::Standard));
+    // … seller, buyer, payment as for every XRechnung
+
+Quittio::make($invoice)->format('xrechnung-cii')->profile('xrechnung-cvd')->render();
+```
+
+The constants of `XRechnung30Cvd` hold the values (`CLASSIFICATION_SCHEME`, `VEHICLE_CATEGORIES`, `ATTRIBUTE`, `ATTRIBUTE_VALUES`). Lines without a vehicle, such as services, need neither. Credit notes are possible in both syntaxes.
 
 ### XRechnung rules
 
-`Quittio\Country\DE\Rules\XRechnungRules` (level L3) are the business rules of the XRechnung profiles, with codes `BR-DE-…`. They apply whenever the profile is `xrechnung` or `xrechnung-extension`, whatever the seller's country.
+`Quittio\Country\DE\Rules\XRechnungRules` (level L3) are the business rules of the XRechnung profiles, with codes `BR-DE-…`. They apply whenever the profile is `xrechnung`, `xrechnung-extension` or `xrechnung-cvd`, whatever the seller's country; the rules `BR-DE-CVD-…` only with the specification identifier of XRechnung CVD.
 
 The severity follows the flags of the official Schematron, the rule file of the official validator. Rules flagged `fatal` ("muss", must) are errors, rules flagged `warning` ("soll", should) are warnings, and `BR-DE-TMP-32` (flagged `information`) is an info. The KoSIT validator (the official XRechnung validator) remains authoritative (see [Validation](validation.md)).
 
@@ -265,6 +290,11 @@ The severity follows the flags of the official Schematron, the rule file of the 
 | `BR-DEX-14` | error | extension, UBL: a third party payment amount (BT-DEX-002) in another currency than the invoice currency (BT-5) |
 | `BR-DEX-15` | error | sub lines in XRechnung CII (sub lines need the extension in UBL) |
 | `DE-XRECHNUNG-EXT-01` | error | a credit note in profile `xrechnung-extension` with syntax UBL; the official validator configuration has no scenario for it. Cancel with the strategy `negative_invoice` (type code 380, negative amounts). |
+| `BR-DE-CVD-01`, `BR-DE-CVD-02` | error | XRechnung CVD without contract reference (BT-12) or tender or lot reference (BT-17) |
+| `BR-DE-CVD-03` | error | XRechnung CVD without a line that has an item classification (BT-158) with scheme `CVD` and an item attribute `cva` (BT-160) |
+| `BR-DE-CVD-04` | error | an item classification with scheme `CVD` that is not `M1`, `M2`, `M3`, `N1`, `N2` or `N3` |
+| `BR-DE-CVD-05` | error | an item attribute `cva` whose value (BT-161) is not `clean`, `zero-emission` or `other` |
+| `BR-DE-CVD-06-a`, `BR-DE-CVD-06-b` | error | a line with a `CVD` classification that has not exactly one `cva` attribute, or a line with a `cva` attribute that has not exactly one `CVD` classification |
 
 The `BR-DEX-…` rules apply only to the profile `xrechnung-extension`; those marked UBL are skipped when the XML is written in CII, where the official Schematron does not have them. As in the official validator configuration, where the replaced rules are only an information, the extension replaces `BR-CL-10`, `-11`, `-21`, `-25` and `-26` with `BR-DEX-04` to `BR-DEX-08` and, in UBL, `BR-CO-16` with `BR-DEX-09` and `QUITTIO-SUBLINES` with `BR-DEX-02` (`XRechnung30Extension::replacedRules()`), so a violation is reported once, with the official code.
 
@@ -563,7 +593,7 @@ Helpers used by the rules and available to you:
 
 | Rule | Severity | Reported when |
 |---|---|---|
-| `DE-LEITWEG-ID` | warning | The buyer is a public buyer: the profile is `xrechnung` or `xrechnung-extension`, or the buyer's electronic address (BT-49) uses scheme `0204`. Message: "The check digits of the Leitweg-ID ":value" (BT-10) are wrong." |
+| `DE-LEITWEG-ID` | warning | The buyer is a public buyer: the profile is `xrechnung`, `xrechnung-extension` or `xrechnung-cvd`, or the buyer's electronic address (BT-49) uses scheme `0204`. Message: "The check digits of the Leitweg-ID ":value" (BT-10) are wrong." |
 | `DE-LEITWEG-ID-SUSPECT` | info | Any other buyer in Germany (country `DE` or none) that is not a consumer. Message: "The buyer reference ":value" (BT-10) is shaped like a Leitweg-ID, but its check digits are wrong. It is not treated as a Leitweg-ID, so the invoice is not issued as XRechnung automatically." |
 
 So a mistyped Leitweg-ID does not lead to ZUGFeRD unnoticed. An order number of the same shape (e.g. `4711-01`) gets the same info, which you may ignore. Neither finding changes the format.
@@ -717,7 +747,7 @@ For pack authors, this is how `CountryDE` fills the [`CountryPack` contract](#th
 | Hook | Germany |
 |---|---|
 | `defaults()` | currency `EUR`, time zone `Europe/Berlin`, locale `de`, paper `A4`, letter layout `din5008b`, profile `en16931`, payment QR `girocode`, default VAT presets `de.standard` and `de.small_business` |
-| `profiles()` | [`XRechnung30`, `XRechnung30Extension`](#xrechnung-profiles) |
+| `profiles()` | [`XRechnung30`, `XRechnung30Extension`, `XRechnung30Cvd`](#xrechnung-profiles) |
 | `taxPresets()` | every case of [`VatPreset`](#tax-presets) |
 | `rules()` | the [UStG rules](#ustg-rules) `DE-USTG-01` to `DE-USTG-15`, the [Leitweg-ID checks](#leitweg-id) `DE-LEITWEG-ID` and `DE-LEITWEG-ID-SUSPECT`, and the [tax number check](#tax-number) `DE-TAX-NUMBER` |
 | `buyerCountryRules()` | none |

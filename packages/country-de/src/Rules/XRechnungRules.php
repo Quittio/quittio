@@ -11,6 +11,9 @@ use Quittio\Core\Codes\CodeList;
 use Quittio\Core\Codes\RawCode;
 use Quittio\Core\Data\Extensions\ThirdPartyPayment;
 use Quittio\Core\Data\InvoiceData;
+use Quittio\Core\Data\Lines\Classification;
+use Quittio\Core\Data\Lines\InvoiceLine;
+use Quittio\Core\Data\Lines\ItemAttribute;
 use Quittio\Core\Enums\InvoiceTypeCode;
 use Quittio\Core\Enums\PaymentMeansCode;
 use Quittio\Core\Enums\VatCategory;
@@ -22,10 +25,11 @@ use Quittio\Core\Validation\Rules\CallbackRule;
 use Quittio\Core\Validation\Rules\Inspect;
 use Quittio\Core\Validation\Rules\RuleReporter;
 use Quittio\Country\DE\CountryDE;
+use Quittio\Country\DE\Profiles\XRechnung\XRechnung30Cvd;
 
 /**
- * Business rules of the CIUS XRechnung 3.0 (BR-DE-…) and its extension (BR-DEX-…), checked on
- * the data model.
+ * Business rules of the CIUS XRechnung 3.0 (BR-DE-…), its extension (BR-DEX-…) and XRechnung
+ * CVD (BR-DE-CVD-…), checked on the data model.
  *
  * Severity follows the flags of the official Schematron: "muss" rules (fatal) are errors,
  * "soll" rules (warning) warnings and BR-DE-TMP-32 (information) an info. The official
@@ -230,6 +234,72 @@ final class XRechnungRules
                     $report->error('BT-3', 'typeCode');
                 }
             }),
+            // XRechnung CVD (Clean Vehicles Directive): only with its specification identifier.
+            $r('BR-DE-CVD-01', 'The contract reference (BT-12) must be provided.', function (InvoiceData $i, RuleReporter $report): void {
+                if (self::isCvd($report) && ! Inspect::filled($i->contractReference)) {
+                    $report->error('BT-12', 'contractReference');
+                }
+            }),
+            $r('BR-DE-CVD-02', 'The tender or lot reference (BT-17) must be provided.', function (InvoiceData $i, RuleReporter $report): void {
+                if (self::isCvd($report) && ! Inspect::filled($i->tenderReference)) {
+                    $report->error('BT-17', 'tenderReference');
+                }
+            }),
+            $r('BR-DE-CVD-03', 'At least one invoice line (BG-25) must contain an item classification identifier (BT-158) with the scheme identifier CVD and an item attribute named cva (BT-160).', function (InvoiceData $i, RuleReporter $report): void {
+                if (! self::isCvd($report)) {
+                    return;
+                }
+                foreach ($i->lines as $line) {
+                    if (self::cvdClassifications($line) !== [] && self::cvaAttributes($line) !== []) {
+                        return;
+                    }
+                }
+                $report->error('BG-25', 'lines');
+            }),
+            $r('BR-DE-CVD-04', 'The item classification identifier (BT-158) ":value" with the scheme identifier CVD must be one of the vehicle categories M1, M2, M3, N1, N2 or N3. Line :line.', function (InvoiceData $i, RuleReporter $report): void {
+                if (! self::isCvd($report)) {
+                    return;
+                }
+                foreach ($i->lines as $line) {
+                    foreach ($line->item->classifications as $index => $classification) {
+                        if (trim($classification->listId->value) === XRechnung30Cvd::CLASSIFICATION_SCHEME && ! in_array(trim($classification->code), XRechnung30Cvd::VEHICLE_CATEGORIES, true)) {
+                            $report->error('BT-158', "line {$line->id}.item.classifications[{$index}].code", ['value' => $classification->code, 'line' => $line->id]);
+                        }
+                    }
+                }
+            }),
+            $r('BR-DE-CVD-05', 'The value ":value" (BT-161) of the item attribute cva must be clean, zero-emission or other. Line :line.', function (InvoiceData $i, RuleReporter $report): void {
+                if (! self::isCvd($report)) {
+                    return;
+                }
+                foreach ($i->lines as $line) {
+                    foreach (self::cvaAttributes($line) as $index => $attribute) {
+                        if (! in_array(trim($attribute->value), XRechnung30Cvd::ATTRIBUTE_VALUES, true)) {
+                            $report->error('BT-161', "line {$line->id}.item.attributes[{$index}].value", ['value' => $attribute->value, 'line' => $line->id]);
+                        }
+                    }
+                }
+            }),
+            $r('BR-DE-CVD-06-a', 'An invoice line with an item classification identifier (BT-158) with the scheme identifier CVD must contain exactly one item attribute named cva (BT-160). Line :line.', function (InvoiceData $i, RuleReporter $report): void {
+                if (! self::isCvd($report)) {
+                    return;
+                }
+                foreach ($i->lines as $line) {
+                    if (self::cvdClassifications($line) !== [] && count(self::cvaAttributes($line)) !== 1) {
+                        $report->error('BT-160', "line {$line->id}.item.attributes", ['line' => $line->id]);
+                    }
+                }
+            }),
+            $r('BR-DE-CVD-06-b', 'An invoice line with an item attribute named cva (BT-160) must contain exactly one item classification identifier (BT-158) with the scheme identifier CVD. Line :line.', function (InvoiceData $i, RuleReporter $report): void {
+                if (! self::isCvd($report)) {
+                    return;
+                }
+                foreach ($i->lines as $line) {
+                    if (self::cvaAttributes($line) !== [] && count(self::cvdClassifications($line)) !== 1) {
+                        $report->error('BT-158', "line {$line->id}.item.classifications", ['line' => $line->id]);
+                    }
+                }
+            }),
         ];
     }
 
@@ -385,6 +455,34 @@ final class XRechnungRules
             }
             $report->error($bt, $path, ['value' => $value]);
         }
+    }
+
+    /**
+     * The CVD rules apply only with the specification identifier of XRechnung CVD.
+     */
+    private static function isCvd(RuleReporter $report): bool
+    {
+        return $report->context()->profile->specificationId() === XRechnung30Cvd::SPECIFICATION_ID;
+    }
+
+    /**
+     * Item classifications of a line with the scheme identifier CVD (BT-158-1).
+     *
+     * @return array<int, Classification>
+     */
+    private static function cvdClassifications(InvoiceLine $line): array
+    {
+        return array_filter($line->item->classifications, static fn (Classification $c): bool => $c->listId->value === XRechnung30Cvd::CLASSIFICATION_SCHEME);
+    }
+
+    /**
+     * Item attributes of a line named cva (BT-160).
+     *
+     * @return array<int, ItemAttribute>
+     */
+    private static function cvaAttributes(InvoiceLine $line): array
+    {
+        return array_filter($line->item->attributes, static fn (ItemAttribute $a): bool => $a->name === XRechnung30Cvd::ATTRIBUTE);
     }
 
     /**

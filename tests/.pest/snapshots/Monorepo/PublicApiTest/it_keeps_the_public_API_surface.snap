@@ -5733,6 +5733,44 @@
             "public xmpVersion(): string"
         ]
     },
+    "Quittio\\Country\\DE\\Profiles\\XRechnung\\XRechnung30Cvd": {
+        "kind": "final class",
+        "extends": "Quittio\\Country\\DE\\Profiles\\XRechnung\\XRechnung30",
+        "implements": [
+            "Quittio\\Core\\Profiles\\Capabilities\\DescribesEmbeddedXml",
+            "Quittio\\Core\\Profiles\\Capabilities\\ExtendsCodeLists",
+            "Quittio\\Core\\Profiles\\Capabilities\\RequiresVatBreakdownRate",
+            "Quittio\\Core\\Profiles\\Capabilities\\StructuredCashDiscountText",
+            "Quittio\\Core\\Profiles\\Capabilities\\SupportsThirdPartyPayments",
+            "Quittio\\Core\\Profiles\\Profile"
+        ],
+        "constants": [
+            "ATTRIBUTE",
+            "ATTRIBUTE_VALUES",
+            "CLASSIFICATION_SCHEME",
+            "SPECIFICATION_ID",
+            "VEHICLE_CATEGORIES"
+        ],
+        "methods": [
+            "public additionalCodes(string $codeList): array",
+            "public afRelationship(): ?string",
+            "public defaultBusinessProcess(): ?string",
+            "public embeddedFilename(): ?string",
+            "public isEn16931Compliant(): bool",
+            "public key(): string",
+            "public level(): Quittio\\Core\\Profiles\\ProfileLevel",
+            "public name(): string",
+            "public requiredBusinessTerms(): array",
+            "public rules(): array",
+            "public specificationId(Quittio\\Core\\Standards\\StandardVersion $version = Quittio\\Core\\Standards\\StandardVersion::En16931_2017): string",
+            "public supportsStandard(Quittio\\Core\\Standards\\StandardVersion $version): bool",
+            "public supportsSyntax(Quittio\\Core\\Profiles\\Syntax $syntax): bool",
+            "public syntaxes(): array",
+            "public xmpConformanceLevel(): ?string",
+            "public xmpDescription(): string",
+            "public xmpVersion(): string"
+        ]
+    },
     "Quittio\\Country\\DE\\Profiles\\XRechnung\\XRechnung30Extension": {
         "kind": "final class",
         "extends": "Quittio\\Country\\DE\\Profiles\\XRechnung\\XRechnung30",

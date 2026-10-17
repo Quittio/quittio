@@ -137,6 +137,30 @@ return [
         'message' => 'Die XRechnung-Extension kennt in UBL keine Gutschriftsanzeige (CreditNote). Stornieren Sie mit der Strategie negative_invoice (Rechnungsart 380 mit negativen Beträgen).',
         'hint' => 'Setzen Sie corrections.cancellation_strategy auf negative_invoice oder übergeben Sie die Strategie beim Storno.',
     ],
+    'BR-DE-CVD-01' => [
+        'message' => 'Die Vertragsreferenz (BT-12) muss übermittelt werden.',
+        'hint' => 'Setzen Sie die Vertragsreferenz mit ->contractReference(…).',
+    ],
+    'BR-DE-CVD-02' => [
+        'message' => 'Die Vergabe- oder Losreferenz (BT-17) muss übermittelt werden.',
+        'hint' => 'Setzen Sie die Vergabe- oder Losreferenz mit ->tenderReference(…).',
+    ],
+    'BR-DE-CVD-03' => [
+        'message' => 'Mindestens eine Rechnungsposition (BG-25) muss eine Artikelklassifizierung (BT-158) mit der Kennung des Schemas CVD und ein Artikelmerkmal mit dem Namen cva (BT-160) enthalten.',
+        'hint' => 'Beschreiben Sie das Fahrzeug in seiner Position mit ->classification(\'M1\', \'CVD\') und ->attribute(\'cva\', \'clean\').',
+    ],
+    'BR-DE-CVD-04' => [
+        'message' => 'Die Artikelklassifizierung (BT-158) ":value" mit der Kennung des Schemas CVD muss eine der Fahrzeugklassen M1, M2, M3, N1, N2 oder N3 sein. Position :line.',
+    ],
+    'BR-DE-CVD-05' => [
+        'message' => 'Der Wert ":value" (BT-161) des Artikelmerkmals cva muss clean, zero-emission oder other sein. Position :line.',
+    ],
+    'BR-DE-CVD-06-a' => [
+        'message' => 'Eine Rechnungsposition mit einer Artikelklassifizierung (BT-158) mit der Kennung des Schemas CVD muss genau ein Artikelmerkmal mit dem Namen cva (BT-160) enthalten. Position :line.',
+    ],
+    'BR-DE-CVD-06-b' => [
+        'message' => 'Eine Rechnungsposition mit einem Artikelmerkmal mit dem Namen cva (BT-160) muss genau eine Artikelklassifizierung (BT-158) mit der Kennung des Schemas CVD enthalten. Position :line.',
+    ],
     'DE-USTG-01' => [
         'message' => 'Die Anschrift :party ist unvollständig, es fehlt: :fields (§ 14 Abs. 4 Nr. 1 UStG).',
         'hint' => ':advice',

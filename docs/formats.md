@@ -67,11 +67,11 @@ These are the keys for `render()`, `format()` and `formats()`:
 
 | Format | Aliases | Syntax | Output | Profiles | Default profile |
 |---|---|---|---|---|---|
-| `zugferd` | `factur-x`, `facturx` | CII | PDF/A-3b with embedded XML (and the XML) | every CII profile that can be embedded: `minimum`, `basic-wl`, `basic`, `en16931`, `extended`, `xrechnung`, `xrechnung-extension` | `en16931` |
-| `xrechnung-cii` | `xrechnung` | CII | XML | `xrechnung`, `xrechnung-extension` | `xrechnung` |
-| `xrechnung-ubl` | – | UBL | XML | `xrechnung`, `xrechnung-extension` | `xrechnung` |
+| `zugferd` | `factur-x`, `facturx` | CII | PDF/A-3b with embedded XML (and the XML) | every CII profile that can be embedded: `minimum`, `basic-wl`, `basic`, `en16931`, `extended`, `xrechnung`, `xrechnung-extension`, `xrechnung-cvd` | `en16931` |
+| `xrechnung-cii` | `xrechnung` | CII | XML | `xrechnung`, `xrechnung-extension`, `xrechnung-cvd` | `xrechnung` |
+| `xrechnung-ubl` | – | UBL | XML | `xrechnung`, `xrechnung-extension`, `xrechnung-cvd` | `xrechnung` |
 | `cii` | – | CII | XML | every CII profile | `en16931` |
-| `ubl` | – | UBL | XML | every UBL profile: `en16931`, `peppol`, `xrechnung`, `xrechnung-extension` | `en16931` |
+| `ubl` | – | UBL | XML | every UBL profile: `en16931`, `peppol`, `xrechnung`, `xrechnung-extension`, `xrechnung-cvd` | `en16931` |
 | `peppol` | – | UBL | XML according to Peppol BIS Billing 3.0 | `peppol` | `peppol` |
 | `pdf` | – | – | PDF without XML (PDF/A-3b by default; optionally with embedded XML, see [PDF, HTML and JSON](#pdf-html-and-json)) | – | – |
 | `html` | – | – | the rendered template | – | – |
@@ -79,7 +79,7 @@ These are the keys for `render()`, `format()` and `formats()`:
 
 PDF/A-3b is the archiving standard for PDF (PDF/A) in version 3, which allows embedded files, at conformance level b.
 
-Format and profile keys are case-insensitive. The profiles `xrechnung` and `xrechnung-extension` and the formats `xrechnung-cii` and `xrechnung-ubl` come with the German country pack (`Quittio\Country\DE\Formats\XRechnungFormats`); until 1.0 the core registers the two formats as well. Other country packs register their own formats the same way ([Writing your own country pack](country-packs.md#writing-your-own-country-pack)). MINIMUM and BASIC WL carry no invoice lines and do not comply with EN 16931. The validation warns about them with `QUITTIO-PROFILE-NOT-EINVOICE`; use them only when a recipient asks for them.
+Format and profile keys are case-insensitive. The profiles `xrechnung`, `xrechnung-extension` and `xrechnung-cvd` and the formats `xrechnung-cii` and `xrechnung-ubl` come with the German country pack (`Quittio\Country\DE\Formats\XRechnungFormats`); until 1.0 the core registers the two formats as well. Other country packs register their own formats the same way ([Writing your own country pack](country-packs.md#writing-your-own-country-pack)). MINIMUM and BASIC WL carry no invoice lines and do not comply with EN 16931. The validation warns about them with `QUITTIO-PROFILE-NOT-EINVOICE`; use them only when a recipient asks for them.
 
 ## Automatic choice
 
@@ -156,6 +156,7 @@ A profile is a set of fields and rules based on EN 16931 ([Profiles](concepts.md
 | `peppol` | Peppol BIS Billing 3.0 | EN 16931 | UBL | `urn:cen.eu:en16931:2017#compliant#urn:fdc:peppol.eu:2017:poacc:billing:3.0` | `urn:fdc:peppol.eu:2017:poacc:billing:01:1.0` | Electronic addresses of seller and buyer (BT-34, BT-49); Peppol rules |
 | `xrechnung` | XRechnung 3.0 | EN 16931 | CII, UBL | `urn:cen.eu:en16931:2017#compliant#urn:xeinkauf.de:kosit:xrechnung_3.0` | `urn:fdc:peppol.eu:2017:poacc:billing:01:1.0` | Buyer reference (BT-10), electronic addresses of seller and buyer (BT-34, BT-49), seller contact (BG-6), payment instructions (BG-16); BR-DE rules |
 | `xrechnung-extension` | XRechnung 3.0 Extension | EN 16931 | CII, UBL | `urn:cen.eu:en16931:2017#compliant#urn:xeinkauf.de:kosit:xrechnung_3.0#conformant#urn:xeinkauf.de:kosit:extension:xrechnung_3.0` | as XRechnung | as XRechnung |
+| `xrechnung-cvd` | XRechnung 3.0 CVD | EN 16931 | CII, UBL | `urn:cen.eu:en16931:2017#compliant#urn:xeinkauf.de:kosit:xrechnung_3.0#compliant#urn:xeinkauf.de:kosit:xrechnung:cvd_0.9` | as XRechnung | as XRechnung, plus contract reference (BT-12), tender or lot reference (BT-17) and a vehicle line; BR-DE-CVD rules |
 
 Aliases: `basicwl` (basic-wl), `en-16931` and `comfort` (en16931), `peppol-bis-3` (peppol). The default business process is written only when the invoice sets none (`businessProcess()`). The registry is available as `$quittio->profiles()` (`get()`, `has()`, `all()`, `register()`, `alias()`, `bySpecificationId()`).
 
@@ -192,7 +193,7 @@ The writers leave out every field that the profile does not contain. The validat
 | EN 16931 | everything of EN 16931 | data of profile EXTENDED |
 | EXTENDED | EN 16931 plus sub lines (with parent line identifier and line status), `ExtendedData` and `LineExtendedData`, the exchange rate, cash discounts and late fees as structured elements, several cash discount tiers, instalments, further payment instructions, line references, exemption reasons repeated on line and allowance level | – |
 
-The UBL profiles (`en16931`, `peppol`, `xrechnung`, `xrechnung-extension`) are on level EN 16931. UBL ignores `extended()` data and writes sub lines only for the XRechnung extension.
+The UBL profiles (`en16931`, `peppol`, `xrechnung`, `xrechnung-extension`, `xrechnung-cvd`) are on level EN 16931. UBL ignores `extended()` data and writes sub lines only for the XRechnung extension.
 
 ### Capabilities
 
@@ -200,10 +201,10 @@ Profiles can implement marker interfaces in `Quittio\Core\Profiles\Capabilities`
 
 | Interface | Effect | Implemented by |
 |---|---|---|
-| `RequiresVatBreakdownRate` | The VAT breakdown always carries a rate, 0 for category O, outside the scope of VAT (BR-DE-14). | `xrechnung`, `xrechnung-extension` |
-| `StructuredCashDiscountText` | Cash discounts are written to the payment terms (BT-20) in the XRechnung notation `#SKONTO#TAGE=…#PROZENT=…#` ([Payment terms](building-invoices.md#payment-terms)). | `xrechnung`, `xrechnung-extension` |
-| `DescribesEmbeddedXml` | `xmpDescription()` and `xmpVersion()` replace the XMP metadata of the embedded XML (`Factur-X/ZUGFeRD Invoice`, `fx:Version` `1.0`), e.g. `XRechnung Invoice` and `3.0`. | `xrechnung`, `xrechnung-extension` |
-| `ExtendsCodeLists` | `additionalCodes(string $codeList)` adds codes to an official code list for the validation. | `xrechnung-extension` (identifier schemes `XR01` to `XR03` for the code lists ICD and EAS, checked by `BR-DEX-04` to `BR-DEX-08`) |
+| `RequiresVatBreakdownRate` | The VAT breakdown always carries a rate, 0 for category O, outside the scope of VAT (BR-DE-14). | `xrechnung`, `xrechnung-extension`, `xrechnung-cvd` |
+| `StructuredCashDiscountText` | Cash discounts are written to the payment terms (BT-20) in the XRechnung notation `#SKONTO#TAGE=…#PROZENT=…#` ([Payment terms](building-invoices.md#payment-terms)). | `xrechnung`, `xrechnung-extension`, `xrechnung-cvd` |
+| `DescribesEmbeddedXml` | `xmpDescription()` and `xmpVersion()` replace the XMP metadata of the embedded XML (`Factur-X/ZUGFeRD Invoice`, `fx:Version` `1.0`), e.g. `XRechnung Invoice` and `3.0`. | `xrechnung`, `xrechnung-extension`, `xrechnung-cvd` |
+| `ExtendsCodeLists` | `additionalCodes(string $codeList)` adds codes to an official code list for the validation. | `xrechnung-extension` (identifier schemes `XR01` to `XR03` for the code lists ICD and EAS, checked by `BR-DEX-04` to `BR-DEX-08`), `xrechnung-cvd` (item classification scheme `CVD` for UNTDID 7143) |
 | `ReplacesRules` | `replacedRules(?Syntax $syntax)` names built-in rules that the PHP rules driver does not run for the profile, because own rules with other codes replace them. | `xrechnung-extension` (`BR-CL-10`, `-11`, `-21`, `-25`, `-26`; in UBL also `BR-CO-16` and `QUITTIO-SUBLINES`, see [XRechnung rules](country-packs.md#xrechnung-rules)) |
 
 ### Own profiles and formats
@@ -303,6 +304,8 @@ The **XRechnung extension** (`->profile('xrechnung-extension')`, specification i
 - the identifier schemes `XR01` to `XR03`.
 
 The extension is never chosen automatically; request it explicitly. It has no credit note in UBL (`DE-XRECHNUNG-EXT-01`): cancel such invoices with the strategy `negative_invoice`.
+
+**XRechnung CVD** (`->profile('xrechnung-cvd')`, specification identifier `…#compliant#urn:xeinkauf.de:kosit:xrechnung:cvd_0.9`) is XRechnung 3.0 for vehicles procured under the Clean Vehicles Directive, in CII and UBL. It requires the contract reference (BT-12), the tender or lot reference (BT-17) and at least one line with the vehicle category as item classification of scheme `CVD` (BT-158) and the item attribute `cva` (BT-160, BT-161), see [XRechnung CVD](country-packs.md#xrechnung-cvd). It is never chosen automatically either.
 
 ## Peppol BIS Billing 3.0
 

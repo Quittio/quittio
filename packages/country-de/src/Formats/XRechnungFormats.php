@@ -9,7 +9,7 @@ use Quittio\Core\Profiles\Syntax;
 
 /**
  * The XRechnung formats of the German pack: XRechnung in CII (default) and in UBL, each with the
- * profiles XRechnung and XRechnung extension.
+ * profiles XRechnung, XRechnung extension and XRechnung CVD.
  */
 final class XRechnungFormats
 {
@@ -26,8 +26,8 @@ final class XRechnungFormats
     public static function all(): array
     {
         return [
-            new OutputFormat(self::CII, Syntax::Cii, defaultProfile: 'xrechnung', profiles: ['xrechnung', 'xrechnung-extension']),
-            new OutputFormat(self::UBL, Syntax::Ubl, defaultProfile: 'xrechnung', profiles: ['xrechnung', 'xrechnung-extension']),
+            new OutputFormat(self::CII, Syntax::Cii, defaultProfile: 'xrechnung', profiles: ['xrechnung', 'xrechnung-extension', 'xrechnung-cvd']),
+            new OutputFormat(self::UBL, Syntax::Ubl, defaultProfile: 'xrechnung', profiles: ['xrechnung', 'xrechnung-extension', 'xrechnung-cvd']),
         ];
     }
 }

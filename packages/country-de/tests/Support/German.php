@@ -31,14 +31,14 @@ final class German
     }
 
     /**
-     * Official XRechnung test files, without the CVD cases (Clean Vehicles Directive is not supported).
+     * Official XRechnung test files: standard, extension and the technical cases of the CIUS and of XRechnung CVD.
      *
      * @return array<string, array{0: string}>
      */
     public static function testSuiteFiles(): array
     {
         $files = [];
-        foreach (['standard', 'extension', 'technical-cases/cius'] as $directory) {
+        foreach (['standard', 'extension', 'technical-cases/cius', 'technical-cases/cvd'] as $directory) {
             foreach (glob(self::testSuite().'/'.$directory.'/*.xml') ?: [] as $file) {
                 $files[$directory.'/'.basename($file)] = [$file];
             }

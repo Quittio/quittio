@@ -352,7 +352,7 @@ Add `kosit` to `validation.levels`. Without Laravel, the same keys go to `valida
 Every message of the report becomes a finding with:
 
 - the rule code of the report (`BR-DE-15`, `PEPPOL-EN16931-R010` …),
-- the severity of the report (`error`, `warning`, otherwise `info`),
+- the severity of the report (`error`, `warning`, otherwise `info`); a level the scenario sets for the rule (`customLevel`, e.g. `BR-CL-13` as information in XRechnung) takes precedence, as in the validator's own assessment,
 - the business term found in the text,
 - the XPath location.
 
@@ -417,7 +417,7 @@ The PHP driver (`Quittio\Core\Validation\Drivers\PhpRulesDriver`, name `php`) ru
 | `CodeListRules` | L3 | `BR-CL-01`, `-04` to `-08`, `-10`, `-11`, `-13`, `-14`, `-16`, `-19` to `-23`, `-25`, `-26` (official code lists) |
 | `QuittioRules` | L3 | package rules, see below |
 | `PlausibilityRules` | L7 | see [plausibility](#plausibility-l7) |
-| profile rules | L3 | Peppol BIS profile: `PEPPOL-EN16931-R001`, `-R002`, `-R003`, `-R005` (warning), `-R007`, `-R008`, `-R010`, `-R020`, `-R040`, `-R041`, `-R042`, `-R046`, `-R055`, `-R061`, `-R110`, `-R111`, `-R120`, `-R121`, `-R130`, `-CL007`, `-CL008`, `-F001`, `-P0100`, `-P0101`, `-P0104` to `-P0112`, `PEPPOL-COMMON-R040` to `-R047`, `-R049`, `-R050`, `-R052`, `-R053` (`-R044` to `-R047`, `-R052`, `-R053` warnings), see [Peppol rules](#peppol-rules); XRechnung profiles (country pack DE): `BR-DE-…`, `DE-XRECHNUNG-EXT-01`; XRechnung extension: `BR-DEX-02` (warning), `BR-DEX-04` to `-10`, `-12` to `-15` |
+| profile rules | L3 | Peppol BIS profile: `PEPPOL-EN16931-R001`, `-R002`, `-R003`, `-R005` (warning), `-R007`, `-R008`, `-R010`, `-R020`, `-R040`, `-R041`, `-R042`, `-R046`, `-R055`, `-R061`, `-R110`, `-R111`, `-R120`, `-R121`, `-R130`, `-CL007`, `-CL008`, `-F001`, `-P0100`, `-P0101`, `-P0104` to `-P0112`, `PEPPOL-COMMON-R040` to `-R047`, `-R049`, `-R050`, `-R052`, `-R053` (`-R044` to `-R047`, `-R052`, `-R053` warnings), see [Peppol rules](#peppol-rules); XRechnung profiles (country pack DE): `BR-DE-…`, `DE-XRECHNUNG-EXT-01`; XRechnung extension: `BR-DEX-02` (warning), `BR-DEX-04` to `-10`, `-12` to `-15`; XRechnung CVD: `BR-DE-CVD-01` to `BR-DE-CVD-06-b` |
 | country pack rules | L3, L7 | `rules()` of the seller's pack and `buyerCountryRules()` of the buyer's pack; Germany: `DE-USTG-01` … `DE-USTG-15` (L3), `DE-LEITWEG-ID`, `DE-LEITWEG-ID-SUSPECT`, `DE-TAX-NUMBER` (L7), see [Country packs](country-packs.md) |
 
 All EN 16931, code list, VAT category and Peppol rules report errors unless noted. The PHP rules cover the most frequent Schematron findings with readable messages. They do not replace the official Schematron (L5).
