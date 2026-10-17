@@ -4,6 +4,10 @@ All notable changes to this project are documented in this file. The format foll
 
 ## [Unreleased]
 
+### Fixed
+
+- The official validation in CI now checks PDF/A-3b with veraPDF: the job pulls the `verapdf/cli` image (pinned by digest), and the veraPDF tests fail instead of being skipped when the image is missing in CI. `tools/validate-fixtures.sh` also renders every EN 16931 scenario as ZUGFeRD PDF and checks the PDFs with veraPDF; before, it generated no PDFs, and its veraPDF call would have received no files.
+
 ## [0.3.0] - 2026-10-16
 
 ### Added

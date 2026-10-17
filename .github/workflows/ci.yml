@@ -116,6 +116,11 @@ jobs:
             tools/validators
             packages/country-de/tests/Fixtures/xrechnung-testsuite
           key: validators-${{ hashFiles('tools/schemas/download.sh', 'tools/fixtures/download.sh', 'packages/core/src/Validation/Drivers/KositArtifacts.php') }}
+      # veraPDF (L6) runs from Docker; the tests and validate-fixtures.sh look for the tag
+      # verapdf/cli, so the image pinned by digest is tagged locally.
+      - run: |
+          docker pull verapdf/cli@sha256:d565095c67a083e693aebf7d1a15784007370571053fc1aa5b502665b9a78f9c
+          docker tag verapdf/cli@sha256:d565095c67a083e693aebf7d1a15784007370571053fc1aa5b502665b9a78f9c verapdf/cli
       - run: tools/schemas/download.sh
       - run: tools/fixtures/download.sh
       - run: tools/validate-fixtures.sh

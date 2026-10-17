@@ -3,15 +3,18 @@
 declare(strict_types=1);
 
 /**
- * Writes every example scenario in every applicable syntax and profile to build/fixtures.
- * tools/validate-fixtures.sh validates the files with the official validators.
+ * Writes every example scenario in every applicable syntax and profile to build/fixtures,
+ * and renders the scenarios with EN 16931 as ZUGFeRD PDF. tools/validate-fixtures.sh validates
+ * the XML files with KoSIT and the PDFs with veraPDF.
  */
 
 use Quittio\Core\Calculation\En16931Calculator;
 use Quittio\Core\Profiles\ProfileRegistry;
+use Quittio\Core\Quittio;
 use Quittio\Core\Testing\Scenarios;
 use Quittio\Core\Xml\Cii\CiiWriter;
 use Quittio\Core\Xml\Ubl\UblWriter;
+use Quittio\Country\DE\CountryDE;
 use Quittio\Country\DE\Profiles\XRechnung\XRechnung30;
 use Quittio\Country\DE\Profiles\XRechnung\XRechnung30Extension;
 
@@ -22,6 +25,7 @@ $target = $argv[1] ?? dirname(__DIR__).'/build/fixtures';
 
 $calculator = new En16931Calculator;
 $profiles = ProfileRegistry::withDefaults();
+$quittio = Quittio::create([], [new CountryDE]);
 $count = 0;
 
 foreach (Scenarios::names() as $name) {
@@ -43,6 +47,10 @@ foreach (Scenarios::names() as $name) {
             "{$name}.xrechnung.ubl.xml" => (new UblWriter)->serialize($xrInvoice, new XRechnung30),
         ],
     };
+
+    if (! in_array($name, ['sub-lines', 'peppol'], true)) {
+        $outputs["{$name}.zugferd.pdf"] = $quittio->make(Scenarios::make($name))->format('zugferd')->profile('en16931')->render()->pdf();
+    }
 
     foreach ($outputs as $file => $xml) {
         file_put_contents($target.'/'.$file, $xml);

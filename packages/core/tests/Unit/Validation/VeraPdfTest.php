@@ -61,4 +61,4 @@ it('confirms PDF/A-3b for rendered invoices with veraPDF', function (string $for
 
     expect($result->validation()->levels)->toContain(ValidationLevel::L6)
         ->and($result->validation()->byLevel(ValidationLevel::L6))->toBe([]);
-})->with(['zugferd', 'pdf'])->group('official')->skip(fn () => ! dockerAvailable(), 'Docker image verapdf/cli is not available.');
+})->with(['zugferd', 'pdf'])->group('official')->skip(fn () => ! dockerAvailable() && getenv('CI') !== 'true', 'Docker image verapdf/cli is not available.');

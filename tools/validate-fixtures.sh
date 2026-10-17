@@ -52,7 +52,9 @@ echo "KoSIT: ${#inputs[@]} reports, all accepted (EXTENDED excluded)."
 
 if (( ${#pdfs[@]} > 0 )); then
     if command -v docker > /dev/null; then
-        docker run --rm -v "${OUT}:/data" verapdf/cli --flavour 3b /data/*.pdf | tee "${OUT}/verapdf.log"
+        # The paths inside the container are passed explicitly: with nullglob, /data/*.pdf
+        # would match nothing on the host and expand to no argument at all.
+        docker run --rm -v "${OUT}:/data" verapdf/cli --flavour 3b "${pdfs[@]/#${OUT}//data}" | tee "${OUT}/verapdf.log"
         # One report per PDF, each compliant; a report without results must not pass.
         compliant="$(grep -o 'isCompliant="true"' "${OUT}/verapdf.log" | wc -l | tr -d ' ')"
         if [[ "${compliant}" != "${#pdfs[@]}" ]]; then
