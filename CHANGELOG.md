@@ -4,10 +4,15 @@ All notable changes to this project are documented in this file. The format foll
 
 ## [Unreleased]
 
+### Added
+
+- Typed view model: every node that templates receive has a class in `Quittio\Core\View\Model` (`PartyView`, `AddressView`, `LineView`, `VatRowView`, `TotalsView`, `PaymentView`, `DesignView`, `DocumentInfoView` …; lists are `ViewList<T>`, e.g. `ViewList<LineView>`) with its keys as typed properties, so IDEs and PHPStan know that `$invoice->totals->amountDue` is a `?FormattedValue`. The nodes are `ViewNode` objects over the same data: published Blade and PHP templates, array syntax, `toArray()` and the mandatory field guard work unchanged ([Typed nodes](docs/templates.md#typed-nodes)). The compatibility promise now names the keys and types of the view model.
+
 ### Changed
 
 - The Laravel settings of the German pack live under `quittio.countries.de` (`config('quittio.countries.de.base_rates')`, `….base_rate_file`) instead of the configuration `quittio-de`. `php artisan vendor:publish --tag=quittio-de-config` publishes them to `config/quittio/countries/de.php`, which Laravel loads as `quittio.countries.de`; they can also be set in `config/quittio.php` under `'countries' => ['de' => […]]`. `quittio:install` publishes the tag `quittio-{code}-config` of every installed country pack with `config/quittio.php`. `GermanyServiceProvider` no longer fills `quittio-de` with defaults: code that reads `config('quittio-de.…')` reads `quittio.countries.de`. Lower-case codes under `quittio.countries` hold the settings of a pack, the convention for further packs (`quittio.countries.{code}`); a pack class listed under `'de'` is moved to a numeric key.
 - The calculator, the builder, the reader and the cancellations read and write the declared amounts flags together as one typed state (the internal `Calculation\DeclaredAmountsState`) instead of single flags. The flags stay the stored format with the same strings, so stored data of earlier versions is read unchanged; they are now always written after the other flags in a fixed order (`declared_amounts`, `declared_amounts_recalculated`, `cancellation_vat_aligned`, `declared_vat_in_tax_currency:`, `amounts_fingerprint:` last), and duplicates or an unreadable `declared_vat_in_tax_currency:` value are dropped when data is calculated again.
+- `ViewModelFactory` builds the view model with one internal factory per section (header, parties, references, lines, allowances and charges, VAT breakdown, totals, payment, notes, design, documents; `View\Internal\Sections`). The view model is the same as before.
 
 ### Deprecated
 

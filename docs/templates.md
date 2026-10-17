@@ -390,7 +390,7 @@ Template names may come from invoice data (`Presentation::$template`, issuer bra
 
 ### What a template receives
 
-A Blade template receives `$invoice`, the [view model](#view-model). A plain PHP template receives `$invoice` and `$e`, an escape function that returns HTML-safe text.
+A Blade template receives `$invoice`, the [view model](#view-model). A plain PHP template receives `$invoice` and `$e`, an escape function that returns HTML-safe text. Its nodes are [typed](#typed-nodes); object and array syntax read the same values.
 
 Print values escaped: with `{{ }}` in Blade, with `$e(…)` in plain PHP. Only these prepared HTML values may be printed unescaped (`{!! !!}`): `lines[].description.html`, `notes[].html`, `texts.intro`, `texts.closing` and `design.watermarkCss`.
 
@@ -485,12 +485,62 @@ mPDF cannot load anything over HTTP (a denying HTTP client is installed), has no
 
 Templates receive `$invoice` (`Quittio\Core\View\InvoiceViewModel`) and nothing else. It holds every value of the invoice, already calculated and formatted for printing.
 
-- Nodes are read-only `ViewNode` objects. Use object syntax (`$invoice->seller->name`) or array syntax, loop over lists, and use `count()`, `isEmpty()` and `toArray()` (plain values, formatted).
+- Nodes are read-only `ViewNode` objects. Use object syntax (`$invoice->seller->name`) or array syntax (`$invoice['seller']['name']`), loop over lists, and use `count()`, `isEmpty()` and `toArray()` (plain values, formatted).
 - Writing throws a `LogicException`; a missing key reads as `null`.
 - Values that need formatting are `FormattedValue` objects. `{{ $invoice->totals->amountDue }}` prints the formatted text (`->formatted`). `->raw` holds the original value: `Brick\Money\Money` for amounts, `Quittio\Core\Support\Date` for dates, `Period` for periods, `Brick\Math\BigDecimal` for quantities, prices and rates.
+- Nodes are typed ([Typed nodes](#typed-nodes)): `$invoice->seller` is a `PartyView`, `$invoice->lines` a list of `LineView`.
 - Templates contain no calculations.
 
 `$invoice->label($key, $replace)` returns a label with `:placeholders` replaced (unknown keys return the key); `$invoice->title()` returns the title.
+
+### Typed nodes
+
+Every node of the view model has a class of its own in `Quittio\Core\View\Model`, with its keys documented as typed properties. IDEs complete `$invoice->totals->` and know that `amountDue` is a `?FormattedValue`; PHPStan checks templates and own template engines against the same types.
+
+The typed nodes are `ViewNode` objects with the same data as before. Templates you published keep working unchanged: object syntax, array syntax, loops, `count()`, `toArray()`, `json_encode()` and the [mandatory field guard](#mandatory-field-guard) behave exactly as they did, and both syntaxes read the same value. Nothing is copied; the classes only describe the structure.
+
+| Node | Class |
+|---|---|
+| `$invoice` | `InvoiceViewModel` (`Quittio\Core\View`) |
+| `document`, `documentInfo` | `DocumentView`, `DocumentInfoView` |
+| `seller`, `buyer`, `issuer`, `recipient` | `PartyView` (keys of the seller only are `null` for the buyer and the other way round) |
+| `…address`, `…contact` | `AddressView`, `ContactView` |
+| `payee`, `taxRepresentative`, `delivery` | `PayeeView`, `TaxRepresentativeView`, `DeliveryView` |
+| `references[]`, `precedingInvoices[]` | `ReferenceView`, `PrecedingInvoiceView` |
+| `lineGroups[]`, `lines[]`, `…subLines[]` | `LineGroupView`, `LineView` |
+| `lines[].description`, `.unit`, `.attributes[]`, `.allowances[]`, `.charges[]` | `DescriptionView`, `UnitView`, `AttributeView`, `LineAllowanceChargeView` |
+| `allowances[]`, `charges[]` | `AllowanceChargeView` |
+| `vatRows[]` | `VatRowView` |
+| `totals`, `totals.thirdPartyPayments[]` | `TotalsView`, `DescribedAmountView` |
+| `payment`, `.accounts[]`, `.card`, `.directDebit`, `.qrCode` | `PaymentView`, `AccountView`, `CardView`, `DirectDebitView`, `QrCodeView` |
+| `paymentTerms`, `.discounts[]` | `PaymentTermsView`, `DiscountView` |
+| `notes[]`, `attachments[]`, `texts`, `design`, `meta` | `NoteView`, `AttachmentView`, `TextsView`, `DesignView`, `MetaView` |
+| `documentInfo.packages[]`, `.lines[]`, `.dunning`, `.statement` | `PackageView`, `LineOptionsView`, `DunningView`, `StatementView` |
+| `dunning.openItems[]`, `statement.items[]`, `dunning.fees[]`, `dunning.interest[]` | `OpenItemView`, `DescribedAmountView`, `InterestView` |
+
+Lists are `ViewList<T>` objects (`[]` in the table): `lines` is a `ViewList<LineView>`, `legalNotes`, `address.lines` and `labels` are `ViewList<string>`, `design.footerColumns` is a `ViewList<ViewList<string>>`. `meta.custom` is a plain `ViewNode`.
+
+To use the types in a plain PHP template, declare `$invoice` and type your helpers:
+
+```php
+<?php
+/**
+ * @var \Quittio\Core\View\InvoiceViewModel $invoice
+ * @var callable(mixed): string $e
+ */
+
+use Quittio\Core\View\Model\LineView;
+
+$name = static fn (LineView $line): string => $e($line->name).($line->sellerId ? ' · '.$e($line->sellerId) : '');
+
+foreach ($invoice->lines as $line) {
+    echo '<tr><td>'.$name($line).'</td><td>'.$e($line->quantity).' '.$e($line->unit->label).'</td><td>'.$e($line->total).'</td></tr>';
+}
+```
+
+In Blade, declare the variable in a `@php` block at the top of the view: `@php /** @var \Quittio\Core\View\InvoiceViewModel $invoice */ @endphp`. Labels are a map: read them with `$invoice->labels['amount_due']` or `$invoice->label('amount_due')` for a typed result; `$labels->amount_due`, as in the default partials, works as before but is untyped.
+
+The property types are part of the public API ([Versioning and compatibility](compatibility.md)). A release may add keys and node classes; it does not remove or retype a key without listing it in the changelog. The node objects are created by the view model only; their constructors are not meant to be called.
 
 The tables name the EN 16931 field of a value in parentheses, e.g. invoice number (BT-1) or seller address (BG-5); see [Business terms](concepts.md#en-16931-and-business-terms).
 

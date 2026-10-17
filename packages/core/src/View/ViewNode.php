@@ -9,6 +9,7 @@ use Countable;
 use IteratorAggregate;
 use JsonSerializable;
 use Quittio\Core\Exceptions\LogicException;
+use Quittio\Core\View\Internal\NodeTypes;
 use Traversable;
 
 /**
@@ -20,6 +21,10 @@ use Traversable;
  * when it is read as a leaf: also in a condition such as `if ($invoice->buyer->vatId)` and
  * while a loop reads the items of a list. Counting a list (count(), isEmpty(), isset()) and
  * reading null values are not recorded: count($invoice->legalNotes) prints no note.
+ *
+ * Nested nodes are typed: $invoice->seller is a Model\PartyView, $invoice->lines a
+ * Model\ViewList of Model\LineView. The typed nodes are ViewNodes whose keys are documented
+ * as typed properties, so they read, loop, count and record exactly like this class.
  *
  * @implements ArrayAccess<string|int, mixed>
  * @implements IteratorAggregate<string|int, mixed>
@@ -107,7 +112,8 @@ class ViewNode implements ArrayAccess, Countable, IteratorAggregate, JsonSeriali
         $path = $this->childPath($this->path, $key);
         $value = $this->data[$key] ?? null;
         if (is_array($value)) {
-            return new self($value, $this->log, $path);
+            // A typed node (PartyView, ViewList<LineView> …) where the view model defines one.
+            return NodeTypes::node(NodeTypes::child(static::class, $key), $value, $this->log, $path);
         }
         if ($value !== null) {
             $this->log->record($path);

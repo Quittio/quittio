@@ -4371,6 +4371,980 @@
             "public static toHtml(?string $text): string"
         ]
     },
+    "Quittio\\Core\\View\\Model\\AccountView": {
+        "kind": "final class",
+        "extends": "Quittio\\Core\\View\\ViewNode",
+        "implements": [
+            "ArrayAccess",
+            "Countable",
+            "IteratorAggregate",
+            "JsonSerializable",
+            "Traversable"
+        ],
+        "methods": [
+            "public __construct(array $data, Quittio\\Core\\View\\AccessLog $log, string $path = \"\")",
+            "public __get(string $name): mixed",
+            "public __isset(string $name): bool",
+            "public count(): int",
+            "public getIterator(): Traversable",
+            "public isEmpty(): bool",
+            "public jsonSerialize(): mixed",
+            "public offsetExists(mixed $offset): bool",
+            "public offsetGet(mixed $offset): mixed",
+            "public offsetSet(mixed $offset, mixed $value): void",
+            "public offsetUnset(mixed $offset): void",
+            "public toArray(): array"
+        ]
+    },
+    "Quittio\\Core\\View\\Model\\AddressView": {
+        "kind": "final class",
+        "extends": "Quittio\\Core\\View\\ViewNode",
+        "implements": [
+            "ArrayAccess",
+            "Countable",
+            "IteratorAggregate",
+            "JsonSerializable",
+            "Traversable"
+        ],
+        "methods": [
+            "public __construct(array $data, Quittio\\Core\\View\\AccessLog $log, string $path = \"\")",
+            "public __get(string $name): mixed",
+            "public __isset(string $name): bool",
+            "public count(): int",
+            "public getIterator(): Traversable",
+            "public isEmpty(): bool",
+            "public jsonSerialize(): mixed",
+            "public offsetExists(mixed $offset): bool",
+            "public offsetGet(mixed $offset): mixed",
+            "public offsetSet(mixed $offset, mixed $value): void",
+            "public offsetUnset(mixed $offset): void",
+            "public toArray(): array"
+        ]
+    },
+    "Quittio\\Core\\View\\Model\\AllowanceChargeView": {
+        "kind": "final class",
+        "extends": "Quittio\\Core\\View\\ViewNode",
+        "implements": [
+            "ArrayAccess",
+            "Countable",
+            "IteratorAggregate",
+            "JsonSerializable",
+            "Traversable"
+        ],
+        "methods": [
+            "public __construct(array $data, Quittio\\Core\\View\\AccessLog $log, string $path = \"\")",
+            "public __get(string $name): mixed",
+            "public __isset(string $name): bool",
+            "public count(): int",
+            "public getIterator(): Traversable",
+            "public isEmpty(): bool",
+            "public jsonSerialize(): mixed",
+            "public offsetExists(mixed $offset): bool",
+            "public offsetGet(mixed $offset): mixed",
+            "public offsetSet(mixed $offset, mixed $value): void",
+            "public offsetUnset(mixed $offset): void",
+            "public toArray(): array"
+        ]
+    },
+    "Quittio\\Core\\View\\Model\\AttachmentView": {
+        "kind": "final class",
+        "extends": "Quittio\\Core\\View\\ViewNode",
+        "implements": [
+            "ArrayAccess",
+            "Countable",
+            "IteratorAggregate",
+            "JsonSerializable",
+            "Traversable"
+        ],
+        "methods": [
+            "public __construct(array $data, Quittio\\Core\\View\\AccessLog $log, string $path = \"\")",
+            "public __get(string $name): mixed",
+            "public __isset(string $name): bool",
+            "public count(): int",
+            "public getIterator(): Traversable",
+            "public isEmpty(): bool",
+            "public jsonSerialize(): mixed",
+            "public offsetExists(mixed $offset): bool",
+            "public offsetGet(mixed $offset): mixed",
+            "public offsetSet(mixed $offset, mixed $value): void",
+            "public offsetUnset(mixed $offset): void",
+            "public toArray(): array"
+        ]
+    },
+    "Quittio\\Core\\View\\Model\\AttributeView": {
+        "kind": "final class",
+        "extends": "Quittio\\Core\\View\\ViewNode",
+        "implements": [
+            "ArrayAccess",
+            "Countable",
+            "IteratorAggregate",
+            "JsonSerializable",
+            "Traversable"
+        ],
+        "methods": [
+            "public __construct(array $data, Quittio\\Core\\View\\AccessLog $log, string $path = \"\")",
+            "public __get(string $name): mixed",
+            "public __isset(string $name): bool",
+            "public count(): int",
+            "public getIterator(): Traversable",
+            "public isEmpty(): bool",
+            "public jsonSerialize(): mixed",
+            "public offsetExists(mixed $offset): bool",
+            "public offsetGet(mixed $offset): mixed",
+            "public offsetSet(mixed $offset, mixed $value): void",
+            "public offsetUnset(mixed $offset): void",
+            "public toArray(): array"
+        ]
+    },
+    "Quittio\\Core\\View\\Model\\CardView": {
+        "kind": "final class",
+        "extends": "Quittio\\Core\\View\\ViewNode",
+        "implements": [
+            "ArrayAccess",
+            "Countable",
+            "IteratorAggregate",
+            "JsonSerializable",
+            "Traversable"
+        ],
+        "methods": [
+            "public __construct(array $data, Quittio\\Core\\View\\AccessLog $log, string $path = \"\")",
+            "public __get(string $name): mixed",
+            "public __isset(string $name): bool",
+            "public count(): int",
+            "public getIterator(): Traversable",
+            "public isEmpty(): bool",
+            "public jsonSerialize(): mixed",
+            "public offsetExists(mixed $offset): bool",
+            "public offsetGet(mixed $offset): mixed",
+            "public offsetSet(mixed $offset, mixed $value): void",
+            "public offsetUnset(mixed $offset): void",
+            "public toArray(): array"
+        ]
+    },
+    "Quittio\\Core\\View\\Model\\ContactView": {
+        "kind": "final class",
+        "extends": "Quittio\\Core\\View\\ViewNode",
+        "implements": [
+            "ArrayAccess",
+            "Countable",
+            "IteratorAggregate",
+            "JsonSerializable",
+            "Traversable"
+        ],
+        "methods": [
+            "public __construct(array $data, Quittio\\Core\\View\\AccessLog $log, string $path = \"\")",
+            "public __get(string $name): mixed",
+            "public __isset(string $name): bool",
+            "public count(): int",
+            "public getIterator(): Traversable",
+            "public isEmpty(): bool",
+            "public jsonSerialize(): mixed",
+            "public offsetExists(mixed $offset): bool",
+            "public offsetGet(mixed $offset): mixed",
+            "public offsetSet(mixed $offset, mixed $value): void",
+            "public offsetUnset(mixed $offset): void",
+            "public toArray(): array"
+        ]
+    },
+    "Quittio\\Core\\View\\Model\\DeliveryView": {
+        "kind": "final class",
+        "extends": "Quittio\\Core\\View\\ViewNode",
+        "implements": [
+            "ArrayAccess",
+            "Countable",
+            "IteratorAggregate",
+            "JsonSerializable",
+            "Traversable"
+        ],
+        "methods": [
+            "public __construct(array $data, Quittio\\Core\\View\\AccessLog $log, string $path = \"\")",
+            "public __get(string $name): mixed",
+            "public __isset(string $name): bool",
+            "public count(): int",
+            "public getIterator(): Traversable",
+            "public isEmpty(): bool",
+            "public jsonSerialize(): mixed",
+            "public offsetExists(mixed $offset): bool",
+            "public offsetGet(mixed $offset): mixed",
+            "public offsetSet(mixed $offset, mixed $value): void",
+            "public offsetUnset(mixed $offset): void",
+            "public toArray(): array"
+        ]
+    },
+    "Quittio\\Core\\View\\Model\\DescribedAmountView": {
+        "kind": "final class",
+        "extends": "Quittio\\Core\\View\\ViewNode",
+        "implements": [
+            "ArrayAccess",
+            "Countable",
+            "IteratorAggregate",
+            "JsonSerializable",
+            "Traversable"
+        ],
+        "methods": [
+            "public __construct(array $data, Quittio\\Core\\View\\AccessLog $log, string $path = \"\")",
+            "public __get(string $name): mixed",
+            "public __isset(string $name): bool",
+            "public count(): int",
+            "public getIterator(): Traversable",
+            "public isEmpty(): bool",
+            "public jsonSerialize(): mixed",
+            "public offsetExists(mixed $offset): bool",
+            "public offsetGet(mixed $offset): mixed",
+            "public offsetSet(mixed $offset, mixed $value): void",
+            "public offsetUnset(mixed $offset): void",
+            "public toArray(): array"
+        ]
+    },
+    "Quittio\\Core\\View\\Model\\DescriptionView": {
+        "kind": "final class",
+        "extends": "Quittio\\Core\\View\\ViewNode",
+        "implements": [
+            "ArrayAccess",
+            "Countable",
+            "IteratorAggregate",
+            "JsonSerializable",
+            "Traversable"
+        ],
+        "methods": [
+            "public __construct(array $data, Quittio\\Core\\View\\AccessLog $log, string $path = \"\")",
+            "public __get(string $name): mixed",
+            "public __isset(string $name): bool",
+            "public count(): int",
+            "public getIterator(): Traversable",
+            "public isEmpty(): bool",
+            "public jsonSerialize(): mixed",
+            "public offsetExists(mixed $offset): bool",
+            "public offsetGet(mixed $offset): mixed",
+            "public offsetSet(mixed $offset, mixed $value): void",
+            "public offsetUnset(mixed $offset): void",
+            "public toArray(): array"
+        ]
+    },
+    "Quittio\\Core\\View\\Model\\DesignView": {
+        "kind": "final class",
+        "extends": "Quittio\\Core\\View\\ViewNode",
+        "implements": [
+            "ArrayAccess",
+            "Countable",
+            "IteratorAggregate",
+            "JsonSerializable",
+            "Traversable"
+        ],
+        "methods": [
+            "public __construct(array $data, Quittio\\Core\\View\\AccessLog $log, string $path = \"\")",
+            "public __get(string $name): mixed",
+            "public __isset(string $name): bool",
+            "public count(): int",
+            "public getIterator(): Traversable",
+            "public isEmpty(): bool",
+            "public jsonSerialize(): mixed",
+            "public offsetExists(mixed $offset): bool",
+            "public offsetGet(mixed $offset): mixed",
+            "public offsetSet(mixed $offset, mixed $value): void",
+            "public offsetUnset(mixed $offset): void",
+            "public toArray(): array"
+        ]
+    },
+    "Quittio\\Core\\View\\Model\\DirectDebitView": {
+        "kind": "final class",
+        "extends": "Quittio\\Core\\View\\ViewNode",
+        "implements": [
+            "ArrayAccess",
+            "Countable",
+            "IteratorAggregate",
+            "JsonSerializable",
+            "Traversable"
+        ],
+        "methods": [
+            "public __construct(array $data, Quittio\\Core\\View\\AccessLog $log, string $path = \"\")",
+            "public __get(string $name): mixed",
+            "public __isset(string $name): bool",
+            "public count(): int",
+            "public getIterator(): Traversable",
+            "public isEmpty(): bool",
+            "public jsonSerialize(): mixed",
+            "public offsetExists(mixed $offset): bool",
+            "public offsetGet(mixed $offset): mixed",
+            "public offsetSet(mixed $offset, mixed $value): void",
+            "public offsetUnset(mixed $offset): void",
+            "public toArray(): array"
+        ]
+    },
+    "Quittio\\Core\\View\\Model\\DiscountView": {
+        "kind": "final class",
+        "extends": "Quittio\\Core\\View\\ViewNode",
+        "implements": [
+            "ArrayAccess",
+            "Countable",
+            "IteratorAggregate",
+            "JsonSerializable",
+            "Traversable"
+        ],
+        "methods": [
+            "public __construct(array $data, Quittio\\Core\\View\\AccessLog $log, string $path = \"\")",
+            "public __get(string $name): mixed",
+            "public __isset(string $name): bool",
+            "public count(): int",
+            "public getIterator(): Traversable",
+            "public isEmpty(): bool",
+            "public jsonSerialize(): mixed",
+            "public offsetExists(mixed $offset): bool",
+            "public offsetGet(mixed $offset): mixed",
+            "public offsetSet(mixed $offset, mixed $value): void",
+            "public offsetUnset(mixed $offset): void",
+            "public toArray(): array"
+        ]
+    },
+    "Quittio\\Core\\View\\Model\\DocumentInfoView": {
+        "kind": "final class",
+        "extends": "Quittio\\Core\\View\\ViewNode",
+        "implements": [
+            "ArrayAccess",
+            "Countable",
+            "IteratorAggregate",
+            "JsonSerializable",
+            "Traversable"
+        ],
+        "methods": [
+            "public __construct(array $data, Quittio\\Core\\View\\AccessLog $log, string $path = \"\")",
+            "public __get(string $name): mixed",
+            "public __isset(string $name): bool",
+            "public count(): int",
+            "public getIterator(): Traversable",
+            "public isEmpty(): bool",
+            "public jsonSerialize(): mixed",
+            "public offsetExists(mixed $offset): bool",
+            "public offsetGet(mixed $offset): mixed",
+            "public offsetSet(mixed $offset, mixed $value): void",
+            "public offsetUnset(mixed $offset): void",
+            "public toArray(): array"
+        ]
+    },
+    "Quittio\\Core\\View\\Model\\DocumentView": {
+        "kind": "final class",
+        "extends": "Quittio\\Core\\View\\ViewNode",
+        "implements": [
+            "ArrayAccess",
+            "Countable",
+            "IteratorAggregate",
+            "JsonSerializable",
+            "Traversable"
+        ],
+        "methods": [
+            "public __construct(array $data, Quittio\\Core\\View\\AccessLog $log, string $path = \"\")",
+            "public __get(string $name): mixed",
+            "public __isset(string $name): bool",
+            "public count(): int",
+            "public getIterator(): Traversable",
+            "public isEmpty(): bool",
+            "public jsonSerialize(): mixed",
+            "public offsetExists(mixed $offset): bool",
+            "public offsetGet(mixed $offset): mixed",
+            "public offsetSet(mixed $offset, mixed $value): void",
+            "public offsetUnset(mixed $offset): void",
+            "public toArray(): array"
+        ]
+    },
+    "Quittio\\Core\\View\\Model\\DunningView": {
+        "kind": "final class",
+        "extends": "Quittio\\Core\\View\\ViewNode",
+        "implements": [
+            "ArrayAccess",
+            "Countable",
+            "IteratorAggregate",
+            "JsonSerializable",
+            "Traversable"
+        ],
+        "methods": [
+            "public __construct(array $data, Quittio\\Core\\View\\AccessLog $log, string $path = \"\")",
+            "public __get(string $name): mixed",
+            "public __isset(string $name): bool",
+            "public count(): int",
+            "public getIterator(): Traversable",
+            "public isEmpty(): bool",
+            "public jsonSerialize(): mixed",
+            "public offsetExists(mixed $offset): bool",
+            "public offsetGet(mixed $offset): mixed",
+            "public offsetSet(mixed $offset, mixed $value): void",
+            "public offsetUnset(mixed $offset): void",
+            "public toArray(): array"
+        ]
+    },
+    "Quittio\\Core\\View\\Model\\InterestView": {
+        "kind": "final class",
+        "extends": "Quittio\\Core\\View\\ViewNode",
+        "implements": [
+            "ArrayAccess",
+            "Countable",
+            "IteratorAggregate",
+            "JsonSerializable",
+            "Traversable"
+        ],
+        "methods": [
+            "public __construct(array $data, Quittio\\Core\\View\\AccessLog $log, string $path = \"\")",
+            "public __get(string $name): mixed",
+            "public __isset(string $name): bool",
+            "public count(): int",
+            "public getIterator(): Traversable",
+            "public isEmpty(): bool",
+            "public jsonSerialize(): mixed",
+            "public offsetExists(mixed $offset): bool",
+            "public offsetGet(mixed $offset): mixed",
+            "public offsetSet(mixed $offset, mixed $value): void",
+            "public offsetUnset(mixed $offset): void",
+            "public toArray(): array"
+        ]
+    },
+    "Quittio\\Core\\View\\Model\\LineAllowanceChargeView": {
+        "kind": "final class",
+        "extends": "Quittio\\Core\\View\\ViewNode",
+        "implements": [
+            "ArrayAccess",
+            "Countable",
+            "IteratorAggregate",
+            "JsonSerializable",
+            "Traversable"
+        ],
+        "methods": [
+            "public __construct(array $data, Quittio\\Core\\View\\AccessLog $log, string $path = \"\")",
+            "public __get(string $name): mixed",
+            "public __isset(string $name): bool",
+            "public count(): int",
+            "public getIterator(): Traversable",
+            "public isEmpty(): bool",
+            "public jsonSerialize(): mixed",
+            "public offsetExists(mixed $offset): bool",
+            "public offsetGet(mixed $offset): mixed",
+            "public offsetSet(mixed $offset, mixed $value): void",
+            "public offsetUnset(mixed $offset): void",
+            "public toArray(): array"
+        ]
+    },
+    "Quittio\\Core\\View\\Model\\LineGroupView": {
+        "kind": "final class",
+        "extends": "Quittio\\Core\\View\\ViewNode",
+        "implements": [
+            "ArrayAccess",
+            "Countable",
+            "IteratorAggregate",
+            "JsonSerializable",
+            "Traversable"
+        ],
+        "methods": [
+            "public __construct(array $data, Quittio\\Core\\View\\AccessLog $log, string $path = \"\")",
+            "public __get(string $name): mixed",
+            "public __isset(string $name): bool",
+            "public count(): int",
+            "public getIterator(): Traversable",
+            "public isEmpty(): bool",
+            "public jsonSerialize(): mixed",
+            "public offsetExists(mixed $offset): bool",
+            "public offsetGet(mixed $offset): mixed",
+            "public offsetSet(mixed $offset, mixed $value): void",
+            "public offsetUnset(mixed $offset): void",
+            "public toArray(): array"
+        ]
+    },
+    "Quittio\\Core\\View\\Model\\LineOptionsView": {
+        "kind": "final class",
+        "extends": "Quittio\\Core\\View\\ViewNode",
+        "implements": [
+            "ArrayAccess",
+            "Countable",
+            "IteratorAggregate",
+            "JsonSerializable",
+            "Traversable"
+        ],
+        "methods": [
+            "public __construct(array $data, Quittio\\Core\\View\\AccessLog $log, string $path = \"\")",
+            "public __get(string $name): mixed",
+            "public __isset(string $name): bool",
+            "public count(): int",
+            "public getIterator(): Traversable",
+            "public isEmpty(): bool",
+            "public jsonSerialize(): mixed",
+            "public offsetExists(mixed $offset): bool",
+            "public offsetGet(mixed $offset): mixed",
+            "public offsetSet(mixed $offset, mixed $value): void",
+            "public offsetUnset(mixed $offset): void",
+            "public toArray(): array"
+        ]
+    },
+    "Quittio\\Core\\View\\Model\\LineView": {
+        "kind": "final class",
+        "extends": "Quittio\\Core\\View\\ViewNode",
+        "implements": [
+            "ArrayAccess",
+            "Countable",
+            "IteratorAggregate",
+            "JsonSerializable",
+            "Traversable"
+        ],
+        "methods": [
+            "public __construct(array $data, Quittio\\Core\\View\\AccessLog $log, string $path = \"\")",
+            "public __get(string $name): mixed",
+            "public __isset(string $name): bool",
+            "public count(): int",
+            "public getIterator(): Traversable",
+            "public isEmpty(): bool",
+            "public jsonSerialize(): mixed",
+            "public offsetExists(mixed $offset): bool",
+            "public offsetGet(mixed $offset): mixed",
+            "public offsetSet(mixed $offset, mixed $value): void",
+            "public offsetUnset(mixed $offset): void",
+            "public toArray(): array"
+        ]
+    },
+    "Quittio\\Core\\View\\Model\\MetaView": {
+        "kind": "final class",
+        "extends": "Quittio\\Core\\View\\ViewNode",
+        "implements": [
+            "ArrayAccess",
+            "Countable",
+            "IteratorAggregate",
+            "JsonSerializable",
+            "Traversable"
+        ],
+        "methods": [
+            "public __construct(array $data, Quittio\\Core\\View\\AccessLog $log, string $path = \"\")",
+            "public __get(string $name): mixed",
+            "public __isset(string $name): bool",
+            "public count(): int",
+            "public getIterator(): Traversable",
+            "public isEmpty(): bool",
+            "public jsonSerialize(): mixed",
+            "public offsetExists(mixed $offset): bool",
+            "public offsetGet(mixed $offset): mixed",
+            "public offsetSet(mixed $offset, mixed $value): void",
+            "public offsetUnset(mixed $offset): void",
+            "public toArray(): array"
+        ]
+    },
+    "Quittio\\Core\\View\\Model\\NoteView": {
+        "kind": "final class",
+        "extends": "Quittio\\Core\\View\\ViewNode",
+        "implements": [
+            "ArrayAccess",
+            "Countable",
+            "IteratorAggregate",
+            "JsonSerializable",
+            "Traversable"
+        ],
+        "methods": [
+            "public __construct(array $data, Quittio\\Core\\View\\AccessLog $log, string $path = \"\")",
+            "public __get(string $name): mixed",
+            "public __isset(string $name): bool",
+            "public count(): int",
+            "public getIterator(): Traversable",
+            "public isEmpty(): bool",
+            "public jsonSerialize(): mixed",
+            "public offsetExists(mixed $offset): bool",
+            "public offsetGet(mixed $offset): mixed",
+            "public offsetSet(mixed $offset, mixed $value): void",
+            "public offsetUnset(mixed $offset): void",
+            "public toArray(): array"
+        ]
+    },
+    "Quittio\\Core\\View\\Model\\OpenItemView": {
+        "kind": "final class",
+        "extends": "Quittio\\Core\\View\\ViewNode",
+        "implements": [
+            "ArrayAccess",
+            "Countable",
+            "IteratorAggregate",
+            "JsonSerializable",
+            "Traversable"
+        ],
+        "methods": [
+            "public __construct(array $data, Quittio\\Core\\View\\AccessLog $log, string $path = \"\")",
+            "public __get(string $name): mixed",
+            "public __isset(string $name): bool",
+            "public count(): int",
+            "public getIterator(): Traversable",
+            "public isEmpty(): bool",
+            "public jsonSerialize(): mixed",
+            "public offsetExists(mixed $offset): bool",
+            "public offsetGet(mixed $offset): mixed",
+            "public offsetSet(mixed $offset, mixed $value): void",
+            "public offsetUnset(mixed $offset): void",
+            "public toArray(): array"
+        ]
+    },
+    "Quittio\\Core\\View\\Model\\PackageView": {
+        "kind": "final class",
+        "extends": "Quittio\\Core\\View\\ViewNode",
+        "implements": [
+            "ArrayAccess",
+            "Countable",
+            "IteratorAggregate",
+            "JsonSerializable",
+            "Traversable"
+        ],
+        "methods": [
+            "public __construct(array $data, Quittio\\Core\\View\\AccessLog $log, string $path = \"\")",
+            "public __get(string $name): mixed",
+            "public __isset(string $name): bool",
+            "public count(): int",
+            "public getIterator(): Traversable",
+            "public isEmpty(): bool",
+            "public jsonSerialize(): mixed",
+            "public offsetExists(mixed $offset): bool",
+            "public offsetGet(mixed $offset): mixed",
+            "public offsetSet(mixed $offset, mixed $value): void",
+            "public offsetUnset(mixed $offset): void",
+            "public toArray(): array"
+        ]
+    },
+    "Quittio\\Core\\View\\Model\\PartyView": {
+        "kind": "final class",
+        "extends": "Quittio\\Core\\View\\ViewNode",
+        "implements": [
+            "ArrayAccess",
+            "Countable",
+            "IteratorAggregate",
+            "JsonSerializable",
+            "Traversable"
+        ],
+        "methods": [
+            "public __construct(array $data, Quittio\\Core\\View\\AccessLog $log, string $path = \"\")",
+            "public __get(string $name): mixed",
+            "public __isset(string $name): bool",
+            "public count(): int",
+            "public getIterator(): Traversable",
+            "public isEmpty(): bool",
+            "public jsonSerialize(): mixed",
+            "public offsetExists(mixed $offset): bool",
+            "public offsetGet(mixed $offset): mixed",
+            "public offsetSet(mixed $offset, mixed $value): void",
+            "public offsetUnset(mixed $offset): void",
+            "public toArray(): array"
+        ]
+    },
+    "Quittio\\Core\\View\\Model\\PayeeView": {
+        "kind": "final class",
+        "extends": "Quittio\\Core\\View\\ViewNode",
+        "implements": [
+            "ArrayAccess",
+            "Countable",
+            "IteratorAggregate",
+            "JsonSerializable",
+            "Traversable"
+        ],
+        "methods": [
+            "public __construct(array $data, Quittio\\Core\\View\\AccessLog $log, string $path = \"\")",
+            "public __get(string $name): mixed",
+            "public __isset(string $name): bool",
+            "public count(): int",
+            "public getIterator(): Traversable",
+            "public isEmpty(): bool",
+            "public jsonSerialize(): mixed",
+            "public offsetExists(mixed $offset): bool",
+            "public offsetGet(mixed $offset): mixed",
+            "public offsetSet(mixed $offset, mixed $value): void",
+            "public offsetUnset(mixed $offset): void",
+            "public toArray(): array"
+        ]
+    },
+    "Quittio\\Core\\View\\Model\\PaymentTermsView": {
+        "kind": "final class",
+        "extends": "Quittio\\Core\\View\\ViewNode",
+        "implements": [
+            "ArrayAccess",
+            "Countable",
+            "IteratorAggregate",
+            "JsonSerializable",
+            "Traversable"
+        ],
+        "methods": [
+            "public __construct(array $data, Quittio\\Core\\View\\AccessLog $log, string $path = \"\")",
+            "public __get(string $name): mixed",
+            "public __isset(string $name): bool",
+            "public count(): int",
+            "public getIterator(): Traversable",
+            "public isEmpty(): bool",
+            "public jsonSerialize(): mixed",
+            "public offsetExists(mixed $offset): bool",
+            "public offsetGet(mixed $offset): mixed",
+            "public offsetSet(mixed $offset, mixed $value): void",
+            "public offsetUnset(mixed $offset): void",
+            "public toArray(): array"
+        ]
+    },
+    "Quittio\\Core\\View\\Model\\PaymentView": {
+        "kind": "final class",
+        "extends": "Quittio\\Core\\View\\ViewNode",
+        "implements": [
+            "ArrayAccess",
+            "Countable",
+            "IteratorAggregate",
+            "JsonSerializable",
+            "Traversable"
+        ],
+        "methods": [
+            "public __construct(array $data, Quittio\\Core\\View\\AccessLog $log, string $path = \"\")",
+            "public __get(string $name): mixed",
+            "public __isset(string $name): bool",
+            "public count(): int",
+            "public getIterator(): Traversable",
+            "public isEmpty(): bool",
+            "public jsonSerialize(): mixed",
+            "public offsetExists(mixed $offset): bool",
+            "public offsetGet(mixed $offset): mixed",
+            "public offsetSet(mixed $offset, mixed $value): void",
+            "public offsetUnset(mixed $offset): void",
+            "public toArray(): array"
+        ]
+    },
+    "Quittio\\Core\\View\\Model\\PrecedingInvoiceView": {
+        "kind": "final class",
+        "extends": "Quittio\\Core\\View\\ViewNode",
+        "implements": [
+            "ArrayAccess",
+            "Countable",
+            "IteratorAggregate",
+            "JsonSerializable",
+            "Traversable"
+        ],
+        "methods": [
+            "public __construct(array $data, Quittio\\Core\\View\\AccessLog $log, string $path = \"\")",
+            "public __get(string $name): mixed",
+            "public __isset(string $name): bool",
+            "public count(): int",
+            "public getIterator(): Traversable",
+            "public isEmpty(): bool",
+            "public jsonSerialize(): mixed",
+            "public offsetExists(mixed $offset): bool",
+            "public offsetGet(mixed $offset): mixed",
+            "public offsetSet(mixed $offset, mixed $value): void",
+            "public offsetUnset(mixed $offset): void",
+            "public toArray(): array"
+        ]
+    },
+    "Quittio\\Core\\View\\Model\\QrCodeView": {
+        "kind": "final class",
+        "extends": "Quittio\\Core\\View\\ViewNode",
+        "implements": [
+            "ArrayAccess",
+            "Countable",
+            "IteratorAggregate",
+            "JsonSerializable",
+            "Traversable"
+        ],
+        "methods": [
+            "public __construct(array $data, Quittio\\Core\\View\\AccessLog $log, string $path = \"\")",
+            "public __get(string $name): mixed",
+            "public __isset(string $name): bool",
+            "public count(): int",
+            "public getIterator(): Traversable",
+            "public isEmpty(): bool",
+            "public jsonSerialize(): mixed",
+            "public offsetExists(mixed $offset): bool",
+            "public offsetGet(mixed $offset): mixed",
+            "public offsetSet(mixed $offset, mixed $value): void",
+            "public offsetUnset(mixed $offset): void",
+            "public toArray(): array"
+        ]
+    },
+    "Quittio\\Core\\View\\Model\\ReferenceView": {
+        "kind": "final class",
+        "extends": "Quittio\\Core\\View\\ViewNode",
+        "implements": [
+            "ArrayAccess",
+            "Countable",
+            "IteratorAggregate",
+            "JsonSerializable",
+            "Traversable"
+        ],
+        "methods": [
+            "public __construct(array $data, Quittio\\Core\\View\\AccessLog $log, string $path = \"\")",
+            "public __get(string $name): mixed",
+            "public __isset(string $name): bool",
+            "public count(): int",
+            "public getIterator(): Traversable",
+            "public isEmpty(): bool",
+            "public jsonSerialize(): mixed",
+            "public offsetExists(mixed $offset): bool",
+            "public offsetGet(mixed $offset): mixed",
+            "public offsetSet(mixed $offset, mixed $value): void",
+            "public offsetUnset(mixed $offset): void",
+            "public toArray(): array"
+        ]
+    },
+    "Quittio\\Core\\View\\Model\\StatementView": {
+        "kind": "final class",
+        "extends": "Quittio\\Core\\View\\ViewNode",
+        "implements": [
+            "ArrayAccess",
+            "Countable",
+            "IteratorAggregate",
+            "JsonSerializable",
+            "Traversable"
+        ],
+        "methods": [
+            "public __construct(array $data, Quittio\\Core\\View\\AccessLog $log, string $path = \"\")",
+            "public __get(string $name): mixed",
+            "public __isset(string $name): bool",
+            "public count(): int",
+            "public getIterator(): Traversable",
+            "public isEmpty(): bool",
+            "public jsonSerialize(): mixed",
+            "public offsetExists(mixed $offset): bool",
+            "public offsetGet(mixed $offset): mixed",
+            "public offsetSet(mixed $offset, mixed $value): void",
+            "public offsetUnset(mixed $offset): void",
+            "public toArray(): array"
+        ]
+    },
+    "Quittio\\Core\\View\\Model\\TaxRepresentativeView": {
+        "kind": "final class",
+        "extends": "Quittio\\Core\\View\\ViewNode",
+        "implements": [
+            "ArrayAccess",
+            "Countable",
+            "IteratorAggregate",
+            "JsonSerializable",
+            "Traversable"
+        ],
+        "methods": [
+            "public __construct(array $data, Quittio\\Core\\View\\AccessLog $log, string $path = \"\")",
+            "public __get(string $name): mixed",
+            "public __isset(string $name): bool",
+            "public count(): int",
+            "public getIterator(): Traversable",
+            "public isEmpty(): bool",
+            "public jsonSerialize(): mixed",
+            "public offsetExists(mixed $offset): bool",
+            "public offsetGet(mixed $offset): mixed",
+            "public offsetSet(mixed $offset, mixed $value): void",
+            "public offsetUnset(mixed $offset): void",
+            "public toArray(): array"
+        ]
+    },
+    "Quittio\\Core\\View\\Model\\TextsView": {
+        "kind": "final class",
+        "extends": "Quittio\\Core\\View\\ViewNode",
+        "implements": [
+            "ArrayAccess",
+            "Countable",
+            "IteratorAggregate",
+            "JsonSerializable",
+            "Traversable"
+        ],
+        "methods": [
+            "public __construct(array $data, Quittio\\Core\\View\\AccessLog $log, string $path = \"\")",
+            "public __get(string $name): mixed",
+            "public __isset(string $name): bool",
+            "public count(): int",
+            "public getIterator(): Traversable",
+            "public isEmpty(): bool",
+            "public jsonSerialize(): mixed",
+            "public offsetExists(mixed $offset): bool",
+            "public offsetGet(mixed $offset): mixed",
+            "public offsetSet(mixed $offset, mixed $value): void",
+            "public offsetUnset(mixed $offset): void",
+            "public toArray(): array"
+        ]
+    },
+    "Quittio\\Core\\View\\Model\\TotalsView": {
+        "kind": "final class",
+        "extends": "Quittio\\Core\\View\\ViewNode",
+        "implements": [
+            "ArrayAccess",
+            "Countable",
+            "IteratorAggregate",
+            "JsonSerializable",
+            "Traversable"
+        ],
+        "methods": [
+            "public __construct(array $data, Quittio\\Core\\View\\AccessLog $log, string $path = \"\")",
+            "public __get(string $name): mixed",
+            "public __isset(string $name): bool",
+            "public count(): int",
+            "public getIterator(): Traversable",
+            "public isEmpty(): bool",
+            "public jsonSerialize(): mixed",
+            "public offsetExists(mixed $offset): bool",
+            "public offsetGet(mixed $offset): mixed",
+            "public offsetSet(mixed $offset, mixed $value): void",
+            "public offsetUnset(mixed $offset): void",
+            "public toArray(): array"
+        ]
+    },
+    "Quittio\\Core\\View\\Model\\UnitView": {
+        "kind": "final class",
+        "extends": "Quittio\\Core\\View\\ViewNode",
+        "implements": [
+            "ArrayAccess",
+            "Countable",
+            "IteratorAggregate",
+            "JsonSerializable",
+            "Traversable"
+        ],
+        "methods": [
+            "public __construct(array $data, Quittio\\Core\\View\\AccessLog $log, string $path = \"\")",
+            "public __get(string $name): mixed",
+            "public __isset(string $name): bool",
+            "public count(): int",
+            "public getIterator(): Traversable",
+            "public isEmpty(): bool",
+            "public jsonSerialize(): mixed",
+            "public offsetExists(mixed $offset): bool",
+            "public offsetGet(mixed $offset): mixed",
+            "public offsetSet(mixed $offset, mixed $value): void",
+            "public offsetUnset(mixed $offset): void",
+            "public toArray(): array"
+        ]
+    },
+    "Quittio\\Core\\View\\Model\\VatRowView": {
+        "kind": "final class",
+        "extends": "Quittio\\Core\\View\\ViewNode",
+        "implements": [
+            "ArrayAccess",
+            "Countable",
+            "IteratorAggregate",
+            "JsonSerializable",
+            "Traversable"
+        ],
+        "methods": [
+            "public __construct(array $data, Quittio\\Core\\View\\AccessLog $log, string $path = \"\")",
+            "public __get(string $name): mixed",
+            "public __isset(string $name): bool",
+            "public count(): int",
+            "public getIterator(): Traversable",
+            "public isEmpty(): bool",
+            "public jsonSerialize(): mixed",
+            "public offsetExists(mixed $offset): bool",
+            "public offsetGet(mixed $offset): mixed",
+            "public offsetSet(mixed $offset, mixed $value): void",
+            "public offsetUnset(mixed $offset): void",
+            "public toArray(): array"
+        ]
+    },
+    "Quittio\\Core\\View\\Model\\ViewList": {
+        "kind": "final class",
+        "extends": "Quittio\\Core\\View\\ViewNode",
+        "implements": [
+            "ArrayAccess",
+            "Countable",
+            "IteratorAggregate",
+            "JsonSerializable",
+            "Traversable"
+        ],
+        "methods": [
+            "public __get(string $name): mixed",
+            "public __isset(string $name): bool",
+            "public count(): int",
+            "public getIterator(): Traversable",
+            "public isEmpty(): bool",
+            "public jsonSerialize(): mixed",
+            "public offsetExists(mixed $offset): bool",
+            "public offsetGet(mixed $offset): mixed",
+            "public offsetSet(mixed $offset, mixed $value): void",
+            "public offsetUnset(mixed $offset): void",
+            "public toArray(): array"
+        ]
+    },
     "Quittio\\Core\\View\\ResolvedLogo": {
         "kind": "final readonly class",
         "properties": [

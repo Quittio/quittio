@@ -23,13 +23,14 @@ The public API is everything below that is not marked `@internal`:
 | Configuration | The keys of `config/quittio.php` and of the country packs (`quittio.countries.de`, `config/quittio/countries/de.php`), their meaning and defaults, and the environment variables. A renamed key or variable keeps working under its old name until the next major release. |
 | Rule codes | Codes of findings, both official (`BR-CO-10`, `BR-DE-1`, `PEPPOL-EN16931-R001`) and Quittio's (`QUITTIO-…`). A code keeps its meaning; its message text is not covered. Rule overrides (`validation.rules`, `Quittio::extend('rule', …)`) address rules by these codes. |
 | Events | Class names and payload properties of the events in `Quittio\Laravel\Events` |
+| View model | The keys templates read (`$invoice->seller->name`, also in array syntax) and their types, described by the node classes in `Quittio\Core\View\Model` ([Typed nodes](templates.md#typed-nodes)). New keys may be added. |
 | Stored data | The snapshot formats of `InvoiceData::toSnapshot()` and `DocumentData::toSnapshot()` and the array format of `RenderOptions::toArray()`. A new version comes with an upcaster or a reader for the old one, so stored invoices and queued jobs stay readable. |
 | Commands | Names, arguments, options and exit codes of the Artisan commands |
 | Output | XML that conforms to the profile. The XML of the same data changes only when a standard or a profile changes, or to fix a conformance error. |
 
 ## What it does not cover
 
-- Classes and methods marked `@internal`, e.g. `XPathReader`, `XmlBuilder`, the PDF parser in `Pdf\Parsing`, `ConfigMapper`, `CountryPackDiscovery`, the preview controller and the command classes. Use the public contract instead: implement `FormatReader` instead of extending `XPathReader`, call the commands instead of their classes.
+- Classes and methods marked `@internal`, e.g. `XPathReader`, `XmlBuilder`, the PDF parser in `Pdf\Parsing`, `ConfigMapper`, `CountryPackDiscovery`, the section factories of the view model in `View\Internal`, the preview controller and the command classes. Use the public contract instead: implement `FormatReader` instead of extending `XPathReader`, call the commands instead of their classes.
 - Private and protected members of final classes.
 - The markup and CSS of the shipped templates. Templates you published (`--tag=quittio-views`) are yours; a release lists template changes so you can merge them.
 - The bytes of rendered PDFs, the wording of messages and labels, and the exact layout.
