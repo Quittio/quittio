@@ -4,6 +4,8 @@ All notable changes to this project are documented in this file. The format foll
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-17
+
 ### Added
 
 - Typed view model: every node that templates receive has a class in `Quittio\Core\View\Model` (`PartyView`, `AddressView`, `LineView`, `VatRowView`, `TotalsView`, `PaymentView`, `DesignView`, `DocumentInfoView` …; lists are `ViewList<T>`, e.g. `ViewList<LineView>`) with its keys as typed properties, so IDEs and PHPStan know that `$invoice->totals->amountDue` is a `?FormattedValue`. The nodes are `ViewNode` objects over the same data: published Blade and PHP templates, array syntax, `toArray()` and the mandatory field guard work unchanged ([Typed nodes](docs/templates.md#typed-nodes)). The compatibility promise now names the keys and types of the view model.
@@ -249,7 +251,8 @@ First release.
 - `pdf.paper` and the VIES verification (`validation.drivers.vies.enabled`) take effect; file names of XML-only formats no longer contain a raw translation key.
 - Watermarks (draft and preview PDFs) were never printed: mPDF needs `showWatermarkText`, and PDF/A forbids their transparency. Watermarked PDFs without embedded XML are now rendered without PDF/A.
 
-[Unreleased]: https://github.com/Quittio/quittio/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/Quittio/quittio/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/Quittio/quittio/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/Quittio/quittio/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/Quittio/quittio/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/Quittio/quittio/releases/tag/v0.1.0
