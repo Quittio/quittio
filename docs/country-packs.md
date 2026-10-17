@@ -249,8 +249,24 @@ The severity follows the flags of the official Schematron, the rule file of the 
 | `BR-DE-28` | warning | seller e-mail (BT-43) without exactly one `@` surrounded by at least two characters |
 | `BR-DE-30`, `BR-DE-31` | error | direct debit (BG-19) without creditor identifier (BT-90) or debited account (BT-91) |
 | `BR-DE-TMP-32` | info (flag `information` in the Schematron) | no delivery date (BT-72), invoicing period (BG-14) or period on every line (BG-26) |
+| `BR-DEX-01` | not checked | guaranteed by `MimeType`: its codes are a subset of those the extension allows (the extension also allows `application/xml`, which `MimeType` does not offer) |
+| `BR-DEX-02` | warning | extension, UBL: the net amount of a line (BT-131) with sub lines is not the sum of the net amounts of its direct sub lines; replaces `QUITTIO-SUBLINES` |
+| `BR-DEX-03` | not checked | guaranteed by the data model: every sub line has exactly one `LineVat`, which the UBL writer writes as one VAT information (BG-DEX-06) |
+| `BR-DEX-04` | error | extension: scheme of a seller (BT-29-1), buyer (BT-46-1) or payee (BT-60-1) identifier neither in ISO/IEC 6523 nor `XR01` to `XR03`; `SEPA` is accepted for seller and payee, except in CII; replaces `BR-CL-10` |
+| `BR-DEX-05` | error | extension: scheme of a legal registration identifier (BT-30-1, BT-47-1, BT-61-1) neither in ISO/IEC 6523 nor `XR01` to `XR03`; replaces `BR-CL-11` |
+| `BR-DEX-06` | error | extension: scheme of an item standard identifier (BT-157-1) neither in ISO/IEC 6523 nor `XR01` to `XR03`; replaces `BR-CL-21` |
+| `BR-DEX-07` | error | extension: scheme of an electronic address (BT-34-1, BT-49-1) neither in the EAS code list nor `XR01` to `XR03`; replaces `BR-CL-25` |
+| `BR-DEX-08` | error | extension: scheme of the delivery location identifier (BT-71-1) neither in ISO/IEC 6523 nor `XR01` to `XR03`; replaces `BR-CL-26` |
+| `BR-DEX-09` | error | extension, UBL: amount due (BT-115) is not BT-112 − BT-113 + BT-114 + the third party payment amounts (BT-DEX-002); replaces `BR-CO-16` |
+| `BR-DEX-10` | error | extension, UBL: a third party payment (BG-DEX-09) without type (BT-DEX-001) |
+| `BR-DEX-11` | not checked | guaranteed by the data model: `ThirdPartyPayment` requires an amount (BT-DEX-002), and the reader skips payments without one |
+| `BR-DEX-12` | error | extension, UBL: a third party payment (BG-DEX-09) without description (BT-DEX-003) |
+| `BR-DEX-13` | error | extension, UBL: a third party payment amount (BT-DEX-002) with more than two decimals; amounts created with `Amount::of()` always have two, and a `Money` with more cannot be written |
+| `BR-DEX-14` | error | extension, UBL: a third party payment amount (BT-DEX-002) in another currency than the invoice currency (BT-5) |
 | `BR-DEX-15` | error | sub lines in XRechnung CII (sub lines need the extension in UBL) |
 | `DE-XRECHNUNG-EXT-01` | error | a credit note in profile `xrechnung-extension` with syntax UBL; the official validator configuration has no scenario for it. Cancel with the strategy `negative_invoice` (type code 380, negative amounts). |
+
+The `BR-DEX-…` rules apply only to the profile `xrechnung-extension`; those marked UBL are skipped when the XML is written in CII, where the official Schematron does not have them. As in the official validator configuration, where the replaced rules are only an information, the extension replaces `BR-CL-10`, `-11`, `-21`, `-25` and `-26` with `BR-DEX-04` to `BR-DEX-08` and, in UBL, `BR-CO-16` with `BR-DEX-09` and `QUITTIO-SUBLINES` with `BR-DEX-02` (`XRechnung30Extension::replacedRules()`), so a violation is reported once, with the official code.
 
 `#SKONTO#` lines state a cash discount (Skonto) in a form software can read: `TAGE` is the number of days, `PROZENT` the percentage and `BASISBETRAG` the base amount. Quittio writes structured cash discounts itself (`#SKONTO#TAGE=7#PROZENT=2.00#`), so `BR-DE-18` only concerns lines you put into the payment terms text yourself.
 
@@ -683,7 +699,7 @@ The validation levels are described in [Validation](validation.md); see also [Va
 
 The pack ships German and English catalogs in `resources/lang/{de,en}/`:
 
-- `rules.php`: message and hint of every rule (`BR-DE-*`, `BR-DEX-15`, `DE-XRECHNUNG-EXT-01`, `DE-USTG-*`, `DE-LEITWEG-ID`, `DE-LEITWEG-ID-SUSPECT`, `DE-TAX-NUMBER`);
+- `rules.php`: message and hint of every rule (`BR-DE-*`, `BR-DEX-*`, `DE-XRECHNUNG-EXT-01`, `DE-USTG-*`, `DE-LEITWEG-ID`, `DE-LEITWEG-ID-SUSPECT`, `DE-TAX-NUMBER`);
 - `tax.php`: the exemption reason texts of the presets, including `de.exempt` for `VatPreset::exempt()` (placeholder `:paragraph`).
 
 They are registered as the namespace `quittio-de` (e.g. `quittio-de::rules.DE-USTG-03.message`). `CountryDE::registerTranslations()` registers them lazily, so presets work without a `Quittio` instance. Other locales fall back to English. With Laravel, Laravel's translator is used, so the usual override files apply: `lang/vendor/quittio-de/{locale}/rules.php` and `tax.php`, also for additional locales.
@@ -989,6 +1005,7 @@ Profiles declare what they can transmit with interfaces in `Quittio\Core\Profile
 | `SupportsExtensionFields` | `extensions()` names the extensions whose fields the profile carries, e.g. `['xrechnung']` for the fields of `XRechnungExtensionData` |
 | `SupportsThirdPartyPayments` | UBL invoices of the profile may carry third party payments (BG-DEX-09) |
 | `DescribesEmbeddedXml` | XMP description and version of the embedded XML |
+| `ReplacesRules` | `replacedRules(?Syntax $syntax)` names built-in rules the profile replaces with its own; the PHP rules driver does not run them for the profile |
 | `RequiresVatBreakdownRate`, `StructuredCashDiscountText`, `ExtendsCodeLists` | rate in every VAT breakdown, structured cash discount texts, additional codes |
 
 ### Builder macros of your pack

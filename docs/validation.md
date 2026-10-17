@@ -149,7 +149,7 @@ Some rules read options. Set them per call with `->option()`, without Laravel al
 | `max_decimals` | `QUITTIO-PRECISION`: more decimals in quantity or net price are a warning | `4` |
 | `attachment_max_bytes` | `QUITTIO-ATTACHMENT-SIZE`: limit per attached document | 10 MB |
 | `attachments_max_total_bytes` | `QUITTIO-ATTACHMENT-SIZE`: limit of all attachments | 15 MB |
-| `syntax` | Syntax of the XML that will be written (`Quittio\Core\Profiles\Syntax`); set by the run for every format with XML, used by `QUITTIO-THIRD-PARTY-PAYMENTS`, `QUITTIO-CREDIT-NOTE-DUE-DATE`, `BR-DEX-15` and `DE-XRECHNUNG-EXT-01` | from the format |
+| `syntax` | Syntax of the XML that will be written (`Quittio\Core\Profiles\Syntax`); set by the run for every format with XML, used by `QUITTIO-THIRD-PARTY-PAYMENTS`, `QUITTIO-CREDIT-NOTE-DUE-DATE`, the `BR-DEX-…` rules, `DE-XRECHNUNG-EXT-01` and the rules a profile replaces (`ReplacesRules`) | from the format |
 
 ## Validation levels
 
@@ -417,17 +417,19 @@ The PHP driver (`Quittio\Core\Validation\Drivers\PhpRulesDriver`, name `php`) ru
 | `CodeListRules` | L3 | `BR-CL-01`, `-04` to `-08`, `-10`, `-11`, `-13`, `-14`, `-16`, `-19` to `-23`, `-25`, `-26` (official code lists) |
 | `QuittioRules` | L3 | package rules, see below |
 | `PlausibilityRules` | L7 | see [plausibility](#plausibility-l7) |
-| profile rules | L3 | Peppol BIS profile: `PEPPOL-EN16931-R001`, `-R002`, `-R003`, `-R005` (warning), `-R010`, `-R020`, `-CL008`, `-R040`, `-R041`, `-R042`, `-R061`, `-R120`, `-R121`, `-R130`; XRechnung profiles (country pack DE): `BR-DE-…`, `BR-DEX-15`, `DE-XRECHNUNG-EXT-01` |
+| profile rules | L3 | Peppol BIS profile: `PEPPOL-EN16931-R001`, `-R002`, `-R003`, `-R005` (warning), `-R010`, `-R020`, `-CL008`, `-R040`, `-R041`, `-R042`, `-R061`, `-R120`, `-R121`, `-R130`; XRechnung profiles (country pack DE): `BR-DE-…`, `DE-XRECHNUNG-EXT-01`; XRechnung extension: `BR-DEX-02` (warning), `BR-DEX-04` to `-10`, `-12` to `-15` |
 | country pack rules | L3, L7 | `rules()` of the seller's pack and `buyerCountryRules()` of the buyer's pack; Germany: `DE-USTG-01` … `DE-USTG-15` (L3), `DE-LEITWEG-ID`, `DE-LEITWEG-ID-SUSPECT`, `DE-TAX-NUMBER` (L7), see [Country packs](country-packs.md) |
 
 All EN 16931, code list, VAT category and Peppol rules report errors unless noted. The PHP rules cover the most frequent Schematron findings with readable messages. They do not replace the official Schematron (L5).
+
+A profile can replace rules with its own (`Profiles\Capabilities\ReplacesRules`); the driver then does not run them for that profile. The XRechnung extension replaces `BR-CL-10`, `-11`, `-21`, `-25`, `-26` with `BR-DEX-04` to `-08` and, in UBL, `BR-CO-16` with `BR-DEX-09` and `QUITTIO-SUBLINES` with `BR-DEX-02`, as its official validator configuration does ([XRechnung rules](country-packs.md#xrechnung-rules)).
 
 ### Package rules (`QUITTIO-…`)
 
 | Code | Severity | Meaning |
 |---|---|---|
 | `QUITTIO-NEGATIVE-TOTAL` | warning | Commercial invoice (380) with a negative amount due; consider a credit note |
-| `QUITTIO-SUBLINES` | error | Net amount of a line differs from the sum of its sub lines |
+| `QUITTIO-SUBLINES` | error | Net amount of a line differs from the sum of its sub lines (XRechnung extension in UBL: `BR-DEX-02`, warning) |
 | `QUITTIO-LINE-ID-DUPLICATE` | warning | A line identifier (BT-126) is used more than once (data not built with `InvoiceBuilder`, which rejects duplicates) |
 | `QUITTIO-SUBLINE-VAT` | error | Sub line with another VAT category or rate than its parent line |
 | `QUITTIO-PRECEDING-INVOICES-CII` | warning | More than one preceding invoice (BG-3): CII transmits only the first |

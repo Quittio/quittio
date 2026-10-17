@@ -97,6 +97,39 @@ return [
     'BR-DE-TMP-32' => [
         'message' => 'Die Rechnung soll das Liefer- oder Leistungsdatum enthalten: Lieferdatum (BT-72), Rechnungszeitraum (BG-14) oder einen Leistungszeitraum in jeder Position (BG-26).',
     ],
+    'BR-DEX-02' => [
+        'message' => 'Der Nettobetrag der Position :line (BT-131) soll der Summe der Nettobeträge ihrer direkten Unterpositionen (:expected) entsprechen.',
+    ],
+    'BR-DEX-04' => [
+        'message' => 'Das Kennungsschema „:value“ einer Partei ist weder in ISO/IEC 6523 noch eines der Schemata XR01 bis XR03 der XRechnung-Extension (SEPA nur für Verkäufer und Zahlungsempfänger in UBL).',
+    ],
+    'BR-DEX-05' => [
+        'message' => 'Das Schema „:value“ der Registrierungskennung ist weder in ISO/IEC 6523 noch eines der Schemata XR01 bis XR03 der XRechnung-Extension.',
+    ],
+    'BR-DEX-06' => [
+        'message' => 'Das Schema „:value“ der Artikelkennung (Standard Identifier) ist weder in ISO/IEC 6523 noch eines der Schemata XR01 bis XR03 der XRechnung-Extension.',
+    ],
+    'BR-DEX-07' => [
+        'message' => 'Das Schema „:value“ der elektronischen Adresse ist weder in der EAS-Codeliste noch eines der Schemata XR01 bis XR03 der XRechnung-Extension.',
+    ],
+    'BR-DEX-08' => [
+        'message' => 'Das Schema „:value“ der Kennung des Lieferorts ist weder in ISO/IEC 6523 noch eines der Schemata XR01 bis XR03 der XRechnung-Extension.',
+    ],
+    'BR-DEX-09' => [
+        'message' => 'Der Zahlbetrag (BT-115) muss dem Bruttobetrag (BT-112) abzüglich bereits gezahlter Beträge (BT-113) zuzüglich Rundungsbetrag (BT-114) und der Summe der Zahlungen an Dritte (BT-DEX-002) entsprechen.',
+    ],
+    'BR-DEX-10' => [
+        'message' => 'Die Art der Zahlung an Dritte (BT-DEX-001) muss für jede Zahlung an Dritte (BG-DEX-09) übermittelt werden.',
+    ],
+    'BR-DEX-12' => [
+        'message' => 'Die Beschreibung der Zahlung an Dritte (BT-DEX-003) muss für jede Zahlung an Dritte (BG-DEX-09) übermittelt werden.',
+    ],
+    'BR-DEX-13' => [
+        'message' => 'Der Betrag der Zahlung an Dritte (BT-DEX-002) darf höchstens zwei Nachkommastellen haben, angegeben ist :value.',
+    ],
+    'BR-DEX-14' => [
+        'message' => 'Der Betrag der Zahlung an Dritte (BT-DEX-002) ist in :value angegeben, muss aber in der Rechnungswährung (BT-5) :expected angegeben werden.',
+    ],
     'BR-DEX-15' => [
         'message' => 'Unterpositionen werden von XRechnung in CII nicht unterstützt. Verwenden Sie für die XRechnung-Extension die Syntax UBL.',
     ],

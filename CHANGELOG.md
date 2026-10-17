@@ -7,6 +7,7 @@ All notable changes to this project are documented in this file. The format foll
 ### Added
 
 - Typed view model: every node that templates receive has a class in `Quittio\Core\View\Model` (`PartyView`, `AddressView`, `LineView`, `VatRowView`, `TotalsView`, `PaymentView`, `DesignView`, `DocumentInfoView` …; lists are `ViewList<T>`, e.g. `ViewList<LineView>`) with its keys as typed properties, so IDEs and PHPStan know that `$invoice->totals->amountDue` is a `?FormattedValue`. The nodes are `ViewNode` objects over the same data: published Blade and PHP templates, array syntax, `toArray()` and the mandatory field guard work unchanged ([Typed nodes](docs/templates.md#typed-nodes)). The compatibility promise now names the keys and types of the view model.
+- The PHP rules check the XRechnung extension like the official validator: `BR-DEX-02` (warning), `BR-DEX-04` to `BR-DEX-10` and `BR-DEX-12` to `BR-DEX-14` for identifier schemes with `XR01` to `XR03`, the amount due with third party payments and the third party payments themselves. In the profile `xrechnung-extension` they replace `BR-CL-10`, `-11`, `-21`, `-25`, `-26` and, in UBL, `BR-CO-16` and `QUITTIO-SUBLINES`, so a violation is reported once. Profiles declare such replacements with the capability `ReplacesRules`.
 
 ### Changed
 

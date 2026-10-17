@@ -6,8 +6,10 @@ namespace Quittio\Country\DE\Profiles\XRechnung;
 
 use Quittio\Core\Codes\CodeList;
 use Quittio\Core\Profiles\Capabilities\ExtendsCodeLists;
+use Quittio\Core\Profiles\Capabilities\ReplacesRules;
 use Quittio\Core\Profiles\Capabilities\SupportsExtensionFields;
 use Quittio\Core\Profiles\Capabilities\SupportsSubLines;
+use Quittio\Core\Profiles\Syntax;
 use Quittio\Core\Standards\StandardVersion;
 
 /**
@@ -16,7 +18,7 @@ use Quittio\Core\Standards\StandardVersion;
  * choice nor the profile xrechnung switch to it when extension data is used; with xrechnung
  * such data is reported as an error.
  */
-final class XRechnung30Extension extends XRechnung30 implements ExtendsCodeLists, SupportsExtensionFields, SupportsSubLines
+final class XRechnung30Extension extends XRechnung30 implements ExtendsCodeLists, ReplacesRules, SupportsExtensionFields, SupportsSubLines
 {
     public const string SPECIFICATION_ID = 'urn:cen.eu:en16931:2017#compliant#urn:xeinkauf.de:kosit:xrechnung_3.0#conformant#urn:xeinkauf.de:kosit:extension:xrechnung_3.0';
 
@@ -44,11 +46,25 @@ final class XRechnung30Extension extends XRechnung30 implements ExtendsCodeLists
     }
 
     /**
-     * The extension accepts the identifier schemes XR01 to XR03 (BR-DEX-04 to BR-DEX-08).
+     * The extension accepts the identifier schemes XR01 to XR03, checked by BR-DEX-04 to
+     * BR-DEX-08 (XRechnungRules), which replace the code list rules (see replacedRules()).
      */
     public function additionalCodes(string $codeList): array
     {
         return in_array($codeList, [CodeList::ICD, CodeList::EAS], true) ? ['XR01', 'XR02', 'XR03'] : [];
+    }
+
+    /**
+     * As in the official validator configuration, where the replaced rules are only an
+     * information: BR-DEX-04 to BR-DEX-08 replace BR-CL-10, -11, -21, -25 and -26 (identifier
+     * schemes with XR01 to XR03); in UBL BR-DEX-09 replaces BR-CO-16 (amount due with third
+     * party payments) and BR-DEX-02 replaces QUITTIO-SUBLINES (sum of the sub lines).
+     */
+    public function replacedRules(?Syntax $syntax): array
+    {
+        $replaced = ['BR-CL-10', 'BR-CL-11', 'BR-CL-21', 'BR-CL-25', 'BR-CL-26'];
+
+        return $syntax === Syntax::Cii ? $replaced : [...$replaced, 'BR-CO-16', 'QUITTIO-SUBLINES'];
     }
 
     /**

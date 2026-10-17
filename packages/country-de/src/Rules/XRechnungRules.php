@@ -4,11 +4,17 @@ declare(strict_types=1);
 
 namespace Quittio\Country\DE\Rules;
 
+use BackedEnum;
+use Brick\Math\BigDecimal;
 use Closure;
+use Quittio\Core\Codes\CodeList;
+use Quittio\Core\Codes\RawCode;
+use Quittio\Core\Data\Extensions\ThirdPartyPayment;
 use Quittio\Core\Data\InvoiceData;
 use Quittio\Core\Enums\InvoiceTypeCode;
 use Quittio\Core\Enums\PaymentMeansCode;
 use Quittio\Core\Enums\VatCategory;
+use Quittio\Core\Profiles\Capabilities\ExtendsCodeLists;
 use Quittio\Core\Profiles\Syntax;
 use Quittio\Core\Validation\Plausibility\Iban;
 use Quittio\Core\Validation\Rule;
@@ -18,7 +24,8 @@ use Quittio\Core\Validation\Rules\RuleReporter;
 use Quittio\Country\DE\CountryDE;
 
 /**
- * Business rules of the CIUS XRechnung 3.0 (BR-DE-…), checked on the data model.
+ * Business rules of the CIUS XRechnung 3.0 (BR-DE-…) and its extension (BR-DEX-…), checked on
+ * the data model.
  *
  * Severity follows the flags of the official Schematron: "muss" rules (fatal) are errors,
  * "soll" rules (warning) warnings and BR-DE-TMP-32 (information) an info. The official
@@ -208,6 +215,7 @@ final class XRechnungRules
                     $report->info('BT-72', 'delivery.actualDeliveryDate');
                 }
             }),
+            ...self::extensionRules($r),
             $r('BR-DEX-15', 'Sub invoice lines are not supported by XRechnung in CII. Use the UBL syntax for the XRechnung extension.', function (InvoiceData $i, RuleReporter $report): void {
                 $syntax = $report->context()->option('syntax');
                 if ($syntax === Syntax::Cii && array_filter($i->lines, static fn ($line): bool => $line->subLines !== []) !== []) {
@@ -223,6 +231,160 @@ final class XRechnungRules
                 }
             }),
         ];
+    }
+
+    /**
+     * Rules of the XRechnung extension (BR-DEX-…), only for the profile xrechnung-extension.
+     * BR-DEX-01 (MIME code), BR-DEX-03 (one VAT information per sub line) and BR-DEX-11 (third
+     * party payment amount) cannot be violated: MimeType has only allowed codes, every line has
+     * a LineVat and every ThirdPartyPayment a Money amount, which the UBL writer always writes.
+     *
+     * @param  Closure(string, string, Closure): Rule  $r
+     * @return list<Rule>
+     */
+    private static function extensionRules(Closure $r): array
+    {
+        return [
+            $r('BR-DEX-02', 'The net amount of line :line (BT-131) should equal the sum of the net amounts of its direct sub lines (:expected).', function (InvoiceData $i, RuleReporter $report): void {
+                if (! self::isExtension($report, Syntax::Ubl)) {
+                    return;
+                }
+                foreach ($i->allLines() as $line) {
+                    if ($line->subLines === [] || $line->netAmount === null) {
+                        continue;
+                    }
+                    $sum = BigDecimal::zero();
+                    foreach ($line->subLines as $sub) {
+                        $sum = $sum->plus($sub->netAmount?->getAmount() ?? BigDecimal::zero());
+                    }
+                    if (! $line->netAmount->getAmount()->isEqualTo($sum)) {
+                        $report->warning('BT-131', "line {$line->id}.netAmount", ['line' => $line->id, 'expected' => $sum->toScale(2)->toString()]);
+                    }
+                }
+            }),
+            $r('BR-DEX-04', 'The party identifier scheme ":value" is not part of ISO/IEC 6523 or the schemes XR01 to XR03 of the XRechnung extension (SEPA only for seller and payee in UBL).', function (InvoiceData $i, RuleReporter $report): void {
+                $schemes = ['buyer.identifier.scheme' => ['BT-46-1', $i->buyer->identifier?->scheme, false]];
+                foreach ($i->seller->identifiers as $index => $identifier) {
+                    $schemes["seller.identifiers[{$index}].scheme"] = ['BT-29-1', $identifier->scheme, true];
+                }
+                $schemes['payee.identifier.scheme'] = ['BT-60-1', $i->payee?->identifier?->scheme, true];
+                self::checkSchemes($report, CodeList::ICD, $schemes);
+            }),
+            $r('BR-DEX-05', 'The legal registration identifier scheme ":value" is not part of ISO/IEC 6523 or the schemes XR01 to XR03 of the XRechnung extension.', function (InvoiceData $i, RuleReporter $report): void {
+                self::checkSchemes($report, CodeList::ICD, [
+                    'seller.legalRegistration.scheme' => ['BT-30-1', $i->seller->legalRegistration?->scheme, false],
+                    'buyer.legalRegistration.scheme' => ['BT-47-1', $i->buyer->legalRegistration?->scheme, false],
+                    'payee.legalRegistration.scheme' => ['BT-61-1', $i->payee?->legalRegistration?->scheme, false],
+                ]);
+            }),
+            $r('BR-DEX-06', 'The item standard identifier scheme ":value" is not part of ISO/IEC 6523 or the schemes XR01 to XR03 of the XRechnung extension.', function (InvoiceData $i, RuleReporter $report): void {
+                $schemes = [];
+                foreach ($i->allLines() as $line) {
+                    $schemes["line {$line->id}.item.standardId.scheme"] = ['BT-157-1', $line->item->standardId?->scheme, false];
+                }
+                self::checkSchemes($report, CodeList::ICD, $schemes);
+            }),
+            $r('BR-DEX-07', 'The electronic address scheme ":value" is not part of the EAS code list or the schemes XR01 to XR03 of the XRechnung extension.', function (InvoiceData $i, RuleReporter $report): void {
+                self::checkSchemes($report, CodeList::EAS, [
+                    'seller.electronicAddress.scheme' => ['BT-34-1', $i->seller->electronicAddress?->scheme, false],
+                    'buyer.electronicAddress.scheme' => ['BT-49-1', $i->buyer->electronicAddress?->scheme, false],
+                ]);
+            }),
+            $r('BR-DEX-08', 'The delivery location identifier scheme ":value" is not part of ISO/IEC 6523 or the schemes XR01 to XR03 of the XRechnung extension.', function (InvoiceData $i, RuleReporter $report): void {
+                self::checkSchemes($report, CodeList::ICD, ['delivery.locationId.scheme' => ['BT-71-1', $i->delivery?->locationId?->scheme, false]]);
+            }),
+            $r('BR-DEX-09', 'Amount due for payment (BT-115) = invoice total amount with VAT (BT-112) − paid amount (BT-113) + rounding amount (BT-114) + sum of the third party payment amounts (BT-DEX-002).', function (InvoiceData $i, RuleReporter $report): void {
+                $t = $i->totals;
+                if ($t === null || ! self::isExtension($report, Syntax::Ubl)) {
+                    return;
+                }
+                $expected = $t->grossTotal->getAmount()
+                    ->minus($t->prepaidAmount?->getAmount() ?? BigDecimal::zero())
+                    ->plus($t->roundingAmount?->getAmount() ?? BigDecimal::zero());
+                foreach ($i->xrechnungExtension->thirdPartyPayments ?? [] as $payment) {
+                    $expected = $expected->plus($payment->amount->getAmount());
+                }
+                if (! $t->amountDue->getAmount()->isEqualTo($expected)) {
+                    $report->error('BT-115', 'totals.amountDue');
+                }
+            }),
+            $r('BR-DEX-10', 'The third party payment type (BT-DEX-001) must be provided for every third party payment (BG-DEX-09).', function (InvoiceData $i, RuleReporter $report): void {
+                foreach (self::thirdPartyPayments($i, $report) as $index => $payment) {
+                    if (! Inspect::filled($payment->type)) {
+                        $report->error('BT-DEX-001', "xrechnungExtension.thirdPartyPayments[{$index}].type");
+                    }
+                }
+            }),
+            $r('BR-DEX-12', 'The third party payment description (BT-DEX-003) must be provided for every third party payment (BG-DEX-09).', function (InvoiceData $i, RuleReporter $report): void {
+                foreach (self::thirdPartyPayments($i, $report) as $index => $payment) {
+                    if (! Inspect::filled($payment->description)) {
+                        $report->error('BT-DEX-003', "xrechnungExtension.thirdPartyPayments[{$index}].description");
+                    }
+                }
+            }),
+            $r('BR-DEX-13', 'The third party payment amount (BT-DEX-002) may have at most two decimals, :value given.', function (InvoiceData $i, RuleReporter $report): void {
+                foreach (self::thirdPartyPayments($i, $report) as $index => $payment) {
+                    $amount = $payment->amount->getAmount();
+                    if ($amount->strippedOfTrailingZeros()->getScale() > 2) {
+                        $report->error('BT-DEX-002', "xrechnungExtension.thirdPartyPayments[{$index}].amount", ['value' => $amount->toString()]);
+                    }
+                }
+            }),
+            $r('BR-DEX-14', 'The third party payment amount (BT-DEX-002) is in :value, but must be in the invoice currency (BT-5) :expected.', function (InvoiceData $i, RuleReporter $report): void {
+                foreach (self::thirdPartyPayments($i, $report) as $index => $payment) {
+                    $currency = $payment->amount->getCurrency()->getCurrencyCode();
+                    if ($currency !== $i->currency) {
+                        $report->error('BT-DEX-002', "xrechnungExtension.thirdPartyPayments[{$index}].amount", ['value' => $currency, 'expected' => $i->currency]);
+                    }
+                }
+            }),
+        ];
+    }
+
+    /**
+     * Whether the profile is the XRechnung extension and, with $syntax, the XML is written in
+     * that syntax (an unknown syntax counts as any).
+     */
+    private static function isExtension(RuleReporter $report, ?Syntax $syntax = null): bool
+    {
+        $context = $report->context();
+        $written = $context->option('syntax');
+
+        return $context->profileIs('xrechnung-extension') && ($syntax === null || ! $written instanceof Syntax || $written === $syntax);
+    }
+
+    /**
+     * The third party payments the official rules check: only UBL invoices of the extension
+     * carry them (otherwise QUITTIO-THIRD-PARTY-PAYMENTS).
+     *
+     * @return array<int, ThirdPartyPayment>
+     */
+    private static function thirdPartyPayments(InvoiceData $invoice, RuleReporter $report): array
+    {
+        return self::isExtension($report, Syntax::Ubl) ? ($invoice->xrechnungExtension->thirdPartyPayments ?? []) : [];
+    }
+
+    /**
+     * Reports schemes that are neither in the official code list nor additional codes of the
+     * extension (XR01 to XR03); SEPA is accepted where allowed, except in CII.
+     *
+     * @param  array<string, array{0: string, 1: BackedEnum|RawCode|null, 2: bool}>  $schemes  path => [business term, scheme, SEPA allowed]
+     */
+    private static function checkSchemes(RuleReporter $report, string $list, array $schemes): void
+    {
+        if (! self::isExtension($report)) {
+            return;
+        }
+        $context = $report->context();
+        $additional = $context->profile instanceof ExtendsCodeLists ? $context->profile->additionalCodes($list) : [];
+        $sepa = $context->option('syntax') !== Syntax::Cii;
+        foreach ($schemes as $path => [$bt, $scheme, $sepaAllowed]) {
+            $value = $scheme === null ? '' : (string) $scheme->value;
+            if ($value === '' || CodeList::contains($list, $value) || in_array($value, $additional, true) || ($sepa && $sepaAllowed && $value === 'SEPA')) {
+                continue;
+            }
+            $report->error($bt, $path, ['value' => $value]);
+        }
     }
 
     /**

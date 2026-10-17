@@ -3014,6 +3014,12 @@
             "abstract public additionalCodes(string $codeList): array"
         ]
     },
+    "Quittio\\Core\\Profiles\\Capabilities\\ReplacesRules": {
+        "kind": "interface",
+        "methods": [
+            "abstract public replacedRules(?Quittio\\Core\\Profiles\\Syntax $syntax): array"
+        ]
+    },
     "Quittio\\Core\\Profiles\\Capabilities\\RequiresVatBreakdownRate": {
         "kind": "interface"
     },
@@ -5729,6 +5735,7 @@
         "implements": [
             "Quittio\\Core\\Profiles\\Capabilities\\DescribesEmbeddedXml",
             "Quittio\\Core\\Profiles\\Capabilities\\ExtendsCodeLists",
+            "Quittio\\Core\\Profiles\\Capabilities\\ReplacesRules",
             "Quittio\\Core\\Profiles\\Capabilities\\RequiresVatBreakdownRate",
             "Quittio\\Core\\Profiles\\Capabilities\\StructuredCashDiscountText",
             "Quittio\\Core\\Profiles\\Capabilities\\SupportsExtensionFields",
@@ -5749,6 +5756,7 @@
             "public key(): string",
             "public level(): Quittio\\Core\\Profiles\\ProfileLevel",
             "public name(): string",
+            "public replacedRules(?Quittio\\Core\\Profiles\\Syntax $syntax): array",
             "public requiredBusinessTerms(): array",
             "public rules(): array",
             "public specificationId(Quittio\\Core\\Standards\\StandardVersion $version = Quittio\\Core\\Standards\\StandardVersion::En16931_2017): string",

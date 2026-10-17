@@ -97,6 +97,39 @@ return [
     'BR-DE-TMP-32' => [
         'message' => 'The invoice should state the delivery or service date: actual delivery date (BT-72), invoicing period (BG-14) or a period on every line (BG-26).',
     ],
+    'BR-DEX-02' => [
+        'message' => 'The net amount of line :line (BT-131) should equal the sum of the net amounts of its direct sub lines (:expected).',
+    ],
+    'BR-DEX-04' => [
+        'message' => 'The party identifier scheme ":value" is not part of ISO/IEC 6523 or the schemes XR01 to XR03 of the XRechnung extension (SEPA only for seller and payee in UBL).',
+    ],
+    'BR-DEX-05' => [
+        'message' => 'The legal registration identifier scheme ":value" is not part of ISO/IEC 6523 or the schemes XR01 to XR03 of the XRechnung extension.',
+    ],
+    'BR-DEX-06' => [
+        'message' => 'The item standard identifier scheme ":value" is not part of ISO/IEC 6523 or the schemes XR01 to XR03 of the XRechnung extension.',
+    ],
+    'BR-DEX-07' => [
+        'message' => 'The electronic address scheme ":value" is not part of the EAS code list or the schemes XR01 to XR03 of the XRechnung extension.',
+    ],
+    'BR-DEX-08' => [
+        'message' => 'The delivery location identifier scheme ":value" is not part of ISO/IEC 6523 or the schemes XR01 to XR03 of the XRechnung extension.',
+    ],
+    'BR-DEX-09' => [
+        'message' => 'Amount due for payment (BT-115) = invoice total amount with VAT (BT-112) − paid amount (BT-113) + rounding amount (BT-114) + sum of the third party payment amounts (BT-DEX-002).',
+    ],
+    'BR-DEX-10' => [
+        'message' => 'The third party payment type (BT-DEX-001) must be provided for every third party payment (BG-DEX-09).',
+    ],
+    'BR-DEX-12' => [
+        'message' => 'The third party payment description (BT-DEX-003) must be provided for every third party payment (BG-DEX-09).',
+    ],
+    'BR-DEX-13' => [
+        'message' => 'The third party payment amount (BT-DEX-002) may have at most two decimals, :value given.',
+    ],
+    'BR-DEX-14' => [
+        'message' => 'The third party payment amount (BT-DEX-002) is in :value, but must be in the invoice currency (BT-5) :expected.',
+    ],
     'BR-DEX-15' => [
         'message' => 'Sub invoice lines are not supported by XRechnung in CII. Use the UBL syntax for the XRechnung extension.',
     ],

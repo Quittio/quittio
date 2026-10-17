@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Quittio\Core\Validation\Drivers;
 
 use Quittio\Core\Countries\CountryPack;
+use Quittio\Core\Profiles\Capabilities\ReplacesRules;
 use Quittio\Core\Profiles\Profile;
+use Quittio\Core\Profiles\Syntax;
 use Quittio\Core\Validation\Plausibility\VatIdVerifier;
 use Quittio\Core\Validation\Rule;
 use Quittio\Core\Validation\RuleOverrides;
@@ -117,7 +119,8 @@ final class PhpRulesDriver implements ValidationDriver
 
     /**
      * The rules for the subject after the overrides: the built-in rules, those of the profile
-     * and the country packs, then the additional rules.
+     * and the country packs without those the profile replaces (ReplacesRules), then the
+     * additional rules.
      *
      * @return list<Rule>
      */
@@ -141,7 +144,14 @@ final class PhpRulesDriver implements ValidationDriver
             }
         }
 
-        return $this->overrides->apply([...$rules, ...$this->additionalRules]);
+        // Rules the profile replaces with its own (e.g. BR-CO-16 by BR-DEX-09 in the XRechnung extension).
+        if ($context->profile instanceof ReplacesRules) {
+            $syntax = $context->option('syntax');
+            $replaced = $context->profile->replacedRules($syntax instanceof Syntax ? $syntax : null);
+            $rules = array_filter($rules, static fn (Rule $rule): bool => ! in_array($rule->code(), $replaced, true));
+        }
+
+        return $this->overrides->apply([...array_values($rules), ...$this->additionalRules]);
     }
 
     /**
