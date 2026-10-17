@@ -311,6 +311,58 @@ return [
         'message' => 'An invoice with VAT category "O" (not subject to VAT) shall not contain other VAT categories.',
         'hint' => 'Issue separate invoices for supplies that are not subject to VAT.',
     ],
+    'BR-AF-01' => [
+        'message' => 'An invoice that contains VAT category ":category" shall contain at least one VAT breakdown (BG-23) with this category.',
+    ],
+    'BR-AF-02' => [
+        'message' => 'An invoice with VAT category "L" (IGIC, Canary Islands) shall contain the seller VAT identifier (BT-31), the seller tax registration identifier (BT-32) or the seller tax representative VAT identifier (BT-63).',
+        'hint' => 'Set the VAT identifier with ->vatId() or the tax number with ->taxNumber() of the seller.',
+    ],
+    'BR-AF-05' => [
+        'message' => 'In an invoice line, document level allowance or charge with VAT category ":category" the VAT rate shall be 0 (zero) or greater than zero.',
+    ],
+    'BR-AF-08' => [
+        'message' => 'For each VAT rate of category ":category" the taxable amount (BT-116) shall equal the sum of line net amounts minus allowances plus charges of this category and rate.',
+    ],
+    'BR-AF-09' => [
+        'message' => 'The VAT category tax amount (BT-117) for category ":category" shall equal the taxable amount (BT-116) multiplied by the rate (BT-119).',
+    ],
+    'BR-AF-10' => [
+        'message' => 'A VAT breakdown with category ":category" shall not have a VAT exemption reason code (BT-121) or text (BT-120).',
+        'hint' => 'Remove the exemption reason; it is allowed only for the categories E, AE, K, G and O.',
+    ],
+    'BR-AG-01' => [
+        'message' => 'An invoice that contains VAT category ":category" shall contain at least one VAT breakdown (BG-23) with this category.',
+    ],
+    'BR-AG-02' => [
+        'message' => 'An invoice with VAT category "M" (IPSI, Ceuta and Melilla) shall contain the seller VAT identifier (BT-31), the seller tax registration identifier (BT-32) or the seller tax representative VAT identifier (BT-63).',
+        'hint' => 'Set the VAT identifier with ->vatId() or the tax number with ->taxNumber() of the seller.',
+    ],
+    'BR-AG-05' => [
+        'message' => 'In an invoice line, document level allowance or charge with VAT category ":category" the VAT rate shall be 0 (zero) or greater than zero.',
+    ],
+    'BR-AG-08' => [
+        'message' => 'For each VAT rate of category ":category" the taxable amount (BT-116) shall equal the sum of line net amounts minus allowances plus charges of this category and rate.',
+    ],
+    'BR-AG-09' => [
+        'message' => 'The VAT category tax amount (BT-117) for category ":category" shall equal the taxable amount (BT-116) multiplied by the rate (BT-119).',
+    ],
+    'BR-AG-10' => [
+        'message' => 'A VAT breakdown with category ":category" shall not have a VAT exemption reason code (BT-121) or text (BT-120).',
+        'hint' => 'Remove the exemption reason; it is allowed only for the categories E, AE, K, G and O.',
+    ],
+    'BR-B-01' => [
+        'message' => 'An invoice with VAT category "B" (split payment) shall be a domestic Italian invoice: every country code (BT-40, BT-55, BT-69, BT-80, BT-159) shall be "IT", found ":value".',
+        'hint' => 'Split payment (scissione dei pagamenti) applies only between Italian parties; use category "S" for other invoices.',
+    ],
+    'BR-B-02' => [
+        'message' => 'An invoice with VAT category "B" (split payment) shall not contain lines, document level allowances, charges or VAT breakdowns with VAT category "S".',
+        'hint' => 'Issue separate invoices for supplies with split payment and for standard rated supplies.',
+    ],
+    'QUITTIO-IGIC-ZERO-RATE-CII' => [
+        'message' => 'VAT category "L" (IGIC) with the rate 0 in :value: EN 16931 and UBL accept it (BR-AF-05 to BR-AF-07), the official CII Schematron requires a rate greater than zero. Use UBL for this invoice.',
+        'hint' => 'Render the invoice as UBL (e.g. Peppol BIS or XRechnung UBL); CII (ZUGFeRD/Factur-X, XRechnung CII) is rejected by the official validation.',
+    ],
     'BR-CL-01' => [
         'message' => 'The document type code (BT-3) ":value" is not part of the invoice and credit note related code lists of UNTDID 1001.',
     ],

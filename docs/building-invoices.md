@@ -493,11 +493,11 @@ The default only fills in what a line leaves open: the built data and the XML ca
 | `IntraCommunitySupply` | K | 0 (BR-IC-05) | 0 | required (BR-IC-10), e.g. `VATEX-EU-IC` | Seller VAT identifier or tax representative, and buyer VAT identifier (BR-IC-02); delivery date or invoicing period (BR-IC-11); deliver-to country (BR-IC-12). |
 | `Export` | G | 0 (BR-G-05) | 0 | required (BR-G-10), e.g. `VATEX-EU-G` | Seller VAT identifier or tax representative (BR-G-02). |
 | `NotSubjectToVat` | O | none (BR-O-05) | 0 | required (BR-O-10), e.g. `VATEX-EU-O` | No VAT identifier of seller, tax representative or buyer (BR-O-02); no other category in the invoice (BR-O-11). |
-| `CanaryIslands` | L | as given | rate × taxable amount | – | – |
-| `CeutaMelilla` | M | as given | rate × taxable amount | – | – |
-| `TransferredVatItaly` | B | as given | rate × taxable amount | – | – |
+| `CanaryIslands` | L | 0 or greater (BR-AF-05) | rate × taxable amount (BR-AF-09) | not allowed (BR-AF-10) | IGIC (Canary Islands). As S (BR-AF-02). One VAT breakdown per rate. The official CII validation rejects the rate 0, UBL accepts it (warning `QUITTIO-IGIC-ZERO-RATE-CII`). |
+| `CeutaMelilla` | M | 0 or greater (BR-AG-05) | rate × taxable amount (BR-AG-09) | not allowed (BR-AG-10) | IPSI (Ceuta and Melilla). As S (BR-AG-02). One VAT breakdown per rate. |
+| `TransferredVatItaly` | B | as given | rate × taxable amount | – | Split payment (Italy): only in a domestic Italian invoice, every country code (seller, buyer, tax representative, deliver-to, item origin) is `IT` (BR-B-01); no category S in the same invoice (BR-B-02). |
 
-- Categories Z, E, AE, K, G and O allow exactly one VAT breakdown each (BR-Z-01 …).
+- Categories Z, E, AE, K, G and O allow exactly one VAT breakdown each (BR-Z-01 …); S, L and M one per rate.
 - The calculator calculates VAT 0 for Z, E, AE, K, G and O, whatever rate is given. It writes the rate 0 to the VAT breakdown of a group whose lines have no rate (category O: no rate). The validation still requires the rate 0 on the lines (BR-Z-05 …).
 - The rules are part of the [validation](validation.md) (level L3). `VatCategory::requiresRate()`, `isZeroTax()` and `requiresExemptionReason()` expose the same properties.
 

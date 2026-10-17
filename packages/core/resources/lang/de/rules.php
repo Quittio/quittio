@@ -311,6 +311,58 @@ return [
         'message' => 'Eine Rechnung mit der Kategorie „O“ (nicht steuerbar) darf keine anderen Umsatzsteuerkategorien enthalten.',
         'hint' => 'Stellen Sie für nicht steuerbare Umsätze eine eigene Rechnung aus.',
     ],
+    'BR-AF-01' => [
+        'message' => 'Eine Rechnung mit der Umsatzsteuerkategorie „:category“ muss mindestens eine Steueraufschlüsselung (BG-23) mit dieser Kategorie enthalten.',
+    ],
+    'BR-AF-02' => [
+        'message' => 'Eine Rechnung mit der Kategorie „L“ (IGIC, Kanarische Inseln) muss die USt-IdNr. des Verkäufers (BT-31), seine Steuernummer (BT-32) oder die USt-IdNr. des Steuervertreters (BT-63) enthalten.',
+        'hint' => 'Setzen Sie die USt-IdNr. des Verkäufers mit ->vatId() oder seine Steuernummer mit ->taxNumber().',
+    ],
+    'BR-AF-05' => [
+        'message' => 'Bei Positionen, Nachlässen und Zuschlägen mit der Kategorie „:category“ muss der Steuersatz 0 oder größer als null sein.',
+    ],
+    'BR-AF-08' => [
+        'message' => 'Für jeden Steuersatz der Kategorie „:category“ muss die Bemessungsgrundlage (BT-116) der Summe der Positionsbeträge abzüglich Nachlässen zuzüglich Zuschlägen dieser Kategorie und dieses Satzes entsprechen.',
+    ],
+    'BR-AF-09' => [
+        'message' => 'Der Steuerbetrag (BT-117) der Kategorie „:category“ muss der Bemessungsgrundlage (BT-116) multipliziert mit dem Steuersatz (BT-119) entsprechen.',
+    ],
+    'BR-AF-10' => [
+        'message' => 'Eine Steueraufschlüsselung mit der Kategorie „:category“ darf keinen Befreiungsgrund (BT-120, BT-121) enthalten.',
+        'hint' => 'Entfernen Sie den Befreiungsgrund; er ist nur bei den Kategorien E, AE, K, G und O zulässig.',
+    ],
+    'BR-AG-01' => [
+        'message' => 'Eine Rechnung mit der Umsatzsteuerkategorie „:category“ muss mindestens eine Steueraufschlüsselung (BG-23) mit dieser Kategorie enthalten.',
+    ],
+    'BR-AG-02' => [
+        'message' => 'Eine Rechnung mit der Kategorie „M“ (IPSI, Ceuta und Melilla) muss die USt-IdNr. des Verkäufers (BT-31), seine Steuernummer (BT-32) oder die USt-IdNr. des Steuervertreters (BT-63) enthalten.',
+        'hint' => 'Setzen Sie die USt-IdNr. des Verkäufers mit ->vatId() oder seine Steuernummer mit ->taxNumber().',
+    ],
+    'BR-AG-05' => [
+        'message' => 'Bei Positionen, Nachlässen und Zuschlägen mit der Kategorie „:category“ muss der Steuersatz 0 oder größer als null sein.',
+    ],
+    'BR-AG-08' => [
+        'message' => 'Für jeden Steuersatz der Kategorie „:category“ muss die Bemessungsgrundlage (BT-116) der Summe der Positionsbeträge abzüglich Nachlässen zuzüglich Zuschlägen dieser Kategorie und dieses Satzes entsprechen.',
+    ],
+    'BR-AG-09' => [
+        'message' => 'Der Steuerbetrag (BT-117) der Kategorie „:category“ muss der Bemessungsgrundlage (BT-116) multipliziert mit dem Steuersatz (BT-119) entsprechen.',
+    ],
+    'BR-AG-10' => [
+        'message' => 'Eine Steueraufschlüsselung mit der Kategorie „:category“ darf keinen Befreiungsgrund (BT-120, BT-121) enthalten.',
+        'hint' => 'Entfernen Sie den Befreiungsgrund; er ist nur bei den Kategorien E, AE, K, G und O zulässig.',
+    ],
+    'BR-B-01' => [
+        'message' => 'Eine Rechnung mit der Kategorie „B“ (Split Payment) muss eine italienische Inlandsrechnung sein: Jeder Ländercode (BT-40, BT-55, BT-69, BT-80, BT-159) muss „IT“ sein, gefunden „:value“.',
+        'hint' => 'Das Split Payment (scissione dei pagamenti) gilt nur zwischen italienischen Parteien; verwenden Sie für andere Rechnungen die Kategorie „S“.',
+    ],
+    'BR-B-02' => [
+        'message' => 'Eine Rechnung mit der Kategorie „B“ (Split Payment) darf keine Positionen, Nachlässe, Zuschläge oder Steueraufschlüsselungen mit der Kategorie „S“ enthalten.',
+        'hint' => 'Stellen Sie für Umsätze mit Split Payment und für Umsätze zum Normalsatz getrennte Rechnungen aus.',
+    ],
+    'QUITTIO-IGIC-ZERO-RATE-CII' => [
+        'message' => 'Kategorie „L“ (IGIC) mit dem Steuersatz 0 in :value: EN 16931 und UBL lassen ihn zu (BR-AF-05 bis BR-AF-07), die offizielle CII-Schematron-Prüfung verlangt einen Steuersatz größer als null. Verwenden Sie für diese Rechnung UBL.',
+        'hint' => 'Erzeugen Sie die Rechnung als UBL (z. B. Peppol BIS oder XRechnung UBL); CII (ZUGFeRD/Factur-X, XRechnung CII) wird von der offiziellen Prüfung abgelehnt.',
+    ],
     'BR-CL-01' => [
         'message' => 'Der Rechnungsartcode (BT-3) „:value“ ist in der Codeliste UNTDID 1001 für Rechnungen und Gutschriften nicht enthalten.',
     ],
