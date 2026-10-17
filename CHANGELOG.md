@@ -11,6 +11,7 @@ All notable changes to this project are documented in this file. The format foll
 ### Changed
 
 - The VAT rows of the PDF and HTML name IGIC (category L, Canary Islands) and IPSI (category M, Ceuta and Melilla) instead of VAT, e.g. "7 % IGIC auf 50,00 €" or "7% IGIC on 50.00 €" (labels `vat_row_igic` and `vat_row_ipsi`). Rows of the other categories are unchanged.
+- The package rules `QUITTIO-DECLARED-AMOUNTS`, `QUITTIO-VAT-ROUNDING` and `QUITTIO-CANCELLATION-VAT-ALIGNED` read the declared amounts state through the internal `Calculation\DeclaredAmountsState` like the calculator, the builder, the reader and the cancellations. The results are the same.
 
 ## [0.4.0] - 2026-10-17
 

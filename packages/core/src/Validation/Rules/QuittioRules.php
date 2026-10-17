@@ -6,11 +6,11 @@ namespace Quittio\Core\Validation\Rules;
 
 use Brick\Math\BigDecimal;
 use Quittio\Core\Calculation\CalculationException;
+use Quittio\Core\Calculation\DeclaredAmountsState;
 use Quittio\Core\Calculation\LineCalculator;
 use Quittio\Core\Countries\CountryGeneric;
 use Quittio\Core\Data\InvoiceData;
 use Quittio\Core\Data\Lines\InvoiceLine;
-use Quittio\Core\Data\Meta;
 use Quittio\Core\Enums\InvoiceTypeCode;
 use Quittio\Core\Profiles\Capabilities\SupportsThirdPartyPayments;
 use Quittio\Core\Profiles\Syntax;
@@ -118,7 +118,7 @@ final class QuittioRules
                 }
             }),
             $r('QUITTIO-DECLARED-AMOUNTS', 'The declared line net amounts (BT-131) or VAT category tax amounts (BT-117) of the original document differ from the recalculation by more than tolerated (BT-131: 0.02, PEPPOL-EN16931-R120; BT-117: less than one currency unit, BR-CO-17) and were recalculated. The document may not reverse the original exactly; compare its totals with the original.', function (InvoiceData $i, RuleReporter $report): void {
-                if ($i->meta->hasFlag(Meta::FLAG_DECLARED_AMOUNTS_RECALCULATED)) {
+                if (DeclaredAmountsState::fromMeta($i->meta)->isRecalculated()) {
                     $report->warning('BT-131', 'lines');
                 }
             }),
@@ -286,7 +286,9 @@ final class QuittioRules
      */
     private static function vatAligned(InvoiceData $invoice): bool
     {
-        return $invoice->meta->hasFlag(Meta::FLAG_CANCELLATION_VAT_ALIGNED) && $invoice->meta->hasFlag(Meta::FLAG_DECLARED_AMOUNTS);
+        $state = DeclaredAmountsState::fromMeta($invoice->meta);
+
+        return $state->vatAligned && $state->isDeclared();
     }
 
     /**
