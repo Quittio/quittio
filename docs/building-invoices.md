@@ -683,7 +683,7 @@ use Quittio\Core\Enums\MimeType;
 ->attachment('Contract', externalUri: 'https://example.com/contracts/4711.pdf', description: 'Framework contract')
 ```
 
-- `MimeType` has `Pdf` (application/pdf), `Png` (image/png), `Jpeg` (image/jpeg), `Csv` (text/csv), `Xlsx` (application/vnd.openxmlformats-officedocument.spreadsheetml.sheet) and `Ods` (application/vnd.oasis.opendocument.spreadsheet), the MIME codes EN 16931 allows. Another string fails with a `ValueError`.
+- `MimeType` has `Pdf` (application/pdf), `Png` (image/png), `Jpeg` (image/jpeg), `Csv` (text/csv), `Xlsx` (application/vnd.openxmlformats-officedocument.spreadsheetml.sheet) and `Ods` (application/vnd.oasis.opendocument.spreadsheet), the MIME codes EN 16931 allows. `Xml` (application/xml) is allowed only in the profile `xrechnung-extension` (BR-DEX-01); other profiles report it with `BR-CL-24`. Another string fails with a `ValueError`.
 - Supporting documents are part of the XML from profile EN 16931 upwards, not in the profiles MINIMUM, BASIC WL and BASIC. They are not separate files in the PDF ([Formats and profiles](formats.md#embedded-files)).
 - XRechnung requires unique file names (BR-DE-22).
 

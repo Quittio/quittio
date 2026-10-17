@@ -26,7 +26,14 @@ it('keeps the Peppol electronic address schemes a subset of the EAS list without
 });
 
 it('only contains enum cases that are valid codes', function (string $enum, string $list) {
+    // MimeType::Xml is allowed only in the XRechnung extension (BR-DEX-01); BR-CL-24 reports it elsewhere.
+    $outsideTheList = [Quittio\Core\Enums\MimeType::Xml];
     foreach ($enum::cases() as $case) {
+        if (in_array($case, $outsideTheList, true)) {
+            expect(CodeList::contains($list, $case->value))->toBeFalse();
+
+            continue;
+        }
         expect(CodeList::contains($list, $case->value))->toBeTrue("{$enum}::{$case->name} ({$case->value}) is not in {$list}");
     }
 })->with([

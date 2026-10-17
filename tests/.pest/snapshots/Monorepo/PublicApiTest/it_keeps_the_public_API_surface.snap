@@ -2184,7 +2184,8 @@
             "Jpeg = \"image\\/jpeg\"",
             "Csv = \"text\\/csv\"",
             "Xlsx = \"application\\/vnd.openxmlformats-officedocument.spreadsheetml.sheet\"",
-            "Ods = \"application\\/vnd.oasis.opendocument.spreadsheet\""
+            "Ods = \"application\\/vnd.oasis.opendocument.spreadsheet\"",
+            "Xml = \"application\\/xml\""
         ],
         "properties": [
             "public readonly string $name",

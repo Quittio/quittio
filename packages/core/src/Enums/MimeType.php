@@ -8,7 +8,8 @@ use Quittio\Core\Codes\CodeList;
 use Quittio\Core\Enums\Concerns\HasLabel;
 
 /**
- * MIME code of an attached document (BT-125-1).
+ * MIME code of an attached document (BT-125-1). Xml (application/xml) is not part of the
+ * EN 16931 code list (BR-CL-24); only the XRechnung extension allows it (BR-DEX-01).
  */
 enum MimeType: string
 {
@@ -20,6 +21,7 @@ enum MimeType: string
     case Csv = 'text/csv';
     case Xlsx = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
     case Ods = 'application/vnd.oasis.opendocument.spreadsheet';
+    case Xml = 'application/xml';
 
     public static function labelGroup(): string
     {

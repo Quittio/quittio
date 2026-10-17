@@ -10,6 +10,7 @@ use Quittio\Core\Data\Extensions\ThirdPartyPayment;
 use Quittio\Core\Data\Extensions\XRechnungExtensionData;
 use Quittio\Core\Data\Identifier;
 use Quittio\Core\Data\InvoiceData;
+use Quittio\Core\Enums\MimeType;
 use Quittio\Core\Profiles\Profile;
 use Quittio\Core\Profiles\Syntax;
 use Quittio\Core\Support\Amount;
@@ -155,6 +156,14 @@ it('keeps BR-CO-16 and QUITTIO-SUBLINES for the extension in CII, which has no B
         ->and(dexCodes(dexValidate($subLines, Syntax::Cii)))->toContain('QUITTIO-SUBLINES', 'BR-DEX-15')->not->toContain('BR-DEX-02');
 });
 
+it('accepts XML attachments only in the extension (BR-DEX-01), the other XRechnung profiles report BR-CL-24', function (?Syntax $syntax) {
+    $invoice = dexCalculated(dexInvoice()->attachment('ATT-1', '<data/>', MimeType::Xml, 'data.xml', 'Data'));
+
+    expect(dexCodes(dexValidate($invoice, $syntax)))->not->toContain('BR-CL-24', 'BR-DEX-01')
+        ->and(dexValidate($invoice, $syntax)->errors())->toBe([])
+        ->and(dexCodes(dexValidate($invoice, $syntax, new XRechnung30)))->toContain('BR-CL-24');
+})->with(['UBL' => [Syntax::Ubl], 'unknown syntax' => [null]]);
+
 it('reports the extension messages in German', function () {
     $result = (new PhpRulesDriver)->validate(new ValidationSubject(
         dexWithPayments([new ThirdPartyPayment('Porto', Amount::of('4.90', 'USD'), 'Briefporto')]),
@@ -176,6 +185,21 @@ it('passes the official validation with the data the extension rules accept', fu
     expect(dexValidate($invoice)->errors())->toBe([])
         ->and($report['scenario'])->toBe('EN16931 XRechnung Extension (UBL Invoice)')
         ->and($report['accepted'])->toBeTrue();
+})->skip(fn () => ! Official::available(), 'KoSIT validator or Java not available (run tools/schemas/download.sh).')->group('official');
+
+it('passes the official validation of the extension with an XML attachment, which XRechnung reports with BR-CL-24', function () {
+    $invoice = dexCalculated(dexInvoice()->attachment('ATT-1', '<data/>', MimeType::Xml, 'data.xml', 'Data'));
+    $kosit = Official::kosit();
+    $messages = $kosit->validateXml((new UblWriter)->serialize($invoice, new XRechnung30Extension));
+    $report = (new KositReportParser)->parse((string) $kosit->lastReport());
+    $plain = dexCalculated(Scenarios::simple()->buyerReference('04011000-12345-03')->attachment('ATT-1', '<data/>', MimeType::Xml, 'data.xml', 'Data'));
+    $plainMessages = $kosit->validateXml((new UblWriter)->serialize($plain, new XRechnung30));
+
+    expect(array_map(fn ($m) => $m->code, $messages))->not->toContain('BR-DEX-01')
+        ->and($report['scenario'])->toBe('EN16931 XRechnung Extension (UBL Invoice)')
+        ->and($report['accepted'])->toBeTrue()
+        ->and(array_map(fn ($m) => $m->code, $plainMessages))->toContain('BR-CL-24')
+        ->and(dexCodes(dexValidate($plain, Syntax::Ubl, new XRechnung30)))->toContain('BR-CL-24');
 })->skip(fn () => ! Official::available(), 'KoSIT validator or Java not available (run tools/schemas/download.sh).')->group('official');
 
 it('reports what the official validation reports for the extension', function (Closure $invoice, string $code) {

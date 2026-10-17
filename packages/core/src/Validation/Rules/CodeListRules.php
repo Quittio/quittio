@@ -159,7 +159,7 @@ final class CodeListRules
     }
 
     /**
-     * Item identifier schemes, VAT exemption reasons, units and electronic addresses.
+     * Item identifier schemes, VAT exemption reasons, units, MIME codes and electronic addresses.
      *
      * @return list<Rule>
      */
@@ -190,6 +190,15 @@ final class CodeListRules
                     foreach ($i->allLines() as $line) {
                         $codes["line {$line->id}.unit"] = ['BT-130', $line->unit];
                         $codes["line {$line->id}.price.baseQuantityUnit"] = ['BT-150', $line->price->baseQuantityUnit];
+                    }
+
+                    return $codes;
+                }),
+            self::rule('BR-CL-24', 'The MIME code ":value" of an attached document (BT-125-1) is not part of the EN 16931 code list.', CodeList::MIME_TYPES,
+                static function (InvoiceData $i): array {
+                    $codes = [];
+                    foreach ($i->attachments as $index => $attachment) {
+                        $codes["attachments[{$index}].mimeType"] = ['BT-125-1', $attachment->mimeType];
                     }
 
                     return $codes;

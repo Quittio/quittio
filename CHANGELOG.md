@@ -4,6 +4,10 @@ All notable changes to this project are documented in this file. The format foll
 
 ## [Unreleased]
 
+### Added
+
+- `MimeType::Xml` (`application/xml`) for supporting documents (BT-125-1) in the profile `xrechnung-extension`, which allows XML attachments (BR-DEX-01). The PHP rules now check the MIME code with `BR-CL-24`: other profiles report `MimeType::Xml` as error, as the official Schematron does (`BR-CL-24`, in Peppol also `PEPPOL-EN16931-CL001`); the extension accepts it through `ExtendsCodeLists::additionalCodes()`.
+
 ## [0.4.0] - 2026-10-17
 
 ### Added

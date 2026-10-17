@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Quittio\Country\DE\Profiles\XRechnung;
 
 use Quittio\Core\Codes\CodeList;
+use Quittio\Core\Enums\MimeType;
 use Quittio\Core\Profiles\Capabilities\ExtendsCodeLists;
 use Quittio\Core\Profiles\Capabilities\ReplacesRules;
 use Quittio\Core\Profiles\Capabilities\SupportsExtensionFields;
@@ -47,11 +48,16 @@ final class XRechnung30Extension extends XRechnung30 implements ExtendsCodeLists
 
     /**
      * The extension accepts the identifier schemes XR01 to XR03, checked by BR-DEX-04 to
-     * BR-DEX-08 (XRechnungRules), which replace the code list rules (see replacedRules()).
+     * BR-DEX-08 (XRechnungRules), which replace the code list rules (see replacedRules()), and
+     * attachments with the MIME code application/xml (BR-DEX-01 instead of BR-CL-24).
      */
     public function additionalCodes(string $codeList): array
     {
-        return in_array($codeList, [CodeList::ICD, CodeList::EAS], true) ? ['XR01', 'XR02', 'XR03'] : [];
+        return match ($codeList) {
+            CodeList::ICD, CodeList::EAS => ['XR01', 'XR02', 'XR03'],
+            CodeList::MIME_TYPES => [MimeType::Xml->value],
+            default => [],
+        };
     }
 
     /**

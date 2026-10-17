@@ -210,6 +210,7 @@ return [
         'text/csv' => 'Fichier CSV',
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' => 'Feuille Excel',
         'application/vnd.oasis.opendocument.spreadsheet' => 'Feuille OpenDocument',
+        'application/xml' => 'Fichier XML',
     ],
     'document_reference' => [
         '50' => 'Référence d’appel d’offres',

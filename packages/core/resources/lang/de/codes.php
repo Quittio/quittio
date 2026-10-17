@@ -210,6 +210,7 @@ return [
         'text/csv' => 'CSV-Datei',
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' => 'Excel-Tabelle',
         'application/vnd.oasis.opendocument.spreadsheet' => 'OpenDocument-Tabelle',
+        'application/xml' => 'XML-Datei',
     ],
     'document_reference' => [
         '50' => 'Vergabe- oder Losnummer',

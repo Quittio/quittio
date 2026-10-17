@@ -51,6 +51,7 @@ it('detects rule violations', function (Closure $build, string $code) {
     'BR-CL-23 unknown unit' => [fn () => Invoices::base()->line(fn ($l) => $l->name('A')->quantity(1)->unit('NOPE')->netPrice('10')->vat(VatCategory::StandardRate, '19'))->build(), 'BR-CL-23'],
     'BR-CL-14 unknown country' => [fn () => Invoices::simple()->buyer(fn ($b) => $b->address('x', '1', 'y', 'QQ'))->build(), 'BR-CL-14'],
     'BR-CL-04 unknown currency' => [fn () => Invoices::simple()->currency('XYZ')->build(), 'BR-CL-04'],
+    'BR-CL-24 XML attachment outside the XRechnung extension' => [fn () => Invoices::simple()->attachment('ATT-1', '<data/>', Quittio\Core\Enums\MimeType::Xml, 'data.xml')->build(), 'BR-CL-24'],
     'BR-CL-01 unknown type code' => [fn () => Invoices::simple()->type('999')->build(), 'BR-CL-01'],
     'QUITTIO-NEGATIVE-TOTAL' => [fn () => Invoices::base()->line(fn ($l) => $l->name('Return')->quantity(-1)->netPrice('10')->vat(VatCategory::StandardRate, '19'))->build(), 'QUITTIO-NEGATIVE-TOTAL'],
     'QUITTIO-IBAN' => [fn () => Invoices::simple()->payment(PaymentMeansCode::SepaCreditTransfer, iban: 'DE02120300000000202052')->build(), 'QUITTIO-IBAN'],

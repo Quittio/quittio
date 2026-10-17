@@ -274,7 +274,7 @@ The severity follows the flags of the official Schematron, the rule file of the 
 | `BR-DE-28` | warning | seller e-mail (BT-43) without exactly one `@` surrounded by at least two characters |
 | `BR-DE-30`, `BR-DE-31` | error | direct debit (BG-19) without creditor identifier (BT-90) or debited account (BT-91) |
 | `BR-DE-TMP-32` | info (flag `information` in the Schematron) | no delivery date (BT-72), invoicing period (BG-14) or period on every line (BG-26) |
-| `BR-DEX-01` | not checked | guaranteed by `MimeType`: its codes are a subset of those the extension allows (the extension also allows `application/xml`, which `MimeType` does not offer) |
+| `BR-DEX-01` | not checked | guaranteed by `MimeType`: its codes are exactly those the extension allows; `BR-CL-24` accepts `MimeType::Xml` (application/xml) only in the extension |
 | `BR-DEX-02` | warning | extension, UBL: the net amount of a line (BT-131) with sub lines is not the sum of the net amounts of its direct sub lines; replaces `QUITTIO-SUBLINES` |
 | `BR-DEX-03` | not checked | guaranteed by the data model: every sub line has exactly one `LineVat`, which the UBL writer writes as one VAT information (BG-DEX-06) |
 | `BR-DEX-04` | error | extension: scheme of a seller (BT-29-1), buyer (BT-46-1) or payee (BT-60-1) identifier neither in ISO/IEC 6523 nor `XR01` to `XR03`; `SEPA` is accepted for seller and payee, except in CII; replaces `BR-CL-10` |

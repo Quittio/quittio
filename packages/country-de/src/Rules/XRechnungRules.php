@@ -306,8 +306,10 @@ final class XRechnungRules
     /**
      * Rules of the XRechnung extension (BR-DEX-…), only for the profile xrechnung-extension.
      * BR-DEX-01 (MIME code), BR-DEX-03 (one VAT information per sub line) and BR-DEX-11 (third
-     * party payment amount) cannot be violated: MimeType has only allowed codes, every line has
-     * a LineVat and every ThirdPartyPayment a Money amount, which the UBL writer always writes.
+     * party payment amount) cannot be violated: every MimeType case is one of the codes BR-DEX-01
+     * allows (application/xml is accepted by BR-CL-24 through additionalCodes() of the profile),
+     * every line has a LineVat and every ThirdPartyPayment a Money amount, which the UBL writer
+     * always writes.
      *
      * @param  Closure(string, string, Closure): Rule  $r
      * @return list<Rule>

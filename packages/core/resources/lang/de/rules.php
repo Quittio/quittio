@@ -408,6 +408,10 @@ return [
     'BR-CL-23' => [
         'message' => 'Der Einheitencode „:value“ ist in UN/ECE Recommendation 20 oder 21 nicht enthalten.',
     ],
+    'BR-CL-24' => [
+        'message' => 'Der MIME-Code „:value“ des angehängten Dokuments (BT-125-1) ist in der Codeliste der EN 16931 nicht enthalten.',
+        'hint' => 'Nur das Profil xrechnung-extension erlaubt application/xml (BR-DEX-01). Hängen Sie das Dokument als PDF, PNG, JPEG, CSV, XLSX oder ODS an oder wählen Sie ->profile(\'xrechnung-extension\').',
+    ],
     'BR-CL-25' => [
         'message' => 'Das Schema der elektronischen Adresse „:value“ ist in der EAS-Codeliste nicht enthalten.',
     ],

@@ -272,13 +272,28 @@ it('needs no PHP rule for Peppol code lists that equal the EN 16931 lists', func
         return $codes;
     };
 
-    // PEPPOL-EN16931-CL001 (BR-CL-24, MimeType), CL002 (BR-CL-19), CL003 (BR-CL-20), CL006 (BR-CL-06).
+    // PEPPOL-EN16931-CL001 (BR-CL-24, MimeType without Xml), CL002 (BR-CL-19), CL003 (BR-CL-20), CL006 (BR-CL-06).
+    $mimeTypes = array_map(fn (MimeType $type) => $type->value, array_filter(MimeType::cases(), fn (MimeType $type) => $type !== MimeType::Xml));
     expect($list('MIMECODE'))->toBe($codes(CodeList::MIME_TYPES))
-        ->and(array_map(fn (MimeType $type) => $type->value, MimeType::cases()))->toEqualCanonicalizing($codes(CodeList::MIME_TYPES))
+        ->and($mimeTypes)->toEqualCanonicalizing($codes(CodeList::MIME_TYPES))
         ->and($list('UNCL5189'))->toBe($codes(CodeList::ALLOWANCE_REASONS))
         ->and($list('UNCL7161'))->toBe($codes(CodeList::CHARGE_REASONS))
         ->and($list('UNCL2005'))->toBe(['3', '35', '432']);
 })->group('official')->skip(fn () => ! is_file(Official::root().'/peppol/PEPPOL-EN16931-UBL.sch'), 'The Peppol Schematron is not available (run tools/schemas/download.sh).');
+
+it('rejects XML attachments with BR-CL-24, as the official rules do with BR-CL-24 and PEPPOL-EN16931-CL001', function () {
+    $invoice = (new En16931Calculator)->calculate(peppolParticipants(Scenarios::simple())
+        ->attachment('ATT-1', '<data/>', MimeType::Xml, 'data.xml', 'Data')
+        ->build());
+    $xml = (new UblWriter)->serialize($invoice, ProfileRegistry::withDefaults()->get('peppol'));
+
+    $php = array_map(fn ($m) => $m->code, array_filter(Validate::data($invoice, 'peppol', calculate: false)->messages, fn ($m) => $m->isError()));
+    $official = array_map(fn ($m) => $m->code, array_filter(Official::kosit()->validateXml($xml), fn ($m) => $m->isError()));
+
+    expect($xml)->toContain('mimeCode="application/xml"')
+        ->and(array_values($php))->toBe(['BR-CL-24'])
+        ->and($official)->toContain('BR-CL-24', 'PEPPOL-EN16931-CL001');
+})->group('official')->skip(fn () => ! Official::available() || ! is_file(Official::root().'/peppol/PEPPOL-EN16931-UBL.xsl'), 'KoSIT validator or Peppol artifacts are not available (run tools/schemas/download.sh).');
 
 /*
  * The rules the UBL writer always satisfies (R004, R043, R044, R051, R053, R054, R080, R100, R101,

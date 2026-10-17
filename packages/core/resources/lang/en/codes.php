@@ -210,6 +210,7 @@ return [
         'text/csv' => 'CSV file',
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' => 'Excel spreadsheet',
         'application/vnd.oasis.opendocument.spreadsheet' => 'OpenDocument spreadsheet',
+        'application/xml' => 'XML file',
     ],
     'document_reference' => [
         '50' => 'Tender or lot reference',
