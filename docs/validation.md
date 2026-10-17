@@ -417,7 +417,7 @@ The PHP driver (`Quittio\Core\Validation\Drivers\PhpRulesDriver`, name `php`) ru
 | `CodeListRules` | L3 | `BR-CL-01`, `-04` to `-08`, `-10`, `-11`, `-13`, `-14`, `-16`, `-19` to `-23`, `-25`, `-26` (official code lists) |
 | `QuittioRules` | L3 | package rules, see below |
 | `PlausibilityRules` | L7 | see [plausibility](#plausibility-l7) |
-| profile rules | L3 | Peppol BIS profile: `PEPPOL-EN16931-R001`, `-R002`, `-R003`, `-R005` (warning), `-R010`, `-R020`, `-CL008`, `-R040`, `-R041`, `-R042`, `-R061`, `-R120`, `-R121`, `-R130`; XRechnung profiles (country pack DE): `BR-DE-…`, `DE-XRECHNUNG-EXT-01`; XRechnung extension: `BR-DEX-02` (warning), `BR-DEX-04` to `-10`, `-12` to `-15` |
+| profile rules | L3 | Peppol BIS profile: `PEPPOL-EN16931-R001`, `-R002`, `-R003`, `-R005` (warning), `-R007`, `-R008`, `-R010`, `-R020`, `-R040`, `-R041`, `-R042`, `-R046`, `-R055`, `-R061`, `-R110`, `-R111`, `-R120`, `-R121`, `-R130`, `-CL007`, `-CL008`, `-F001`, `-P0100`, `-P0101`, `-P0104` to `-P0112`, `PEPPOL-COMMON-R040` to `-R047`, `-R049`, `-R050`, `-R052`, `-R053` (`-R044` to `-R047`, `-R052`, `-R053` warnings), see [Peppol rules](#peppol-rules); XRechnung profiles (country pack DE): `BR-DE-…`, `DE-XRECHNUNG-EXT-01`; XRechnung extension: `BR-DEX-02` (warning), `BR-DEX-04` to `-10`, `-12` to `-15` |
 | country pack rules | L3, L7 | `rules()` of the seller's pack and `buyerCountryRules()` of the buyer's pack; Germany: `DE-USTG-01` … `DE-USTG-15` (L3), `DE-LEITWEG-ID`, `DE-LEITWEG-ID-SUSPECT`, `DE-TAX-NUMBER` (L7), see [Country packs](country-packs.md) |
 
 All EN 16931, code list, VAT category and Peppol rules report errors unless noted. The PHP rules cover the most frequent Schematron findings with readable messages. They do not replace the official Schematron (L5).
@@ -447,6 +447,23 @@ A profile can replace rules with its own (`Profiles\Capabilities\ReplacesRules`)
 | `QUITTIO-PROFILE-NOT-EINVOICE` | warning | Profile that is no EN 16931 e-invoice (MINIMUM, BASIC WL) |
 | `QUITTIO-STANDARD-VERSION` | error | The profile does not support the EN 16931 version of the invoice |
 | `QUITTIO-PROFORMA` | error | Type code 325 in the invoice pipeline; use `Quittio::proforma()` or `DocumentBuilder::proforma()` ([documents](documents.md#proforma-invoices)) |
+
+### Peppol rules
+
+The Peppol BIS Billing 3.0 Schematron (3.0.20) has 59 rule ids of its own (`PEPPOL-EN16931-…`, `PEPPOL-COMMON-…`); the national rules it contains (`NO-R-…`, `DK-R-…`, `SE-R-…` …) are not ported. In the Peppol profile the PHP rules check every rule that the data of an invoice can break. The others need no PHP rule:
+
+| Rules | Why there is no PHP rule |
+|---|---|
+| `PEPPOL-EN16931-R004` | The writer takes the specification identifier (BT-24) from the profile. |
+| `PEPPOL-EN16931-R043`, `-R044` | The writer writes the charge indicator itself, `false` for the price discount (BT-147). |
+| `PEPPOL-EN16931-R051` | The writer gives every amount the invoice currency (BT-5), BT-111 the VAT accounting currency (BT-6). |
+| `PEPPOL-EN16931-R053`, `-R054` | The writer writes one `cac:TaxTotal` with the VAT breakdown and a second one with BT-111 only together with BT-6. A missing breakdown or BT-111 is reported by `BR-CO-18` and `BR-53`. |
+| `PEPPOL-EN16931-R080`, `-R100`, `-R101` | The data holds one project reference (BT-11) and one invoiced object per line (BT-128); the writer gives the line reference the type code 130. |
+| `PEPPOL-EN16931-CL001` | `MimeType` holds exactly the six MIME codes of the Peppol list (`BR-CL-24`). |
+| `PEPPOL-EN16931-CL002`, `-CL003`, `-CL006` | The lists equal those of `BR-CL-19`, `BR-CL-20` and `BR-CL-06`, which report the code once. |
+| `PEPPOL-COMMON-R048` | Commented out in the Schematron. |
+
+Where a Peppol rule overlaps an EN 16931 rule, the Peppol code is reported only for what the Peppol rule adds: `-CL007` for currencies of the EN 16931 list that the Peppol copy of ISO 4217 lacks (e.g. `XCG`), `-P0100` and `-P0101` for type codes of the EN 16931 list that business process 01 does not allow, `-R008` for optional values of only whitespace (the writer leaves out empty values; mandatory ones are reported as missing by `BR-02` …), `-R007` for a business process in another format (a missing one is `-R001`). The narrower code lists `CodeList::PEPPOL_CURRENCIES`, `PEPPOL_INVOICE_TYPES` and `PEPPOL_CREDIT_NOTE_TYPES` are generated from the Schematron like `PEPPOL_EAS` (`tools/codelists/update.php`). `PEPPOL-COMMON-R040` to `-R053` check the format and check digits of identifiers with the schemes 0088 (GLN), 0192, 0184, 0208, 0201, 0210, 9907 (electronic address only), 0211, 0007, 0151, 0096 and 0198 in electronic addresses (BT-34, BT-49), party identifiers (BT-29, BT-46, BT-60) and legal registration identifiers (BT-30, BT-47, BT-61).
 
 ### Plausibility (L7)
 

@@ -405,7 +405,10 @@
             "NOTE_SUBJECTS",
             "OBJECT_IDENTIFIERS",
             "PAYMENT_MEANS",
+            "PEPPOL_CREDIT_NOTE_TYPES",
+            "PEPPOL_CURRENCIES",
             "PEPPOL_EAS",
+            "PEPPOL_INVOICE_TYPES",
             "UNITS",
             "VATEX",
             "VAT_CATEGORIES"
@@ -418,7 +421,8 @@
     "Quittio\\Core\\Codes\\CodeListGenerator": {
         "kind": "final class",
         "constants": [
-            "LISTS"
+            "LISTS",
+            "PEPPOL_LISTS"
         ],
         "methods": [
             "public generate(string $xslPath, ?string $target = null): array",

@@ -8,7 +8,8 @@ use Quittio\Core\Exceptions\RuntimeException;
 
 /**
  * Generates the code list files (resources/codelists/*.json) from the official EN 16931
- * Schematron rules (BR-CL-*), as shipped with the KoSIT validator configuration.
+ * Schematron rules (BR-CL-*), as shipped with the KoSIT validator configuration, and the
+ * narrower Peppol lists from the Peppol BIS Schematron.
  */
 final class CodeListGenerator
 {
@@ -30,6 +31,14 @@ final class CodeListGenerator
         'BR-CL-23' => 'unit-codes',
         'BR-CL-24' => 'mime-codes',
         'BR-CL-25' => 'eas-codes',
+    ];
+
+    /** Code list names and the Peppol rules they are generated from (generatePeppol()). */
+    public const array PEPPOL_LISTS = [
+        CodeList::PEPPOL_EAS => 'PEPPOL-EN16931-CL008',
+        CodeList::PEPPOL_CURRENCIES => 'PEPPOL-EN16931-CL007',
+        CodeList::PEPPOL_INVOICE_TYPES => 'PEPPOL-EN16931-P0100',
+        CodeList::PEPPOL_CREDIT_NOTE_TYPES => 'PEPPOL-EN16931-P0101',
     ];
 
     public static function defaultTarget(): string
@@ -80,8 +89,10 @@ final class CodeListGenerator
     }
 
     /**
-     * Generates the Peppol code lists (PEPPOL-EN16931-CL…) that are narrower than the EN 16931
-     * lists, from the Peppol BIS Billing 3.0 Schematron (PEPPOL-EN16931-UBL.sch).
+     * Generates the Peppol code lists (PEPPOL-EN16931-CL…, P01…) that are narrower than the
+     * EN 16931 lists, from the Peppol BIS Billing 3.0 Schematron (PEPPOL-EN16931-UBL.sch). The
+     * codes are read from the assertion of the rule: an inline tokenize('…') or the variable
+     * (<let>) the assertion refers to.
      *
      * @return array<string, int> code list name => number of codes
      */
@@ -91,27 +102,40 @@ final class CodeListGenerator
         if ($content === false) {
             throw new RuntimeException(sprintf('The Peppol Schematron "%s" could not be read.', $schematronPath));
         }
-        if (preg_match('/<let name="eaid" value="tokenize\(\'([^\']*)\'/', $content, $list) !== 1) {
-            throw new RuntimeException(sprintf('The Peppol Schematron "%s" defines no code list "eaid".', $schematronPath));
-        }
-
-        $parts = preg_split('/\s+/', trim($list[1]));
-        $codes = array_values(array_unique($parts === false ? [] : $parts));
-        sort($codes, SORT_STRING);
         preg_match('/release ([0-9]+(?:\.[0-9]+)*)/', $content, $version);
-        preg_match('/id="PEPPOL-EN16931-CL008".*?>([^<]+)<\/assert>/s', $content, $message);
 
         $target ??= self::defaultTarget();
-        $data = [
-            'name' => CodeList::PEPPOL_EAS,
-            'rule' => 'PEPPOL-EN16931-CL008',
-            'description' => trim($message[1] ?? ''),
-            'source' => 'Peppol BIS Billing 3.0 Schematron '.($version[1] ?? 'unknown'),
-            'codes' => $codes,
-        ];
-        file_put_contents($target.'/'.CodeList::PEPPOL_EAS.'.json', json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)."\n");
+        $counts = [];
+        foreach (self::PEPPOL_LISTS as $name => $rule) {
+            if (preg_match('/<assert\s+id="'.preg_quote($rule, '/').'"\s+test="([^"]*)"[^>]*>([^<]*)<\/assert>/', $content, $assert) !== 1) {
+                throw new RuntimeException(sprintf('The Peppol Schematron "%s" defines no rule "%s".', $schematronPath, $rule));
+            }
+            $list = null;
+            if (preg_match("/tokenize\\('([^']*)'/", $assert[1], $inline) === 1) {
+                $list = $inline[1];
+            } elseif (preg_match('/\bin\s+\$([A-Za-z0-9_]+)/', $assert[1], $variable) === 1
+                && preg_match('/<let name="'.preg_quote($variable[1], '/').'" value="tokenize\(\'([^\']*)\'/', $content, $let) === 1) {
+                $list = $let[1];
+            }
+            if ($list === null) {
+                throw new RuntimeException(sprintf('The rule "%s" of the Peppol Schematron "%s" names no code list.', $rule, $schematronPath));
+            }
 
-        return [CodeList::PEPPOL_EAS => count($codes)];
+            $parts = preg_split('/\s+/', trim($list));
+            $codes = array_values(array_unique($parts === false ? [] : $parts));
+            sort($codes, SORT_STRING);
+            $data = [
+                'name' => $name,
+                'rule' => $rule,
+                'description' => trim(preg_replace('/\s+/', ' ', $assert[2]) ?? ''),
+                'source' => 'Peppol BIS Billing 3.0 Schematron '.($version[1] ?? 'unknown'),
+                'codes' => $codes,
+            ];
+            file_put_contents($target.'/'.$name.'.json', json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)."\n");
+            $counts[$name] = count($codes);
+        }
+
+        return $counts;
     }
 
     /**

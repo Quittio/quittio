@@ -26,6 +26,15 @@ final class CodeList
     /** The electronic address schemes Peppol accepts (PEPPOL-EN16931-CL008): EAS without EM and other letter codes. */
     public const string PEPPOL_EAS = 'peppol-eas-codes';
 
+    /** The currencies Peppol accepts (PEPPOL-EN16931-CL007), the ISO 4217 version of the Peppol rules. */
+    public const string PEPPOL_CURRENCIES = 'peppol-currency-codes';
+
+    /** The invoice type codes (BT-3) of Peppol business process 01 (PEPPOL-EN16931-P0100). */
+    public const string PEPPOL_INVOICE_TYPES = 'peppol-invoice-type-codes';
+
+    /** The credit note type codes (BT-3) of Peppol business process 01 (PEPPOL-EN16931-P0101). */
+    public const string PEPPOL_CREDIT_NOTE_TYPES = 'peppol-credit-note-type-codes';
+
     public const string UNITS = 'unit-codes';
 
     public const string VATEX = 'vatex-codes';

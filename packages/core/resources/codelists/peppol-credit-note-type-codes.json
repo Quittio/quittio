@@ -1,0 +1,13 @@
+{
+    "name": "peppol-credit-note-type-codes",
+    "rule": "PEPPOL-EN16931-P0101",
+    "description": "Credit note type code MUST be set according to the profile.",
+    "source": "Peppol BIS Billing 3.0 Schematron 3.0.20",
+    "codes": [
+        "381",
+        "396",
+        "532",
+        "81",
+        "83"
+    ]
+}
