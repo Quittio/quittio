@@ -41,7 +41,7 @@ What the package tests still need from elsewhere:
 | `core` | `quittio/country-de` (require-dev) | `CancellationVatAlignmentTest` checks cancellations with German VAT presets |
 | `laravel` | `quittio/country-de` (require-dev) | the test application registers the German pack and a German seller |
 | `country-de` | the helper `Official` of the core tests | official validation tests; the split repository uses a stand-in (`tests/Standalone`) that skips them |
-| all | `tools/validators`, the downloaded test suites | the group `official`; skipped without them |
+| all | `tools/validators`, the downloaded test suites | the group `official`; skipped without them (in CI, the veraPDF tests fail without the Docker image instead) |
 | `core`, `laravel` | `docs/`, `resources/boost` of the monorepo | the field reference and Boost copy checks; skipped outside the monorepo |
 
 Two groups need more than PHP:

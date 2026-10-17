@@ -43,7 +43,7 @@ All open source packages are developed in this repository under [`packages/`](pa
 | Format | Content |
 |---|---|
 | `zugferd` / `factur-x` | PDF/A-3 with embedded CII XML (profiles MINIMUM to EXTENDED, XRECHNUNG) |
-| `xrechnung-cii`, `xrechnung-ubl` | XRechnung 3.0 as plain XML |
+| `xrechnung-cii`, `xrechnung-ubl` | XRechnung 3.0 as plain XML (also with the profiles `xrechnung-extension` and `xrechnung-cvd`) |
 | `cii`, `ubl` | Plain CII or UBL 2.1 XML in any profile |
 | `peppol` | UBL according to Peppol BIS Billing 3.0 |
 | `pdf`, `html`, `json` | PDF without XML, HTML preview, normalised data model |
