@@ -36,6 +36,17 @@ final class KositReportParser
         $scenarioNode = $names === false ? null : $names->item(0);
         $scenario = $scenarioNode instanceof DOMElement ? trim($scenarioNode->textContent) : null;
 
+        // The scenario can change the level of single rules (e.g. the XRechnung extension lowers
+        // BR-CO-16 to information); the validator decides on acceptance with these levels, while
+        // the messages keep the level of the Schematron.
+        $customLevels = [];
+        $levels = $xpath->query('/rep:report/rep:scenarioMatched/s:scenario/s:createReport/s:customLevel');
+        foreach ($levels === false ? [] : $levels as $level) {
+            if ($level instanceof DOMElement) {
+                $customLevels[trim($level->textContent)] = $level->getAttribute('level');
+            }
+        }
+
         $messages = [];
         $nodes = $xpath->query('//rep:message');
         foreach ($nodes === false ? [] : $nodes as $node) {
@@ -49,7 +60,7 @@ final class KositReportParser
             $xpathLocation = $node->getAttribute('xpathLocation');
 
             $messages[] = new ValidationMessage(
-                severity: match ($node->getAttribute('level')) {
+                severity: match ($customLevels[$code] ?? $node->getAttribute('level')) {
                     'error' => Severity::Error,
                     'warning' => Severity::Warning,
                     default => Severity::Info,

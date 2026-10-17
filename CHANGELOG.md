@@ -21,6 +21,7 @@ All notable changes to this project are documented in this file. The format foll
 
 ### Fixed
 
+- The KoSIT validator (L5) reports a rule with the level the validator scenario gives it (`customLevel`), as the validator itself does when it decides on acceptance. Before, the level of the Schematron was used, so e.g. BR-CO-16 in an XRechnung extension invoice with third party payments was reported as error although the validator accepted the document.
 - The official validation in CI now checks PDF/A-3b with veraPDF: the job pulls the `verapdf/cli` image (pinned by digest), and the veraPDF tests fail instead of being skipped when the image is missing in CI. `tools/validate-fixtures.sh` also renders every EN 16931 scenario as ZUGFeRD PDF and checks the PDFs with veraPDF; before, it generated no PDFs, and its veraPDF call would have received no files.
 
 ## [0.3.0] - 2026-10-16

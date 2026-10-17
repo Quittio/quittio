@@ -24,10 +24,25 @@ it('parses accepted reports with warnings', function () {
     expect($result['accepted'])->toBeTrue()
         ->and($result['scenario'])->toBe('EN16931 XRechnung (CII)')
         ->and($result['messages'][0]->code)->toBe('CII-SR-475')
-        ->and($result['messages'][0]->severity)->toBe(Severity::Warning)
+        // The Schematron flags CII-SR-475 as warning, the scenario lowers it to information.
+        ->and($result['messages'][0]->severity)->toBe(Severity::Info)
         ->and($result['messages'][0]->level)->toBe(ValidationLevel::L5)
         ->and($result['messages'][0]->message)->toStartWith('Only one AdditionalReferencedDocument')
         ->and($result['messages'][0]->xpath)->not->toBeNull();
+});
+
+it('takes the level of a rule from the custom levels of the scenario', function (string $level, Severity $severity) {
+    $report = str_replace('<s:customLevel level="information">CII-SR-475</s:customLevel>', "<s:customLevel level=\"{$level}\">CII-SR-475</s:customLevel>", kositFixture('accepted-with-warning.xml'));
+    $result = (new KositReportParser)->parse($report);
+
+    expect($result['messages'][0]->code)->toBe('CII-SR-475')
+        ->and($result['messages'][0]->severity)->toBe($severity);
+})->with([['error', Severity::Error], ['warning', Severity::Warning], ['information', Severity::Info]]);
+
+it('keeps the level of the Schematron for rules without a custom level', function () {
+    $report = str_replace('<s:customLevel level="information">CII-SR-475</s:customLevel>', '', kositFixture('accepted-with-warning.xml'));
+
+    expect((new KositReportParser)->parse($report)['messages'][0]->severity)->toBe(Severity::Warning);
 });
 
 it('parses rejected reports', function () {
