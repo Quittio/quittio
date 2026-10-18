@@ -246,6 +246,10 @@ return [
         'message' => 'The final invoice deducts an advance that was settled by self-billing (Gutschrift), but is no self-billed invoice itself. The advance must be deducted (section 14 (2) sentence 5 UStG); changing the way of invoicing is allowed but unusual.',
         'hint' => 'Check with the buyer how the final payment is settled. If the buyer settles it by self-billing as well, the buyer issues the final document.',
     ],
+    'DE-USTG-20' => [
+        'message' => 'The final invoice deducts an advance invoice in full without the amount received being confirmed. Only advance payments actually received are deducted (section 14 (5) sentence 2 UStG, section 14.8 (2), (5) and (10) UStAE).',
+        'hint' => 'Pass the amount received: ->de()->deductAdvance($advance, received: \'500.00\') for a part, received: GermanInvoice::RECEIVED_IN_FULL for the whole advance. Do not deduct an advance that was not paid.',
+    ],
     'DE-LEITWEG-ID' => [
         'message' => 'The check digits of the Leitweg-ID ":value" (BT-10) are wrong.',
         'hint' => 'Check the Leitweg-ID with the public buyer.',

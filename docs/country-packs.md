@@ -327,7 +327,8 @@ German law allows a simplified invoice for small amounts (section 33 UStDV). `->
 | `propertyRelatedService(string $locale = 'de')` | a service in connection with a property for a non-business buyer, who must keep the invoice for two years | flag `de.property_related_service` and the note `LegalTexts::PROPERTY_RETENTION` (subject `REG`) |
 | `newVehicle(string $locale = 'de')` | the intra-community supply of a new vehicle | flag `de.new_vehicle` and the note `LegalTexts::NEW_VEHICLE` (subject `REG`). The vehicle details are your line attributes (`DE-USTG-07`). The vehicle lines use `VatPreset::IntraCommunitySupply` (`DE-USTG-13`), also for small businesses (`DE-USTG-14`). |
 | `selfBilled(string $locale = 'de')` | a self-billed invoice ([Self-billing](#self-billing-gutschrift)) | type code 389 and the note `LegalTexts::SELF_BILLING` (subject `REG`) |
-| `deductAdvance(InvoiceData $advance, string $locale = 'de')` | a final invoice that deducts an advance invoice ([Final invoices](#final-invoices-deductadvance)) | preceding invoice (BG-3), prepaid amount (BT-113) and the note `LegalTexts::ADVANCE_DEDUCTION` (subject `REG`) |
+| `deductAdvance(InvoiceData $advance, string $locale = 'de', $received = null, string $style = 'prepaid')` | a final invoice that deducts an advance invoice ([Final invoices](#final-invoices-deductadvance)) | preceding invoice (BG-3), prepaid amount (BT-113) and the note `LegalTexts::ADVANCE_DEDUCTION` (subject `REG`); with `style: 'remainder'` negative lines and `LegalTexts::ADVANCE_DEDUCTION_REMAINDER` instead of BT-113 |
+| `advance($expectedService, $receivedOn = null, string $locale = 'de')` (only as `->de()->advance()`) | a prepayment invoice ([Prepayment invoices](#prepayment-invoices)) | type code 386, the note `LegalTexts::PREPAYMENT` or `PREPAYMENT_MONTH` (or `SERVICE_DATE_OPEN` without a date), with `$receivedOn` the VAT point date BT-7 and the note `PREPAYMENT_RECEIVED` |
 | `consumerDefaultNotice(string $locale = 'de')` | the notice that a consumer is in default 30 days after the due date (section 286 (3) BGB) | the note `LegalTexts::CONSUMER_DEFAULT` (subject `PMT`) |
 | `discountAgreement(string $agreement, string $locale = 'de')` (only as `->de()->discountAgreement()`) | an agreed bonus, rebate or other reduction whose amount is not known yet (section 14 (4) no. 7 UStG); naming the agreement is enough (section 14.5 (19) UStAE) | the note `LegalTexts::DISCOUNT_AGREEMENT` (subject `REG`) |
 | `smallBusinessId(string $id)` (only as `->de()->smallBusinessId()`) | a small business that states its small business identification number (suffix `EX`) instead of the tax number ([Small businesses](#small-businesses)) | the number as the seller's tax number (BT-32) and the flag `small_business` |
@@ -347,12 +348,35 @@ parameters:
 - A locale with a region uses the text of its language (`en_GB` → English). Locales without a text of the pack get the German text (`LegalTexts::text()`).
 - Notes with subject `REG` (regulatory information) are listed in the PDF's legal notes (`legalNotes`). Notes with subject `PMT` (payment information) appear with the other notes.
 
-#### Final invoices (`deductAdvance`)
+#### Prepayment invoices
 
-A final invoice (Schlussrechnung, section 14 (5) sentence 2 UStG) states the full service with its full VAT and deducts the advance payments received. `->de()->deductAdvance($advance)` does this for one advance invoice:
+A prepayment invoice (Anzahlungsrechnung, type code 386) must show that it invoices an advance payment, e.g. by the expected date or month of the service (section 14.8 (1) and (4) UStAE). `->de()->advance()` sets the type code and the note:
 
 ```php
 use Quittio\Core\Enums\UnitCode;
+use Quittio\Laravel\Facades\Quittio;
+
+$advance = Quittio::invoice()
+    ->de()->advance('2027-03')                     // "Anzahlungsrechnung. Die Leistung wird voraussichtlich im März 2027 erbracht."
+    ->line('Website relaunch, advance payment', netPrice: '1000.00', unit: UnitCode::LumpSum);
+
+$paid = Quittio::invoice()
+    ->de()->advance('2027-03-15', receivedOn: '2026-10-01')   // "… am 15.03.2027 erbracht. Die Anzahlung wurde am 01.10.2026 vereinnahmt."
+    ->line('Website relaunch, advance payment', netPrice: '1000.00', unit: UnitCode::LumpSum)
+    ->prepaid('1190.00');
+```
+
+- `$expectedService` is a date or a month (`"2027-03"`). `null` states that the date is not agreed yet (`serviceDateOpen()`, section 14.8 (4) sentence 5 UStAE). Either way `DE-USTG-03` does not warn.
+- `$receivedOn` is the date a payment was already received. It is stated as VAT point date (BT-7), to which the mapping table of KoSIT and FeRD assigns the date of receipt, and in a note (section 14 (4) sentence 1 no. 6 UStG). A prepayment invoice with a prepaid amount but no BT-7 gets `DE-USTG-17`.
+- XRechnung warns about type code 386 (`BR-DE-17`): its list names 326 and 380 but not 386. The mapping table of KoSIT and FeRD prescribes 386 for prepayment invoices all the same, so the warning is to be accepted.
+
+#### Final invoices (`deductAdvance`)
+
+A final invoice (Schlussrechnung, section 14 (5) sentence 2 UStG) states the full service with its full VAT and deducts the advance payments received. `->de()->deductAdvance(InvoiceData $advance, string $locale = 'de', $received = null, string $style = GermanInvoice::PREPAID)` does this for one advance invoice:
+
+```php
+use Quittio\Core\Enums\UnitCode;
+use Quittio\Country\DE\Builder\GermanInvoice;
 use Quittio\Country\DE\Tax\VatPreset;
 use Quittio\Laravel\Facades\Quittio;
 
@@ -361,7 +385,7 @@ $advance = $advanceResult->data();                 // the rendered advance invoi
 $final = Quittio::invoice()
     // number, dates, buyer, payment …
     ->line('Website', netPrice: '3000.00', unit: UnitCode::Piece, vat: VatPreset::Standard)
-    ->de()->deductAdvance($advance);
+    ->de()->deductAdvance($advance, received: GermanInvoice::RECEIVED_IN_FULL);
 ```
 
 The advance invoice must be calculated. The data of a rendered invoice (`$result->data()`) already is; calculate data you built yourself with `(new En16931Calculator)->calculate($advanceInvoice)` (`Quittio\Core\Calculation\En16931Calculator`).
@@ -374,11 +398,15 @@ With `->de()->deductAdvance($advance, 'en')` the note is in English: "Less advan
 
 - **Checks.** The advance invoice must be calculated (`totals` set), have a positive gross total and be in the currency of the final invoice. Otherwise an `InvalidArgumentException` is thrown. Set `->currency()` before calling the macro.
 - **Accepted documents.** Only documents that can be advance invoices are accepted (`GermanInvoiceMacros::ADVANCE_TYPES`): type codes 380 (commercial invoice), 386 (prepayment invoice), 326 (partial invoice), 875 (partial construction invoice) and 389 (self-billed invoice). Credit notes, debit notes, corrected invoices (384), final invoices (876, 877) and cancellations by negative invoice are rejected.
-- **Amount.** The deducted amount is the advance invoice's gross total plus its cash rounding (BT-114).
+- **Amount received.** Only advance payments actually received are deducted (section 14 (5) sentence 2 UStG). Pass what you received as `received:`: `GermanInvoice::RECEIVED_IN_FULL` (or the full amount) deducts the advance invoice's gross total plus its cash rounding (BT-114). A smaller amount, e.g. `received: '595.00'` for half of the example, deducts that amount: it is distributed over the VAT rows of the advance invoice in proportion to their gross amounts, and the VAT is taken out of each part at its rate (section 14.8 (5) UStAE). The note then names these amounts. Zero or more than the advance invoice throws an `InvalidArgumentException`.
+- **Unconfirmed amount.** Without `received:` the advance invoice is deducted in full as before, but the flag `de.advance_receipt_unconfirmed` is set and `DE-USTG-20` warns. Deducting an advance that was not paid states too little VAT; not deducting one that was paid makes you owe its VAT twice (section 14.8 (10) UStAE).
+- **Unpaid advance invoices.** Do not deduct them. The advance invoice need not be cancelled (section 14.8 (2) UStAE); you may cancel it for clarity in your accounts.
+- **Remainder invoice.** `style: GermanInvoice::REMAINDER` adds instead a line "Abzüglich Anzahlung gemäß Rechnung … vom …" per VAT row with quantity −1 and the net amount received, and the note `LegalTexts::ADVANCE_DEDUCTION_REMAINDER` ("Restrechnung: Abgezogen ist die vereinnahmte Anzahlung gemäß Rechnung …"). The invoice then shows only the VAT of the remainder (section 14.8 (11) UStAE), which the buyer's system cannot deduct twice. The default `PREPAID` (BT-113 with the itemisation in BT-22) is the variant the BMF letter of 15 October 2026 (marginal no. 3) explicitly accepts until 30 June 2030.
 - **Itemisation.** Every VAT row of the advance invoice is itemised. Standard rated rows read "Entgelt … zzgl. … Umsatzsteuer …" ("net … plus … VAT …", `LegalTexts::ADVANCE_DEDUCTION_TAXED`), other rows "Entgelt … ohne Umsatzsteuer" ("net … without VAT", `LegalTexts::ADVANCE_DEDUCTION_UNTAXED`). Rows are separated by semicolons.
 - **Language.** The whole note is in one language: the language of `$locale` if the pack has it (`de`, `en`), otherwise German. Amounts and dates are formatted in `$locale` when the note is in its language (e.g. `de_AT`). Otherwise they are formatted in the language of the note: `fr` gives the German note with German formatting.
 - **Several advance invoices.** Call the macro once per advance invoice; the prepaid amounts add up.
-- **Payment.** The macro does not check whether the advance invoice was paid. Deduct only payments you received.
+- **Self-billed advances.** An advance settled by self-billing (389) must be deducted as well. If the final invoice is no self-billed invoice, `DE-USTG-19` notes the change of the way of invoicing.
+- **Review in 2030.** The acceptance of BT-113 with the itemisation in BT-22 ends on 30 June 2030 (BMF letter of 15 October 2026, marginal no. 3); the default will be reviewed then.
 
 A complete example with the advance invoice is in [Examples: Advance payment and final invoice](examples.md#advance-payment-and-final-invoice).
 
@@ -597,6 +625,7 @@ You rarely need this table up front: a failing rule names its code, the field an
 | `DE-USTG-17` | warning (BT-7 `taxPointDate`) | A prepayment invoice (386) states an amount already paid (BT-113 above zero) but no VAT point date (BT-7). A warning, as a payment received on the issue date needs no date of its own. | section 14 (4) sentence 1 no. 6 UStG | `->taxPointDate($received)`. |
 | `DE-USTG-18` | warning (BT-22 `notes`) | A corrected invoice (384) has no note that contains "berichtigt", "ersetzt", "korrigiert", "corrects", "replaces", "rectifie" or "remplace". | section 31 (5) UStDV, section 15.2a (7) UStAE | `Quittio::correction()` adds "Diese Rechnung berichtigt und ersetzt die Rechnung … vom …". |
 | `DE-USTG-19` | info (BT-3 `typeCode`) | A final invoice deducted an advance settled by self-billing (389, flag `de.self_billed_advance` set by `deductAdvance()`), but is no self-billed invoice. The deduction is required; changing the way of invoicing is allowed but unusual. | section 14 (2) sentence 5, (5) sentence 2 UStG | Check with the buyer who settles the final payment. |
+| `DE-USTG-20` | warning (BT-113 `prepaidAmount`) | `deductAdvance()` deducted an advance invoice without `received:` (flag `de.advance_receipt_unconfirmed`). Only advance payments actually received are deducted. | section 14 (5) sentence 2 UStG, section 14.8 (2), (5) and (10) UStAE | `received: GermanInvoice::RECEIVED_IN_FULL` or the amount received. |
 
 Helpers used by the rules and available to you:
 
@@ -680,8 +709,12 @@ The default templates print all of them.
 | `EXPORT` (`export`) | Steuerfreie Ausfuhrlieferung (§ 4 Nr. 1a i. V. m. § 6 UStG) | VAT-exempt export supply (section 4 no. 1a in conjunction with section 6 UStG) | – (text of `VatPreset::Export`) |
 | `SMALL_BUSINESS` (`small_business`) | Steuerfreie Leistung nach § 19 Abs. 1 UStG (Steuerbefreiung für Kleinunternehmer). | VAT-exempt supply under section 19 (1) UStG (small business exemption). | – (text of `VatPreset::SmallBusiness`) |
 | `SERVICE_DATE_OPEN` (`service_date_open`) | Der Zeitpunkt der Leistung ist noch nicht vereinbart. | The date of the service has not been agreed yet. | `serviceDateOpen()` |
-| `PREPAYMENT` (`prepayment`) | Die Umsatzsteuer entsteht mit Vereinnahmung der Anzahlung. Die Leistung wird voraussichtlich am :date erbracht. | VAT becomes due on receipt of the prepayment. The service is expected to be performed on :date. | – |
+| `PREPAYMENT` (`prepayment`) | Anzahlungsrechnung. Die Leistung wird voraussichtlich am :date erbracht. | Advance invoice. The service is expected to be performed on :date. | `advance()` with a date |
+| `PREPAYMENT_MONTH` (`prepayment_month`) | Anzahlungsrechnung. Die Leistung wird voraussichtlich im :month erbracht. | Advance invoice. The service is expected to be performed in :month. | `advance()` with a month |
+| `PREPAYMENT_RECEIVED` (`prepayment_received`) | Die Anzahlung wurde am :date vereinnahmt. | The advance payment was received on :date. | `advance()` with `$receivedOn` |
 | `ADVANCE_DEDUCTION` (`advance_deduction`) | Abzüglich Anzahlung gemäß Rechnung :number vom :date: :amounts (§ 14 Abs. 5 Satz 2 UStG). | Less advance payment according to invoice :number of :date: :amounts (section 14 (5) sentence 2 UStG). | `deductAdvance()` |
+| `ADVANCE_DEDUCTION_REMAINDER` (`advance_deduction_remainder`) | Restrechnung: Abgezogen ist die vereinnahmte Anzahlung gemäß Rechnung :number vom :date: :amounts (§ 14 Abs. 5 Satz 2 UStG). | Remainder invoice: less the advance payment received according to invoice :number of :date: :amounts (section 14 (5) sentence 2 UStG). | `deductAdvance()` with `style: 'remainder'` |
+| `ADVANCE_DEDUCTION_LINE` (`advance_deduction_line`) | Abzüglich Anzahlung gemäß Rechnung :number vom :date | Less advance payment according to invoice :number of :date | item name of the negative lines of a remainder invoice |
 | `ADVANCE_DEDUCTION_TAXED` (`advance_deduction_taxed`) | Entgelt :net zzgl. :rate Umsatzsteuer :vat | net :net plus :rate VAT :vat | `deductAdvance()`, part of `:amounts` |
 | `ADVANCE_DEDUCTION_UNTAXED` (`advance_deduction_untaxed`) | Entgelt :net ohne Umsatzsteuer | net :net without VAT | `deductAdvance()`, part of `:amounts` |
 | `CONSUMER_DEFAULT` (`consumer_default`) | Sie kommen spätestens in Verzug, wenn Sie nicht innerhalb von 30 Tagen nach Fälligkeit und Zugang dieser Rechnung zahlen (§ 286 Abs. 3 BGB). | You will be in default at the latest if you do not pay within 30 days of the due date and receipt of this invoice (section 286 (3) BGB). | `consumerDefaultNotice()` |
@@ -694,7 +727,7 @@ The default templates print all of them.
 - Validation and rendering add no text. The builder adds the notes of the presets that require one (`StatesInvoiceNote`, see [Tax presets](#tax-presets)).
 - `LegalTexts::text($key, $locale, $replace)` returns a text in the language of `$locale` (`en_GB` → English) or in German. `LegalTexts::localeOf($key, $locale)` names the catalog locale it uses.
 
-A text for your own note, here on a prepayment invoice (386), which states that VAT is due on receipt of the payment and names the expected date of the service:
+A text for your own note, here on a prepayment invoice (386), which names the expected date of the service:
 
 ```php
 use Quittio\Core\Enums\NoteSubjectCode;
@@ -706,7 +739,7 @@ $builder->type('386')->note(
 );
 ```
 
-Prepayment invoices (386) without a service date get a `DE-USTG-03` warning instead of an error; name the expected date as above, or state with `->de()->serviceDateOpen()` that it is not agreed yet. A prepayment invoice for a payment already received (BT-113) states the date of receipt as VAT point date (`->taxPointDate()`, BT-7) if it differs from the issue date (`DE-USTG-17`).
+`->de()->advance()` adds this note itself ([Prepayment invoices](#prepayment-invoices)). Prepayment invoices (386) without a service date get a `DE-USTG-03` warning instead of an error, unless `advance()` named the expected date or `->de()->serviceDateOpen()` states that it is not agreed yet. A prepayment invoice for a payment already received (BT-113) states the date of receipt as VAT point date (`->taxPointDate()`, BT-7) if it differs from the issue date (`DE-USTG-17`).
 
 ### Meta flags
 
@@ -719,6 +752,8 @@ The pack marks German special cases with meta flags on the invoice (`InvoiceData
 | `NEW_VEHICLE` | `de.new_vehicle` | `newVehicle()` | `DE-USTG-07`, `DE-USTG-13`, `DE-USTG-14` (exception) |
 | `SERVICE_DATE_OPEN` | `de.service_date_open` | `serviceDateOpen()` | no `DE-USTG-03` warning for a prepayment invoice without service date |
 | `SELF_BILLED_ADVANCE` | `de.self_billed_advance` | `deductAdvance()` of a self-billed advance (389) | `DE-USTG-19` |
+| `EXPECTED_SERVICE_DATE` | `de.expected_service_date` | `advance()` with a date or month | no `DE-USTG-03` warning for a prepayment invoice without service date |
+| `ADVANCE_RECEIPT_UNCONFIRMED` | `de.advance_receipt_unconfirmed` | `deductAdvance()` without `received:` | `DE-USTG-20` |
 | `SMALL_BUSINESS` | `small_business` (`Meta::FLAG_SMALL_BUSINESS`) | seller configuration, Managed issuer, `->flag()`, `smallBusinessId()` | small business invoice (section 34a UStDV): `DE-USTG-03`, `DE-USTG-09`, `DE-USTG-11`, `DE-USTG-14`, `DE-TAX-NUMBER`, mandatory output |
 | `SMALL_AMOUNT_LIMIT` | `250.00` | – | deprecated: the limit depends on the supply date, see `TaxTables::smallAmountLimitOn()` |
 
@@ -790,7 +825,7 @@ For pack authors, this is how `CountryDE` fills the [`CountryPack` contract](#th
 ### Known limitations
 
 - The legal wording and references of presets, rules and texts are proposals that must be confirmed by a tax adviser (see the legal review in the README). The default correction strategy and the cancellation of self-billed invoices are under review as well.
-- Final invoices: only the EN 16931 variant (`deductAdvance()`) exists. The EXTENDED variant and the handling of unpaid advance invoices are open.
+- Final invoices: the EN 16931 variants of `deductAdvance()` (prepaid amount or remainder invoice) exist; the EXTENDED variant does not. The tax review found it unnecessary.
 - The shipped base rate table ends with 1 July 2026. Later rates come from `quittio.countries.de.base_rates` or `php artisan quittio:base-rate:update` (see [Base rate table](#base-rate-table)).
 - Default dunning fees and flat rates are under review. The documents layer does not track the section 288 (5) BGB flat rate per claim.
 - Distance sales (section 3c UStG) cannot be told from the data; `DE-USTG-12` only warns about possible ones.

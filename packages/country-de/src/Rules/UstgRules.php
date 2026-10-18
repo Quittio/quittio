@@ -86,7 +86,7 @@ final class UstgRules
                 // Prepayment invoices name the expected date of the service, or state that it is
                 // not agreed yet (section 14.8 (4) sentences 3 and 5 UStAE).
                 if ($i->typeCode === InvoiceTypeCode::PrepaymentInvoice) {
-                    if (! $i->meta->hasFlag(Flags::SERVICE_DATE_OPEN)) {
+                    if (! $i->meta->hasFlag(Flags::SERVICE_DATE_OPEN) && ! $i->meta->hasFlag(Flags::EXPECTED_SERVICE_DATE)) {
                         $report->warning('BT-72', 'delivery.actualDeliveryDate');
                     }
 
@@ -264,6 +264,11 @@ final class UstgRules
                     }
                 }
                 $report->warning('BT-22', 'notes');
+            }),
+            $r('DE-USTG-20', 'The final invoice deducts an advance invoice in full without the amount received being confirmed. Only advance payments actually received are deducted (section 14 (5) sentence 2 UStG, section 14.8 (2), (5) and (10) UStAE).', function (InvoiceData $i, RuleReporter $report): void {
+                if ($i->meta->hasFlag(Flags::ADVANCE_RECEIPT_UNCONFIRMED)) {
+                    $report->warning('BT-113', 'prepaidAmount');
+                }
             }),
             $r('DE-USTG-19', 'The final invoice deducts an advance that was settled by self-billing (Gutschrift), but is no self-billed invoice itself. The advance must be deducted (section 14 (2) sentence 5 UStG); changing the way of invoicing is allowed but unusual.', function (InvoiceData $i, RuleReporter $report): void {
                 if ($i->meta->hasFlag(Flags::SELF_BILLED_ADVANCE) && ! ($i->typeCode instanceof InvoiceTypeCode && $i->typeCode->isSelfBilled())) {

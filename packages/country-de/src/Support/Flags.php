@@ -27,6 +27,18 @@ final class Flags
     public const string SERVICE_DATE_OPEN = 'de.service_date_open';
 
     /**
+     * Prepayment invoice that names the expected date or month of the service in its note (set
+     * by advance(), section 14.8 (4) sentence 3 UStAE): no DE-USTG-03 warning.
+     */
+    public const string EXPECTED_SERVICE_DATE = 'de.expected_service_date';
+
+    /**
+     * deductAdvance() deducted an advance in full without the amount received being confirmed:
+     * DE-USTG-20 asks to confirm it.
+     */
+    public const string ADVANCE_RECEIPT_UNCONFIRMED = 'de.advance_receipt_unconfirmed';
+
+    /**
      * A final invoice deducted an advance that was settled by self-billing (389), set by
      * deductAdvance(): DE-USTG-19 notes the change of the way of invoicing.
      */

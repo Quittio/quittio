@@ -246,6 +246,10 @@ return [
         'message' => 'Die Schlussrechnung zieht eine per Gutschrift abgerechnete Anzahlung ab, ist selbst aber keine Gutschrift. Die Anzahlung muss abgezogen werden (§ 14 Abs. 2 Satz 5 UStG); ein Wechsel des Abrechnungswegs ist zulässig, aber ungewöhnlich.',
         'hint' => 'Klären Sie mit dem Leistungsempfänger, wie die Schlusszahlung abgerechnet wird. Rechnet er weiter per Gutschrift ab, stellt er auch das Schlussdokument aus.',
     ],
+    'DE-USTG-20' => [
+        'message' => 'Die Schlussrechnung zieht eine Anzahlungsrechnung vollständig ab, ohne dass der vereinnahmte Betrag bestätigt ist. Abzuziehen sind nur tatsächlich vereinnahmte Anzahlungen (§ 14 Abs. 5 Satz 2 UStG, Abschnitt 14.8 Abs. 2, 5 und 10 UStAE).',
+        'hint' => 'Geben Sie den vereinnahmten Betrag an: ->de()->deductAdvance($anzahlung, received: \'500.00\') für einen Teil, received: GermanInvoice::RECEIVED_IN_FULL für die ganze Anzahlung. Eine nicht bezahlte Anzahlung ziehen Sie nicht ab.',
+    ],
     'DE-LEITWEG-ID' => [
         'message' => 'Die Prüfziffer der Leitweg-ID „:value“ (BT-10) ist falsch.',
         'hint' => 'Prüfen Sie die Leitweg-ID beim öffentlichen Auftraggeber.',

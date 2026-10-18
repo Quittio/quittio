@@ -240,8 +240,8 @@ You agree on a project with an advance payment: you invoice part of the price wh
 
 ```php
 use Quittio\Core\Builder\Party;
-use Quittio\Core\Enums\InvoiceTypeCode;
 use Quittio\Core\Enums\UnitCode;
+use Quittio\Country\DE\Builder\GermanInvoice;
 use Quittio\Laravel\Facades\Quittio;
 
 $customer = Party::make('Kunde AG')
@@ -250,10 +250,9 @@ $customer = Party::make('Kunde AG')
 
 // Advance payment invoice when the order is placed
 $advance = Quittio::invoice()
-    ->type(InvoiceTypeCode::PrepaymentInvoice)
+    ->de()->advance('2026-10')                           // expected month of the service
     ->number('RE-2026-0090')
     ->issueDate('2026-09-01')
-    ->invoicingPeriod('2026-09-01', '2026-10-31')        // planned period of the service
     ->buyer($customer)
     ->line('Website relaunch, advance payment', netPrice: '1000.00', unit: UnitCode::LumpSum)
     ->dueInDays(14)
@@ -266,7 +265,7 @@ $final = Quittio::invoice()
     ->deliveryDate('2026-10-10')
     ->buyer($customer)
     ->line('Website relaunch', netPrice: '3000.00', unit: UnitCode::LumpSum)
-    ->de()->deductAdvance($advance->data())
+    ->de()->deductAdvance($advance->data(), received: GermanInvoice::RECEIVED_IN_FULL)
     ->dueInDays(14)
     ->render();
 
@@ -275,11 +274,10 @@ $final->data()->totals->prepaidAmount;                 // EUR 1190.00
 $final->data()->totals->amountDue;                     // EUR 2380.00
 ```
 
-- `type(InvoiceTypeCode::PrepaymentInvoice)` sets the invoice type code 386 (BT-3, the kind of invoice). The PDF is titled "Anzahlungsrechnung" (advance payment invoice).
-- The advance payment invoice states the planned period of the service. Without a date, the German country pack warns (`DE-USTG-03`).
-- The final invoice states the whole service with its whole VAT. `deductAdvance()` refers to the advance payment invoice and deducts its gross amount ([Final invoices](country-packs.md#final-invoices-deductadvance)).
+- `->de()->advance('2026-10')` sets the invoice type code 386 (BT-3, the kind of invoice) and the note "Anzahlungsrechnung. Die Leistung wird voraussichtlich im Oktober 2026 erbracht." (advance invoice, the service is expected in October 2026). The PDF is titled "Anzahlungsrechnung" ([Prepayment invoices](country-packs.md#prepayment-invoices)).
+- The final invoice states the whole service with its whole VAT. `deductAdvance()` refers to the advance payment invoice and deducts the amount received, here all of it ([Final invoices](country-packs.md#final-invoices-deductadvance)).
 - It also adds the note "Abzüglich Anzahlung gemäß Rechnung RE-2026-0090 vom 01.09.2026: Entgelt 1.000,00 € zzgl. 19 % Umsatzsteuer 190,00 € (§ 14 Abs. 5 Satz 2 UStG)." (less the advance payment of invoice RE-2026-0090 of 1 September 2026: net amount 1,000.00 € plus 19 % VAT 190.00 €, section 14 (5) sentence 2 UStG).
-- Call `deductAdvance()` once per advance payment received. It does not check whether the advance invoice was paid.
+- Call `deductAdvance()` once per advance payment received, with the amount received: `received: '595.00'` for a part. Do not deduct an advance that was not paid. Without `received:` the German pack warns (`DE-USTG-20`).
 
 ### Cancellation
 

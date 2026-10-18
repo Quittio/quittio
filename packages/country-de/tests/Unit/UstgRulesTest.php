@@ -20,6 +20,7 @@ use Quittio\Core\Validation\ValidationContext;
 use Quittio\Core\Validation\ValidationException;
 use Quittio\Core\Validation\ValidationResult;
 use Quittio\Core\Validation\ValidationSubject;
+use Quittio\Country\DE\Builder\GermanInvoice;
 use Quittio\Country\DE\CountryDE;
 use Quittio\Country\DE\Rules\UstgRules;
 use Quittio\Country\DE\Support\Flags;
@@ -294,7 +295,7 @@ it('deducts paid advance invoices with their VAT in the final invoice (section 1
         ->build());
     $builder = Scenarios::base()
         ->line(fn ($l) => $l->name('Website')->quantity(1, UnitCode::Piece)->netPrice('3000.00')->vat(VatPreset::Standard19))
-        ->de()->deductAdvance($advance);
+        ->de()->deductAdvance($advance, received: GermanInvoice::RECEIVED_IN_FULL);
     $invoice = (new En16931Calculator)->calculate($builder->build());
 
     expect($invoice->totals?->grossTotal->getAmount()->toString())->toBe('3570.00')
@@ -600,7 +601,7 @@ it('includes final invoices in the issuing deadline of intra-community supplies 
     $final = fn (string $issued) => Scenarios::base()->issueDate($issued)->deliveryDate('2026-08-31')
         ->buyer(fn ($b) => $b->name('Cliente S.r.l.')->vatId('IT12345678901')->address('Via Roma 1', '00184', 'Roma', 'IT'))
         ->line(fn ($l) => $l->name('Maschine')->quantity(1, UnitCode::Piece)->netPrice('5000.00')->vat(VatPreset::IntraCommunitySupply))
-        ->de()->deductAdvance($advance);
+        ->de()->deductAdvance($advance, received: GermanInvoice::RECEIVED_IN_FULL);
 
     expect(ustgCodes(ustg($final('2026-09-16'))))->toBe(['DE-USTG-15'])
         ->and(ustgCodes(ustg($final('2026-09-15'))))->toBe([])
@@ -668,4 +669,82 @@ it('warns about VAT rates that did not apply on the supply date', function () {
         ->and(ustgCodes(ustg($invoice('2021-01-05', '16'))))->toContain('DE-VAT-RATE')
         // Distance sales carry the rates of the buyer's country.
         ->and(ustgCodes(ustg($invoice('2021-01-05', '20', 'FR'))))->not->toContain('DE-VAT-RATE');
+});
+
+it('deducts only the amount received of an advance invoice paid in part (section 14.8 (5) UStAE)', function () {
+    $advance = (new En16931Calculator)->calculate(Scenarios::base()->number('AB-1')->issueDate('2026-09-01')->type('386')
+        ->line(fn ($l) => $l->name('Anzahlung A')->quantity(1, UnitCode::Piece)->netPrice('1000.00')->vat(VatPreset::Standard))
+        ->line(fn ($l) => $l->name('Anzahlung B')->quantity(1, UnitCode::Piece)->netPrice('500.00')->vat(VatPreset::Reduced))
+        ->build());
+    // 1,190.00 + 535.00 = 1,725.00 gross; half of it received.
+    $builder = Scenarios::base()
+        ->line(fn ($l) => $l->name('Website')->quantity(1, UnitCode::Piece)->netPrice('3000.00')->vat(VatPreset::Standard))
+        ->line(fn ($l) => $l->name('Buch')->quantity(1, UnitCode::Piece)->netPrice('1000.00')->vat(VatPreset::Reduced))
+        ->de()->deductAdvance($advance, received: '862.50');
+    $invoice = (new En16931Calculator)->calculate($builder->build());
+
+    expect($invoice->totals?->prepaidAmount?->getAmount()->toString())->toBe('862.50')
+        ->and($invoice->notes[array_key_last($invoice->notes)]->content)
+        ->toBe("Abzüglich Anzahlung gemäß Rechnung AB-1 vom 01.09.2026: Entgelt 500,00\u{00A0}€ zzgl. 19\u{00A0}% Umsatzsteuer 95,00\u{00A0}€; Entgelt 250,00\u{00A0}€ zzgl. 7\u{00A0}% Umsatzsteuer 17,50\u{00A0}€ (§ 14 Abs. 5 Satz 2 UStG).")
+        ->and(ustgCodes(ustg($builder)))->toBe([])
+        ->and(fn () => Scenarios::base()->de()->deductAdvance($advance, received: '0'))->toThrow(InvalidArgumentException::class, 'advance payments not received are not deducted')
+        ->and(fn () => Scenarios::base()->de()->deductAdvance($advance, received: '1725.01'))->toThrow(InvalidArgumentException::class, 'at most 1725.00');
+});
+
+it('asks to confirm the amount received of a deducted advance invoice', function () {
+    $advance = (new En16931Calculator)->calculate(Scenarios::base()->number('AB-1')->type('386')
+        ->line(fn ($l) => $l->name('Anzahlung')->quantity(1, UnitCode::Piece)->netPrice('1000.00')->vat(VatPreset::Standard))->build());
+    $final = fn () => Scenarios::base()->line(fn ($l) => $l->name('Website')->quantity(1, UnitCode::Piece)->netPrice('3000.00')->vat(VatPreset::Standard));
+    $unconfirmed = ustg($final()->de()->deductAdvance($advance));
+
+    expect(ustgCodes($unconfirmed))->toBe(['DE-USTG-20'])
+        ->and($unconfirmed->warnings()[0]->path)->toBe('prepaidAmount')
+        ->and(ustgCodes(ustg($final()->de()->deductAdvance($advance, received: '1190.00'))))->toBe([])
+        ->and(ustgCodes(ustg($final()->de()->deductAdvance($advance, received: GermanInvoice::RECEIVED_IN_FULL))))->toBe([]);
+});
+
+it('deducts the advance as negative lines in a remainder invoice (section 14.8 (11) UStAE)', function () {
+    $advance = (new En16931Calculator)->calculate(Scenarios::base()->number('AB-1')->issueDate('2026-09-01')->type('386')
+        ->line(fn ($l) => $l->name('Anzahlung')->quantity(1, UnitCode::Piece)->netPrice('1000.00')->vat(VatPreset::Standard))->build());
+    $builder = Scenarios::base()
+        ->line(fn ($l) => $l->name('Website')->quantity(1, UnitCode::Piece)->netPrice('5000.00')->vat(VatPreset::Standard))
+        ->de()->deductAdvance($advance, received: GermanInvoice::RECEIVED_IN_FULL, style: GermanInvoice::REMAINDER);
+    $invoice = (new En16931Calculator)->calculate($builder->build());
+    $quittio = Quittio::create([], [new CountryDE]);
+
+    expect($invoice->lines)->toHaveCount(2)
+        ->and($invoice->lines[1]->item->name)->toBe('Abzüglich Anzahlung gemäß Rechnung AB-1 vom 01.09.2026')
+        ->and($invoice->lines[1]->quantity->toString())->toBe('-1')
+        ->and($invoice->totals?->netTotal->getAmount()->toString())->toBe('4000.00')
+        ->and($invoice->totals?->vatTotal?->getAmount()->toString())->toBe('760.00')
+        ->and($invoice->totals?->prepaidAmount)->toBeNull()
+        ->and($invoice->precedingInvoices[0]->number)->toBe('AB-1')
+        ->and($invoice->notes[array_key_last($invoice->notes)]->content)->toStartWith('Restrechnung: Abgezogen ist die vereinnahmte Anzahlung gemäß Rechnung AB-1 vom 01.09.2026: Entgelt 1.000,00')
+        ->and(ustgCodes(ustg($builder)))->toBe([])
+        ->and($quittio->make($builder)->format('xrechnung-cii')->check()->errors())->toBe([])
+        ->and(fn () => Scenarios::base()->de()->deductAdvance($advance, style: 'extended'))->toThrow(InvalidArgumentException::class, 'Unknown style');
+});
+
+it('builds prepayment invoices with the expected date or month and the date of receipt (section 14.8 (4) UStAE)', function () {
+    $base = fn () => Scenarios::base()->line(fn ($l) => $l->name('Anzahlung')->quantity(1, UnitCode::Piece)->netPrice('1000.00')->vat(VatPreset::Standard));
+    $withoutDate = function (InvoiceBuilder $builder): InvoiceBuilder {
+        (new ReflectionProperty(InvoiceBuilder::class, 'delivery'))->setValue($builder, null);
+
+        return $builder;
+    };
+    $month = $withoutDate($base()->de()->advance('2027-03'));
+    $date = $base()->de()->advance('2027-03-15', receivedOn: '2026-10-01')->prepaid('1190.00');
+    $english = $base()->de()->advance('2027-03', locale: 'en')->build();
+    $open = $withoutDate($base()->de()->advance(null));
+    $notes = static fn (InvoiceBuilder $b): array => array_map(static fn ($n): string => $n->content, $b->build()->notes);
+
+    expect($month->build()->typeCode?->value)->toBe('386')
+        ->and($notes($month))->toBe(['Anzahlungsrechnung. Die Leistung wird voraussichtlich im März 2027 erbracht.'])
+        ->and(ustgCodes(ustg($month)))->toBe([])
+        ->and($notes($date))->toBe(['Anzahlungsrechnung. Die Leistung wird voraussichtlich am 15.03.2027 erbracht.', 'Die Anzahlung wurde am 01.10.2026 vereinnahmt.'])
+        ->and($date->build()->taxPointDate?->toIsoString())->toBe('2026-10-01')
+        ->and(ustgCodes(ustg($date)))->toBe([])
+        ->and($english->notes[0]->content)->toBe('Advance invoice. The service is expected to be performed in March 2027.')
+        ->and($notes($open))->toBe(['Der Zeitpunkt der Leistung ist noch nicht vereinbart.'])
+        ->and(ustgCodes(ustg($open)))->toBe([]);
 });

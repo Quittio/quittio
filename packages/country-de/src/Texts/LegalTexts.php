@@ -34,6 +34,12 @@ final class LegalTexts
 
     public const string PREPAYMENT = 'prepayment';
 
+    /** Prepayment invoice with the expected month of the service (advance()). */
+    public const string PREPAYMENT_MONTH = 'prepayment_month';
+
+    /** The date the advance payment was received (advance()). */
+    public const string PREPAYMENT_RECEIVED = 'prepayment_received';
+
     /** The date of the service of a prepayment invoice is not agreed yet. */
     public const string SERVICE_DATE_OPEN = 'service_date_open';
 
@@ -41,6 +47,12 @@ final class LegalTexts
 
     /** One standard rated VAT row of a deducted advance invoice, part of ADVANCE_DEDUCTION. */
     public const string ADVANCE_DEDUCTION_TAXED = 'advance_deduction_taxed';
+
+    /** Note of a remainder invoice (deductAdvance() with style REMAINDER). */
+    public const string ADVANCE_DEDUCTION_REMAINDER = 'advance_deduction_remainder';
+
+    /** Item name of the negative lines of a remainder invoice. */
+    public const string ADVANCE_DEDUCTION_LINE = 'advance_deduction_line';
 
     /** One VAT row without VAT of a deducted advance invoice, part of ADVANCE_DEDUCTION. */
     public const string ADVANCE_DEDUCTION_UNTAXED = 'advance_deduction_untaxed';
@@ -62,7 +74,8 @@ final class LegalTexts
 
     /** Keys of the texts in resources/lang/{locale}/legal.php. */
     private const array TRANSLATED = [
-        self::SELF_BILLING, self::PROPERTY_RETENTION, self::PREPAYMENT, self::SERVICE_DATE_OPEN, self::ADVANCE_DEDUCTION,
+        self::SELF_BILLING, self::PROPERTY_RETENTION, self::PREPAYMENT, self::PREPAYMENT_MONTH, self::PREPAYMENT_RECEIVED,
+        self::SERVICE_DATE_OPEN, self::ADVANCE_DEDUCTION, self::ADVANCE_DEDUCTION_REMAINDER, self::ADVANCE_DEDUCTION_LINE,
         self::ADVANCE_DEDUCTION_TAXED, self::ADVANCE_DEDUCTION_UNTAXED, self::CONSUMER_DEFAULT,
         self::NEW_VEHICLE, self::DEFAULT_INTEREST, self::ZERO_RATED_PV, self::DISCOUNT_AGREEMENT,
     ];

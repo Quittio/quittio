@@ -5599,12 +5599,16 @@
     "Quittio\\Country\\DE\\Builder\\GermanInvoice": {
         "kind": "final readonly class",
         "constants": [
-            "ADVANCE_TYPES"
+            "ADVANCE_TYPES",
+            "PREPAID",
+            "RECEIVED_IN_FULL",
+            "REMAINDER"
         ],
         "methods": [
             "public __construct(Quittio\\Core\\Builder\\InvoiceBuilder $builder)",
+            "public advance(Quittio\\Core\\Support\\Date|DateTimeInterface|string|null $expectedService, Quittio\\Core\\Support\\Date|DateTimeInterface|string|null $receivedOn = null, string $locale = \"de\"): Quittio\\Core\\Builder\\InvoiceBuilder",
             "public consumerDefaultNotice(string $locale = \"de\"): Quittio\\Core\\Builder\\InvoiceBuilder",
-            "public deductAdvance(Quittio\\Core\\Data\\InvoiceData $advance, string $locale = \"de\"): Quittio\\Core\\Builder\\InvoiceBuilder",
+            "public deductAdvance(Quittio\\Core\\Data\\InvoiceData $advance, string $locale = \"de\", Brick\\Money\\Money|Brick\\Math\\BigDecimal|string|int|null $received = null, string $style = self::PREPAID): Quittio\\Core\\Builder\\InvoiceBuilder",
             "public discountAgreement(string $agreement, string $locale = \"de\"): Quittio\\Core\\Builder\\InvoiceBuilder",
             "public newVehicle(string $locale = \"de\"): Quittio\\Core\\Builder\\InvoiceBuilder",
             "public propertyRelatedService(string $locale = \"de\"): Quittio\\Core\\Builder\\InvoiceBuilder",
@@ -5915,6 +5919,8 @@
     "Quittio\\Country\\DE\\Support\\Flags": {
         "kind": "final class",
         "constants": [
+            "ADVANCE_RECEIPT_UNCONFIRMED",
+            "EXPECTED_SERVICE_DATE",
             "NEW_VEHICLE",
             "PROPERTY_RELATED_SERVICE",
             "SELF_BILLED_ADVANCE",
@@ -6027,6 +6033,8 @@
         "kind": "final class",
         "constants": [
             "ADVANCE_DEDUCTION",
+            "ADVANCE_DEDUCTION_LINE",
+            "ADVANCE_DEDUCTION_REMAINDER",
             "ADVANCE_DEDUCTION_TAXED",
             "ADVANCE_DEDUCTION_UNTAXED",
             "CONSUMER_DEFAULT",
@@ -6037,6 +6045,8 @@
             "INTRA_COMMUNITY_SUPPLY",
             "NEW_VEHICLE",
             "PREPAYMENT",
+            "PREPAYMENT_MONTH",
+            "PREPAYMENT_RECEIVED",
             "PROPERTY_RETENTION",
             "REVERSE_CHARGE",
             "SELF_BILLING",
