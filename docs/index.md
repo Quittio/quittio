@@ -28,7 +28,7 @@ Germany is the first market; everything country-specific (VAT rates, legal texts
 
 - PHP 8.3 or newer with `ctype`, `dom`, `gd`, `libxml`, `mbstring`, `xmlwriter`, `zlib`; `intl` recommended, `zip` for `quittio:schemas:download`
 - Laravel 13 (only for `quittio/laravel`)
-- Optional: Java 17+ for the KoSIT validator, veraPDF or Docker for PDF/A checks, `opis/json-schema` for JSON input validation
+- Optional: Java 11+ for the KoSIT validator, veraPDF or Docker for PDF/A checks, `opis/json-schema` for JSON input validation
 
 ## Supported formats
 
