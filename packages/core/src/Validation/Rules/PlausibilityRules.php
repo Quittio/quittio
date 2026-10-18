@@ -55,8 +55,20 @@ final class PlausibilityRules
                     'buyer.vatId' => ['BT-48', $i->buyer->vatId],
                     'sellerTaxRepresentative.vatId' => ['BT-63', $i->sellerTaxRepresentative?->vatId],
                 ] as $path => [$bt, $vatId]) {
-                    if ($vatId !== null && VatIdFormat::isValid($vatId) === false) {
+                    if ($vatId !== null && VatIdFormat::isValid($vatId) === false && ! VatIdFormat::isSmallBusinessId($vatId)) {
                         $report->warning($bt, $path, ['value' => $vatId]);
+                    }
+                }
+            }),
+            $r('QUITTIO-SME-ID', '":value" is a small business identification number (suffix EX), not a VAT identifier.', function (InvoiceData $i, RuleReporter $report): void {
+                // Article 284 (3) VAT Directive; VIES does not know these numbers.
+                foreach ([
+                    'seller.vatId' => ['BT-31', $i->seller->vatId],
+                    'buyer.vatId' => ['BT-48', $i->buyer->vatId],
+                    'sellerTaxRepresentative.vatId' => ['BT-63', $i->sellerTaxRepresentative?->vatId],
+                ] as $path => [$bt, $vatId]) {
+                    if ($vatId !== null && VatIdFormat::isSmallBusinessId($vatId)) {
+                        $report->info($bt, $path, ['value' => $vatId]);
                     }
                 }
             }),

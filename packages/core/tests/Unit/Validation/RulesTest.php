@@ -62,6 +62,25 @@ it('detects rule violations', function (Closure $build, string $code) {
     'QUITTIO-ATTACHMENT-FILENAME' => [fn () => Invoices::simple()->attachment('A', 'x', 'text/csv', 'a.csv')->attachment('B', 'y', 'text/csv', 'a.csv')->build(), 'QUITTIO-ATTACHMENT-FILENAME'],
 ]);
 
+it('tells small business identification numbers apart from VAT identifiers (Article 284 (3) VAT Directive)', function (string $number) {
+    $result = Validate::data(Invoices::simple()->seller(fn ($s) => $s->vatId($number))->build());
+    $finding = array_values(array_filter($result->messages, static fn ($m): bool => $m->code === 'QUITTIO-SME-ID'));
+
+    expect(Validate::codes($result))->not->toContain('QUITTIO-VATID-FORMAT')
+        ->and($finding)->toHaveCount(1)
+        ->and($finding[0]->severity)->toBe(Severity::Info)
+        ->and($finding[0]->path)->toBe('seller.vatId');
+})->with(['DE123456789EX', 'DE123456789-EX', 'PL1234567890-EX', 'at 123 456 789 ex']);
+
+it('recognises small business identification numbers only by the suffix EX', function () {
+    expect(Quittio\Core\Validation\Plausibility\VatIdFormat::isSmallBusinessId('DE123456789EX'))->toBeTrue()
+        ->and(Quittio\Core\Validation\Plausibility\VatIdFormat::isSmallBusinessId('DE1EX'))->toBeTrue()
+        ->and(Quittio\Core\Validation\Plausibility\VatIdFormat::isSmallBusinessId('DE123456789'))->toBeFalse()
+        ->and(Quittio\Core\Validation\Plausibility\VatIdFormat::isSmallBusinessId('EX'))->toBeFalse()
+        ->and(Quittio\Core\Validation\Plausibility\VatIdFormat::isSmallBusinessId('DEEX'))->toBeFalse()
+        ->and(Quittio\Core\Validation\Plausibility\VatIdFormat::isSmallBusinessId('12/345/67890'))->toBeFalse();
+});
+
 it('reports BR-Z-10 for a declared zero rated VAT breakdown with exemption reason', function () {
     $invoice = (new Quittio\Core\Calculation\En16931Calculator)->calculate(Invoices::base()->line(fn ($l) => $l->name('A')->quantity(1)->netPrice('10')->vat(VatCategory::ZeroRated, '0'))->build());
     $declared = $invoice->with(['vatBreakdown' => [$invoice->vatBreakdown[0]->with(['exemptionReason' => 'Why'])]]);

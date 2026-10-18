@@ -489,6 +489,10 @@ return [
         'message' => 'The VAT identifier ":value" does not match the format of its country.',
         'hint' => 'Check the VAT identifier for typing errors.',
     ],
+    'QUITTIO-SME-ID' => [
+        'message' => '":value" is a small business identification number (suffix EX), not a VAT identifier.',
+        'hint' => 'The number of the cross-border small business scheme belongs to the seller\'s tax registration (BT-32, ->taxNumber()), not to the VAT identifier: it is no VAT identifier (Article 284 (3) VAT Directive) and cannot be checked in VIES.',
+    ],
     'QUITTIO-EMAIL' => [
         'message' => 'The e-mail address ":value" is not valid.',
     ],

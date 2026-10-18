@@ -6,12 +6,14 @@ namespace Quittio\Country\DE\Builder;
 
 use Closure;
 use Quittio\Core\Builder\InvoiceBuilder;
+use Quittio\Core\Builder\PartyBuilder;
 use Quittio\Core\Data\InvoiceData;
 use Quittio\Core\Enums\InvoiceTypeCode;
 use Quittio\Core\Enums\NoteSubjectCode;
 use Quittio\Core\Enums\VatCategory;
 use Quittio\Core\Exceptions\InvalidArgumentException;
 use Quittio\Core\Support\Amount;
+use Quittio\Core\Validation\Plausibility\VatIdFormat;
 use Quittio\Core\View\IntlFormatter;
 use Quittio\Country\DE\Support\Flags;
 use Quittio\Country\DE\Texts\LegalTexts;
@@ -49,13 +51,46 @@ final readonly class GermanInvoice
     public function __construct(private InvoiceBuilder $builder) {}
 
     /**
-     * Small amount invoice of at most 250 EUR gross (section 33 UStDV; the limit of the issue date).
+     * Small amount invoice of at most 250 EUR gross (section 33 UStDV; the limit of the supply date).
      *
      * @return TBuilder
      */
     public function smallAmount(): InvoiceBuilder
     {
         return $this->builder->flag(Flags::SMALL_AMOUNT);
+    }
+
+    /**
+     * Invoice of a small business that states its small business identification number
+     * (Kleinunternehmer-Identifikationsnummer, suffix "EX") instead of the tax number (section
+     * 34a sentence 1 no. 2 UStDV). The number is no VAT identifier: it goes to the seller's tax
+     * registration (BT-32), not to BT-31. Sets the small business flag.
+     *
+     * @return TBuilder
+     *
+     * @throws InvalidArgumentException for a number without the suffix "EX"
+     */
+    public function smallBusinessId(string $id): InvoiceBuilder
+    {
+        if (! VatIdFormat::isSmallBusinessId($id)) {
+            throw new InvalidArgumentException(sprintf('"%s" is no small business identification number: it must start with the country code and end with "EX", e.g. DE123456789EX.', $id));
+        }
+
+        return $this->builder->seller(static fn (PartyBuilder $seller): PartyBuilder => $seller->taxNumber($id))
+            ->flag(Flags::SMALL_BUSINESS);
+    }
+
+    /**
+     * Prepayment invoice whose date of the service is not agreed yet: the note
+     * LegalTexts::SERVICE_DATE_OPEN, and DE-USTG-03 does not warn about the missing date
+     * (section 14.8 (4) sentence 5 UStAE).
+     *
+     * @return TBuilder
+     */
+    public function serviceDateOpen(string $locale = 'de'): InvoiceBuilder
+    {
+        return $this->builder->flag(Flags::SERVICE_DATE_OPEN)
+            ->note(LegalTexts::text(LegalTexts::SERVICE_DATE_OPEN, $locale), NoteSubjectCode::RegulatoryInformation);
     }
 
     /**

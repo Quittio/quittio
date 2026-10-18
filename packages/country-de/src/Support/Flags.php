@@ -20,13 +20,19 @@ final class Flags
     /** Intra-community supply of a new vehicle (section 14a (4) UStG). */
     public const string NEW_VEHICLE = 'de.new_vehicle';
 
+    /**
+     * Prepayment invoice whose date of the service is not agreed yet (section 14.8 (4) sentence 5
+     * UStAE): no DE-USTG-03 warning.
+     */
+    public const string SERVICE_DATE_OPEN = 'de.service_date_open';
+
     /** The seller is a small business (section 19 UStG), e.g. from config quittio.seller.small_business. */
     public const string SMALL_BUSINESS = Meta::FLAG_SMALL_BUSINESS;
 
     /**
      * Gross limit of a small amount invoice in EUR.
      *
-     * @deprecated the limit depends on the issue date, use TaxTables::smallAmountLimitOn()
+     * @deprecated the limit depends on the supply date, use TaxTables::smallAmountLimitOn()
      */
     public const string SMALL_AMOUNT_LIMIT = '250.00';
 }

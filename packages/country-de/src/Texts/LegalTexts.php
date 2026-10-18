@@ -34,6 +34,9 @@ final class LegalTexts
 
     public const string PREPAYMENT = 'prepayment';
 
+    /** The date of the service of a prepayment invoice is not agreed yet. */
+    public const string SERVICE_DATE_OPEN = 'service_date_open';
+
     public const string ADVANCE_DEDUCTION = 'advance_deduction';
 
     /** One standard rated VAT row of a deducted advance invoice, part of ADVANCE_DEDUCTION. */
@@ -53,7 +56,7 @@ final class LegalTexts
 
     /** Keys of the texts in resources/lang/{locale}/legal.php. */
     private const array TRANSLATED = [
-        self::SELF_BILLING, self::PROPERTY_RETENTION, self::PREPAYMENT, self::ADVANCE_DEDUCTION,
+        self::SELF_BILLING, self::PROPERTY_RETENTION, self::PREPAYMENT, self::SERVICE_DATE_OPEN, self::ADVANCE_DEDUCTION,
         self::ADVANCE_DEDUCTION_TAXED, self::ADVANCE_DEDUCTION_UNTAXED, self::CONSUMER_DEFAULT,
         self::NEW_VEHICLE, self::DEFAULT_INTEREST,
     ];

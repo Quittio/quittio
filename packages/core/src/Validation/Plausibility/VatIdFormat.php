@@ -45,6 +45,19 @@ final class VatIdFormat
     ];
 
     /**
+     * Small business identification number of the cross-border small business scheme (Article
+     * 284 (3) VAT Directive): the country code, then the number with the suffix "EX", e.g.
+     * DE123456789EX or PL1234567890-EX. It is no VAT identifier; its format apart from the
+     * suffix is up to each member state.
+     */
+    public static function isSmallBusinessId(string $value): bool
+    {
+        $value = strtoupper(preg_replace('/[\s.\-]/', '', $value) ?? $value);
+
+        return preg_match('/^[A-Z]{2}[A-Z0-9]*\d[A-Z0-9]*EX$/', $value) === 1 && self::isValid($value) !== true;
+    }
+
+    /**
      * Returns null if the country prefix is unknown (no statement possible).
      */
     public static function isValid(string $vatId): ?bool

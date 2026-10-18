@@ -180,11 +180,11 @@ return [
     ],
     'DE-USTG-03' => [
         'message' => 'Der Zeitpunkt der Lieferung oder Leistung muss angegeben sein: Lieferdatum (BT-72), Abrechnungszeitraum (BG-14) oder Leistungszeiträume aller Positionen (BG-26) (§ 14 Abs. 4 Nr. 6 UStG).',
-        'hint' => 'Setzen Sie ->deliveryDate() – auch wenn es dem Rechnungsdatum entspricht – oder ->invoicingPeriod().',
+        'hint' => 'Setzen Sie ->deliveryDate() – auch wenn es dem Rechnungsdatum entspricht – oder ->invoicingPeriod(). Eine Anzahlungsrechnung (386) nennt den voraussichtlichen Zeitpunkt oder Monat; ist er noch nicht vereinbart, verwenden Sie ->de()->serviceDateOpen().',
     ],
     'DE-USTG-04' => [
         'message' => 'Eine Gutschrift im Sinne des UStG muss die Angabe „Gutschrift“ enthalten (§ 14 Abs. 4 Nr. 10 UStG).',
-        'hint' => 'Verwenden Sie ->de()->selfBilled(); der Builder ergänzt den Hinweis.',
+        'hint' => 'Verwenden Sie ->de()->selfBilled(); der Builder ergänzt den Hinweis. In einer E-Rechnung genügt der Rechnungstyp als Kennzeichnung (Abschnitt 14.5 Abs. 24 UStAE), dort ist es nur eine Warnung.',
     ],
     'DE-USTG-05' => [
         'message' => 'Bei Leistungen im Zusammenhang mit einem Grundstück an Nichtunternehmer ist der Hinweis auf die Aufbewahrungspflicht des Empfängers Pflicht (§ 14 Abs. 4 Nr. 9 UStG).',
@@ -192,7 +192,7 @@ return [
     ],
     'DE-USTG-06' => [
         'message' => 'Rechnungen mit Steuerschuldnerschaft des Leistungsempfängers müssen die Angabe „Steuerschuldnerschaft des Leistungsempfängers“ enthalten (§ 14a Abs. 1 und 5 UStG).',
-        'hint' => 'Verwenden Sie die Presets VatPreset::ReverseChargeDomestic, VatPreset::ReverseChargeEu oder VatPreset::TriangularTransaction; ihre Texte werden in jeder Sprache des Länderpakets akzeptiert.',
+        'hint' => 'Verwenden Sie die Presets VatPreset::ReverseChargeDomestic, VatPreset::ReverseChargeEu oder VatPreset::TriangularTransaction; ihre Texte werden in jeder Sprache des Länderpakets akzeptiert. Ohne die Angabe ist die Rechnung nicht ordnungsgemäß; die Steuerschuld des Empfängers bleibt davon unberührt.',
     ],
     'DE-USTG-07' => [
         'message' => 'Bei der innergemeinschaftlichen Lieferung neuer Fahrzeuge müssen die Fahrzeugmerkmale (BG-32) bei jeder Position angegeben sein (§ 14a Abs. 4 UStG).',
@@ -212,7 +212,7 @@ return [
     ],
     'DE-USTG-11' => [
         'message' => 'Bei Reverse-Charge-Leistungen in einem anderen EU-Mitgliedstaat und bei innergemeinschaftlichen Dreiecksgeschäften müssen die USt-IdNr. des Verkäufers (BT-31) und des Käufers (BT-48) angegeben werden (§ 14a Abs. 1 und 7 UStG).',
-        'hint' => 'Ergänzen Sie ->vatId(…) bei Verkäufer und Käufer; die Steuernummer genügt hier nicht.',
+        'hint' => 'Ergänzen Sie ->vatId(…) bei Verkäufer und Käufer; die Steuernummer genügt hier nicht. Ein Kleinunternehmer (§ 19 UStG) braucht keine eigene USt-IdNr.',
     ],
     'DE-USTG-12' => [
         'message' => 'Die Erleichterungen für Kleinbetragsrechnungen gelten nicht für Fernverkäufe, innergemeinschaftliche Lieferungen und Leistungen mit Steuerschuldnerschaft des Leistungsempfängers (§ 33 Satz 3 UStDV).',
@@ -229,6 +229,14 @@ return [
     'DE-USTG-15' => [
         'message' => 'Rechnungen über innergemeinschaftliche Lieferungen und über sonstige Leistungen nach § 3a Abs. 2 UStG in einem anderen Mitgliedstaat sind bis zum 15. Tag des Folgemonats auszustellen (§ 14a Abs. 1 Satz 2 und Abs. 3 Satz 1 UStG); die Frist endete am :deadline.',
         'hint' => 'Prüfen Sie Rechnungsdatum (BT-2) und Leistungsdatum. Die Rechnung bleibt gültig, wird aber verspätet ausgestellt.',
+    ],
+    'DE-USTG-16' => [
+        'message' => 'Die Rechnung wird mehr als sechs Monate nach der Leistung (:supply) ausgestellt; Rechnungen an Unternehmer und über Leistungen im Zusammenhang mit einem Grundstück sind innerhalb von sechs Monaten auszustellen (§ 14 Abs. 2 Satz 2 UStG).',
+        'hint' => 'Prüfen Sie Rechnungsdatum (BT-2) und Leistungsdatum. Die Rechnung bleibt gültig, wird aber verspätet ausgestellt.',
+    ],
+    'DE-USTG-17' => [
+        'message' => 'Eine Anzahlungsrechnung mit bereits gezahltem Betrag (BT-113) muss den Tag der Vereinnahmung als Steuerzeitpunkt (BT-7) angeben, wenn er vom Rechnungsdatum abweicht (§ 14 Abs. 4 Satz 1 Nr. 6 UStG).',
+        'hint' => 'Setzen Sie ->taxPointDate($vereinnahmtAm). Ging die Zahlung am Rechnungsdatum ein, fehlt nichts.',
     ],
     'DE-LEITWEG-ID' => [
         'message' => 'Die Prüfziffer der Leitweg-ID „:value“ (BT-10) ist falsch.',

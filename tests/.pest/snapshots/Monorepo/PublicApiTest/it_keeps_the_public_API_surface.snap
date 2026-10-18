@@ -3894,6 +3894,7 @@
     "Quittio\\Core\\Validation\\Plausibility\\VatIdFormat": {
         "kind": "final class",
         "methods": [
+            "public static isSmallBusinessId(string $value): bool",
             "public static isValid(string $vatId): ?bool"
         ]
     },
@@ -5553,7 +5554,9 @@
             "public newVehicle(string $locale = \"de\"): Quittio\\Core\\Builder\\InvoiceBuilder",
             "public propertyRelatedService(string $locale = \"de\"): Quittio\\Core\\Builder\\InvoiceBuilder",
             "public selfBilled(string $locale = \"de\"): Quittio\\Core\\Builder\\InvoiceBuilder",
-            "public smallAmount(): Quittio\\Core\\Builder\\InvoiceBuilder"
+            "public serviceDateOpen(string $locale = \"de\"): Quittio\\Core\\Builder\\InvoiceBuilder",
+            "public smallAmount(): Quittio\\Core\\Builder\\InvoiceBuilder",
+            "public smallBusinessId(string $id): Quittio\\Core\\Builder\\InvoiceBuilder"
         ]
     },
     "Quittio\\Country\\DE\\Builder\\GermanInvoiceMacros": {
@@ -5843,7 +5846,8 @@
             "public static isSmallAmountInvoice(Quittio\\Core\\Data\\InvoiceData $invoice): bool",
             "public static isSmallBusinessInvoice(Quittio\\Core\\Data\\InvoiceData $invoice): bool",
             "public static issuingDeadline(Quittio\\Core\\Data\\InvoiceData $invoice): ?Quittio\\Core\\Support\\Date",
-            "public static plausibility(): array"
+            "public static plausibility(): array",
+            "public static supplyDate(Quittio\\Core\\Data\\InvoiceData $invoice): ?Quittio\\Core\\Support\\Date"
         ]
     },
     "Quittio\\Country\\DE\\Rules\\XRechnungRules": {
@@ -5858,6 +5862,7 @@
         "constants": [
             "NEW_VEHICLE",
             "PROPERTY_RELATED_SERVICE",
+            "SERVICE_DATE_OPEN",
             "SMALL_AMOUNT",
             "SMALL_AMOUNT_LIMIT",
             "SMALL_BUSINESS"
@@ -5975,6 +5980,7 @@
             "PROPERTY_RETENTION",
             "REVERSE_CHARGE",
             "SELF_BILLING",
+            "SERVICE_DATE_OPEN",
             "SMALL_BUSINESS"
         ],
         "methods": [

@@ -9,8 +9,10 @@ use Quittio\Core\Countries\ResolvedCountries;
 use Quittio\Core\Enums\PaymentMeansCode;
 use Quittio\Core\Enums\UnitCode;
 use Quittio\Core\Enums\VatCategory;
+use Quittio\Core\Exceptions\InvalidArgumentException;
 use Quittio\Core\Formats\DefaultFormatResolver;
 use Quittio\Core\Profiles\ProfileRegistry;
+use Quittio\Core\Profiles\Syntax;
 use Quittio\Core\Quittio;
 use Quittio\Core\Testing\Scenarios;
 use Quittio\Core\Validation\Drivers\PhpRulesDriver;
@@ -125,13 +127,13 @@ it('adds the retention notice for property related services', function () {
     expect(ustgCodes(ustg($flagOnly)))->toBe(['DE-USTG-05']);
 });
 
-it('warns when the reverse charge wording is missing', function () {
+it('requires the reverse charge wording', function () {
     $builder = Scenarios::base()->line(fn ($l) => $l->name('Beratung')->quantity(1, UnitCode::Hour)->netPrice('100.00')->vat(VatCategory::ReverseCharge, '0', 'Reverse charge', 'VATEX-EU-AE'))
         ->buyer(fn ($b) => $b->name('Client SARL')->vatId('FR12345678901')->address('1 Rue', '75002', 'Paris', 'FR'));
 
     $result = ustg($builder);
     expect(ustgCodes($result))->toBe(['DE-USTG-06'])
-        ->and($result->isValid())->toBeTrue();
+        ->and($result->isValid())->toBeFalse();
 
     $preset = Scenarios::base()->line(fn ($l) => $l->name('Beratung')->quantity(1, UnitCode::Hour)->netPrice('100.00')->vat(VatPreset::ReverseChargeEu))
         ->buyer(fn ($b) => $b->name('Client SARL')->vatId('FR12345678901')->address('1 Rue', '75002', 'Paris', 'FR'));
@@ -517,14 +519,136 @@ it('writes the messages in the configured language', function (?string $configur
     'a fixed language' => ['en', 'The address of the buyer'],
 ]);
 
-it('applies the small amount limit of the issue date', function () {
-    $invoice = fn (string $issueDate) => Scenarios::base()->issueDate($issueDate)->deliveryDate($issueDate)->de()->smallAmount()
+it('applies the small amount limit of the supply date', function () {
+    $invoice = fn (string $issueDate, ?string $deliveryDate = null) => Scenarios::base()->issueDate($issueDate)->deliveryDate($deliveryDate ?? $issueDate)->de()->smallAmount()
         ->buyer(fn ($b) => $b->name('Barkunde')->address(null, null, null, 'DE'))
         ->line(fn ($l) => $l->name('Werkzeug')->quantity(1, UnitCode::Piece)->netPrice('170.00')->vat(VatPreset::Standard));
+    $withoutDate = $invoice('2017-01-02');
+    (new ReflectionProperty(InvoiceBuilder::class, 'delivery'))->setValue($withoutDate, null);
 
     // 202.30 EUR gross: above the 150 EUR of 2016, below the 250 EUR from 2017.
     expect(ustgCodes(ustg($invoice('2016-12-30'))))->toContain('DE-USTG-08')
-        ->and(ustgCodes(ustg($invoice('2017-01-02'))))->not->toContain('DE-USTG-08');
+        ->and(ustgCodes(ustg($invoice('2017-01-02'))))->not->toContain('DE-USTG-08')
+        // A supply of 2016 invoiced in 2017 keeps the limit of 2016 (BMF letter of 15 November 2017).
+        ->and(ustgCodes(ustg($invoice('2017-01-02', '2016-12-30'))))->toContain('DE-USTG-08')
+        // Without a supply date the issue date counts.
+        ->and(ustgCodes(ustg($withoutDate)))->not->toContain('DE-USTG-08');
+});
+
+it('counts exempt parts towards the small amount limit (section 14.6 (4) UStAE)', function () {
+    $builder = Scenarios::base()->de()->smallAmount()
+        ->buyer(fn ($b) => $b->name('Barkunde')->address(null, null, null, 'DE'))
+        ->line(fn ($l) => $l->name('Werkzeug')->quantity(1, UnitCode::Piece)->netPrice('150.00')->vat(VatPreset::Standard))
+        ->line(fn ($l) => $l->name('Porto')->quantity(1, UnitCode::Piece)->netPrice('80.00')->vat(VatPreset::exempt('§ 4 Nr. 11b UStG')));
+
+    // 178.50 EUR taxed plus 80.00 EUR exempt: 258.50 EUR gross.
+    expect(ustgCodes(ustg($builder)))->toContain('DE-USTG-08');
+});
+
+it('does not require VAT identifiers of small businesses for reverse charge services (section 19 (1) sentence 2 UStG)', function () {
+    $taxNumberOnly = (new PartyBuilder)->name('Muster Design')->taxNumber('248/815/08156')->address('Hauptstraße 1', '12345', 'Musterstadt', 'DE')->contact('Max', '+49 30 123456', 'a@b.de')->buildSeller();
+    $buyer = fn ($b) => $b->name('Client SARL')->vatId('FR12345678901')->address('1 Rue', '75002', 'Paris', 'FR');
+    $line = fn ($l) => $l->name('Logo')->quantity(1, UnitCode::Piece)->netPrice('500.00')->vat(VatPreset::ReverseChargeEu);
+    $smallBusiness = Scenarios::base()->seller($taxNumberOnly)->flag(Flags::SMALL_BUSINESS)->buyer($buyer)->line($line);
+    $withoutBuyerVatId = Scenarios::base()->seller($taxNumberOnly)->flag(Flags::SMALL_BUSINESS)->line($line)
+        ->buyer(fn ($b) => $b->name('Client SARL')->vatId(null)->legalRegistration('12345678900012')->address('1 Rue', '75002', 'Paris', 'FR'));
+
+    expect(ustgCodes(ustg($smallBusiness)))->toBe([])
+        ->and(ustgCodes(ustg($withoutBuyerVatId)))->toBe(['DE-USTG-11'])
+        ->and(array_map(static fn ($m): string => $m->path, array_values(array_filter(ustg($withoutBuyerVatId)->errors(), static fn ($m): bool => $m->code === 'DE-USTG-11'))))->toBe(['buyer.vatId']);
+});
+
+it('treats the small business flag alone as small business invoice (section 34a UStDV)', function () {
+    $builder = Scenarios::base()->flag(Flags::SMALL_BUSINESS)
+        ->line(fn ($l) => $l->name('Beratung')->quantity(1, UnitCode::Hour)->netPrice('100.00')->vat(VatCategory::Exempt, '0', 'Kleinunternehmer gemäß § 19 UStG'));
+    (new ReflectionProperty(InvoiceBuilder::class, 'delivery'))->setValue($builder, null);
+
+    expect(UstgRules::isSmallBusinessInvoice($builder->build()))->toBeTrue()
+        ->and(ustgCodes(ustg($builder)))->toBe([]);
+});
+
+it('accepts the small business identification number as tax number (section 34a UStDV)', function () {
+    $seller = fn (string $number) => Scenarios::base()->seller(fn ($s) => $s->vatId(null))->de()->smallBusinessId($number)
+        ->line(fn ($l) => $l->name('Beratung')->quantity(1, UnitCode::Hour)->netPrice('100.00')->vat(VatPreset::SmallBusiness));
+    $invoice = $seller('DE123456789-EX')->build();
+    $notSmallBusiness = Scenarios::make('simple')->seller(fn ($s) => $s->vatId(null)->taxNumber('DE123456789EX'));
+
+    expect($invoice->seller->taxNumber)->toBe('DE123456789-EX')
+        ->and($invoice->meta->hasFlag(Flags::SMALL_BUSINESS))->toBeTrue()
+        ->and(ustgCodes(ustg($seller('DE123456789EX'))))->toBe([])
+        ->and(ustgCodes(ustg($seller('DE123456789-EX'))))->toBe([])
+        ->and(ustgCodes(ustg($notSmallBusiness)))->toContain('DE-TAX-NUMBER')
+        ->and(fn () => Scenarios::base()->de()->smallBusinessId('DE123456789'))->toThrow(InvalidArgumentException::class, 'must start with the country code and end with "EX"');
+});
+
+it('accepts the type code as self-billing label in an e-invoice (section 14.5 (24) UStAE)', function () {
+    $invoice = (new En16931Calculator)->calculate(Scenarios::make('simple')->type('389')->build());
+    $context = fn (array $options) => new ValidationContext(ProfileRegistry::withDefaults()->get('en16931'), [new CountryDE], 'en', options: $options);
+    $xml = (new PhpRulesDriver)->validate(new ValidationSubject($invoice, $context(['syntax' => Syntax::Cii])));
+    $pdf = (new PhpRulesDriver)->validate(new ValidationSubject($invoice, $context([])));
+    $finding = static fn (ValidationResult $r) => array_values(array_filter($r->messages, static fn ($m): bool => $m->code === 'DE-USTG-04'))[0];
+
+    expect($finding($xml)->severity->value)->toBe('warning')
+        ->and($finding($pdf)->severity->value)->toBe('error');
+});
+
+it('includes final invoices in the issuing deadline of intra-community supplies (section 14a (3) UStG)', function () {
+    $advance = (new En16931Calculator)->calculate(Scenarios::base()->number('AB-1')->issueDate('2026-06-01')->type('386')
+        ->buyer(fn ($b) => $b->name('Cliente S.r.l.')->vatId('IT12345678901')->address('Via Roma 1', '00184', 'Roma', 'IT'))
+        ->line(fn ($l) => $l->name('Anzahlung Maschine')->quantity(1, UnitCode::Piece)->netPrice('1000.00')->vat(VatPreset::IntraCommunitySupply))
+        ->build());
+    $final = fn (string $issued) => Scenarios::base()->issueDate($issued)->deliveryDate('2026-08-31')
+        ->buyer(fn ($b) => $b->name('Cliente S.r.l.')->vatId('IT12345678901')->address('Via Roma 1', '00184', 'Roma', 'IT'))
+        ->line(fn ($l) => $l->name('Maschine')->quantity(1, UnitCode::Piece)->netPrice('5000.00')->vat(VatPreset::IntraCommunitySupply))
+        ->de()->deductAdvance($advance);
+
+    expect(ustgCodes(ustg($final('2026-09-16'))))->toBe(['DE-USTG-15'])
+        ->and(ustgCodes(ustg($final('2026-09-15'))))->toBe([])
+        // A re-issued invoice (BG-3 without a deducted advance) keeps the deadline of the original.
+        ->and(ustgCodes(ustg($final('2026-09-16')->prepaid('0'))))->toBe([]);
+});
+
+it('warns about invoices issued more than six months after the supply (section 14 (2) sentence 2 UStG)', function () {
+    $invoice = fn (string $issued) => Scenarios::base()->deliveryDate('2026-03-31')->issueDate($issued)
+        ->line(fn ($l) => $l->name('Beratung')->quantity(1, UnitCode::Hour)->netPrice('100.00')->vat(VatPreset::Standard));
+    $consumer = fn () => $invoice('2026-10-03')->buyer(fn ($b) => $b->name('Erika Mustermann')->consumer());
+    $late = ustg($invoice('2026-10-01'));
+
+    expect(ustgCodes($late))->toBe(['DE-USTG-16'])
+        ->and($late->warnings()[0]->message)->toContain('2026-03-31')
+        ->and($late->isValid())->toBeTrue()
+        ->and(ustgCodes(ustg($invoice('2026-09-30'))))->toBe([])
+        // No obligation to invoice consumers, except for services in connection with a property.
+        ->and(ustgCodes(ustg($consumer())))->toBe([])
+        ->and(ustgCodes(ustg($consumer()->de()->propertyRelatedService())))->toBe(['DE-USTG-16'])
+        // Cancellations and corrections refer to the original.
+        ->and(ustgCodes(ustg($invoice('2026-10-01')->type('381')->precedingInvoice('RE-1', '2026-04-01'))))->toBe([]);
+});
+
+it('asks for the date of receipt of a paid prepayment invoice (section 14 (4) sentence 1 no. 6 UStG)', function () {
+    $advance = fn () => Scenarios::make('simple')->type('386')->prepaid('119.00');
+    $result = ustg($advance());
+
+    expect(ustgCodes($result))->toBe(['DE-USTG-17'])
+        ->and($result->warnings()[0]->path)->toBe('taxPointDate')
+        ->and(ustgCodes(ustg($advance()->taxPointDate('2026-09-20'))))->toBe([])
+        ->and(ustgCodes(ustg(Scenarios::make('simple')->type('386'))))->toBe([]);
+});
+
+it('accepts prepayment invoices whose service date is not agreed yet (section 14.8 (4) sentence 5 UStAE)', function () {
+    $builder = fn () => Scenarios::base()->type('386')
+        ->line(fn ($l) => $l->name('Anzahlung')->quantity(1, UnitCode::Piece)->netPrice('1000.00')->vat(VatPreset::Standard));
+    $warned = $builder();
+    (new ReflectionProperty(InvoiceBuilder::class, 'delivery'))->setValue($warned, null);
+    $open = $builder()->de()->serviceDateOpen();
+    (new ReflectionProperty(InvoiceBuilder::class, 'delivery'))->setValue($open, null);
+    $invoice = $open->build();
+
+    expect(ustgCodes(ustg($warned)))->toBe(['DE-USTG-03'])
+        ->and(ustg($warned)->isValid())->toBeTrue()
+        ->and(ustgCodes(ustg($open)))->toBe([])
+        ->and($invoice->meta->hasFlag(Flags::SERVICE_DATE_OPEN))->toBeTrue()
+        ->and($invoice->notes[array_key_last($invoice->notes)]->content)->toBe('Der Zeitpunkt der Leistung ist noch nicht vereinbart.');
 });
 
 it('warns about VAT rates that did not apply on the supply date', function () {

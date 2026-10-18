@@ -8,6 +8,7 @@ return [
     'self_billing' => 'Gutschrift (self-billed invoice)',
     'property_retention' => 'You are required by law to keep this invoice, a payment receipt or other conclusive document for two years (section 14b (1) sentence 5 UStG).',
     'prepayment' => 'VAT becomes due on receipt of the prepayment. The service is expected to be performed on :date.',
+    'service_date_open' => 'The date of the service has not been agreed yet.',
     'advance_deduction' => 'Less advance payment according to invoice :number of :date: :amounts (section 14 (5) sentence 2 UStG).',
     'advance_deduction_taxed' => 'net :net plus :rate VAT :vat',
     'advance_deduction_untaxed' => 'net :net without VAT',

@@ -489,6 +489,10 @@ return [
         'message' => 'Die USt-IdNr. „:value“ entspricht nicht dem Format ihres Landes.',
         'hint' => 'Prüfen Sie die USt-IdNr. auf Tippfehler.',
     ],
+    'QUITTIO-SME-ID' => [
+        'message' => '„:value“ ist eine Kleinunternehmer-Identifikationsnummer (Suffix EX), keine USt-IdNr.',
+        'hint' => 'Die Nummer der grenzüberschreitenden Kleinunternehmerregelung gehört in die Steuernummer des Verkäufers (BT-32, ->taxNumber()), nicht in die USt-IdNr.: Sie ist keine USt-IdNr. (Art. 284 Abs. 3 MwStSystRL) und lässt sich nicht über VIES prüfen.',
+    ],
     'QUITTIO-EMAIL' => [
         'message' => 'Die E-Mail-Adresse „:value“ ist ungültig.',
     ],

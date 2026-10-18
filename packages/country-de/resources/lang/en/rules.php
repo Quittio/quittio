@@ -180,11 +180,11 @@ return [
     ],
     'DE-USTG-03' => [
         'message' => 'The date of the supply or service must be stated: delivery date (BT-72), invoicing period (BG-14) or periods on all lines (BG-26) (section 14 (4) no. 6 UStG).',
-        'hint' => 'Set ->deliveryDate(), even if it equals the invoice date, or ->invoicingPeriod().',
+        'hint' => 'Set ->deliveryDate(), even if it equals the invoice date, or ->invoicingPeriod(). A prepayment invoice (386) names the expected date or month; if it is not agreed yet, use ->de()->serviceDateOpen().',
     ],
     'DE-USTG-04' => [
         'message' => 'A self-billed invoice must be labelled "Gutschrift" (section 14 (4) no. 10 UStG).',
-        'hint' => 'Use ->de()->selfBilled(); the builder adds the note.',
+        'hint' => 'Use ->de()->selfBilled(); the builder adds the note. In an e-invoice the type code is label enough (section 14.5 (24) UStAE), so only a warning there.',
     ],
     'DE-USTG-05' => [
         'message' => 'Services in connection with a property to a non-business buyer require the notice on the buyer\'s retention obligation (section 14 (4) no. 9 UStG).',
@@ -192,7 +192,7 @@ return [
     ],
     'DE-USTG-06' => [
         'message' => 'Reverse charge invoices must state "Steuerschuldnerschaft des Leistungsempfängers" (section 14a (1) and (5) UStG).',
-        'hint' => 'Use the presets VatPreset::ReverseChargeDomestic, VatPreset::ReverseChargeEu or VatPreset::TriangularTransaction; their texts are accepted in every language of the country pack.',
+        'hint' => 'Use the presets VatPreset::ReverseChargeDomestic, VatPreset::ReverseChargeEu or VatPreset::TriangularTransaction; their texts are accepted in every language of the country pack. Without the statement the invoice is incomplete; the buyer still owes the VAT.',
     ],
     'DE-USTG-07' => [
         'message' => 'The intra-community supply of a new vehicle requires the vehicle details (BG-32) on every line (section 14a (4) UStG).',
@@ -212,7 +212,7 @@ return [
     ],
     'DE-USTG-11' => [
         'message' => 'Reverse charge services in another EU member state and intra-community triangular transactions must state the VAT identifiers of the seller (BT-31) and the buyer (BT-48) (section 14a (1) and (7) UStG).',
-        'hint' => 'Add ->vatId(…) for seller and buyer; the tax number is not sufficient here.',
+        'hint' => 'Add ->vatId(…) for seller and buyer; the tax number is not sufficient here. A small business (section 19 UStG) needs no VAT identifier of its own.',
     ],
     'DE-USTG-12' => [
         'message' => 'The simplifications for small amount invoices do not apply to distance sales, intra-community supplies and reverse charge supplies (section 33 sentence 3 UStDV).',
@@ -229,6 +229,14 @@ return [
     'DE-USTG-15' => [
         'message' => 'Invoices for intra-community supplies and for services under section 3a (2) UStG in another member state must be issued by the 15th day of the month following the supply (section 14a (1) sentence 2 and (3) sentence 1 UStG); the deadline was :deadline.',
         'hint' => 'Check the invoice date (BT-2) and the date of supply. The invoice stays valid, but it is issued late.',
+    ],
+    'DE-USTG-16' => [
+        'message' => 'The invoice is issued more than six months after the supply (:supply); invoices to businesses and for services in connection with a property must be issued within six months (section 14 (2) sentence 2 UStG).',
+        'hint' => 'Check the invoice date (BT-2) and the date of supply. The invoice stays valid, but it is issued late.',
+    ],
+    'DE-USTG-17' => [
+        'message' => 'A prepayment invoice that states an amount already paid (BT-113) must state the date the payment was received as VAT point date (BT-7) if it differs from the issue date (section 14 (4) sentence 1 no. 6 UStG).',
+        'hint' => 'Set ->taxPointDate($received). If the payment was received on the invoice date, nothing is missing.',
     ],
     'DE-LEITWEG-ID' => [
         'message' => 'The check digits of the Leitweg-ID ":value" (BT-10) are wrong.',

@@ -471,7 +471,8 @@ Where a Peppol rule overlaps an EN 16931 rule, the Peppol code is reported only 
 |---|---|---|
 | `QUITTIO-IBAN` | error | Check digits (ISO 13616, mod 97) of BT-84 and BT-91, for values that start like an IBAN |
 | `QUITTIO-BIC` | warning | Format of BT-86 |
-| `QUITTIO-VATID-FORMAT` | warning | Format of BT-31, BT-48 and BT-63 by country prefix (no check digits); unknown prefixes are not judged |
+| `QUITTIO-VATID-FORMAT` | warning | Format of BT-31, BT-48 and BT-63 by country prefix (no check digits); unknown prefixes and small business identification numbers (suffix `EX`) are not judged |
+| `QUITTIO-SME-ID` | info | BT-31, BT-48 or BT-63 holds a small business identification number of the cross-border small business scheme (suffix `EX`, Article 284 (3) VAT Directive). It is no VAT identifier: a seller states it as tax registration (BT-32) |
 | `QUITTIO-EMAIL` | error / warning | Electronic addresses with scheme `EM` (BT-34, BT-49: error) and contact e-mails (BT-43, BT-58: warning) |
 | `QUITTIO-DUE-DATE` | warning | Due date (BT-9) before the issue date |
 | `QUITTIO-VAT-K-DOMESTIC` | warning | Category K (intra-community supply) with a destination in the seller's member state |

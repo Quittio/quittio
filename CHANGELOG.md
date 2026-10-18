@@ -4,6 +4,25 @@ All notable changes to this project are documented in this file. The format foll
 
 ## [Unreleased]
 
+### Added
+
+- `DE-USTG-16` (warning): an invoice to a business, or for a service in connection with a property, issued more than six months after the supply (section 14 (2) sentence 2 UStG). Cancellations, corrections, prepayment invoices and re-issued invoices are skipped.
+- `DE-USTG-17` (warning): a prepayment invoice (386) with an amount already paid (BT-113) but no VAT point date (BT-7). The date of receipt must be stated if it differs from the issue date (section 14 (4) sentence 1 no. 6 UStG).
+- `->de()->serviceDateOpen()` for prepayment invoices whose date of the service is not agreed yet: flag `de.service_date_open` and the note `LegalTexts::SERVICE_DATE_OPEN` ("Der Zeitpunkt der Leistung ist noch nicht vereinbart."). `DE-USTG-03` no longer warns about the missing date then (section 14.8 (4) sentence 5 UStAE).
+- `->de()->smallBusinessId('DE123456789EX')` for small businesses that state their small business identification number (suffix `EX`) instead of the tax number (section 34a sentence 1 no. 2 UStDV). It sets the number as tax number (BT-32) and the small business flag. `VatIdFormat::isSmallBusinessId()` recognises such numbers.
+- `QUITTIO-SME-ID` (info): a small business identification number (suffix `EX`) in a VAT identifier field (BT-31, BT-48, BT-63). It is no VAT identifier (Article 284 (3) VAT Directive) and cannot be checked in VIES.
+- `UstgRules::supplyDate()`: the supply date that `DE-USTG-08`, `DE-USTG-15` and `DE-USTG-16` use.
+
+### Changed
+
+- `DE-USTG-06` (missing "Steuerschuldnerschaft des Leistungsempfängers") is an error instead of a warning: the statement is mandatory (section 14a (1) sentence 1 and (5) sentence 1 UStG). The buyer owes the VAT all the same.
+- `DE-USTG-11` no longer requires a VAT identifier of a small business seller for reverse charge services in another member state and triangular transactions (section 19 (1) sentence 2 UStG). The buyer's VAT identifier is still required.
+- Small business invoices (section 34a UStDV) are recognised by the small business flag as well: `UstgRules::isSmallBusinessInvoice()` is true when the flag is set or a line uses `VatPreset::SmallBusiness` (before: every line). `DE-USTG-03` and the mandatory PDF output skip the service date for them, as `DE-USTG-09` and `DE-USTG-14` already did.
+- `DE-USTG-15` checks final invoices (BG-3 with a prepaid amount BT-113): on intra-community supplies advance payments trigger no VAT, so the final invoice has the deadline. Re-issued invoices with BG-3 and no prepaid amount are still skipped.
+- `DE-USTG-08` takes the small amount limit of the supply date instead of the issue date (the raise to 250 EUR applies to supplies from 1 January 2017), and the issue date only without a supply date.
+- `DE-USTG-04` (missing "Gutschrift") is a warning when the XML is written: in an e-invoice the type code labels a self-billed invoice (section 14.5 (24) sentence 1 UStAE). It stays an error otherwise.
+- `QUITTIO-VATID-FORMAT` no longer reports small business identification numbers, and `DE-TAX-NUMBER` accepts them as tax number of a small business.
+
 ## [0.5.0] - 2026-10-18
 
 ### Added

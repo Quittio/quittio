@@ -8,6 +8,7 @@ return [
     'self_billing' => 'Gutschrift',
     'property_retention' => 'Sie sind gesetzlich verpflichtet, diese Rechnung, einen Zahlungsbeleg oder eine andere beweiskräftige Unterlage zwei Jahre lang aufzubewahren (§ 14b Abs. 1 Satz 5 UStG).',
     'prepayment' => 'Die Umsatzsteuer entsteht mit Vereinnahmung der Anzahlung. Die Leistung wird voraussichtlich am :date erbracht.',
+    'service_date_open' => 'Der Zeitpunkt der Leistung ist noch nicht vereinbart.',
     'advance_deduction' => 'Abzüglich Anzahlung gemäß Rechnung :number vom :date: :amounts (§ 14 Abs. 5 Satz 2 UStG).',
     'advance_deduction_taxed' => 'Entgelt :net zzgl. :rate Umsatzsteuer :vat',
     'advance_deduction_untaxed' => 'Entgelt :net ohne Umsatzsteuer',
