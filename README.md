@@ -18,7 +18,7 @@ E-invoicing for Laravel. Quittio creates, validates, reads and renders electroni
 
 **Documentation: [docs.quittio.dev](https://docs.quittio.dev)**
 
-> **Status:** version 0.4. Implemented: data model, calculation, validation L1–L7, CII/UBL writers and readers, ZUGFeRD/Factur-X PDF/A-3, XRechnung, Peppol BIS, Laravel integration and the country pack Germany. The Managed layer (issuer profiles, drafts, gapless numbering, archive, cancellations, corrections, mail delivery, audit log) will follow as the separate commercial package `quittio/managed`; it is not released yet. APIs may still change until version 1.0, and the legal wording is under review (see [Legal review](#legal-review)).
+> **Status:** version 0.5. Implemented: data model, calculation, validation L1–L7, CII/UBL writers and readers, ZUGFeRD/Factur-X PDF/A-3, XRechnung, Peppol BIS, Laravel integration and the country pack Germany. The Managed layer (issuer profiles, drafts, gapless numbering, archive, cancellations, corrections, mail delivery, audit log) will follow as the separate commercial package `quittio/managed`; it is not released yet. APIs may still change until version 1.0, and the legal wording is under review (see [Legal review](#legal-review)).
 
 ## Packages
 
