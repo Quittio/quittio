@@ -12,6 +12,10 @@ All notable changes to this project are documented in this file. The format foll
 - `->de()->smallBusinessId('DE123456789EX')` for small businesses that state their small business identification number (suffix `EX`) instead of the tax number (section 34a sentence 1 no. 2 UStDV). It sets the number as tax number (BT-32) and the small business flag. `VatIdFormat::isSmallBusinessId()` recognises such numbers.
 - `QUITTIO-SME-ID` (info): a small business identification number (suffix `EX`) in a VAT identifier field (BT-31, BT-48, BT-63). It is no VAT identifier (Article 284 (3) VAT Directive) and cannot be checked in VIES.
 - `UstgRules::supplyDate()`: the supply date that `DE-USTG-08`, `DE-USTG-15` and `DE-USTG-16` use.
+- Tax presets can require an invoice note: presets that implement `Quittio\Core\Tax\StatesInvoiceNote` give a text (`invoiceNote()`), which the builder adds once as note (BT-22, subject `REG`) when a line uses the preset, unless the invoice has a note with the same text. The PDF lists such a text once, also when it is the exemption reason (BT-120) as well.
+- The German margin scheme, travel agency and triangular transaction presets state their text of section 14a (6) and (7) UStG also as invoice note, as the mapping table of KoSIT and FeRD assigns these statements to the invoice note (BG-1). `VatPreset::ZeroRatedPv` adds the note "Steuersatz 0 % nach § 12 Abs. 3 UStG." (`LegalTexts::ZERO_RATED_PV`), which category Z cannot carry as exemption reason.
+- `VatPreset::BusinessTransfer` (`de.business_transfer`): transfer of a business as a whole (Geschäftsveräußerung im Ganzen, section 1 (1a) UStG), category O with `VATEX-EU-O` and the text "Nicht steuerbare Geschäftsveräußerung im Ganzen (§ 1 Abs. 1a UStG).". Like every category O invoice it states tax numbers instead of VAT identifiers (BR-O-02).
+- `->de()->discountAgreement('der Bonusvereinbarung vom 01.01.2026')` refers to agreed bonuses or rebates whose amount is not known yet (section 14 (4) no. 7 UStG) with the note `LegalTexts::DISCOUNT_AGREEMENT`.
 
 ### Changed
 
@@ -22,6 +26,8 @@ All notable changes to this project are documented in this file. The format foll
 - `DE-USTG-08` takes the small amount limit of the supply date instead of the issue date (the raise to 250 EUR applies to supplies from 1 January 2017), and the issue date only without a supply date.
 - `DE-USTG-04` (missing "Gutschrift") is a warning when the XML is written: in an e-invoice the type code labels a self-billed invoice (section 14.5 (24) sentence 1 UStAE). It stays an error otherwise.
 - `QUITTIO-VATID-FORMAT` no longer reports small business identification numbers, and `DE-TAX-NUMBER` accepts them as tax number of a small business.
+- The text of `VatPreset::NotTaxableInGermany` names the place of supply abroad: "Nicht im Inland steuerbare Leistung (Leistungsort im Ausland)" ("Service not taxable in Germany (place of supply abroad)").
+- The note of a partial cancellation whose VAT is aligned with the earlier ones (`cancellation_vat_aligned`) explains the rounding: "Rundungsausgleich: Die Umsatzsteuer dieses Teilstornos ist so bemessen, dass alle Teilstornos zur Rechnung RE-… zusammen deren Umsatzsteuer exakt berichtigen." The label takes the placeholder `:number`; overridden labels without it keep working.
 
 ## [0.5.0] - 2026-10-18
 

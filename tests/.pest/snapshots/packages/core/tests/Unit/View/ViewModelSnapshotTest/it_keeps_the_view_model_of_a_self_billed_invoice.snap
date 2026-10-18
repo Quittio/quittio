@@ -635,7 +635,7 @@
             "cancellation_note": "Stornierung der Rechnung :number vom :date.",
             "cancellation_note_self_billed": "Stornierung der Gutschrift :number vom :date.",
             "cancellation_reason": "Grund: :reason",
-            "cancellation_vat_aligned": "Die Umsatzsteuer ist auf die bereits stornierten Teilbeträge abgestimmt.",
+            "cancellation_vat_aligned": "Rundungsausgleich: Die Umsatzsteuer dieses Teilstornos ist so bemessen, dass alle Teilstornos zur Rechnung :number zusammen deren Umsatzsteuer exakt berichtigen.",
             "cancellation_terms": "Der Betrag wird mit offenen Forderungen verrechnet oder erstattet."
         },
         "design": {

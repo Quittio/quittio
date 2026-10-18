@@ -81,7 +81,7 @@ it('rounds the VAT of partial cancellations cumulatively', function (string $str
         ->and($parts[1]['data']->meta->hasFlag(Meta::FLAG_CANCELLATION_VAT_ALIGNED))->toBeTrue()
         // The note mentions the alignment only where a VAT amount differs.
         ->and($parts[0]['data']->notes[0]->content)->toBe('Stornierung der Rechnung RE-2026-0042 vom 03.10.2026.')
-        ->and($parts[1]['data']->notes[0]->content)->toBe('Stornierung der Rechnung RE-2026-0042 vom 03.10.2026. Die Umsatzsteuer ist auf die bereits stornierten Teilbeträge abgestimmt.')
+        ->and($parts[1]['data']->notes[0]->content)->toBe('Stornierung der Rechnung RE-2026-0042 vom 03.10.2026. Rundungsausgleich: Die Umsatzsteuer dieses Teilstornos ist so bemessen, dass alle Teilstornos zur Rechnung RE-2026-0042 zusammen deren Umsatzsteuer exakt berichtigen.')
         ->and($parts[2]['data']->notes[0]->content)->toBe('Stornierung der Rechnung RE-2026-0042 vom 03.10.2026.')
         ->and(Validate::codes($validation[1]))->toContain('QUITTIO-CANCELLATION-VAT-ALIGNED')->not->toContain('QUITTIO-VAT-ROUNDING')
         ->and($validation[1]->infos()[0]->code ?? null)->toBe('QUITTIO-CANCELLATION-VAT-ALIGNED')
@@ -102,7 +102,7 @@ it('puts the reason after the alignment sentence', function () {
     $history = new CancellationHistory((new CancellationHistory)->withCancellation($original, $first)->groups);
     $second = Cancellation::of($original, 'ST-2', reason: 'Retoure', lines: alignmentUnit(), history: $history, locale: 'en')->build();
 
-    expect($second->notes[0]->content)->toBe('Cancellation of invoice RE-2026-0042 of 03/10/2026. The VAT is aligned with the amounts already cancelled. Reason: Retoure');
+    expect($second->notes[0]->content)->toBe('Cancellation of invoice RE-2026-0042 of 03/10/2026. Rounding adjustment: the VAT of this partial cancellation is set so that all partial cancellations of invoice RE-2026-0042 together correct its VAT exactly. Reason: Retoure');
 });
 
 it('closes VAT groups separately and reverses negative lines', function (string $strategy, string $sign) {

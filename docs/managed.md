@@ -1442,8 +1442,10 @@ This holds for every sequence of partial cancellations (and the rest with `cance
   rate), and its VAT has the sign of its taxable amount (0.00 on 0.00).
 - BR-CO-17 and BR-S-09 accept up to one currency unit (the official Schematron validation
   rules check exactly this tolerance), so every document stays valid.
-- Such a cancellation says so in its note: "Die Umsatzsteuer ist auf die bereits stornierten
-  Teilbeträge abgestimmt." (The VAT is aligned with the amounts already cancelled.) The
+- Such a cancellation says so in its note: "Rundungsausgleich: Die Umsatzsteuer dieses
+  Teilstornos ist so bemessen, dass alle Teilstornos zur Rechnung RE-… zusammen deren
+  Umsatzsteuer exakt berichtigen." (Rounding adjustment: all partial cancellations together
+  correct the VAT of the invoice exactly.) The
   validation reports the information `QUITTIO-CANCELLATION-VAT-ALIGNED` instead of the
   warning `QUITTIO-VAT-ROUNDING`. That warning still reports a larger difference or another
   sign.

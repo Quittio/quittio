@@ -644,7 +644,7 @@
             "cancellation_note": "Cancellation of invoice :number of :date.",
             "cancellation_note_self_billed": "Cancellation of the self-billed invoice :number of :date.",
             "cancellation_reason": "Reason: :reason",
-            "cancellation_vat_aligned": "The VAT is aligned with the amounts already cancelled.",
+            "cancellation_vat_aligned": "Rounding adjustment: the VAT of this partial cancellation is set so that all partial cancellations of invoice :number together correct its VAT exactly.",
             "cancellation_terms": "The amount will be offset against open items or refunded."
         },
         "design": {

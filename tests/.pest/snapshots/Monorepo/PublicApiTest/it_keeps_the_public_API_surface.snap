@@ -3673,6 +3673,20 @@
             "abstract public rate(): ?Brick\\Math\\BigDecimal"
         ]
     },
+    "Quittio\\Core\\Tax\\StatesInvoiceNote": {
+        "kind": "interface",
+        "implements": [
+            "Quittio\\Core\\Tax\\TaxPreset"
+        ],
+        "methods": [
+            "abstract public category(): Quittio\\Core\\Enums\\VatCategory",
+            "abstract public exemptionReason(?string $locale = null): ?string",
+            "abstract public exemptionReasonCode(): Quittio\\Core\\Enums\\VatExemptionReasonCode|Quittio\\Core\\Codes\\RawCode|null",
+            "abstract public invoiceNote(?string $locale = null): ?string",
+            "abstract public key(): string",
+            "abstract public rate(): ?Brick\\Math\\BigDecimal"
+        ]
+    },
     "Quittio\\Core\\Tax\\SupplyDate": {
         "kind": "final class",
         "methods": [
@@ -5551,6 +5565,7 @@
             "public __construct(Quittio\\Core\\Builder\\InvoiceBuilder $builder)",
             "public consumerDefaultNotice(string $locale = \"de\"): Quittio\\Core\\Builder\\InvoiceBuilder",
             "public deductAdvance(Quittio\\Core\\Data\\InvoiceData $advance, string $locale = \"de\"): Quittio\\Core\\Builder\\InvoiceBuilder",
+            "public discountAgreement(string $agreement, string $locale = \"de\"): Quittio\\Core\\Builder\\InvoiceBuilder",
             "public newVehicle(string $locale = \"de\"): Quittio\\Core\\Builder\\InvoiceBuilder",
             "public propertyRelatedService(string $locale = \"de\"): Quittio\\Core\\Builder\\InvoiceBuilder",
             "public selfBilled(string $locale = \"de\"): Quittio\\Core\\Builder\\InvoiceBuilder",
@@ -5924,6 +5939,7 @@
         "implements": [
             "BackedEnum",
             "Quittio\\Core\\Tax\\DatedTaxPreset",
+            "Quittio\\Core\\Tax\\StatesInvoiceNote",
             "Quittio\\Core\\Tax\\TaxPreset",
             "UnitEnum"
         ],
@@ -5940,6 +5956,7 @@
             "TriangularTransaction = \"de.triangular_transaction\"",
             "Export = \"de.export\"",
             "NotTaxableInGermany = \"de.not_taxable\"",
+            "BusinessTransfer = \"de.business_transfer\"",
             "MarginSecondHand = \"de.margin_second_hand\"",
             "MarginArt = \"de.margin_art\"",
             "MarginAntiques = \"de.margin_antiques\"",
@@ -5954,6 +5971,7 @@
             "public category(): Quittio\\Core\\Enums\\VatCategory",
             "public exemptionReason(?string $locale = null): ?string",
             "public exemptionReasonCode(): ?Quittio\\Core\\Enums\\VatExemptionReasonCode",
+            "public invoiceNote(?string $locale = null): ?string",
             "public key(): string",
             "public on(Quittio\\Core\\Support\\Date $date): Quittio\\Core\\Tax\\TaxPreset",
             "public rate(): ?Brick\\Math\\BigDecimal",
@@ -5972,6 +5990,7 @@
             "ADVANCE_DEDUCTION_UNTAXED",
             "CONSUMER_DEFAULT",
             "DEFAULT_INTEREST",
+            "DISCOUNT_AGREEMENT",
             "EXPORT",
             "FALLBACK_LOCALE",
             "INTRA_COMMUNITY_SUPPLY",
@@ -5981,7 +6000,8 @@
             "REVERSE_CHARGE",
             "SELF_BILLING",
             "SERVICE_DATE_OPEN",
-            "SMALL_BUSINESS"
+            "SMALL_BUSINESS",
+            "ZERO_RATED_PV"
         ],
         "methods": [
             "public static catalog(): Quittio\\Core\\Countries\\LegalTextCatalog",

@@ -164,3 +164,73 @@ it('keeps the keys of the presets and of earlier versions', function () {
         ->and((string) VatPreset::Standard->rate())->toBe('19')
         ->and(VatPreset::Standard->exemptionReason())->toBeNull();
 });
+
+it('adds the statement of the special schemes once as invoice note (mapping table of KoSIT and FeRD)', function (VatPreset $preset, string $text) {
+    $builder = Scenarios::base()
+        ->line(fn ($l) => $l->name('Artikel A')->quantity(1, UnitCode::Piece)->netPrice('100.00')->vat($preset))
+        ->line(fn ($l) => $l->name('Artikel B')->quantity(1, UnitCode::Piece)->netPrice('50.00')->vat($preset));
+    $invoice = (new En16931Calculator)->calculate($builder->build());
+    $notes = array_values(array_filter($invoice->notes, static fn ($note): bool => $note->content === $text));
+    $again = InvoiceBuilder::from($invoice)->line(fn ($l) => $l->name('Artikel C')->quantity(1, UnitCode::Piece)->netPrice('10.00')->vat($preset))->build();
+
+    expect($notes)->toHaveCount(1)
+        ->and($notes[0]->subjectCode?->value)->toBe('REG')
+        ->and(array_filter($again->notes, static fn ($note): bool => $note->content === $text))->toHaveCount(1)
+        // The PDF lists the text once although it is BT-120 and BT-22.
+        ->and(array_filter(Quittio\Core\View\ViewModelFactory::legalNoteTexts($invoice), static fn (string $note): bool => $note === $text))->toHaveCount(1);
+})->with([
+    'second-hand goods' => [VatPreset::MarginSecondHand, 'Gebrauchtgegenstände/Sonderregelung'],
+    'works of art' => [VatPreset::MarginArt, 'Kunstgegenstände/Sonderregelung'],
+    'antiques' => [VatPreset::MarginAntiques, 'Sammlungsstücke und Antiquitäten/Sonderregelung'],
+    'travel agencies' => [VatPreset::TravelAgency, 'Sonderregelung für Reisebüros'],
+    'photovoltaic systems' => [VatPreset::ZeroRatedPv, 'Steuersatz 0 % nach § 12 Abs. 3 UStG.'],
+]);
+
+it('adds the note of the triangular transaction in the invoice language', function () {
+    $invoice = Scenarios::base()->locale('en')
+        ->buyer(fn ($b) => $b->name('Kunde GmbH')->vatId('ATU12345678')->address('Ring 1', '1010', 'Wien', 'AT'))
+        ->line(fn ($l) => $l->name('Maschine')->quantity(1, UnitCode::Piece)->netPrice('5000.00')->vat(VatPreset::TriangularTransaction))
+        ->build();
+
+    expect($invoice->notes[array_key_last($invoice->notes)]->content)->toBe('Intra-Community triangular transaction (section 25b UStG); the last customer is liable for the VAT');
+});
+
+it('adds no invoice note for presets without special scheme', function () {
+    $invoice = Scenarios::base()
+        ->line(fn ($l) => $l->name('Beratung')->quantity(1, UnitCode::Hour)->netPrice('100.00')->vat(VatPreset::Standard))
+        ->line(fn ($l) => $l->name('Ware')->quantity(1, UnitCode::Piece)->netPrice('100.00')->vat(VatPreset::exempt('§ 4 Nr. 14 UStG')))
+        ->build();
+
+    expect($invoice->notes)->toBe([]);
+});
+
+it('treats the transfer of a business as a whole as not subject to VAT (section 1 (1a) UStG)', function () {
+    $quittio = Quittio\Core\Quittio::create([], [new CountryDE]);
+    $builder = Scenarios::base()
+        ->seller(fn ($s) => $s->vatId(null))
+        ->buyer(fn ($b) => $b->vatId(null)->taxNumber('201/987/65432'))
+        ->line(fn ($l) => $l->name('Betrieb Musterstraße 1 mit Inventar')->quantity(1, UnitCode::Piece)->netPrice('250000.00')->vat(VatPreset::BusinessTransfer));
+    $invoice = $builder->build();
+    $withVatIds = Scenarios::base()
+        ->line(fn ($l) => $l->name('Betrieb')->quantity(1, UnitCode::Piece)->netPrice('250000.00')->vat(VatPreset::BusinessTransfer));
+
+    expect($invoice->lines[0]->vat->category)->toBe(VatCategory::NotSubjectToVat)
+        ->and($invoice->lines[0]->vat->rate)->toBeNull()
+        ->and($invoice->lines[0]->vat->exemptionReasonCode)->toBe(VatExemptionReasonCode::NotSubjectToVat)
+        ->and($invoice->lines[0]->vat->exemptionReason)->toBe('Nicht steuerbare Geschäftsveräußerung im Ganzen (§ 1 Abs. 1a UStG).')
+        ->and($quittio->make($builder)->format('xrechnung-cii')->check()->errors())->toBe([])
+        ->and(array_map(static fn ($m): string => $m->code, $quittio->make($withVatIds)->format('xrechnung-cii')->check()->errors()))->toContain('BR-O-02');
+});
+
+it('names the place of supply abroad for supplies not taxable in Germany', function () {
+    expect(VatPreset::NotTaxableInGermany->exemptionReason('de'))->toBe('Nicht im Inland steuerbare Leistung (Leistungsort im Ausland)')
+        ->and(VatPreset::NotTaxableInGermany->exemptionReason('en'))->toBe('Service not taxable in Germany (place of supply abroad)');
+});
+
+it('refers to an agreement on bonuses and rebates (section 14 (4) no. 7 UStG)', function () {
+    $invoice = Scenarios::make('simple')->de()->discountAgreement('der Bonusvereinbarung vom 01.01.2026')->build();
+    $note = $invoice->notes[array_key_last($invoice->notes)];
+
+    expect($note->content)->toBe('Etwaige Minderungen des Entgelts (Boni, Rabatte) ergeben sich aus der Bonusvereinbarung vom 01.01.2026.')
+        ->and($note->subjectCode?->value)->toBe('REG');
+});

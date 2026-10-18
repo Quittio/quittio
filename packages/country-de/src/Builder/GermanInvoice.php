@@ -181,6 +181,20 @@ final readonly class GermanInvoice
     }
 
     /**
+     * Reference to an agreed reduction of the consideration whose amount is not known when the
+     * invoice is issued, e.g. a bonus or rebate agreement (section 14 (4) no. 7 UStG): the note
+     * LegalTexts::DISCOUNT_AGREEMENT naming $agreement, e.g. "der Bonusvereinbarung vom
+     * 01.01.2026". Naming the agreement is enough if its documents can be shown at short notice
+     * (section 14.5 (19) UStAE). A cash discount (Skonto) is stated in the payment terms instead.
+     *
+     * @return TBuilder
+     */
+    public function discountAgreement(string $agreement, string $locale = 'de'): InvoiceBuilder
+    {
+        return $this->builder->note(LegalTexts::text(LegalTexts::DISCOUNT_AGREEMENT, $locale, ['agreement' => $agreement]), NoteSubjectCode::RegulatoryInformation);
+    }
+
+    /**
      * Notice that a consumer is in default 30 days after the due date (section 286 (3) BGB).
      *
      * @return TBuilder

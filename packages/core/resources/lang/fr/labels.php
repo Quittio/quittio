@@ -145,6 +145,6 @@ return [
     'cancellation_note' => 'Annulation de la facture :number du :date.',
     'cancellation_note_self_billed' => 'Annulation de l\'autofacture :number du :date.',
     'cancellation_reason' => 'Motif : :reason',
-    'cancellation_vat_aligned' => 'La TVA est alignée sur les montants déjà annulés.',
+    'cancellation_vat_aligned' => 'Ajustement d’arrondi : la TVA de cette annulation partielle est fixée de sorte que toutes les annulations partielles de la facture :number en corrigent ensemble exactement la TVA.',
     'cancellation_terms' => 'Le montant sera compensé avec les créances ouvertes ou remboursé.',
 ];

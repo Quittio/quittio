@@ -182,7 +182,7 @@ final class Cancellation
 
         // Amounts of a stale original are recalculated completely: nothing to align them with.
         if ($lines !== null && $history !== null && ! DeclaredAmounts::isStale($original)) {
-            $cancellation = self::alignVat($original, $cancellation, $history, $calculator, $note.' '.$translator->get('quittio::labels.cancellation_vat_aligned', [], $locale).$reasonNote);
+            $cancellation = self::alignVat($original, $cancellation, $history, $calculator, $note.' '.$translator->get('quittio::labels.cancellation_vat_aligned', ['number' => $original->number], $locale).$reasonNote);
         }
 
         return InvoiceBuilder::fromUsing($cancellation, $calculator);

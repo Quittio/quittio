@@ -64,18 +64,19 @@ $builder = Quittio::invoice()
 |---|---|---|---|---|---|
 | `Standard` | `de.standard` | `S` | 19 (of the supply date) | – | Standard rate |
 | `Reduced` | `de.reduced` | `S` | 7 (of the supply date) | – | Reduced rate |
-| `ZeroRatedPv` | `de.zero_rated_pv` | `Z` | 0 | – | 0 % rate for photovoltaic systems (section 12 (3) UStG). The rate itself is the statement, so there is no exemption reason (BR-Z-10). |
+| `ZeroRatedPv` | `de.zero_rated_pv` | `Z` | 0 | – | 0 % rate for photovoltaic systems (section 12 (3) UStG). Category `Z` allows no exemption reason (BR-Z-10), so the preset adds the note "Steuersatz 0 % nach § 12 Abs. 3 UStG." (BT-22). Quittio does not check the conditions of the zero rate (operator, place of the system). |
 | `SmallBusiness` | `de.small_business` | `E` | 0 | – | Small business exemption (Kleinunternehmer, section 19 (1) UStG); see [Small businesses](#small-businesses) |
 | `ReverseChargeDomestic` | `de.reverse_charge_domestic` | `AE` | 0 | `VATEX-EU-AE` | Domestic reverse charge (section 13b UStG): the buyer in Germany owes the VAT |
 | `ReverseChargeEu` | `de.reverse_charge_eu` | `AE` | 0 | `VATEX-EU-AE` | Service to a business in another member state, which owes the VAT there. Both VAT identifiers are required (`DE-USTG-11`). Issue the invoice by the 15th of the following month (`DE-USTG-15`). |
 | `IntraCommunitySupply` | `de.intra_community_supply` | `K` | 0 | `VATEX-EU-IC` | VAT-exempt intra-community supply (section 4 no. 1b with section 6a UStG), also of new vehicles (`newVehicle()`). Not for small businesses, except new vehicles (`DE-USTG-14`). Issue the invoice by the 15th of the following month (`DE-USTG-15`). |
-| `TriangularTransaction` | `de.triangular_transaction` | `AE` | 0 | `VATEX-EU-AE` | Intra-community triangular transaction (section 25b UStG), in which the last customer owes the VAT; wording of section 14a (7) UStG. Both VAT identifiers are required. |
+| `TriangularTransaction` | `de.triangular_transaction` | `AE` | 0 | `VATEX-EU-AE` | Intra-community triangular transaction (section 25b UStG), in which the last customer owes the VAT; wording of section 14a (7) UStG, also as note (BT-22). Both VAT identifiers are required. |
 | `Export` | `de.export` | `G` | 0 | `VATEX-EU-G` | VAT-exempt export supply (section 4 no. 1a with section 6 UStG) |
-| `NotTaxableInGermany` | `de.not_taxable` | `O` | none | `VATEX-EU-O` | Supply not taxable in Germany |
-| `MarginSecondHand` | `de.margin_second_hand` | `E` | 0 | `VATEX-EU-F` | Margin scheme, second-hand goods |
-| `MarginArt` | `de.margin_art` | `E` | 0 | `VATEX-EU-I` | Margin scheme, works of art |
-| `MarginAntiques` | `de.margin_antiques` | `E` | 0 | `VATEX-EU-J` | Margin scheme, collectors' items and antiques |
-| `TravelAgency` | `de.travel_agency` | `E` | 0 | `VATEX-EU-D` | Special scheme for travel agents |
+| `NotTaxableInGermany` | `de.not_taxable` | `O` | none | `VATEX-EU-O` | Supply not taxable in Germany (place of supply abroad). EN 16931 allows no VAT identifiers with category `O` (BR-O-02): state the tax number (BT-32) instead. |
+| `BusinessTransfer` | `de.business_transfer` | `O` | none | `VATEX-EU-O` | Transfer of a business as a whole (Geschäftsveräußerung im Ganzen, section 1 (1a) UStG), not subject to VAT. As with `NotTaxableInGermany`, state the tax numbers instead of VAT identifiers (BR-O-02). VAT shown on such an invoice would be owed under section 14c (1) UStG; category `O` cannot carry any. |
+| `MarginSecondHand` | `de.margin_second_hand` | `E` | 0 | `VATEX-EU-F` | Margin scheme, second-hand goods; wording of section 14a (6) UStG, also as note (BT-22) |
+| `MarginArt` | `de.margin_art` | `E` | 0 | `VATEX-EU-I` | Margin scheme, works of art; also as note (BT-22) |
+| `MarginAntiques` | `de.margin_antiques` | `E` | 0 | `VATEX-EU-J` | Margin scheme, collectors' items and antiques; also as note (BT-22) |
+| `TravelAgency` | `de.travel_agency` | `E` | 0 | `VATEX-EU-D` | Special scheme for travel agents; also as note (BT-22) |
 | `VatPreset::exempt(string $paragraph, $code = null)` | `de.exempt` | `E` | 0 | `$code` (enum, raw code or string) | Any other exemption, e.g. `§ 4 Nr. 14 UStG` |
 
 The codes in column BT-121 are VATEX codes: the standard codes for the reason of an exemption.
@@ -106,7 +107,8 @@ Up to version 0.2 the presets were called `Standard19` (`de.standard_19`) and `R
 | `de.intra_community_supply` | Steuerfreie innergemeinschaftliche Lieferung (§ 4 Nr. 1b i. V. m. § 6a UStG) | VAT-exempt intra-Community supply (section 4 no. 1b in conjunction with section 6a UStG) |
 | `de.triangular_transaction` | Innergemeinschaftliches Dreiecksgeschäft nach § 25b UStG; Steuerschuldnerschaft des letzten Abnehmers | Intra-Community triangular transaction (section 25b UStG); the last customer is liable for the VAT |
 | `de.export` | Steuerfreie Ausfuhrlieferung (§ 4 Nr. 1a i. V. m. § 6 UStG) | VAT-exempt export supply (section 4 no. 1a in conjunction with section 6 UStG) |
-| `de.not_taxable` | Nicht im Inland steuerbare Leistung | Service not taxable in Germany |
+| `de.not_taxable` | Nicht im Inland steuerbare Leistung (Leistungsort im Ausland) | Service not taxable in Germany (place of supply abroad) |
+| `de.business_transfer` | Nicht steuerbare Geschäftsveräußerung im Ganzen (§ 1 Abs. 1a UStG). | Transfer of a business as a whole, not subject to VAT (section 1 (1a) UStG). |
 | `de.margin_second_hand` | Gebrauchtgegenstände/Sonderregelung | Second-hand goods/special arrangements |
 | `de.margin_art` | Kunstgegenstände/Sonderregelung | Works of art/special arrangements |
 | `de.margin_antiques` | Sammlungsstücke und Antiquitäten/Sonderregelung | Collectors’ items and antiques/special arrangements |
@@ -120,7 +122,8 @@ How presets behave:
 - **Language.** The text is taken in the invoice locale (`->locale()` on the builder) when the line is built. The enum presets and `VatPreset::exempt()` (a `Quittio\Country\DE\Tax\CustomVatPreset`) use German when the invoice has no locale. Other locales without a text fall back to English.
 - **Preset key.** The key stays on the line (`$line->vat->presetKey`). `DE-USTG-09`, `DE-USTG-11`, `DE-USTG-14`, `DE-USTG-15` and the small business detection rely on it.
 - **VAT breakdown.** Category, rate, code and text flow into the VAT breakdown (BG-23). When lines of one category and rate have different texts, the texts are joined in BT-120. The code (BT-121) is kept only when all codes agree; otherwise Quittio warns with `QUITTIO-EXEMPTION-CONFLICT`.
-- **PDF.** The PDF lists the BT-120 texts of all categories other than the standard rate in its legal notes (`legalNotes`). Margin scheme and travel agency rows show no VAT amount (section 14a (6) UStG).
+- **Invoice notes.** The mapping table of KoSIT and FeRD (recommended by the BMF letter of 15 October 2026) puts the statements of section 14a (6) and (7) UStG into the invoice note (BG-1). The margin scheme, travel agency and triangular presets therefore add their text once as note (BT-22, subject `REG`) as well, and `ZeroRatedPv` its reference to section 12 (3) UStG. A note with the same text is not added twice. Presets of other packs can do the same by implementing `Quittio\Core\Tax\StatesInvoiceNote`.
+- **PDF.** The PDF lists the BT-120 texts of all categories other than the standard rate in its legal notes (`legalNotes`), together with the regulatory notes and without duplicates. Margin scheme and travel agency rows show no VAT amount (section 14a (6) UStG).
 - **Allowances and charges.** Document level allowances and charges take a category and a rate, not a preset: `->charge(VatCategory::StandardRate, '19', amount: '10.00', reason: 'Shipping')`.
 - **Lookup by key**, e.g. from a database column: `VatPreset::from('de.standard')`, `(new CountryDE)->taxPresets()->get('de.standard')` or, across all installed packs, `$quittio->countries()->taxPreset('de.standard')`. `de.exempt` is not part of the collection.
 
@@ -326,6 +329,7 @@ German law allows a simplified invoice for small amounts (section 33 UStDV). `->
 | `selfBilled(string $locale = 'de')` | a self-billed invoice ([Self-billing](#self-billing-gutschrift)) | type code 389 and the note `LegalTexts::SELF_BILLING` (subject `REG`) |
 | `deductAdvance(InvoiceData $advance, string $locale = 'de')` | a final invoice that deducts an advance invoice ([Final invoices](#final-invoices-deductadvance)) | preceding invoice (BG-3), prepaid amount (BT-113) and the note `LegalTexts::ADVANCE_DEDUCTION` (subject `REG`) |
 | `consumerDefaultNotice(string $locale = 'de')` | the notice that a consumer is in default 30 days after the due date (section 286 (3) BGB) | the note `LegalTexts::CONSUMER_DEFAULT` (subject `PMT`) |
+| `discountAgreement(string $agreement, string $locale = 'de')` (only as `->de()->discountAgreement()`) | an agreed bonus, rebate or other reduction whose amount is not known yet (section 14 (4) no. 7 UStG); naming the agreement is enough (section 14.5 (19) UStAE) | the note `LegalTexts::DISCOUNT_AGREEMENT` (subject `REG`) |
 | `smallBusinessId(string $id)` (only as `->de()->smallBusinessId()`) | a small business that states its small business identification number (suffix `EX`) instead of the tax number ([Small businesses](#small-businesses)) | the number as the seller's tax number (BT-32) and the flag `small_business` |
 | `serviceDateOpen(string $locale = 'de')` (only as `->de()->serviceDateOpen()`) | a prepayment invoice (386) whose date of the service is not agreed yet (section 14.8 (4) sentence 5 UStAE) | flag `de.service_date_open` and the note `LegalTexts::SERVICE_DATE_OPEN` (subject `REG`); no `DE-USTG-03` warning |
 
@@ -674,10 +678,12 @@ The default templates print all of them.
 | `ADVANCE_DEDUCTION_UNTAXED` (`advance_deduction_untaxed`) | Entgelt :net ohne Umsatzsteuer | net :net without VAT | `deductAdvance()`, part of `:amounts` |
 | `CONSUMER_DEFAULT` (`consumer_default`) | Sie kommen spätestens in Verzug, wenn Sie nicht innerhalb von 30 Tagen nach Fälligkeit und Zugang dieser Rechnung zahlen (§ 286 Abs. 3 BGB). | You will be in default at the latest if you do not pay within 30 days of the due date and receipt of this invoice (section 286 (3) BGB). | `consumerDefaultNotice()` |
 | `DEFAULT_INTEREST` (`default_interest`) | Verzugszinsen :rate % p. a. (Basiszinssatz :base_rate % + :points Prozentpunkte) vom :from bis :until | Default interest :rate % p.a. (base rate :base_rate % + :points points) from :from to :until | `DefaultInterest` (interest lines of payment reminders; German numbers and dates for every German locale) |
+| `DISCOUNT_AGREEMENT` (`discount_agreement`) | Etwaige Minderungen des Entgelts (Boni, Rabatte) ergeben sich aus :agreement. | Any reductions of the consideration (bonuses, rebates) follow from :agreement. | `discountAgreement()` |
+| `ZERO_RATED_PV` (`zero_rated_pv`) | Steuersatz 0 % nach § 12 Abs. 3 UStG. | VAT rate 0 % under section 12 (3) UStG. | `VatPreset::ZeroRatedPv` |
 | `NEW_VEHICLE` (`new_vehicle`) | Innergemeinschaftliche Lieferung eines neuen Fahrzeugs (§ 14a Abs. 4 UStG); die Fahrzeugmerkmale nach § 1b Abs. 2 und 3 UStG sind bei der Position angegeben. | Intra-Community supply of a new means of transport (section 14a (4) UStG); the vehicle details under section 1b (2) and (3) UStG are stated with the line. | `newVehicle()` |
 
 - `REVERSE_CHARGE`, `INTRA_COMMUNITY_SUPPLY`, `EXPORT` and `SMALL_BUSINESS` are the exemption reasons of the named [tax presets](#tax-presets), in every locale the pack ships (`CountryDE::locales()`). So a notice has one wording in BT-120 and in your notes, including overrides of `tax.php`.
-- No text is added automatically by validation or rendering.
+- Validation and rendering add no text. The builder adds the notes of the presets that require one (`StatesInvoiceNote`, see [Tax presets](#tax-presets)).
 - `LegalTexts::text($key, $locale, $replace)` returns a text in the language of `$locale` (`en_GB` → English) or in German. `LegalTexts::localeOf($key, $locale)` names the catalog locale it uses.
 
 A text for your own note, here on a prepayment invoice (386), which states that VAT is due on receipt of the payment and names the expected date of the service:

@@ -57,6 +57,7 @@ use Quittio\Core\Documents\DocumentType;
 use Quittio\Core\Enums\AllowanceReasonCode;
 use Quittio\Core\Enums\ChargeReasonCode;
 use Quittio\Core\Enums\InvoiceTypeCode;
+use Quittio\Core\Enums\NoteSubjectCode;
 use Quittio\Core\Enums\TaxPointDateCode;
 use Quittio\Core\Enums\VatCategory;
 use Quittio\Core\Enums\VatExemptionReasonCode;
@@ -531,7 +532,7 @@ class InvoiceBuilder
 
     private function assemble(bool $requireLines): InvoiceData
     {
-        $lines = $this->assembleLines($requireLines);
+        [$lines, $presetNotes] = $this->assembleLines($requireLines);
         [$allowances, $charges] = $this->assembleAllowancesAndCharges($lines);
         $seller = $this->seller instanceof PartyBuilder ? $this->seller->buildSeller() : $this->seller;
         $buyer = $this->buyer instanceof PartyBuilder ? $this->buyer->buildBuyer() : $this->buyer;
@@ -566,7 +567,7 @@ class InvoiceBuilder
             invoicedObject: $this->invoicedObject,
             buyerAccountingReference: $this->references['buyerAccountingReference'] ?? null,
             paymentTerms: $this->paymentTerms instanceof PaymentTermsBuilder ? $this->paymentTerms->build($this->currency) : $this->paymentTerms,
-            notes: $this->notes,
+            notes: $this->notesWithPresetNotes($presetNotes),
             businessProcess: $this->businessProcess,
             precedingInvoices: $this->precedingInvoices,
             payee: $this->payee instanceof PartyBuilder ? $this->payee->buildPayee() : $this->payee,
@@ -593,9 +594,10 @@ class InvoiceBuilder
 
     /**
      * The lines: identifiers, VAT default and supply date for the builders, then checked for
-     * unique identifiers and, for build(), at least one line (BG-25).
+     * unique identifiers and, for build(), at least one line (BG-25); and the notes their presets
+     * require (StatesInvoiceNote).
      *
-     * @return list<InvoiceLine>
+     * @return array{list<InvoiceLine>, list<string>}
      */
     private function assembleLines(bool $requireLines): array
     {
@@ -620,8 +622,10 @@ class InvoiceBuilder
             }
         }
         $lines = [];
+        $notes = [];
         foreach ($this->lines as $index => $line) {
             if (! $line instanceof InvoiceLine) {
+                $notes = [...$notes, ...$line->invoiceNotes($locale, $vatDefault)];
                 $default = $index + 1;
                 if ($line->explicitId() === null) {
                     while (isset($taken[(string) $default])) {
@@ -645,7 +649,28 @@ class InvoiceBuilder
             throw InvalidInvoiceData::missing('BG-25', 'invoice lines');
         }
 
-        return $lines;
+        return [$lines, $notes];
+    }
+
+    /**
+     * The notes, followed by the notes the presets of the lines require ($presetNotes) that the
+     * invoice does not have yet, as regulatory information (REG).
+     *
+     * @param  list<string>  $presetNotes
+     * @return list<Note>
+     */
+    private function notesWithPresetNotes(array $presetNotes): array
+    {
+        $notes = $this->notes;
+        $texts = array_map(static fn (Note $note): string => trim($note->content), $notes);
+        foreach ($presetNotes as $text) {
+            if (! in_array(trim($text), $texts, true)) {
+                $notes[] = new Note($text, NoteSubjectCode::RegulatoryInformation);
+                $texts[] = trim($text);
+            }
+        }
+
+        return $notes;
     }
 
     /**

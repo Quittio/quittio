@@ -14,5 +14,7 @@ return [
     'advance_deduction_untaxed' => 'net :net without VAT',
     'consumer_default' => 'You will be in default at the latest if you do not pay within 30 days of the due date and receipt of this invoice (section 286 (3) BGB).',
     'new_vehicle' => 'Intra-Community supply of a new means of transport (section 14a (4) UStG); the vehicle details under section 1b (2) and (3) UStG are stated with the line.',
+    'discount_agreement' => 'Any reductions of the consideration (bonuses, rebates) follow from :agreement.',
+    'zero_rated_pv' => 'VAT rate 0 % under section 12 (3) UStG.',
     'default_interest' => 'Default interest :rate % p.a. (base rate :base_rate % + :points points) from :from to :until',
 ];

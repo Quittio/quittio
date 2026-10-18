@@ -49,6 +49,12 @@ final class LegalTexts
 
     public const string NEW_VEHICLE = 'new_vehicle';
 
+    /** Reference to an agreement on bonuses, rebates or discounts not yet quantified (section 14 (4) no. 7 UStG). */
+    public const string DISCOUNT_AGREEMENT = 'discount_agreement';
+
+    /** Reference of the zero rate for photovoltaic systems (VatPreset::ZeroRatedPv adds it). */
+    public const string ZERO_RATED_PV = 'zero_rated_pv';
+
     /** Description of a default interest charge of a payment reminder (DefaultInterest). */
     public const string DEFAULT_INTEREST = 'default_interest';
 
@@ -58,7 +64,7 @@ final class LegalTexts
     private const array TRANSLATED = [
         self::SELF_BILLING, self::PROPERTY_RETENTION, self::PREPAYMENT, self::SERVICE_DATE_OPEN, self::ADVANCE_DEDUCTION,
         self::ADVANCE_DEDUCTION_TAXED, self::ADVANCE_DEDUCTION_UNTAXED, self::CONSUMER_DEFAULT,
-        self::NEW_VEHICLE, self::DEFAULT_INTEREST,
+        self::NEW_VEHICLE, self::DEFAULT_INTEREST, self::ZERO_RATED_PV, self::DISCOUNT_AGREEMENT,
     ];
 
     /** @var array{0: int, 1: LegalTextCatalog}|null the catalog of a translator version */

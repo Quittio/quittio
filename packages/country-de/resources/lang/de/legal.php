@@ -14,5 +14,7 @@ return [
     'advance_deduction_untaxed' => 'Entgelt :net ohne Umsatzsteuer',
     'consumer_default' => 'Sie kommen spätestens in Verzug, wenn Sie nicht innerhalb von 30 Tagen nach Fälligkeit und Zugang dieser Rechnung zahlen (§ 286 Abs. 3 BGB).',
     'new_vehicle' => 'Innergemeinschaftliche Lieferung eines neuen Fahrzeugs (§ 14a Abs. 4 UStG); die Fahrzeugmerkmale nach § 1b Abs. 2 und 3 UStG sind bei der Position angegeben.',
+    'discount_agreement' => 'Etwaige Minderungen des Entgelts (Boni, Rabatte) ergeben sich aus :agreement.',
+    'zero_rated_pv' => 'Steuersatz 0 % nach § 12 Abs. 3 UStG.',
     'default_interest' => 'Verzugszinsen :rate % p. a. (Basiszinssatz :base_rate % + :points Prozentpunkte) vom :from bis :until',
 ];

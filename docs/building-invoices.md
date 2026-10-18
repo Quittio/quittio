@@ -1011,7 +1011,7 @@ With a `CancellationHistory` of the earlier partial cancellations, the VAT is ro
 The three parts then carry 1.84, 1.83 and 1.84 = 5.51.
 
 - Every part differs by at most 0.01 from round2(own taxable amount × rate) and keeps the sign of its taxable amount.
-- The validation reports the difference as information `QUITTIO-CANCELLATION-VAT-ALIGNED`, and the cancellation note says "The VAT is aligned with the amounts already cancelled.".
+- The validation reports the difference as information `QUITTIO-CANCELLATION-VAT-ALIGNED`, and the cancellation note explains the rounding: "Rounding adjustment: the VAT of this partial cancellation is set so that all partial cancellations of invoice RE-… together correct its VAT exactly." (German: "Rundungsausgleich: Die Umsatzsteuer dieses Teilstornos ist so bemessen, dass alle Teilstornos zur Rechnung RE-… zusammen deren Umsatzsteuer exakt berichtigen.").
 - For an original whose VAT another system rounded (BT-117 ≠ round2(BT-116 × rate)), the target uses its effective rate BT-117 / BT-116, which spreads the difference over the parts. This does not apply to groups with positive and negative lines.
 - In gross price mode, the taxable amounts follow the same way from the gross amounts cancelled so far, and the rounding amounts (BT-114) of all parts add up to the original's.
 - BT-111 in accounting currency is aligned the same way at the original's exchange rate.

@@ -34,6 +34,7 @@ use Quittio\Core\Support\Date;
 use Quittio\Core\Support\Decimal;
 use Quittio\Core\Support\Macroable;
 use Quittio\Core\Tax\DatedTaxPreset;
+use Quittio\Core\Tax\StatesInvoiceNote;
 use Quittio\Core\Tax\SupplyDate;
 use Quittio\Core\Tax\TaxPreset;
 
@@ -162,6 +163,26 @@ final class LineBuilder
         }
 
         return false;
+    }
+
+    /**
+     * The notes that the presets of the line and its sub lines require (StatesInvoiceNote);
+     * lines without VAT treatment take the preset of $default.
+     *
+     * @internal used by InvoiceBuilder
+     *
+     * @return list<string>
+     */
+    public function invoiceNotes(?string $locale, ?self $default = null): array
+    {
+        $preset = $this->hasVat() ? $this->preset : $default?->preset;
+        $note = $preset instanceof StatesInvoiceNote ? $preset->invoiceNote($locale) : null;
+        $notes = $note === null || trim($note) === '' ? [] : [$note];
+        foreach ($this->subLines as $subLine) {
+            $notes = [...$notes, ...$subLine->invoiceNotes($locale, $default)];
+        }
+
+        return $notes;
     }
 
     /**
