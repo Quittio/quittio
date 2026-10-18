@@ -37,6 +37,7 @@ use Quittio\Country\DE\Profiles\XRechnung\XRechnung30Extension;
 use Quittio\Country\DE\Rules\BmfErrorClass;
 use Quittio\Country\DE\Rules\UstgRules;
 use Quittio\Country\DE\Support\Flags;
+use Quittio\Country\DE\Support\LeitwegId;
 use Quittio\Country\DE\Tax\VatPreset;
 use Quittio\Country\DE\Texts\LegalTexts;
 
@@ -231,8 +232,10 @@ class CountryDE extends AbstractCountryPack implements ProvidesReferenceRates
     }
 
     /**
-     * Cancellation by credit note, correction by cancel and reissue. To be confirmed with
-     * a tax adviser (legal review in the README).
+     * Cancellation by credit note, correction by cancel and reissue. A self-billed invoice sent
+     * as XRechnung (with a Leitweg-ID) is cancelled by a negative self-billed invoice (389): the
+     * self-billed credit note (261) is not among the type codes of XRechnung (warning BR-DE-17).
+     * To be confirmed with a tax adviser (legal review in the README).
      */
     public function correctionPolicy(): CorrectionPolicy
     {
@@ -244,8 +247,14 @@ class CountryDE extends AbstractCountryPack implements ProvidesReferenceRates
                 // A cancellation of a self-billed invoice is issued by the buyer as well (section 14 (4) no. 10 UStG).
                 'cancellation_self_billed' => ['de' => 'Storno-Gutschrift', 'en' => 'Cancellation of the self-billed invoice (Storno-Gutschrift)'],
                 'correction' => ['de' => 'Rechnungskorrektur', 'en' => 'Corrected invoice'],
+                // Not "Rechnungskorrektur" nor "Gutschrift": the invoice stays correct (section 14.11 (4) UStAE).
+                'price_reduction' => ['de' => 'Entgeltminderung', 'en' => 'Price reduction'],
                 'self_billed' => ['de' => 'Gutschrift', 'en' => 'Self-billed invoice (Gutschrift)'],
             ],
+            strategyResolver: static fn (InvoiceData $original): ?string => $original->typeCode instanceof InvoiceTypeCode
+                && $original->typeCode->isSelfBilled() && ! $original->isCreditNote() && LeitwegId::isValid($original->buyerReference)
+                    ? CorrectionPolicy::CANCELLATION_NEGATIVE_INVOICE
+                    : null,
         );
     }
 

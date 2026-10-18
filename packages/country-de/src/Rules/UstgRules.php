@@ -37,6 +37,9 @@ final class UstgRules
 {
     private const string NS = CountryDE::TRANSLATION_NAMESPACE;
 
+    /** Words of a note that states that a corrected invoice (384) corrects and replaces the original. */
+    private const array CORRECTION_STATEMENTS = ['berichtigt', 'ersetzt', 'korrigiert', 'corrects', 'replaces', 'rectifie', 'remplace'];
+
     /** "Gutschrift" and its equivalents in other official EU languages (UStAE 14.5 Abs. 24). */
     private const array SELF_BILLING_LABELS = [
         'gutschrift', 'self-billing', 'self billing', 'autofacturation', 'autofactura', 'autofatturazione',
@@ -249,6 +252,22 @@ final class UstgRules
                 $paid = $i->totals?->prepaidAmount;
                 if ($i->typeCode === InvoiceTypeCode::PrepaymentInvoice && $paid !== null && $paid->isPositive() && $i->taxPointDate === null) {
                     $report->warning('BT-7', 'taxPointDate');
+                }
+            }),
+            $r('DE-USTG-18', 'A corrected invoice (384) should state in a note that it corrects and replaces the original invoice (section 31 (5) UStDV, section 15.2a (7) UStAE).', function (InvoiceData $i, RuleReporter $report): void {
+                if ($i->typeCode !== InvoiceTypeCode::CorrectedInvoice) {
+                    return;
+                }
+                foreach (self::CORRECTION_STATEMENTS as $word) {
+                    if (self::noteContains($i, $word)) {
+                        return;
+                    }
+                }
+                $report->warning('BT-22', 'notes');
+            }),
+            $r('DE-USTG-19', 'The final invoice deducts an advance that was settled by self-billing (Gutschrift), but is no self-billed invoice itself. The advance must be deducted (section 14 (2) sentence 5 UStG); changing the way of invoicing is allowed but unusual.', function (InvoiceData $i, RuleReporter $report): void {
+                if ($i->meta->hasFlag(Flags::SELF_BILLED_ADVANCE) && ! ($i->typeCode instanceof InvoiceTypeCode && $i->typeCode->isSelfBilled())) {
+                    $report->info('BT-3', 'typeCode');
                 }
             }),
         ];

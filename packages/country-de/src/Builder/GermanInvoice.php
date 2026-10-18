@@ -174,6 +174,12 @@ final readonly class GermanInvoice
             'amounts' => implode('; ', $amounts),
         ]);
 
+        // An advance settled by self-billing must be deducted as well (section 14 (2) sentence 5
+        // UStG); DE-USTG-19 notes when the final invoice is no self-billed invoice.
+        if ($advance->typeCode === InvoiceTypeCode::SelfBilledInvoice) {
+            $this->builder->flag(Flags::SELF_BILLED_ADVANCE);
+        }
+
         return $this->builder->precedingInvoice($advance->number, $advance->issueDate)
             // The amount received: gross total plus a cash rounding (BT-114) of the advance invoice.
             ->addPrepaid(Amount::format($advance->totals->roundingAmount === null ? $advance->totals->grossTotal : $advance->totals->grossTotal->plus($advance->totals->roundingAmount)))

@@ -238,6 +238,14 @@ return [
         'message' => 'Eine Anzahlungsrechnung mit bereits gezahltem Betrag (BT-113) muss den Tag der Vereinnahmung als Steuerzeitpunkt (BT-7) angeben, wenn er vom Rechnungsdatum abweicht (§ 14 Abs. 4 Satz 1 Nr. 6 UStG).',
         'hint' => 'Setzen Sie ->taxPointDate($vereinnahmtAm). Ging die Zahlung am Rechnungsdatum ein, fehlt nichts.',
     ],
+    'DE-USTG-18' => [
+        'message' => 'Eine korrigierte Rechnung (384) soll in einer Notiz angeben, dass sie die ursprüngliche Rechnung berichtigt und ersetzt (§ 31 Abs. 5 UStDV, Abschnitt 15.2a Abs. 7 UStAE).',
+        'hint' => 'Verwenden Sie Quittio::correction(); es ergänzt den Hinweis „Diese Rechnung berichtigt und ersetzt die Rechnung … vom …“, oder ergänzen Sie einen solchen Hinweis.',
+    ],
+    'DE-USTG-19' => [
+        'message' => 'Die Schlussrechnung zieht eine per Gutschrift abgerechnete Anzahlung ab, ist selbst aber keine Gutschrift. Die Anzahlung muss abgezogen werden (§ 14 Abs. 2 Satz 5 UStG); ein Wechsel des Abrechnungswegs ist zulässig, aber ungewöhnlich.',
+        'hint' => 'Klären Sie mit dem Leistungsempfänger, wie die Schlusszahlung abgerechnet wird. Rechnet er weiter per Gutschrift ab, stellt er auch das Schlussdokument aus.',
+    ],
     'DE-LEITWEG-ID' => [
         'message' => 'Die Prüfziffer der Leitweg-ID „:value“ (BT-10) ist falsch.',
         'hint' => 'Prüfen Sie die Leitweg-ID beim öffentlichen Auftraggeber.',

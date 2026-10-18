@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Quittio\Core;
 
+use Brick\Math\BigDecimal;
 use Closure;
 use Psr\Log\LoggerInterface;
 use Quittio\Core\Builder\InvoiceBuilder;
@@ -13,6 +14,9 @@ use Quittio\Core\Calculation\TotalsCalculator;
 use Quittio\Core\Contracts\ProvidesInvoiceData;
 use Quittio\Core\Corrections\Cancellation;
 use Quittio\Core\Corrections\CancellationHistory;
+use Quittio\Core\Corrections\Correction;
+use Quittio\Core\Corrections\PriceReduction;
+use Quittio\Core\Corrections\PriceReductionReason;
 use Quittio\Core\Countries\Capabilities\ProvidesFormats;
 use Quittio\Core\Countries\CountryPack;
 use Quittio\Core\Countries\CountryRegistry;
@@ -247,7 +251,7 @@ final class Quittio
      * Builder for the cancellation of an issued invoice. The sign
      * strategy comes from the argument, the configuration or the country pack (in this order).
      *
-     * @param  list<array{line: string, quantity?: \Brick\Math\BigDecimal|int|string, amount?: string}>|null  $lines  partial cancellation; null = full
+     * @param  list<array{line: string, quantity?: BigDecimal|int|string, amount?: string}>|null  $lines  partial cancellation; null = full
      * @param  CancellationHistory|null  $history  earlier partial cancellations of the original, so that the VAT of a
      *         partial cancellation is rounded cumulatively with theirs (see CancellationHistory)
      * @param  string|null  $title  document title in the PDF, e.g. "Stornorechnung"; null = the title of the country
@@ -263,7 +267,7 @@ final class Quittio
             calculator: $this->calculator,
             original: $original,
             number: $number,
-            strategy: $strategy ?? $this->config->cancellationStrategy ?? $policy->cancellationStrategy,
+            strategy: $strategy ?? $this->config->cancellationStrategy ?? $policy->cancellationStrategyFor($original),
             reason: $reason,
             issueDate: $issueDate,
             locale: $locale,
@@ -271,6 +275,59 @@ final class Quittio
             lines: $lines,
             policy: $policy,
             history: $history,
+        );
+    }
+
+    /**
+     * Builder for a corrected invoice (384) that replaces an issued invoice: a copy with the new
+     * number, the reference to the original and the note "Diese Rechnung berichtigt und ersetzt
+     * die Rechnung … vom …" (see Correction). Change what was wrong on the builder. Cancelling and
+     * issuing a new invoice (cancellation()) is the safer default.
+     *
+     * @param  string|null  $title  document title in the PDF; null = the title "correction" of the country pack
+     */
+    public function correction(InvoiceData $original, string $number, ?string $reason = null, ?Date $issueDate = null, ?string $title = null): InvoiceBuilder
+    {
+        $pack = $this->countryResolver->resolve($original)->leading;
+
+        return Correction::of(
+            calculator: $this->calculator,
+            original: $original,
+            number: $number,
+            reason: $reason,
+            issueDate: $issueDate,
+            locale: $original->meta->locale ?? $this->config->locale ?? $pack->defaults()->locale,
+            title: $title,
+            policy: $pack->correctionPolicy(),
+        );
+    }
+
+    /**
+     * Builder for a document on the reduction of the consideration of an issued invoice (section
+     * 17 UStG), e.g. a cash discount taken: a credit note (381) per VAT group of the original with
+     * the reduced net amounts and the note on the reduction (see PriceReduction). Give the
+     * reduction as percent, as net amount (one VAT group) or as net amounts per VAT group
+     * ("category:rate" => amount).
+     *
+     * @param  array<string, BigDecimal|int|string>|null  $amounts
+     * @param  string|null  $title  document title in the PDF; null = the title "price_reduction" of the country pack
+     */
+    public function priceReduction(InvoiceData $original, string $number, PriceReductionReason $reason, BigDecimal|int|string|null $percent = null, BigDecimal|int|string|null $amount = null, ?array $amounts = null, ?Date $issueDate = null, ?string $title = null): InvoiceBuilder
+    {
+        $pack = $this->countryResolver->resolve($original)->leading;
+
+        return PriceReduction::of(
+            calculator: $this->calculator,
+            original: $original,
+            number: $number,
+            reason: $reason,
+            percent: $percent,
+            amount: $amount,
+            amounts: $amounts,
+            issueDate: $issueDate,
+            locale: $original->meta->locale ?? $this->config->locale ?? $pack->defaults()->locale,
+            title: $title,
+            policy: $pack->correctionPolicy(),
         );
     }
 

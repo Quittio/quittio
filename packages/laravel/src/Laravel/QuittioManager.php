@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Quittio\Laravel;
 
+use Brick\Math\BigDecimal;
 use Closure;
 use Illuminate\Container\Container;
 use Illuminate\Contracts\Bus\Dispatcher as BusDispatcher;
@@ -16,6 +17,7 @@ use Quittio\Core\Builder\InvoiceBuilder;
 use Quittio\Core\Config;
 use Quittio\Core\Contracts\ProvidesInvoiceData;
 use Quittio\Core\Corrections\CancellationHistory;
+use Quittio\Core\Corrections\PriceReductionReason;
 use Quittio\Core\Countries\CountryPack;
 use Quittio\Core\Countries\CountryRegistry;
 use Quittio\Core\Data\InvoiceData;
@@ -103,7 +105,7 @@ class QuittioManager
      * Builder for the cancellation of an issued invoice; render it like any invoice:
      * Quittio::make(Quittio::cancellation($original, 'ST-2026-0001', 'Doppelt berechnet'))->render().
      *
-     * @param  list<array{line: string, quantity?: \Brick\Math\BigDecimal|int|string, amount?: string}>|null  $lines  partial cancellation; null = full
+     * @param  list<array{line: string, quantity?: BigDecimal|int|string, amount?: string}>|null  $lines  partial cancellation; null = full
      * @param  CancellationHistory|null  $history  earlier partial cancellations, for the cumulative rounding of the VAT
      * @param  string|null  $title  document title in the PDF, e.g. "Stornorechnung"; null = the title of the country
      *                               pack's correction policy
@@ -111,6 +113,26 @@ class QuittioManager
     public function cancellation(InvoiceData $original, string $number, ?string $reason = null, ?string $strategy = null, ?Date $issueDate = null, ?array $lines = null, ?CancellationHistory $history = null, ?string $title = null): InvoiceBuilder
     {
         return $this->core()->cancellation($original, $number, $reason, $strategy, $issueDate, $lines, $history, $title);
+    }
+
+    /**
+     * Builder for a corrected invoice (384) that replaces an issued invoice, see
+     * \Quittio\Core\Quittio::correction(); render it like any invoice.
+     */
+    public function correction(InvoiceData $original, string $number, ?string $reason = null, ?Date $issueDate = null, ?string $title = null): InvoiceBuilder
+    {
+        return $this->core()->correction($original, $number, $reason, $issueDate, $title);
+    }
+
+    /**
+     * Builder for a document on the reduction of the consideration of an issued invoice (e.g. a
+     * cash discount taken), see \Quittio\Core\Quittio::priceReduction(); render it like any invoice.
+     *
+     * @param  array<string, BigDecimal|int|string>|null  $amounts  net amount per VAT group ("S:19" => '50.00')
+     */
+    public function priceReduction(InvoiceData $original, string $number, PriceReductionReason $reason, BigDecimal|int|string|null $percent = null, BigDecimal|int|string|null $amount = null, ?array $amounts = null, ?Date $issueDate = null, ?string $title = null): InvoiceBuilder
+    {
+        return $this->core()->priceReduction($original, $number, $reason, $percent, $amount, $amounts, $issueDate, $title);
     }
 
     /**

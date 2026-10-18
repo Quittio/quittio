@@ -238,6 +238,14 @@ return [
         'message' => 'A prepayment invoice that states an amount already paid (BT-113) must state the date the payment was received as VAT point date (BT-7) if it differs from the issue date (section 14 (4) sentence 1 no. 6 UStG).',
         'hint' => 'Set ->taxPointDate($received). If the payment was received on the invoice date, nothing is missing.',
     ],
+    'DE-USTG-18' => [
+        'message' => 'A corrected invoice (384) should state in a note that it corrects and replaces the original invoice (section 31 (5) UStDV, section 15.2a (7) UStAE).',
+        'hint' => 'Use Quittio::correction(), which adds the note "Diese Rechnung berichtigt und ersetzt die Rechnung … vom …", or add such a note.',
+    ],
+    'DE-USTG-19' => [
+        'message' => 'The final invoice deducts an advance that was settled by self-billing (Gutschrift), but is no self-billed invoice itself. The advance must be deducted (section 14 (2) sentence 5 UStG); changing the way of invoicing is allowed but unusual.',
+        'hint' => 'Check with the buyer how the final payment is settled. If the buyer settles it by self-billing as well, the buyer issues the final document.',
+    ],
     'DE-LEITWEG-ID' => [
         'message' => 'The check digits of the Leitweg-ID ":value" (BT-10) are wrong.',
         'hint' => 'Check the Leitweg-ID with the public buyer.',

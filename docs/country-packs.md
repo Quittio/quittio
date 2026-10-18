@@ -402,6 +402,10 @@ A complete example is in [Examples: Self-billing](examples.md#self-billing).
 
 Both cancellation strategies are permitted in Germany. Change them with `quittio.corrections.cancellation_strategy` and `quittio-managed.correction.strategy`. For the XRechnung extension in UBL use `negative_invoice` (`DE-XRECHNUNG-EXT-01`).
 
+A self-billed invoice (389) with a Leitweg-ID (BT-10), i.e. sent as XRechnung, is cancelled by a negative self-billed invoice (389) instead of a self-billed credit note (261): XRechnung lists 261 not among its type codes and warns (`BR-DE-17`). Receiving portals of public buyers may treat that warning strictly. An explicit `$strategy` or `corrections.cancellation_strategy` still wins. ZUGFeRD keeps 261.
+
+A corrected invoice (384) should state that it corrects and replaces the original (`DE-USTG-18`); `Quittio::correction()` adds the note. A price reduction (`Quittio::priceReduction()`) is titled "Entgeltminderung".
+
 The policy also sets the document titles:
 
 | Kind | German | English |
@@ -409,10 +413,12 @@ The policy also sets the document titles:
 | `cancellation` | Stornorechnung | Cancellation invoice |
 | `cancellation_self_billed` | Storno-Gutschrift | Cancellation of the self-billed invoice (Storno-Gutschrift) |
 | `correction` | Rechnungskorrektur | Corrected invoice |
+| `price_reduction` | Entgeltminderung | Price reduction |
 | `self_billed` | Gutschrift | Self-billed invoice (Gutschrift) |
 
 - `cancellation` and `cancellation_self_billed` title the documents of `Quittio::cancellation()`.
-- `correction` titles a Managed corrected invoice (384).
+- `correction` titles a corrected invoice (384) of `Quittio::correction()` and of the Managed layer.
+- `price_reduction` titles the documents of `Quittio::priceReduction()`.
 - `self_billed` titles self-billed invoices (389, 261, 527) unless the presentation sets a title. Locales without a title of their own fall back to English ("Self-billed invoice (Gutschrift)"), which keeps the word "Gutschrift" required by section 14 (4) no. 10 UStG.
 
 ### Dunning law
@@ -589,6 +595,8 @@ You rarely need this table up front: a failing rule names its code, the field an
 | `DE-USTG-15` | warning (BT-2 `issueDate`) | A line, allowance or charge uses category `K`, or a line uses `ReverseChargeEu` (or category `AE` without preset for a buyer in another member state), and the invoice date is after the 15th of the month following the supply. The supply date is the latest of the delivery date (BT-72), the end of the invoicing period (BG-14) and the ends of the line periods (BG-26). Skipped without a supply date, for the type codes 381, 261, 384 and 386, and for re-issued invoices (BG-3 without a prepaid amount). Final invoices (BG-3 with a prepaid amount BT-113) are checked. A warning, as a late invoice stays valid. | section 14a (1) sentence 2 and (3) sentence 1 UStG | Issue these invoices by the 15th of the following month. |
 | `DE-USTG-16` | warning (BT-2 `issueDate`) | The invoice date is more than six months after the supply (`UstgRules::supplyDate()`). Only for business buyers and for services in connection with a property (flag `de.property_related_service`), where an invoice is obligatory. Skipped without a supply date and for the same documents as `DE-USTG-15`. A warning, as a late invoice stays valid. | section 14 (2) sentences 1 and 2 UStG | Issue invoices within six months of the supply. |
 | `DE-USTG-17` | warning (BT-7 `taxPointDate`) | A prepayment invoice (386) states an amount already paid (BT-113 above zero) but no VAT point date (BT-7). A warning, as a payment received on the issue date needs no date of its own. | section 14 (4) sentence 1 no. 6 UStG | `->taxPointDate($received)`. |
+| `DE-USTG-18` | warning (BT-22 `notes`) | A corrected invoice (384) has no note that contains "berichtigt", "ersetzt", "korrigiert", "corrects", "replaces", "rectifie" or "remplace". | section 31 (5) UStDV, section 15.2a (7) UStAE | `Quittio::correction()` adds "Diese Rechnung berichtigt und ersetzt die Rechnung … vom …". |
+| `DE-USTG-19` | info (BT-3 `typeCode`) | A final invoice deducted an advance settled by self-billing (389, flag `de.self_billed_advance` set by `deductAdvance()`), but is no self-billed invoice. The deduction is required; changing the way of invoicing is allowed but unusual. | section 14 (2) sentence 5, (5) sentence 2 UStG | Check with the buyer who settles the final payment. |
 
 Helpers used by the rules and available to you:
 
@@ -710,6 +718,7 @@ The pack marks German special cases with meta flags on the invoice (`InvoiceData
 | `PROPERTY_RELATED_SERVICE` | `de.property_related_service` | `propertyRelatedService()` | `DE-USTG-05`, mandatory output |
 | `NEW_VEHICLE` | `de.new_vehicle` | `newVehicle()` | `DE-USTG-07`, `DE-USTG-13`, `DE-USTG-14` (exception) |
 | `SERVICE_DATE_OPEN` | `de.service_date_open` | `serviceDateOpen()` | no `DE-USTG-03` warning for a prepayment invoice without service date |
+| `SELF_BILLED_ADVANCE` | `de.self_billed_advance` | `deductAdvance()` of a self-billed advance (389) | `DE-USTG-19` |
 | `SMALL_BUSINESS` | `small_business` (`Meta::FLAG_SMALL_BUSINESS`) | seller configuration, Managed issuer, `->flag()`, `smallBusinessId()` | small business invoice (section 34a UStDV): `DE-USTG-03`, `DE-USTG-09`, `DE-USTG-11`, `DE-USTG-14`, `DE-TAX-NUMBER`, mandatory output |
 | `SMALL_AMOUNT_LIMIT` | `250.00` | – | deprecated: the limit depends on the supply date, see `TaxTables::smallAmountLimitOn()` |
 

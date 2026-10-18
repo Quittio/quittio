@@ -548,7 +548,18 @@
             "cancellation_note_self_billed": "Stornierung der Gutschrift :number vom :date.",
             "cancellation_reason": "Grund: :reason",
             "cancellation_vat_aligned": "Rundungsausgleich: Die Umsatzsteuer dieses Teilstornos ist so bemessen, dass alle Teilstornos zur Rechnung :number zusammen deren Umsatzsteuer exakt berichtigen.",
-            "cancellation_terms": "Der Betrag wird mit offenen Forderungen verrechnet oder erstattet."
+            "cancellation_terms": "Der Betrag wird mit offenen Forderungen verrechnet oder erstattet.",
+            "correction_note": "Diese Rechnung berichtigt und ersetzt die Rechnung :number vom :date.",
+            "price_reduction_title": "Entgeltminderung",
+            "price_reduction_line": "Minderung des Entgelts",
+            "price_reduction_note": "Minderung des Entgelts zur Rechnung :number vom :date wegen :reason.",
+            "price_reduction_taxed": "Minderung Entgelt :net, Umsatzsteuer :rate: :vat.",
+            "price_reduction_untaxed": "Minderung Entgelt :net ohne Umsatzsteuer.",
+            "price_reduction_reason_cash_discount": "in Anspruch genommenen Skontos",
+            "price_reduction_reason_defect": "einer Mängelrüge",
+            "price_reduction_reason_bonus": "eines Bonus",
+            "price_reduction_reason_other": "eines Nachlasses",
+            "price_reduction_terms_settled": "Die Minderung wurde bei der Zahlung bereits einbehalten."
         },
         "design": {
             "primaryColor": "#2741d9",

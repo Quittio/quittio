@@ -26,6 +26,12 @@ final class Flags
      */
     public const string SERVICE_DATE_OPEN = 'de.service_date_open';
 
+    /**
+     * A final invoice deducted an advance that was settled by self-billing (389), set by
+     * deductAdvance(): DE-USTG-19 notes the change of the way of invoicing.
+     */
+    public const string SELF_BILLED_ADVANCE = 'de.self_billed_advance';
+
     /** The seller is a small business (section 19 UStG), e.g. from config quittio.seller.small_business. */
     public const string SMALL_BUSINESS = Meta::FLAG_SMALL_BUSINESS;
 

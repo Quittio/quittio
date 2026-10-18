@@ -373,7 +373,18 @@
             "cancellation_note_self_billed": "Cancellation of the self-billed invoice :number of :date.",
             "cancellation_reason": "Reason: :reason",
             "cancellation_vat_aligned": "Rounding adjustment: the VAT of this partial cancellation is set so that all partial cancellations of invoice :number together correct its VAT exactly.",
-            "cancellation_terms": "The amount will be offset against open items or refunded."
+            "cancellation_terms": "The amount will be offset against open items or refunded.",
+            "correction_note": "This invoice corrects and replaces invoice :number of :date.",
+            "price_reduction_title": "Price reduction",
+            "price_reduction_line": "Reduction of the consideration",
+            "price_reduction_note": "Reduction of the consideration for invoice :number of :date due to :reason.",
+            "price_reduction_taxed": "Reduction net :net, VAT :rate: :vat.",
+            "price_reduction_untaxed": "Reduction net :net without VAT.",
+            "price_reduction_reason_cash_discount": "a cash discount taken",
+            "price_reduction_reason_defect": "a complaint about defects",
+            "price_reduction_reason_bonus": "a bonus",
+            "price_reduction_reason_other": "a reduction",
+            "price_reduction_terms_settled": "The reduction was already deducted from the payment."
         },
         "design": {
             "primaryColor": "#2741d9",

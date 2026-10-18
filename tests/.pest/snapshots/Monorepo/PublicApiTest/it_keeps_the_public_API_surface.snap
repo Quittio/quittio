@@ -535,6 +535,41 @@
             "public withCancellation(Quittio\\Core\\Data\\InvoiceData $original, Quittio\\Core\\Data\\InvoiceData $cancellation, array $closes = []): Quittio\\Core\\Corrections\\CancellationHistory"
         ]
     },
+    "Quittio\\Core\\Corrections\\Correction": {
+        "kind": "final class",
+        "methods": [
+            "public static note(string $number, ?Quittio\\Core\\Support\\Date $issueDate, string $locale): string",
+            "public static of(Quittio\\Core\\Data\\InvoiceData $original, string $number, ?string $reason = null, ?Quittio\\Core\\Support\\Date $issueDate = null, ?string $locale = null, ?string $title = null, ?Quittio\\Core\\Countries\\CorrectionPolicy $policy = null, Quittio\\Core\\Calculation\\TotalsCalculator $calculator = new Quittio\\Core\\Calculation\\En16931Calculator): Quittio\\Core\\Builder\\InvoiceBuilder"
+        ]
+    },
+    "Quittio\\Core\\Corrections\\PriceReduction": {
+        "kind": "final class",
+        "methods": [
+            "public static of(Quittio\\Core\\Data\\InvoiceData $original, string $number, Quittio\\Core\\Corrections\\PriceReductionReason $reason, Brick\\Math\\BigDecimal|string|int|null $percent = null, Brick\\Math\\BigDecimal|string|int|null $amount = null, ?array $amounts = null, ?Quittio\\Core\\Support\\Date $issueDate = null, ?string $locale = null, ?string $title = null, ?Quittio\\Core\\Countries\\CorrectionPolicy $policy = null, Quittio\\Core\\Calculation\\TotalsCalculator $calculator = new Quittio\\Core\\Calculation\\En16931Calculator): Quittio\\Core\\Builder\\InvoiceBuilder"
+        ]
+    },
+    "Quittio\\Core\\Corrections\\PriceReductionReason": {
+        "kind": "enum",
+        "implements": [
+            "BackedEnum",
+            "UnitEnum"
+        ],
+        "cases": [
+            "CashDiscount = \"cash_discount\"",
+            "Defect = \"defect\"",
+            "Bonus = \"bonus\"",
+            "Other = \"other\""
+        ],
+        "properties": [
+            "public readonly string $name",
+            "public readonly string $value"
+        ],
+        "methods": [
+            "public static cases(): array",
+            "public static from(string|int $value): static",
+            "public static tryFrom(string|int $value): ?static"
+        ]
+    },
     "Quittio\\Core\\Countries\\AbstractCountryPack": {
         "kind": "abstract class",
         "implements": [
@@ -589,12 +624,14 @@
             "CORRECTION_CORRECTED_INVOICE"
         ],
         "properties": [
+            "public readonly ?Closure $strategyResolver",
             "public readonly array $titles",
             "public readonly string $cancellationStrategy",
             "public readonly string $correctionStrategy"
         ],
         "methods": [
-            "public __construct(string $cancellationStrategy = self::CANCELLATION_CREDIT_NOTE, string $correctionStrategy = self::CORRECTION_CANCEL_AND_REISSUE, array $titles = [])",
+            "public __construct(string $cancellationStrategy = self::CANCELLATION_CREDIT_NOTE, string $correctionStrategy = self::CORRECTION_CANCEL_AND_REISSUE, array $titles = [], ?Closure $strategyResolver = null)",
+            "public cancellationStrategyFor(Quittio\\Core\\Data\\InvoiceData $original): string",
             "public cancellationTitle(bool $selfBilled, string $locale = \"en\"): ?string",
             "public title(string $kind, string $locale = \"en\"): ?string"
         ]
@@ -1257,6 +1294,7 @@
             "FLAG_CANCELLATION_VAT_ALIGNED",
             "FLAG_DECLARED_AMOUNTS",
             "FLAG_DECLARED_AMOUNTS_RECALCULATED",
+            "FLAG_PRICE_REDUCTION",
             "FLAG_SMALL_BUSINESS"
         ],
         "properties": [
@@ -3230,6 +3268,7 @@
             "public clearValidators(): Quittio\\Core\\Quittio",
             "public config(): Quittio\\Core\\Config",
             "public configureRules(Quittio\\Core\\Validation\\RuleOverrides $overrides): Quittio\\Core\\Quittio",
+            "public correction(Quittio\\Core\\Data\\InvoiceData $original, string $number, ?string $reason = null, ?Quittio\\Core\\Support\\Date $issueDate = null, ?string $title = null): Quittio\\Core\\Builder\\InvoiceBuilder",
             "public countries(): Quittio\\Core\\Countries\\CountryRegistry",
             "public document(Quittio\\Core\\Documents\\DocumentData $document): Quittio\\Core\\Rendering\\PendingDocument",
             "public edit(Quittio\\Core\\Data\\InvoiceData $data): Quittio\\Core\\Builder\\InvoiceBuilder",
@@ -3237,6 +3276,7 @@
             "public make(Quittio\\Core\\Data\\InvoiceData|Quittio\\Core\\Contracts\\ProvidesInvoiceData|Quittio\\Core\\Builder\\InvoiceBuilder $data): Quittio\\Core\\Rendering\\PendingInvoice",
             "public onMandatoryFieldsMissing(Closure $listener): Quittio\\Core\\Quittio",
             "public prepare(Quittio\\Core\\Data\\InvoiceData $data, Quittio\\Core\\Rendering\\RenderOptions $options = new Quittio\\Core\\Rendering\\RenderOptions): Quittio\\Core\\Rendering\\PreparedInvoice",
+            "public priceReduction(Quittio\\Core\\Data\\InvoiceData $original, string $number, Quittio\\Core\\Corrections\\PriceReductionReason $reason, Brick\\Math\\BigDecimal|string|int|null $percent = null, Brick\\Math\\BigDecimal|string|int|null $amount = null, ?array $amounts = null, ?Quittio\\Core\\Support\\Date $issueDate = null, ?string $title = null): Quittio\\Core\\Builder\\InvoiceBuilder",
             "public profiles(): Quittio\\Core\\Profiles\\ProfileRegistry",
             "public read(string $content): Quittio\\Core\\Reading\\ReadResult",
             "public readFile(string $path): Quittio\\Core\\Reading\\ReadResult",
@@ -5877,6 +5917,7 @@
         "constants": [
             "NEW_VEHICLE",
             "PROPERTY_RELATED_SERVICE",
+            "SELF_BILLED_ADVANCE",
             "SERVICE_DATE_OPEN",
             "SMALL_AMOUNT",
             "SMALL_AMOUNT_LIMIT",
@@ -6454,6 +6495,7 @@
             "public check(Quittio\\Core\\Data\\InvoiceData $invoice, Quittio\\Core\\Rendering\\RenderOptions $options): Quittio\\Core\\Validation\\ValidationResult",
             "public core(): Quittio\\Core\\Quittio",
             "public coreWithLevels(array $levels): Quittio\\Core\\Quittio",
+            "public correction(Quittio\\Core\\Data\\InvoiceData $original, string $number, ?string $reason = null, ?Quittio\\Core\\Support\\Date $issueDate = null, ?string $title = null): Quittio\\Core\\Builder\\InvoiceBuilder",
             "public countries(): Quittio\\Core\\Countries\\CountryRegistry",
             "public defaultVat(?string $sellerCountry, bool $smallBusiness): ?Quittio\\Core\\Tax\\TaxPreset",
             "public deliveryNote(): Quittio\\Laravel\\Builder\\RenderableDocumentBuilder",
@@ -6467,6 +6509,7 @@
             "public orderConfirmation(): Quittio\\Laravel\\Builder\\RenderableDocumentBuilder",
             "public paymentReminder(int $level = 0): Quittio\\Laravel\\Builder\\RenderableDocumentBuilder",
             "public prepare(Quittio\\Core\\Data\\InvoiceData $invoice, Quittio\\Core\\Rendering\\RenderOptions $options): Quittio\\Core\\Rendering\\PreparedInvoice",
+            "public priceReduction(Quittio\\Core\\Data\\InvoiceData $original, string $number, Quittio\\Core\\Corrections\\PriceReductionReason $reason, Brick\\Math\\BigDecimal|string|int|null $percent = null, Brick\\Math\\BigDecimal|string|int|null $amount = null, ?array $amounts = null, ?Quittio\\Core\\Support\\Date $issueDate = null, ?string $title = null): Quittio\\Core\\Builder\\InvoiceBuilder",
             "public profiles(): Quittio\\Core\\Profiles\\ProfileRegistry",
             "public proforma(): Quittio\\Laravel\\Builder\\RenderableDocumentBuilder",
             "public queueDocument(Quittio\\Laravel\\Jobs\\RenderDocument $job): Quittio\\Laravel\\Jobs\\RenderDocument",
@@ -6710,6 +6753,7 @@
             "public check(Quittio\\Core\\Data\\InvoiceData $invoice, Quittio\\Core\\Rendering\\RenderOptions $options): Quittio\\Core\\Validation\\ValidationResult",
             "public core(): Quittio\\Core\\Quittio",
             "public coreWithLevels(array $levels): Quittio\\Core\\Quittio",
+            "public correction(Quittio\\Core\\Data\\InvoiceData $original, string $number, ?string $reason = null, ?Quittio\\Core\\Support\\Date $issueDate = null, ?string $title = null): Quittio\\Core\\Builder\\InvoiceBuilder",
             "public countries(): Quittio\\Core\\Countries\\CountryRegistry",
             "public defaultVat(?string $sellerCountry, bool $smallBusiness): ?Quittio\\Core\\Tax\\TaxPreset",
             "public deliveryNote(): Quittio\\Laravel\\Builder\\RenderableDocumentBuilder",
@@ -6724,6 +6768,7 @@
             "public orderConfirmation(): Quittio\\Laravel\\Builder\\RenderableDocumentBuilder",
             "public paymentReminder(int $level = 0): Quittio\\Laravel\\Builder\\RenderableDocumentBuilder",
             "public prepare(Quittio\\Core\\Data\\InvoiceData $invoice, Quittio\\Core\\Rendering\\RenderOptions $options): Quittio\\Core\\Rendering\\PreparedInvoice",
+            "public priceReduction(Quittio\\Core\\Data\\InvoiceData $original, string $number, Quittio\\Core\\Corrections\\PriceReductionReason $reason, Brick\\Math\\BigDecimal|string|int|null $percent = null, Brick\\Math\\BigDecimal|string|int|null $amount = null, ?array $amounts = null, ?Quittio\\Core\\Support\\Date $issueDate = null, ?string $title = null): Quittio\\Core\\Builder\\InvoiceBuilder",
             "public profiles(): Quittio\\Core\\Profiles\\ProfileRegistry",
             "public proforma(): Quittio\\Laravel\\Builder\\RenderableDocumentBuilder",
             "public queueDocument(Quittio\\Laravel\\Jobs\\RenderDocument $job): Quittio\\Laravel\\Jobs\\RenderDocument",

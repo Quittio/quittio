@@ -132,26 +132,21 @@ The specification identifier (BT-24) itself is not part of the data. It comes fr
 Set another type code when the document is not a normal invoice:
 
 ```php
-use Quittio\Core\Builder\InvoiceBuilder;
 use Quittio\Core\Enums\InvoiceTypeCode;
 use Quittio\Laravel\Facades\Quittio;
 
 // Credit note: positive amounts, type code 381, reference to the invoice
 Quittio::invoice()->type(InvoiceTypeCode::CreditNote)->precedingInvoice('RE-2026-0042', '2026-10-03');
 
-// Corrected invoice (384) based on the original
-InvoiceBuilder::from($original)
-    ->number('RE-2026-0050')
-    ->issueDate('2026-10-20')
-    ->type(InvoiceTypeCode::CorrectedInvoice)
-    ->precedingInvoice($original->number, $original->issueDate)
+// Corrected invoice (384) based on the original, with the note "Diese Rechnung berichtigt und ersetzt …"
+Quittio::correction($original, 'RE-2026-0050')
     ->updateLine('2', netPrice: '80.00');
 
 // Self-billing: the buyer issues the invoice, the supplier stays the seller (BG-4)
 Quittio::invoice()->type(InvoiceTypeCode::SelfBilledInvoice);
 ```
 
-To cancel an issued invoice, build a cancellation with `Quittio::cancellation()` instead ([Cancellations and corrections](#cancellations-and-corrections)).
+To cancel an issued invoice, build a cancellation with `Quittio::cancellation()` instead ([Cancellations and corrections](#cancellations-and-corrections)); `Quittio::correction()` is described in [Corrected invoices](#corrected-invoices).
 
 The German pack adds `selfBilled()` for self-billing. It sets type code 389 and adds the note "Gutschrift" (self-billed invoice) with subject `REG`, which the German rules require ([Self-billing](country-packs.md#self-billing-gutschrift), [German terms](concepts.md#german-terms)).
 
@@ -997,6 +992,9 @@ $builder = $quittio->cancellation($original, 'ST-2026-0002', reason: 'Partial re
 - Whole lines keep the original's declared net amounts; quantities and amounts are recalculated.
 - Invoices with document level allowances or charges cannot be cancelled partially, because these cannot be assigned to single lines reliably. Cancel fully and issue a new invoice.
 - Each part is rounded on its own: three cancellations of one unit of a line of 29.00 net for 3 units give 9.67 each. Cancel the remainder of a line as an amount (`['line' => '1', 'amount' => '9.66']`), so that the parts add up exactly to the line. The Managed layer tracks this per line ([Managed layer](managed.md#cancellations-and-corrections)).
+- The core checks each part against the invoiced quantity or amount of the line, and with a history the sum per VAT group against the original. It does not know what earlier parts cancelled of a line: limit the last part to the remainder yourself, or let the Managed layer do it.
+- A price reduction is no partial cancellation: the invoice stays correct, only the consideration changes. Use `priceReduction()` ([Price reductions](#price-reductions)).
+- A full cancellation suits an invoice issued twice: cancel the second, duplicate invoice.
 
 ### Cumulative VAT rounding
 
@@ -1009,6 +1007,8 @@ With a `CancellationHistory` of the earlier partial cancellations, the VAT is ro
 - VAT of this cancellation = target − VAT of the earlier cancellations.
 
 The three parts then carry 1.84, 1.83 and 1.84 = 5.51.
+
+Why cumulatively: section 17 (1) sentence 1 UStG requires the VAT owed to be corrected, here 5.51; rounding every part on its own would correct 5.52, a cent more than was ever owed. Union law leaves the rounding method to the member states within the principles of neutrality and proportionality (CJEU C-302/07, J D Wetherspoon), and the BMF letter of 15 October 2026 (marginal no. 21) looks at the original invoice and all corrections together. Section 14.5 (20) UStAE asks for the VAT of an invoice rounded to the cent; a single part then differs by up to one cent from that, which the note explains. No ruling or administrative instruction deals with cumulative rounding over several correction documents explicitly; have it confirmed by your tax adviser.
 
 - Every part differs by at most 0.01 from round2(own taxable amount × rate) and keeps the sign of its taxable amount.
 - The validation reports the difference as information `QUITTIO-CANCELLATION-VAT-ALIGNED`, and the cancellation note explains the rounding: "Rounding adjustment: the VAT of this partial cancellation is set so that all partial cancellations of invoice RE-… together correct its VAT exactly." (German: "Rundungsausgleich: Die Umsatzsteuer dieses Teilstornos ist so bemessen, dass alle Teilstornos zur Rechnung RE-… zusammen deren Umsatzsteuer exakt berichtigen.").
@@ -1054,7 +1054,57 @@ A country pack defines its defaults for cancellations and corrections in `Quitti
 
 - `new CorrectionPolicy(string $cancellationStrategy = 'credit_note', string $correctionStrategy = 'cancel_and_reissue', array $titles = [])`, with the constants `CANCELLATION_CREDIT_NOTE`, `CANCELLATION_NEGATIVE_INVOICE`, `CORRECTION_CANCEL_AND_REISSUE` and `CORRECTION_CORRECTED_INVOICE`.
 - `$titles` maps a document kind to titles per locale (`['cancellation' => ['de' => 'Stornorechnung', 'en' => 'Cancellation invoice']]`). `title(string $kind, string $locale = 'en')` and `cancellationTitle(bool $selfBilled, string $locale = 'en')` read them; self-billed originals use `cancellation_self_billed` if defined.
-- The correction strategy is used by the Managed layer. In the core, correct an invoice by cancelling it and issuing a new one (`InvoiceBuilder::from($original)->number(…)`), or with a corrected invoice (type code 384, [Credit notes, corrected invoices and self-billing](#credit-notes-corrected-invoices-and-self-billing)).
+- `new CorrectionPolicy(…, ?Closure $strategyResolver = null)`: a closure `fn (InvoiceData $original): ?string` that chooses the cancellation strategy for a particular original; `null` keeps `$cancellationStrategy`. `cancellationStrategyFor(InvoiceData $original)` applies it; `Quittio::cancellation()` uses it when neither the argument nor `corrections.cancellation_strategy` sets a strategy. The German pack cancels self-billed invoices sent as XRechnung this way by a negative self-billed invoice ([Country packs](country-packs.md#cancellations-and-corrections)).
+- The correction strategy is used by the Managed layer. In the core, correct an invoice by cancelling it and issuing a new one (`InvoiceBuilder::from($original)->number(…)`), or with a corrected invoice (`correction()`, below).
+- The titles `correction` and `price_reduction` title the documents of `correction()` and `priceReduction()`.
+
+### Corrected invoices
+
+`correction(InvoiceData $original, string $number, ?string $reason = null, ?Date $issueDate = null, ?string $title = null): InvoiceBuilder` (core instance and Laravel facade) starts a corrected invoice (type code 384) that replaces the original:
+
+```php
+$builder = $quittio->correction($original, 'RE-2026-0050', reason: 'Wrong hourly rate')
+    ->removeLine('1')
+    ->line('Web development', netPrice: '90.00', quantity: 24, unit: UnitCode::Hour);
+
+$result = $quittio->make($builder)->render();
+```
+
+- It is a copy of the original with the new number and issue date, type code 384, the reference to the original (BG-3) and the note "Diese Rechnung berichtigt und ersetzt die Rechnung RE-2026-0042 vom 03.10.2026." ("This invoice corrects and replaces invoice … of …", subject `AAI`, label `correction_note`) plus the reason. With this note the corrected invoice refers to the original specifically and unambiguously (section 31 (5) UStDV, section 15.2a (7) UStAE). Correcting a corrected invoice replaces its earlier note.
+- Change what was wrong on the builder. The title comes from the policy (`correction`, Germany: "Rechnungskorrektur").
+- Credit notes and self-billed documents cannot be corrected this way (`InvalidArgumentException`): cancel them and issue a new document.
+- `Correction::of(InvoiceData $original, string $number, ?string $reason = null, ?Date $issueDate = null, ?string $locale = null, ?string $title = null, ?CorrectionPolicy $policy = null)` (`Quittio\Core\Corrections\Correction`) does the same without a `Quittio` instance.
+
+Cancelling the original and issuing a new invoice stays the safer default: a receiving system that does not read type code 384 as replacement books both invoices, and the buyer deducts the VAT twice.
+
+### Price reductions
+
+A price reduction (German "Entgeltminderung") reduces the consideration of a correct invoice afterwards: a cash discount (Skonto) taken, a reduction after a complaint about defects, a bonus (section 17 UStG). The invoice is not corrected; in Germany such a document is not even required, except for section 17 (4) UStG, and it need not be an e-invoice (section 14.11 (4), 17.1 (3a) UStAE). A cash discount taken may simply be booked with the payment.
+
+`priceReduction(InvoiceData $original, string $number, PriceReductionReason $reason, $percent = null, $amount = null, ?array $amounts = null, ?Date $issueDate = null, ?string $title = null): InvoiceBuilder` builds such a document:
+
+```php
+use Quittio\Core\Corrections\PriceReductionReason;
+
+// 2 % cash discount taken, on every VAT group of the invoice
+$builder = $quittio->priceReduction($original, 'EM-2026-0001', PriceReductionReason::CashDiscount, percent: '2');
+
+// 100.00 net after a complaint, on an invoice with one VAT group
+$builder = $quittio->priceReduction($original, 'EM-2026-0002', PriceReductionReason::Defect, amount: '100.00');
+
+// per VAT group, keyed "category:rate"
+$builder = $quittio->priceReduction($original, 'EM-2026-0003', PriceReductionReason::Bonus, amounts: ['S:19' => '50.00', 'S:7' => '5.00']);
+```
+
+- Give exactly one of `percent`, `amount` (only for an original with one VAT group) and `amounts`. A reduction must be greater than zero and at most the taxable amount of its group; an unknown group throws.
+- The document is a credit note (381, positive amounts) with one line "Minderung des Entgelts" per reduced VAT group, with the VAT of that group's first line (preset, exemption reason), the reference to the original (BG-3) and the meta flag `price_reduction` (`Meta::FLAG_PRICE_REDUCTION`).
+- The note names reason, net amount and VAT per rate: "Minderung des Entgelts zur Rechnung RE-2026-0042 vom 03.10.2026 wegen in Anspruch genommenen Skontos (2 %). Minderung Entgelt 50,00 €, Umsatzsteuer 19 %: 9,50 €." The reasons (`PriceReductionReason`): `CashDiscount`, `Defect`, `Bonus`, `Other`.
+- Payment terms: for a cash discount "Die Minderung wurde bei der Zahlung bereits einbehalten.", otherwise the text of a cancellation.
+- The title comes from the policy (`price_reduction`, Germany: "Entgeltminderung"); without one, the label `price_reduction_title`. It is deliberately neither "Rechnungskorrektur" nor "Gutschrift".
+- Credit notes, self-billed documents and uncalculated invoices cannot be reduced (`InvalidArgumentException`).
+- `PriceReduction::of(…)` (`Quittio\Core\Corrections\PriceReduction`) does the same without a `Quittio` instance.
+
+An annual bonus over several invoices (section 17 (4) UStG) is not covered yet.
 
 ## Extensions
 

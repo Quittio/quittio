@@ -50,6 +50,12 @@ final readonly class Meta
      */
     public const string FLAG_CANCELLATION_VAT_ALIGNED = 'cancellation_vat_aligned';
 
+    /**
+     * A document on the reduction of the consideration of an invoice (Corrections\PriceReduction,
+     * section 17 UStG), not a cancellation or correction of it.
+     */
+    public const string FLAG_PRICE_REDUCTION = 'price_reduction';
+
     /** Prefix of the flag that carries the fingerprint of the amount inputs. */
     private const string FINGERPRINT_PREFIX = 'amounts_fingerprint:';
 
