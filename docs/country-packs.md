@@ -460,8 +460,8 @@ When a customer pays late, German law (section 288 BGB) gives the seller default
 | Interest for business debtors | base rate plus 9 percentage points |
 | Interest for consumers | base rate plus 5 percentage points |
 | Flat rate for business debtors | 40.00 EUR |
-| Day count | 365 |
-| Consumer default | 30 days after due date and receipt of the invoice, if the invoice points this out (`->de()->consumerDefaultNotice()`) |
+| Day count | actual/actual (`null`): 365 days, 366 in a leap year |
+| Consumer default | 30 days after due date and receipt of the invoice, if the invoice points this out (added to invoices for consumers automatically, see below) |
 | Reference rate | "Basiszinssatz (§ 247 BGB)", the base rate of section 247 BGB |
 
 #### Default interest
@@ -491,16 +491,24 @@ $reminder = Quittio::paymentReminder(1)                          // first remind
 foreach ($interest->calculate(Money::of('1190.00', 'EUR'), Date::parse('2026-06-16'), Date::parse('2026-10-04')) as $charge) {
     $reminder->interest(Amount::format($charge->base), $charge->ratePercent, $charge->from, $charge->until, $charge->description, dayCount: $charge->dayCount);
 }
-$reminder->fee('Pauschale nach § 288 Abs. 5 BGB', Amount::format($interest->flatRate()));   // "flat rate under section 288 (5) BGB"
+$reminder->flatRate('RE-2026-0042');   // 40.00 EUR for this claim, "Pauschale für Beitreibungskosten (§ 288 Abs. 5 BGB), Forderung RE-2026-0042"
 ```
 
 - **Descriptions.** They name the rate, the base rate, the points and the last day with interest. With the locale `de` (the default) a description reads "Verzugszinsen 10,27 % p. a. (Basiszinssatz 1,27 % + 9,00 Prozentpunkte) vom 16.06.2026 bis 30.06.2026". Any other locale gives "Default interest 10.27 % p.a. (base rate 1.27 % + 9.00 points) from 2026-06-16 to 2026-06-30".
-- **Day count.** The charges use the day count of the dunning law (`InterestCharge::$dayCount`; 365 for `CountryDE::dunningLaw()`, so a leap year yields 366/365 of the annual rate). Pass it to `interest()` as above (`dayCount: $charge->dayCount`); without it the reminder counts actual/actual.
+- **Day count.** The charges use the day count of the dunning law (`InterestCharge::$dayCount`). `CountryDE::dunningLaw()` counts actual/actual: the days of each calendar year are divided by its length, 366 in a leap year, as the statutory day count conventions do (annex to section 16 PAngV). No federal court has decided the question for section 288 BGB; the fixed basis of 365 days would overstate the interest of a leap year slightly. Pass the day count to `interest()` as above (`dayCount: $charge->dayCount`), or use `interestCharge()`.
 - **Periods.** A charge covers a whole period with the same base rate. Interest from 1 December 2025 to 28 February 2026 is one charge, although the table has an entry for 1 January 2026.
-- **Flat rate.** It is due only from business debtors, once per claim. The documents layer does not track which claims already carried it.
-- **Consumers.** For consumers, `->de()->consumerDefaultNotice()` adds the notice on default after 30 days to the invoice.
+- **Flat rate.** `DocumentBuilder::flatRate($claim)` adds it as a fee of kind `DunningFeeKind::FlatRate` for one claim (invoice or instalment). It is due for every late payment, also of instalments and of recurring payments under one contract (section 288 (5) sentence 2 BGB; CJEU C-370/21), only from businesses, and counts towards the costs of legal pursuit (sentence 3): reminder fees of your own are recovery costs and may be claimed beside it only in so far as they exceed 40 EUR (CJEU C-287/17, C-131/18). The builder rejects a second flat rate for the same claim in one reminder and a flat rate for a consumer. Which claims already carried it in earlier reminders is up to your application or the Managed layer. A creditor who brings about the conditions of the flat rate abusively loses it (CJEU C-209/25).
+- **Reminder fees.** The reminder that puts the debtor in default is part of the creditor's own receivables management; its costs are not damages (BGH VIII ZR 138/23, marginal no. 77). Quittio has no default fee. Fee clauses towards consumers are subject to section 309 no. 5 BGB.
+- **No VAT.** Default interest, reminder costs and the flat rate are damages, not consideration (section 1.3 (6) UStAE). Interest agreed for a deferral of payment (e.g. in an instalment agreement) is consideration for a service of its own, possibly exempt under section 4 no. 8 (a) UStG; Quittio does not cover it.
+- **Consumers.** Without an agreed date, a debtor is in default only after a reminder, or 30 days after due date and receipt of the invoice; a consumer only if the invoice points this out (section 286 (3) BGB). A due date the seller sets on the invoice alone does not put the buyer in default (BGH VIII ZR 215/15). The pack therefore adds the notice to every invoice for a consumer (`CountryDE::complete()`, see below); `->de()->consumerDefaultNotice()` adds it explicitly.
 
 A complete reminder is in [Examples: Payment reminder](examples.md#payment-reminder).
+
+#### Default notice for consumers
+
+`CountryDE` completes invoices before they are calculated and rendered (`Quittio\Core\Countries\Capabilities\CompletesInvoices`): an invoice for a consumer (`->consumer()` on the buyer) gets the note `LegalTexts::CONSUMER_DEFAULT` with subject `PMT`, "Sie kommen spätestens in Verzug, wenn Sie nicht innerhalb von 30 Tagen nach Fälligkeit und Zugang dieser Rechnung zahlen (§ 286 Abs. 3 BGB)." in the language of the invoice. Credit notes and invoices that already have such a note (a note containing "286") are left alone. The note is part of the rendered data (`$result->data()`), not of the builder.
+
+Switch it off with the setting `consumer_default_notice` of the pack: `quittio.countries.de.consumer_default_notice = false` in Laravel, `Quittio::create(['countries' => ['de' => ['consumer_default_notice' => false]]], …)` in the core.
 
 #### Base rate table
 
@@ -827,7 +835,7 @@ For pack authors, this is how `CountryDE` fills the [`CountryPack` contract](#th
 - The legal wording and references of presets, rules and texts are proposals that must be confirmed by a tax adviser (see the legal review in the README). The default correction strategy and the cancellation of self-billed invoices are under review as well.
 - Final invoices: the EN 16931 variants of `deductAdvance()` (prepaid amount or remainder invoice) exist; the EXTENDED variant does not. The tax review found it unnecessary.
 - The shipped base rate table ends with 1 July 2026. Later rates come from `quittio.countries.de.base_rates` or `php artisan quittio:base-rate:update` (see [Base rate table](#base-rate-table)).
-- Default dunning fees and flat rates are under review. The documents layer does not track the section 288 (5) BGB flat rate per claim.
+- The documents layer checks the section 288 (5) BGB flat rate within one reminder (once per claim, not for consumers); across reminders the application or the Managed layer must track it.
 - Distance sales (section 3c UStG) cannot be told from the data; `DE-USTG-12` only warns about possible ones.
 - Tax numbers are checked for format and check digit, not against the list of tax offices. Territories without a distinct postcode cannot be detected.
 - The pack defines no buyer country rules, exporters (e.g. DATEV) or readers yet.
@@ -1107,6 +1115,7 @@ A pack that offers builder helpers registers one macro named after its code, whi
 - `addressFormatter()`: a `Quittio\Core\View\AddressFormatter` (`format(Address $address, array $nameLines = [], ?string $senderCountry = null, ?string $locale = null): list<string>`).
 - `profiles()`: national profiles, usually extending `Quittio\Core\Profiles\AbstractProfile`. They are registered with the pack.
 - `referenceRates()` (capability `ProvidesReferenceRates`): the reference interest rate of the late payment law, so that `Quittio\Core\Dunning\DefaultInterest::forCountry($pack)` calculates default interest ([DunningLaw](#dunninglaw)).
+- `complete()` (capability `CompletesInvoices`): adds what the law of the country expects to an invoice before it is rendered, e.g. a notice for consumers. It receives the settings of the pack (`quittio.countries.{code}`, core: `Quittio::create(['countries' => ['{code}' => [...]]])`). Germany adds the default notice for consumers ([Default notice for consumers](#default-notice-for-consumers)).
 
 ### Settings of your pack
 
@@ -1171,6 +1180,7 @@ Optional capabilities (the interface gets new methods only in a major release, n
 |---|---|---|---|
 | `Capabilities\ProvidesFormats` | `formats()`, `formatAliases()`, `serializers()` | implemented, empty | `Quittio::registerCountry()` ([Formats of your pack](#formats-of-your-pack)) |
 | `Capabilities\ProvidesReferenceRates` | `referenceRates(): Dunning\ReferenceRates` | not implemented | `Dunning\DefaultInterest::forCountry()` |
+| `Capabilities\CompletesInvoices` | `complete(InvoiceData $invoice, array $settings): InvoiceData` | not implemented | the render pipeline, for the leading pack, before calculation and validation; `$settings` are `Config::$countrySettings[code]` (`quittio.countries.{code}`) |
 | `translationPath()` | `?string` | `null` | directory with `{locale}/{group}.php` files, registered as namespace `quittio-{code}` |
 
 ### CountryDefaults
@@ -1218,7 +1228,7 @@ Statutory late payment values; amounts and percentage points are decimal strings
 | `b2bInterestPoints` | `8.00` | points above the reference rate for business debtors |
 | `b2cInterestPoints` | `0.00` | points above the reference rate for consumers |
 | `b2bFlatRate` | `40.00` | flat rate for business debtors (null = none) |
-| `dayCount` | `365` | day count basis |
+| `dayCount` | `365` | day count basis: 365, 360 or `null` for actual/actual (Germany) |
 | `consumerDefaultAfterDays` | `null` | days after which a consumer is in default |
 | `referenceRateName` | `null` | name of the reference rate |
 

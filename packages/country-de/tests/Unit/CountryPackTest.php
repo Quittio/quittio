@@ -250,10 +250,20 @@ it('counts default interest with the day count of the dunning law', function () 
 
     expect($leapYear)->toHaveCount(1)
         ->and($leapYear[0]->dayCount)->toBe((new CountryDE)->dunningLaw()->dayCount)
+        ->and($leapYear[0]->dayCount)->toBeNull()
         ->and($leapYear[0]->days())->toBe(366)
-        // 1000 × 10 % × 366 / 365
-        ->and($leapYear[0]->total()->getAmount()->toString())->toBe('100.27')
+        // Actual/actual: 1000 × 10 % × 366 / 366
+        ->and($leapYear[0]->total()->getAmount()->toString())->toBe('100.00')
         ->and($basis360[0]->dayCount)->toBe(360);
+});
+
+it('divides each calendar year by its own length across the turn of the year', function () {
+    $rates = (new BaseRateTable)->withRate('2027-01-01', '1.00')->withRate('2027-07-01', '1.00')->withRate('2028-01-01', '1.00')->withRate('2028-07-01', '1.00');
+    // 2027-12-01 to 2028-01-31: 31 days of 2027 (365) and 30 days of 2028 (366) at 10 %.
+    $charges = (new DefaultInterest($rates))->calculate(Money::of('1000.00', 'EUR'), Date::of(2027, 12, 1), Date::of(2028, 1, 31));
+
+    // 1000 × 10 % × (31 / 365 + 30 / 366) = 8.493 + 8.197 = 16.69
+    expect($charges[0]->total()->getAmount()->toString())->toBe('16.69');
 });
 
 it('merges base rate periods with the same rate', function () {

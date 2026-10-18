@@ -29,4 +29,15 @@ return [
     'base_rates' => [],
     'base_rate_file' => storage_path('app/quittio/base-rates.json'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Default notice for consumers (§ 286 Abs. 3 BGB)
+    |--------------------------------------------------------------------------
+    | Invoices to consumers get the notice that the consumer is in default 30
+    | days after the due date and receipt of the invoice. Without it the 30 days
+    | do not apply to consumers. false = add the notice yourself
+    | (->de()->consumerDefaultNotice()).
+    */
+    'consumer_default_notice' => true,
+
 ];

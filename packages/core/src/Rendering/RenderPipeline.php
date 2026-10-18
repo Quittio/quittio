@@ -8,6 +8,7 @@ use Closure;
 use Psr\Log\LoggerInterface;
 use Quittio\Core\Calculation\TotalsCalculator;
 use Quittio\Core\Config;
+use Quittio\Core\Countries\Capabilities\CompletesInvoices;
 use Quittio\Core\Countries\CountryResolver;
 use Quittio\Core\Countries\MandatoryField;
 use Quittio\Core\Countries\ResolvedCountries;
@@ -88,7 +89,7 @@ final readonly class RenderPipeline
      */
     public function render(InvoiceData $data, RenderOptions $options = new RenderOptions): RenderedInvoice
     {
-        $invoice = $this->calculator->calculate($this->withDefaults($data));
+        $invoice = $this->calculator->calculate($this->withDefaults($data, $options));
         $countries = $this->countryResolver->resolve($invoice, $options->country);
         $locale = $options->locale ?? $invoice->meta->locale ?? $this->config->locale ?? $countries->leading->defaults()->locale;
 
@@ -109,7 +110,7 @@ final readonly class RenderPipeline
      */
     public function prepare(InvoiceData $data, RenderOptions $options = new RenderOptions): PreparedInvoice
     {
-        $invoice = $this->calculator->calculate($this->withDefaults($data));
+        $invoice = $this->calculator->calculate($this->withDefaults($data, $options));
         $countries = $this->countryResolver->resolve($invoice, $options->country);
         $locale = $options->locale ?? $invoice->meta->locale ?? $this->config->locale ?? $countries->leading->defaults()->locale;
         $watermarked = $this->presentation->hasWatermark($invoice->presentation, $options);
@@ -297,13 +298,17 @@ final readonly class RenderPipeline
     /**
      * Applies configured defaults that the invoice does not set itself.
      */
-    private function withDefaults(InvoiceData $invoice): InvoiceData
+    /**
+     * The configured due date, then what the leading country pack completes (CompletesInvoices).
+     */
+    private function withDefaults(InvoiceData $invoice, RenderOptions $options): InvoiceData
     {
         if ($this->config->dueDays !== null && $invoice->dueDate === null && $invoice->paymentTerms === null && ! $invoice->isCreditNote()) {
-            return $invoice->with(['dueDate' => $invoice->issueDate->addDays($this->config->dueDays)]);
+            $invoice = $invoice->with(['dueDate' => $invoice->issueDate->addDays($this->config->dueDays)]);
         }
+        $pack = $this->countryResolver->resolve($invoice, $options->country)->leading;
 
-        return $invoice;
+        return $pack instanceof CompletesInvoices ? $pack->complete($invoice, $this->config->countrySettings[strtolower($pack->code())] ?? []) : $invoice;
     }
 
     /**

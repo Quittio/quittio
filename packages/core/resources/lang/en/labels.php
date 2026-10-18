@@ -142,6 +142,7 @@ return [
     'statement_period' => 'Period',
     'opening_balance' => 'Opening balance',
     'balance' => 'Balance',
+    'dunning_flat_rate' => 'Flat rate for recovery costs, claim :claim',
     'cancellation_note' => 'Cancellation of invoice :number of :date.',
     'cancellation_note_self_billed' => 'Cancellation of the self-billed invoice :number of :date.',
     'cancellation_reason' => 'Reason: :reason',

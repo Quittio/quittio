@@ -86,7 +86,7 @@ it('merges the defaults of the pack into quittio.countries.de', function () {
         ->and(array_keys(Quittio::countries()->all()))->toBe(['DE']);
 
     $defaults = require dirname(__DIR__, 3).'/country-de/config/countries/de.php';
-    expect($defaults)->toBe(['base_rates' => [], 'base_rate_file' => storage_path('app/quittio/base-rates.json')]);
+    expect($defaults)->toBe(['base_rates' => [], 'base_rate_file' => storage_path('app/quittio/base-rates.json'), 'consumer_default_notice' => true]);
 });
 
 it('keeps the keys of quittio.countries.de and fills the others with the defaults', function () {
@@ -156,7 +156,7 @@ it('registers the base rates of an application that still has config/quittio-de.
     });
 
     expect($deprecations)->toBe([GERMAN_DEPRECATION])
-        ->and(config('quittio.countries.de'))->toBe(['base_rates' => ['2027-01-01' => '1.77'], 'base_rate_file' => null])
+        ->and(config('quittio.countries.de'))->toBe(['base_rates' => ['2027-01-01' => '1.77'], 'base_rate_file' => null, 'consumer_default_notice' => true])
         ->and(BaseRates::table()->rateOn(Date::of(2027, 3, 1))->toString())->toBe('1.77');
 });
 

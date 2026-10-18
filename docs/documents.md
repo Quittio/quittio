@@ -123,13 +123,14 @@ Rules:
 
 - Reminders have no lines, allowances or charges; the builder rejects them. The amount to pay is `Dunning::total()`: open items plus fees plus interest.
 - Fees and default interest carry no VAT. They are damages, not payment for a supply (section 1.3 (6) of the German VAT application decree, UStAE). The same applies to the flat rate for late payment of section 288 (5) of the German Civil Code (BGB).
-- Only actual costs may be claimed as reminder fees; Quittio has no default fee. The documents layer does not track which claims already carried a flat rate.
+- Only actual costs may be claimed as reminder fees; Quittio has no default fee.
+- `flatRate(string $claim, $amount = '40.00', ?string $description = null)` adds the flat rate for recovery costs of a late payment between businesses (Article 6 Directive 2011/7/EU; in Germany section 288 (5) BGB) for one claim, as a `DunningFee` of kind `DunningFeeKind::FlatRate` with the claim. The default description is the label `dunning_flat_rate` ("Flat rate for recovery costs, claim RE-…"). Building throws an `InvalidArgumentException` for a second flat rate of the same claim and for a consumer as buyer. Across reminders, track which claims already carried it yourself; the German rules are in [Country packs: Dunning law](country-packs.md#default-interest).
 - `interest()` takes the first day with interest (`from`, e.g. the day after the due date) and the day after the last day with interest (`until`, exclusive). `InterestCharge::lastDay()` is the last day with interest. The default description uses it: "Default interest 10.27% p.a. on 1,000.00 € from … to …".
 - Interest is simple interest, counted actual/actual: the days of each calendar year are divided by 365 or 366, so that a full year yields exactly the annual rate. Pass `dayCount: 365` or `dayCount: 360` for a fixed basis. Other values, and a period that ends before it starts, throw an `InvalidArgumentException`. The amount is rounded half up once.
 
 Classes of a reminder:
 
-- `Dunning` (`$document->dunning`): `level`, `openItems`, `deadline`, `fees` (`DunningFee`: `description`, `amount`), `interest`, `openTotal($currency)`, `feeTotal($currency)`, `interestTotal($currency)`, `total($currency)`, `openInvoiceNumbers()` (unsettled items, without duplicates) and `remittanceText(int $maxLength = 140)` (as many complete numbers as fit, comma separated).
+- `Dunning` (`$document->dunning`): `level`, `openItems`, `deadline`, `fees` (`DunningFee`: `description`, `amount`, `kind` (`DunningFeeKind::Fee` or `FlatRate`), `claim`), `interest`, `openTotal($currency)`, `feeTotal($currency)`, `interestTotal($currency)`, `total($currency)`, `openInvoiceNumbers()` (unsettled items, without duplicates) and `remittanceText(int $maxLength = 140)` (as many complete numbers as fit, comma separated).
 - `InterestCharge`: `base`, `ratePercent`, `from`, `until`, `description`, `amount` (a stated amount replaces the calculation), `dayCount`, `days()`, `lastDay()`, `total()`.
 - `OpenItem`: `invoiceNumber`, `invoiceDate`, `amount`, `dueDate`, `paid`, `description`, `open()` (amount minus paid; negative for overpaid items and credits) and `isSettled()` (nothing open).
 
@@ -152,7 +153,7 @@ $reminder = Quittio::paymentReminder(1)
 $reminder->interestCharge(...(new DefaultInterest)->calculate(Money::of('1000.00', 'EUR'), Date::parse('2026-06-16'), Date::parse('2026-10-05'), consumer: false));
 ```
 
-`interestCharge()` takes the charges with their day count (365 in Germany instead of actual/actual) and texts. For any country pack with a reference rate, `Quittio\Core\Dunning\DefaultInterest::forCountry($pack)` calculates the same with the pack's `referenceRates()` and `dunningLaw()`; the German class adds the German texts. The descriptions are German by default; any other locale, e.g. `calculate(…, locale: 'en')`, returns English ones.
+`interestCharge()` takes the charges with their day count (actual/actual in Germany) and texts. For any country pack with a reference rate, `Quittio\Core\Dunning\DefaultInterest::forCountry($pack)` calculates the same with the pack's `referenceRates()` and `dunningLaw()`; the German class adds the German texts. The descriptions are German by default; any other locale, e.g. `calculate(…, locale: 'en')`, returns English ones.
 
 The base rate table, the flat rate and the conditions of default are described in [Country packs](country-packs.md#dunning-law). The country-neutral contract is `CountryPack::dunningLaw()` (`DunningLaw`: `b2bInterestPoints`, `b2cInterestPoints`, `b2bFlatRate`, `dayCount`, `consumerDefaultAfterDays`, `referenceRateName`).
 

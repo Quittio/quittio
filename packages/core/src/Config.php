@@ -43,6 +43,8 @@ final readonly class Config
      *         invoice, "app" = the language of the application translator (Laravel: app()->getLocale()), or a locale
      * @param  RuleOverrides  $rules  PHP rules switched off, re-rated or replaced by code
      * @param  CalculationPolicy  $calculation  what the calculator does with declared amounts
+     * @param  array<string, array<string, mixed>>  $countrySettings  settings of the country packs by lower-case
+     *         code, e.g. ['de' => ['consumer_default_notice' => false]] (Laravel: quittio.countries.de)
      */
     public function __construct(
         public ?string $format = null,
@@ -73,6 +75,7 @@ final readonly class Config
         public ?string $validationLocale = null,
         public RuleOverrides $rules = new RuleOverrides,
         public CalculationPolicy $calculation = new CalculationPolicy,
+        public array $countrySettings = [],
     ) {
         if ($cancellationStrategy !== null && ! in_array($cancellationStrategy, Cancellation::STRATEGIES, true)) {
             throw new ConfigurationException(sprintf('Unknown cancellation strategy "%s".', $cancellationStrategy));
@@ -98,6 +101,7 @@ final readonly class Config
      * - presentation (a Presentation object)
      * - reader.max_xml_bytes, reader.max_pdf_bytes, reader.max_decompressed_bytes
      * - corrections.cancellation_strategy
+     * - countries.{code}: settings of a country pack, e.g. countries.de.consumer_default_notice
      * - calculation.declared_amounts (keep, recalculate, reject; see DeclaredAmountsMode)
      *
      * The Laravel names differ, e.g. defaults.format, format_resolver.b2c_embed_xml,
@@ -149,7 +153,27 @@ final readonly class Config
             validationLocale: self::str($validation, 'locale'),
             rules: RuleOverrides::fromArray(self::arr($validation, 'rules')),
             calculation: CalculationPolicy::fromArray(self::arr($config, 'calculation')),
+            countrySettings: self::countrySettings(self::arr($config, 'countries')),
         );
+    }
+
+    /**
+     * The settings of the country packs: the entries with a lower-case code and an array, e.g.
+     * 'de' => ['consumer_default_notice' => false]; others (e.g. pack classes) are left out.
+     *
+     * @param  array<array-key, mixed>  $countries
+     * @return array<string, array<string, mixed>>
+     */
+    public static function countrySettings(array $countries): array
+    {
+        $settings = [];
+        foreach ($countries as $code => $values) {
+            if (is_string($code) && preg_match('/^[a-z]{2}$/', $code) === 1 && is_array($values)) {
+                $settings[$code] = array_filter($values, is_string(...), ARRAY_FILTER_USE_KEY);
+            }
+        }
+
+        return $settings;
     }
 
     /**

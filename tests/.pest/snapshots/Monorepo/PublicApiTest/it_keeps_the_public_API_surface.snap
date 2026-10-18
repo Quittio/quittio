@@ -466,6 +466,7 @@
             "public readonly ?string $validationLocale",
             "public readonly Quittio\\Core\\Calculation\\CalculationPolicy $calculation",
             "public readonly Quittio\\Core\\Validation\\RuleOverrides $rules",
+            "public readonly array $countrySettings",
             "public readonly array $options",
             "public readonly array $templatePaths",
             "public readonly array $validationLevels",
@@ -483,7 +484,8 @@
             "public readonly string $validation"
         ],
         "methods": [
-            "public __construct(?string $format = null, ?string $profile = null, ?string $locale = null, ?string $country = null, string $template = \"default\", array $templatePaths = [], string $filename = \"{title}_{number}.{ext}\", bool $pdfa = true, bool $b2cEmbedXml = false, bool $autoUpgradeProfile = true, string $validation = self::VALIDATION_ERROR, array $validationLevels = [\"L1\",\"L2\",\"L3\",\"L4\",\"L7\"], ?array $kosit = null, ?array $veraPdf = null, string $mandatoryFields = Quittio\\Core\\View\\MandatoryFieldGuard::MODE_EXCEPTION, string $girocodeAmount = \"due\", ?string $tempDir = null, array $options = [], ?Quittio\\Core\\Data\\Presentation\\Presentation $presentation = null, bool $blockOnWarnings = false, int $maxXmlBytes = Quittio\\Core\\Xml\\XmlSecurity::DEFAULT_MAX_BYTES, int $maxPdfBytes = 26214400, int $maxDecompressedBytes = 52428800, ?int $dueDays = null, ?string $cancellationStrategy = null, ?string $validationLocale = null, Quittio\\Core\\Validation\\RuleOverrides $rules = new Quittio\\Core\\Validation\\RuleOverrides, Quittio\\Core\\Calculation\\CalculationPolicy $calculation = new Quittio\\Core\\Calculation\\CalculationPolicy)",
+            "public __construct(?string $format = null, ?string $profile = null, ?string $locale = null, ?string $country = null, string $template = \"default\", array $templatePaths = [], string $filename = \"{title}_{number}.{ext}\", bool $pdfa = true, bool $b2cEmbedXml = false, bool $autoUpgradeProfile = true, string $validation = self::VALIDATION_ERROR, array $validationLevels = [\"L1\",\"L2\",\"L3\",\"L4\",\"L7\"], ?array $kosit = null, ?array $veraPdf = null, string $mandatoryFields = Quittio\\Core\\View\\MandatoryFieldGuard::MODE_EXCEPTION, string $girocodeAmount = \"due\", ?string $tempDir = null, array $options = [], ?Quittio\\Core\\Data\\Presentation\\Presentation $presentation = null, bool $blockOnWarnings = false, int $maxXmlBytes = Quittio\\Core\\Xml\\XmlSecurity::DEFAULT_MAX_BYTES, int $maxPdfBytes = 26214400, int $maxDecompressedBytes = 52428800, ?int $dueDays = null, ?string $cancellationStrategy = null, ?string $validationLocale = null, Quittio\\Core\\Validation\\RuleOverrides $rules = new Quittio\\Core\\Validation\\RuleOverrides, Quittio\\Core\\Calculation\\CalculationPolicy $calculation = new Quittio\\Core\\Calculation\\CalculationPolicy, array $countrySettings = [])",
+            "public static countrySettings(array $countries): array",
             "public static fromArray(array $config): Quittio\\Core\\Config",
             "public with(array $changes): Quittio\\Core\\Config"
         ]
@@ -599,6 +601,12 @@
             "public serializers(): array",
             "public taxPresets(): Quittio\\Core\\Tax\\TaxPresetCollection",
             "public translationPath(): ?string"
+        ]
+    },
+    "Quittio\\Core\\Countries\\Capabilities\\CompletesInvoices": {
+        "kind": "interface",
+        "methods": [
+            "abstract public complete(Quittio\\Core\\Data\\InvoiceData $invoice, array $settings): Quittio\\Core\\Data\\InvoiceData"
         ]
     },
     "Quittio\\Core\\Countries\\Capabilities\\ProvidesFormats": {
@@ -744,14 +752,14 @@
         "kind": "final readonly class",
         "properties": [
             "public readonly ?int $consumerDefaultAfterDays",
+            "public readonly ?int $dayCount",
             "public readonly ?string $b2bFlatRate",
             "public readonly ?string $referenceRateName",
-            "public readonly int $dayCount",
             "public readonly string $b2bInterestPoints",
             "public readonly string $b2cInterestPoints"
         ],
         "methods": [
-            "public __construct(string $b2bInterestPoints = \"8.00\", string $b2cInterestPoints = \"0.00\", ?string $b2bFlatRate = \"40.00\", int $dayCount = 365, ?int $consumerDefaultAfterDays = null, ?string $referenceRateName = null)"
+            "public __construct(string $b2bInterestPoints = \"8.00\", string $b2cInterestPoints = \"0.00\", ?string $b2bFlatRate = \"40.00\", ?int $dayCount = 365, ?int $consumerDefaultAfterDays = null, ?string $referenceRateName = null)"
         ]
     },
     "Quittio\\Core\\Countries\\Exporter": {
@@ -1708,6 +1716,7 @@
             "public discountPercent(Brick\\Math\\BigDecimal|string|int|float $percent, ?string $reason = null, Quittio\\Core\\Enums\\AllowanceReasonCode|Quittio\\Core\\Codes\\RawCode|string|null $reasonCode = Quittio\\Core\\Enums\\AllowanceReasonCode::Discount): static",
             "public dueInDays(int $days): static",
             "public fee(string $description, Brick\\Math\\BigDecimal|string|int|float $amount): static",
+            "public flatRate(string $claim, Brick\\Math\\BigDecimal|string|int $amount = \"40.00\", ?string $description = null): static",
             "public interest(string $base, Brick\\Math\\BigDecimal|string $ratePercent, Quittio\\Core\\Support\\Date|DateTimeInterface|string $from, Quittio\\Core\\Support\\Date|DateTimeInterface|string $until, ?string $description = null, ?int $dayCount = Quittio\\Core\\Documents\\InterestCharge::ACTUAL_ACTUAL): static",
             "public interestCharge(Quittio\\Core\\Documents\\InterestCharge ...$charges): static",
             "public issueDate(Quittio\\Core\\Support\\Date|DateTimeInterface|string $date): static",
@@ -1858,11 +1867,33 @@
     "Quittio\\Core\\Documents\\DunningFee": {
         "kind": "final readonly class",
         "properties": [
+            "public readonly ?string $claim",
             "public readonly Brick\\Money\\Money $amount",
+            "public readonly Quittio\\Core\\Documents\\DunningFeeKind $kind",
             "public readonly string $description"
         ],
         "methods": [
-            "public __construct(string $description, Brick\\Money\\Money $amount)"
+            "public __construct(string $description, Brick\\Money\\Money $amount, Quittio\\Core\\Documents\\DunningFeeKind $kind = Quittio\\Core\\Documents\\DunningFeeKind::Fee, ?string $claim = null)"
+        ]
+    },
+    "Quittio\\Core\\Documents\\DunningFeeKind": {
+        "kind": "enum",
+        "implements": [
+            "BackedEnum",
+            "UnitEnum"
+        ],
+        "cases": [
+            "Fee = \"fee\"",
+            "FlatRate = \"flat_rate\""
+        ],
+        "properties": [
+            "public readonly string $name",
+            "public readonly string $value"
+        ],
+        "methods": [
+            "public static cases(): array",
+            "public static from(string|int $value): static",
+            "public static tryFrom(string|int $value): ?static"
         ]
     },
     "Quittio\\Core\\Documents\\InterestCharge": {
@@ -5631,6 +5662,7 @@
         "kind": "class",
         "extends": "Quittio\\Core\\Countries\\AbstractCountryPack",
         "implements": [
+            "Quittio\\Core\\Countries\\Capabilities\\CompletesInvoices",
             "Quittio\\Core\\Countries\\Capabilities\\ProvidesFormats",
             "Quittio\\Core\\Countries\\Capabilities\\ProvidesReferenceRates",
             "Quittio\\Core\\Countries\\CountryPack"
@@ -5644,6 +5676,7 @@
             "public addressFormatter(): Quittio\\Core\\View\\AddressFormatter",
             "public buyerCountryRules(): array",
             "public code(): string",
+            "public complete(Quittio\\Core\\Data\\InvoiceData $invoice, array $settings): Quittio\\Core\\Data\\InvoiceData",
             "public correctionPolicy(): Quittio\\Core\\Countries\\CorrectionPolicy",
             "public defaults(): Quittio\\Core\\Countries\\CountryDefaults",
             "public dunningLaw(): Quittio\\Core\\Countries\\DunningLaw",
@@ -6092,6 +6125,7 @@
             "public discountPercent(Brick\\Math\\BigDecimal|string|int|float $percent, ?string $reason = null, Quittio\\Core\\Enums\\AllowanceReasonCode|Quittio\\Core\\Codes\\RawCode|string|null $reasonCode = Quittio\\Core\\Enums\\AllowanceReasonCode::Discount): static",
             "public dueInDays(int $days): static",
             "public fee(string $description, Brick\\Math\\BigDecimal|string|int|float $amount): static",
+            "public flatRate(string $claim, Brick\\Math\\BigDecimal|string|int $amount = \"40.00\", ?string $description = null): static",
             "public interest(string $base, Brick\\Math\\BigDecimal|string $ratePercent, Quittio\\Core\\Support\\Date|DateTimeInterface|string $from, Quittio\\Core\\Support\\Date|DateTimeInterface|string $until, ?string $description = null, ?int $dayCount = Quittio\\Core\\Documents\\InterestCharge::ACTUAL_ACTUAL): static",
             "public interestCharge(Quittio\\Core\\Documents\\InterestCharge ...$charges): static",
             "public issueDate(Quittio\\Core\\Support\\Date|DateTimeInterface|string $date): static",

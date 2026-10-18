@@ -85,6 +85,7 @@ final class ConfigMapper
             dueDays: self::dueDays($settings->get('defaults.due_days')),
             cancellationStrategy: $settings->nullableString('corrections.cancellation_strategy'),
             calculation: CalculationPolicy::fromArray($settings->array('calculation')),
+            countrySettings: Config::countrySettings($settings->array('countries')),
         );
     }
 

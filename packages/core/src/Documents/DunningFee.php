@@ -15,8 +15,13 @@ use Brick\Money\Money;
  */
 final readonly class DunningFee
 {
+    /**
+     * @param  string|null  $claim  the claim of a flat rate, e.g. the invoice or instalment number
+     */
     public function __construct(
         public string $description,
         public Money $amount,
+        public DunningFeeKind $kind = DunningFeeKind::Fee,
+        public ?string $claim = null,
     ) {}
 }

@@ -15,6 +15,8 @@ namespace Quittio\Core\Countries;
 final readonly class DunningLaw
 {
     /**
+     * @param  int|null  $dayCount  days per year for default interest: 365 or 360, or null for actual/actual
+     *         (365 or 366 days per calendar year, InterestCharge::ACTUAL_ACTUAL)
      * @param  int|null  $consumerDefaultAfterDays  days after due date and receipt after which a consumer is in
      *         default without a reminder, if the invoice points this out (e.g. section 286 (3) BGB); null = no such rule
      */
@@ -22,7 +24,7 @@ final readonly class DunningLaw
         public string $b2bInterestPoints = '8.00',
         public string $b2cInterestPoints = '0.00',
         public ?string $b2bFlatRate = '40.00',
-        public int $dayCount = 365,
+        public ?int $dayCount = 365,
         public ?int $consumerDefaultAfterDays = null,
         public ?string $referenceRateName = null,
     ) {}

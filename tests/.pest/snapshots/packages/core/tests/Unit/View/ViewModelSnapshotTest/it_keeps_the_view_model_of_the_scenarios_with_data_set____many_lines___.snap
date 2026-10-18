@@ -6440,6 +6440,7 @@
             "statement_period": "Zeitraum",
             "opening_balance": "Anfangssaldo",
             "balance": "Saldo",
+            "dunning_flat_rate": "Pauschale für Beitreibungskosten (§ 288 Abs. 5 BGB), Forderung :claim",
             "cancellation_note": "Stornierung der Rechnung :number vom :date.",
             "cancellation_note_self_billed": "Stornierung der Gutschrift :number vom :date.",
             "cancellation_reason": "Grund: :reason",

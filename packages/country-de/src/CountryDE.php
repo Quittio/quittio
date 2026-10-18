@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Quittio\Country\DE;
 
 use Quittio\Core\Countries\AbstractCountryPack;
+use Quittio\Core\Countries\Capabilities\CompletesInvoices;
 use Quittio\Core\Countries\Capabilities\ProvidesReferenceRates;
 use Quittio\Core\Countries\CorrectionPolicy;
 use Quittio\Core\Countries\CountryDefaults;
@@ -18,6 +19,7 @@ use Quittio\Core\Data\InvoiceData;
 use Quittio\Core\Data\Note;
 use Quittio\Core\Dunning\ReferenceRates;
 use Quittio\Core\Enums\InvoiceTypeCode;
+use Quittio\Core\Enums\NoteSubjectCode;
 use Quittio\Core\Enums\VatCategory;
 use Quittio\Core\I18n\Translations;
 use Quittio\Core\Tax\TaxPresetCollection;
@@ -44,7 +46,7 @@ use Quittio\Country\DE\Texts\LegalTexts;
 /**
  * Country pack for Germany.
  */
-class CountryDE extends AbstractCountryPack implements ProvidesReferenceRates
+class CountryDE extends AbstractCountryPack implements CompletesInvoices, ProvidesReferenceRates
 {
     public const string CODE = 'DE';
 
@@ -199,6 +201,30 @@ class CountryDE extends AbstractCountryPack implements ProvidesReferenceRates
     }
 
     /**
+     * Invoices to consumers get the notice that the consumer is in default 30 days after the due
+     * date and receipt of the invoice (LegalTexts::CONSUMER_DEFAULT, subject PMT): without it the
+     * 30 days do not apply to consumers (section 286 (3) sentence 1 BGB). Not for credit notes,
+     * not twice, and not with the setting consumer_default_notice = false (quittio.countries.de).
+     */
+    public function complete(InvoiceData $invoice, array $settings): InvoiceData
+    {
+        if (($settings['consumer_default_notice'] ?? true) === false || ! $invoice->buyer->isConsumer || $invoice->isCreditNote()) {
+            return $invoice;
+        }
+        $texts = array_values(LegalTexts::catalog()->texts[LegalTexts::CONSUMER_DEFAULT] ?? []);
+        foreach ($invoice->notes as $note) {
+            if (str_contains($note->content, '286') || in_array(trim($note->content), $texts, true)) {
+                return $invoice;
+            }
+        }
+
+        return $invoice->with(['notes' => [
+            ...$invoice->notes,
+            new Note(LegalTexts::text(LegalTexts::CONSUMER_DEFAULT, $invoice->meta->locale ?? LegalTexts::FALLBACK_LOCALE), NoteSubjectCode::PaymentInformation),
+        ]]);
+    }
+
+    /**
      * Section 288 BGB: base rate plus 9 points (business) or 5 points (consumer),
      * flat rate of 40 EUR for business debtors, consumer default after 30 days with notice.
      */
@@ -217,7 +243,9 @@ class CountryDE extends AbstractCountryPack implements ProvidesReferenceRates
             b2bInterestPoints: '9.00',
             b2cInterestPoints: '5.00',
             b2bFlatRate: '40.00',
-            dayCount: 365,
+            // Actual/actual: 366 days in a leap year, as the statutory day count conventions do
+            // (annex to section 16 PAngV); 365 would overstate the interest of a leap year.
+            dayCount: null,
             consumerDefaultAfterDays: 30,
             referenceRateName: 'Basiszinssatz (§ 247 BGB)',
         );

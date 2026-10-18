@@ -28,6 +28,7 @@ use Quittio\Core\Enums\VatCategory;
 use Quittio\Core\Enums\VatExemptionReasonCode;
 use Quittio\Core\Exceptions\InvalidArgumentException;
 use Quittio\Core\Exceptions\InvalidInvoiceData;
+use Quittio\Core\I18n\Translations;
 use Quittio\Core\Support\Amount;
 use Quittio\Core\Support\Date;
 use Quittio\Core\Support\Decimal;
@@ -65,7 +66,7 @@ class DocumentBuilder
     /** @var list<array{number: string, date: Date, amount: string, due: ?Date, paid: ?string, description: ?string}> */
     private array $openItems = [];
 
-    /** @var list<array{description: string, amount: string}> */
+    /** @var list<array{description: ?string, amount: string, kind: DunningFeeKind, claim: ?string}> */
     private array $fees = [];
 
     /** @var list<array{base: string, rate: BigDecimal, from: Date, until: Date, description: ?string, dayCount: ?int}> */
@@ -488,7 +489,23 @@ class DocumentBuilder
      */
     public function fee(string $description, BigDecimal|int|float|string $amount): static
     {
-        $this->fees[] = ['description' => $description, 'amount' => (string) Decimal::rejectFloat($amount)];
+        $this->fees[] = ['description' => $description, 'amount' => (string) Decimal::rejectFloat($amount), 'kind' => DunningFeeKind::Fee, 'claim' => null];
+
+        return $this;
+    }
+
+    /**
+     * Adds the flat rate for recovery costs of a late payment (Article 6 Directive 2011/7/EU;
+     * section 288 (5) BGB: 40 EUR) for one claim, e.g. an invoice or an instalment. It is owed
+     * once per late payment, only by businesses, and counts towards other recovery costs such as
+     * reminder fees, which may then be claimed only in so far as they exceed it.
+     *
+     * @throws InvalidArgumentException for a float amount; when building, for a second flat rate
+     *         of the same claim or a consumer as buyer
+     */
+    public function flatRate(string $claim, BigDecimal|int|string $amount = '40.00', ?string $description = null): static
+    {
+        $this->fees[] = ['description' => $description, 'amount' => (string) Decimal::rejectFloat($amount), 'kind' => DunningFeeKind::FlatRate, 'claim' => $claim];
 
         return $this;
     }
@@ -643,7 +660,7 @@ class DocumentBuilder
             delivery: $draft->delivery,
             packages: $this->packages,
             dunning: $this->type === DocumentType::PaymentReminder
-                ? $this->buildDunning($currency)
+                ? $this->buildDunning($currency, $draft->meta->locale ?? 'en', $draft->buyer->isConsumer)
                 : null,
             statement: $this->type === DocumentType::AccountStatement
                 ? new AccountStatement(
@@ -674,13 +691,42 @@ class DocumentBuilder
         ), $this->openItems);
     }
 
-    private function buildDunning(string $currency): Dunning
+    /**
+     * The fees; a flat rate without description gets the label "dunning_flat_rate".
+     *
+     * @return list<DunningFee>
+     *
+     * @throws InvalidArgumentException for a second flat rate of a claim or a flat rate for a consumer
+     */
+    private function dunningFees(string $currency, string $locale, bool $consumer): array
+    {
+        $claims = [];
+        $fees = [];
+        foreach ($this->fees as $fee) {
+            if ($fee['kind'] === DunningFeeKind::FlatRate) {
+                $claim = (string) $fee['claim'];
+                if ($consumer) {
+                    throw new InvalidArgumentException(sprintf('The flat rate for recovery costs (claim %s) applies only to businesses, not to consumers (Article 6 Directive 2011/7/EU, section 288 (5) BGB).', $claim));
+                }
+                if (isset($claims[$claim])) {
+                    throw new InvalidArgumentException(sprintf('The flat rate for recovery costs of claim %s is added twice: it is owed once per late payment.', $claim));
+                }
+                $claims[$claim] = true;
+            }
+            $description = $fee['description'] ?? Translations::translator()->get('quittio::labels.dunning_flat_rate', ['claim' => (string) $fee['claim']], $locale);
+            $fees[] = new DunningFee($description, Amount::of($fee['amount'], $currency), $fee['kind'], $fee['claim']);
+        }
+
+        return $fees;
+    }
+
+    private function buildDunning(string $currency, string $locale, bool $consumer): Dunning
     {
         return new Dunning(
             level: $this->dunningLevel,
             openItems: $this->buildOpenItems($currency),
             deadline: $this->deadline,
-            fees: array_map(static fn (array $fee): DunningFee => new DunningFee($fee['description'], Amount::of($fee['amount'], $currency)), $this->fees),
+            fees: $this->dunningFees($currency, $locale, $consumer),
             interest: array_map(static fn (array $entry): InterestCharge => new InterestCharge(
                 base: Amount::of($entry['base'], $currency),
                 ratePercent: $entry['rate'],

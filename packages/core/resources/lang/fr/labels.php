@@ -142,6 +142,7 @@ return [
     'statement_period' => 'Période',
     'opening_balance' => 'Solde initial',
     'balance' => 'Solde',
+    'dunning_flat_rate' => 'Indemnité forfaitaire pour frais de recouvrement, créance :claim',
     'cancellation_note' => 'Annulation de la facture :number du :date.',
     'cancellation_note_self_billed' => 'Annulation de l\'autofacture :number du :date.',
     'cancellation_reason' => 'Motif : :reason',
