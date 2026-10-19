@@ -1293,6 +1293,7 @@ Statutory late payment values; amounts and percentage points are decimal strings
 | `dayCount` | `365` | day count basis: 365, 360 or `null` for actual/actual (Germany) |
 | `consumerDefaultAfterDays` | `null` | days after which a consumer is in default |
 | `referenceRateName` | `null` | name of the reference rate |
+| `b2cFixedRate` | `null` | fixed rate in percent for consumers instead of the reference rate plus `b2cInterestPoints`, e.g. `4.00` in Austria (section 1000 (1) ABGB); `DefaultInterest` then charges it for the whole time |
 
 Quittio's documents do not read these values. `Quittio\Core\Dunning\DefaultInterest` calculates default interest from them and the reference rates of a pack that implements `Countries\Capabilities\ProvidesReferenceRates` (`referenceRates(): Dunning\ReferenceRates` with `rateOn()` and `periods()`): `DefaultInterest::forCountry($pack)->calculate($amount, $from, $until)`. Germany provides the Basiszinssatz this way ([`DefaultInterest`](#default-interest)); a pack of another country implements `ReferenceRates`, e.g. for the ECB main refinancing rate, on top of `Quittio\Core\Support\DatedValues`.
 

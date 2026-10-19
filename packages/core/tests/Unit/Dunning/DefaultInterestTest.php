@@ -51,6 +51,17 @@ it('adds the points of the law to the reference rate, split at its changes', fun
         ->and((string) $interest->flatRate('EUR'))->toBe('EUR 40.00');
 });
 
+it('charges consumers a fixed rate of the law for the whole time', function () {
+    $interest = new DefaultInterest(fakeReferenceRates(), new DunningLaw(b2bInterestPoints: '9.20', b2cFixedRate: '4.00'),
+        fn (BigDecimal $rate, BigDecimal $reference, string $points, Date $from, Date $lastDay, string $locale) => "{$rate} % ({$reference} + {$points}) {$from}–{$lastDay}");
+    $consumer = $interest->calculate(Amount::of('1000.00', 'EUR'), Date::fromIsoDate('2026-06-16'), Date::fromIsoDate('2026-07-16'), consumer: true);
+
+    expect(array_map(fn ($c) => $c->description, $consumer))->toBe(['4.00 % (4.00 + 0.00) 2026-06-16–2026-07-15'])
+        ->and($consumer[0]->dayCount)->toBe(365)
+        ->and(array_map(fn ($c) => (string) $c->ratePercent, $interest->calculate(Amount::of('1000.00', 'EUR'), Date::fromIsoDate('2026-06-16'), Date::fromIsoDate('2026-07-16'))))->toBe(['11.20', '12.20'])
+        ->and($interest->calculate(Amount::of('1000.00', 'EUR'), Date::fromIsoDate('2026-07-16'), Date::fromIsoDate('2026-07-16'), consumer: true))->toBe([]);
+});
+
 it('needs a country pack with reference rates', function () {
     $pack = new class extends AbstractCountryPack
     {

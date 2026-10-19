@@ -18,7 +18,7 @@ use Quittio\Core\Support\Date;
 /**
  * Default interest of a late payment law: the reference rate plus the points of the DunningLaw
  * (business or consumer debtors), split at every change of the reference rate, with the day
- * count basis of the law. The result goes into DocumentBuilder::interestCharge().
+ * count basis of the law; for consumers a fixed rate of the law instead, if it has one. The result goes into DocumentBuilder::interestCharge().
  */
 final readonly class DefaultInterest
 {
@@ -55,6 +55,20 @@ final readonly class DefaultInterest
     {
         if (! $amount->isPositive() || ! $until->isAfter($from)) {
             return [];
+        }
+
+        if ($consumer && $this->law->b2cFixedRate !== null) {
+            // A fixed rate does not follow the reference rate: one charge for the whole time.
+            $rate = BigDecimal::of($this->law->b2cFixedRate);
+
+            return [new InterestCharge(
+                base: $amount,
+                ratePercent: $rate,
+                from: $from,
+                until: $until,
+                description: $this->describe === null ? null : ($this->describe)($rate, $rate, '0.00', $from, $until->addDays(-1), $locale),
+                dayCount: $this->law->dayCount,
+            )];
         }
 
         $points = $consumer ? $this->law->b2cInterestPoints : $this->law->b2bInterestPoints;

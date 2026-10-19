@@ -4,6 +4,10 @@ All notable changes to this project are documented in this file. The format foll
 
 ## [Unreleased]
 
+### Added
+
+- `DunningLaw::$b2cFixedRate`: a fixed default interest rate for consumers instead of the reference rate plus points (e.g. 4 % in Austria, section 1000 (1) ABGB). `DefaultInterest` charges it for the whole time.
+
 ### Fixed
 
 - The Peppol rules treat the business process (BT-23) as the official rules do: an empty one is reported by `PEPPOL-EN16931-R001` and `-R007`, one of only whitespace by `-R007` and `-R008` instead of `-R001`.

@@ -754,12 +754,13 @@
             "public readonly ?int $consumerDefaultAfterDays",
             "public readonly ?int $dayCount",
             "public readonly ?string $b2bFlatRate",
+            "public readonly ?string $b2cFixedRate",
             "public readonly ?string $referenceRateName",
             "public readonly string $b2bInterestPoints",
             "public readonly string $b2cInterestPoints"
         ],
         "methods": [
-            "public __construct(string $b2bInterestPoints = \"8.00\", string $b2cInterestPoints = \"0.00\", ?string $b2bFlatRate = \"40.00\", ?int $dayCount = 365, ?int $consumerDefaultAfterDays = null, ?string $referenceRateName = null)"
+            "public __construct(string $b2bInterestPoints = \"8.00\", string $b2cInterestPoints = \"0.00\", ?string $b2bFlatRate = \"40.00\", ?int $dayCount = 365, ?int $consumerDefaultAfterDays = null, ?string $referenceRateName = null, ?string $b2cFixedRate = null)"
         ]
     },
     "Quittio\\Core\\Countries\\Exporter": {

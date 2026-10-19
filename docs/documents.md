@@ -157,7 +157,7 @@ $reminder->interestCharge(...(new DefaultInterest)->calculate(Money::of('1000.00
 
 `interestCharge()` takes the charges with their day count (actual/actual in Germany) and texts. For any country pack with a reference rate, `Quittio\Core\Dunning\DefaultInterest::forCountry($pack)` calculates the same with the pack's `referenceRates()` and `dunningLaw()`; the German class adds the German texts. The descriptions are German by default; any other locale, e.g. `calculate(…, locale: 'en')`, returns English ones.
 
-The base rate table, the flat rate and the conditions of default are described in [Country packs](country-packs.md#dunning-law). The country-neutral contract is `CountryPack::dunningLaw()` (`DunningLaw`: `b2bInterestPoints`, `b2cInterestPoints`, `b2bFlatRate`, `dayCount`, `consumerDefaultAfterDays`, `referenceRateName`).
+The base rate table, the flat rate and the conditions of default are described in [Country packs](country-packs.md#dunning-law). The country-neutral contract is `CountryPack::dunningLaw()` (`DunningLaw`: `b2bInterestPoints`, `b2cInterestPoints`, `b2bFlatRate`, `dayCount`, `consumerDefaultAfterDays`, `referenceRateName`, `b2cFixedRate`).
 
 ## Account statements
 
