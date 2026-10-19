@@ -280,6 +280,17 @@ final class UstgRules
                     $report->warning(null, null, ['until' => $reason[1]]);
                 }
             }),
+            $r('DE-CATEGORY-O-01', 'The VAT identifiers of seller and buyer were left out: EN 16931 allows none on an invoice of supplies not subject to VAT (BR-O-02); the seller\'s tax number (BT-32) is stated instead (section 14 (4) sentence 1 no. 2 UStG).', function (InvoiceData $i, RuleReporter $report): void {
+                if ($i->meta->hasFlag(Flags::VAT_IDS_OMITTED)) {
+                    $report->info('BT-31', 'seller.vatId');
+                }
+            }),
+            $r('DE-CATEGORY-O-02', 'An invoice of supplies not subject to VAT (category O) must not state VAT identifiers (BR-O-02). Quittio leaves them out when the seller\'s tax number (BT-32) is given and there is no tax representative.', function (InvoiceData $i, RuleReporter $report): void {
+                $vatIds = Inspect::filled($i->seller->vatId) || Inspect::filled($i->buyer->vatId) || Inspect::filled($i->sellerTaxRepresentative?->vatId);
+                if ($vatIds && CountryDE::onlyCategoryO($i) && ! CountryDE::canOmitVatIds($i)) {
+                    $report->info('BT-32', 'seller.taxNumber');
+                }
+            }),
             $r('DE-USTG-19', 'The final invoice deducts an advance that was settled by self-billing (Gutschrift), but is no self-billed invoice itself. The advance must be deducted (section 14 (2) sentence 5 UStG); changing the way of invoicing is allowed but unusual.', function (InvoiceData $i, RuleReporter $report): void {
                 if ($i->meta->hasFlag(Flags::SELF_BILLED_ADVANCE) && ! ($i->typeCode instanceof InvoiceTypeCode && $i->typeCode->isSelfBilled())) {
                     $report->info('BT-3', 'typeCode');

@@ -209,6 +209,13 @@ class CountryDE extends AbstractCountryPack implements CompletesInvoices, Provid
      */
     public function complete(InvoiceData $invoice, array $settings): InvoiceData
     {
+        if (($settings['omit_vat_ids_for_category_o'] ?? true) !== false && self::canOmitVatIds($invoice)) {
+            $invoice = $invoice->with([
+                'seller' => $invoice->seller->with(['vatId' => null]),
+                'buyer' => $invoice->buyer->with(['vatId' => null]),
+                'meta' => $invoice->meta->withFlag(Flags::VAT_IDS_OMITTED),
+            ]);
+        }
         if (($settings['consumer_default_notice'] ?? true) === false || ! $invoice->buyer->isConsumer || $invoice->isCreditNote()) {
             return $invoice;
         }
@@ -223,6 +230,29 @@ class CountryDE extends AbstractCountryPack implements CompletesInvoices, Provid
             ...$invoice->notes,
             new Note(LegalTexts::text(LegalTexts::CONSUMER_DEFAULT, $invoice->meta->locale ?? LegalTexts::FALLBACK_LOCALE), NoteSubjectCode::PaymentInformation),
         ]]);
+    }
+
+    /**
+     * Whether only supplies not subject to VAT (category O) are invoiced, so that EN 16931 forbids
+     * the VAT identifiers of seller and buyer (BR-O-02).
+     */
+    public static function onlyCategoryO(InvoiceData $invoice): bool
+    {
+        $lines = $invoice->allLines();
+
+        return $lines !== [] && array_filter($lines, static fn ($line): bool => $line->vat->category !== VatCategory::NotSubjectToVat) === [];
+    }
+
+    /**
+     * An invoice of category O only with a VAT identifier that complete() may leave out: the
+     * seller states its tax number instead (section 14 (4) sentence 1 no. 2 UStG), and there is no
+     * tax representative, whose VAT identifier EN 16931 requires (BR-56) and forbids (BR-O-02).
+     */
+    public static function canOmitVatIds(InvoiceData $invoice): bool
+    {
+        return self::onlyCategoryO($invoice) && $invoice->sellerTaxRepresentative === null
+            && Inspect::filled($invoice->seller->taxNumber)
+            && (Inspect::filled($invoice->seller->vatId) || Inspect::filled($invoice->buyer->vatId));
     }
 
     /**

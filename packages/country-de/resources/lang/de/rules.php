@@ -250,6 +250,14 @@ return [
         'message' => 'Die Schlussrechnung zieht eine Anzahlungsrechnung vollständig ab, ohne dass der vereinnahmte Betrag bestätigt ist. Abzuziehen sind nur tatsächlich vereinnahmte Anzahlungen (§ 14 Abs. 5 Satz 2 UStG, Abschnitt 14.8 Abs. 2, 5 und 10 UStAE).',
         'hint' => 'Geben Sie den vereinnahmten Betrag an: ->de()->deductAdvance($anzahlung, received: \'500.00\') für einen Teil, received: GermanInvoice::RECEIVED_IN_FULL für die ganze Anzahlung. Eine nicht bezahlte Anzahlung ziehen Sie nicht ab.',
     ],
+    'DE-CATEGORY-O-01' => [
+        'message' => 'Die USt-IdNr. von Verkäufer und Käufer wurden weggelassen: EN 16931 erlaubt bei nicht steuerbaren Umsätzen keine (BR-O-02); angegeben ist die Steuernummer des Verkäufers (BT-32, § 14 Abs. 4 Satz 1 Nr. 2 UStG).',
+        'hint' => 'Nichts zu tun. Abschalten mit quittio.countries.de.omit_vat_ids_for_category_o = false.',
+    ],
+    'DE-CATEGORY-O-02' => [
+        'message' => 'Eine Rechnung über nicht steuerbare Umsätze (Kategorie O) darf keine USt-IdNr. enthalten (BR-O-02). Quittio lässt sie weg, wenn die Steuernummer des Verkäufers (BT-32) angegeben ist und es keinen Steuervertreter gibt.',
+        'hint' => 'Hinterlegen Sie die Steuernummer des Verkäufers (quittio.seller.tax_number oder ->taxNumber()). Mit Steuervertreter lässt sich eine Rechnung der Kategorie O nach EN 16931 nicht ausstellen (BR-56).',
+    ],
     'DE-EINVOICE-01' => [
         'message' => 'Die Rechnung muss als E-Rechnung ausgestellt werden: :reason (§ 14 Abs. 1 und § 27 Abs. 38 UStG). Ein PDF, MINIMUM oder BASIC WL ist eine „sonstige Rechnung“.',
         'hint' => 'Erzeugen Sie zugferd (EN 16931) oder xrechnung. Für 2027 gibt quittio.countries.de.prior_year_turnover_above_800k an, ob die Übergangsregel für Sie gilt. Eine sonstige Rechnung statt einer E-Rechnung ist keine Ordnungswidrigkeit (BMF-Schreiben vom 15.10.2026, Rn. 28), der Empfänger kann aber den Vorsteuerabzug verlieren.',

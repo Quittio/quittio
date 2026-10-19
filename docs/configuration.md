@@ -220,6 +220,7 @@ The German pack's settings are the base rate (Basiszinssatz) under section 247 o
 | `countries.de.base_rates` | array | `[]` | Base rates in addition to the table shipped with Quittio: ISO date (1 January or 1 July) => percent, e.g. `['2027-01-01' => '1.77']`. They win over the file below. |
 | `countries.de.base_rate_file` | string\|null | `storage_path('app/quittio/base-rates.json')` | JSON file written by `php artisan quittio:base-rate:update` with the rates of the Deutsche Bundesbank. `null` = not used. |
 | `countries.de.prior_year_turnover_above_800k` | bool | `false` | Your total turnover of the previous year was above 800,000 EUR: other invoices for domestic business supplies of 2027 are no longer allowed (section 27 (38) UStG, `DE-EINVOICE-01`, [E-invoice obligation](country-packs.md#e-invoice-obligation)). |
+| `countries.de.omit_vat_ids_for_category_o` | bool | `true` | Invoices of category `O` only (not subject to VAT) leave out the VAT identifiers of seller and buyer when the seller's tax number is given (BR-O-02, [Category O](country-packs.md#vat-identifiers-on-invoices-of-category-o)). |
 | `countries.de.consumer_default_notice` | bool | `true` | Invoices for consumers get the notice on default after 30 days (section 286 (3) BGB, [Default notice for consumers](country-packs.md#default-notice-for-consumers)). `false` = add it yourself with `->de()->consumerDefaultNotice()`. |
 
 See [Country packs: base rate table](country-packs.md#base-rate-table) and [quittio:base-rate:update](commands.md#quittiobase-rateupdate).

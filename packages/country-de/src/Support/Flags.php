@@ -44,6 +44,12 @@ final class Flags
      */
     public const string SELF_BILLED_ADVANCE = 'de.self_billed_advance';
 
+    /**
+     * The VAT identifiers of seller and buyer were left out of an invoice of category O only
+     * (BR-O-02), set by CountryDE::complete(): DE-CATEGORY-O-01 says so.
+     */
+    public const string VAT_IDS_OMITTED = 'de.vat_ids_omitted';
+
     /** Ticket for the carriage of passengers (section 34 UStDV): no e-invoice obligation. */
     public const string TICKET = 'de.ticket';
 

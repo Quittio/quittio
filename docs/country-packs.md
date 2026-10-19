@@ -71,8 +71,8 @@ $builder = Quittio::invoice()
 | `IntraCommunitySupply` | `de.intra_community_supply` | `K` | 0 | `VATEX-EU-IC` | VAT-exempt intra-community supply (section 4 no. 1b with section 6a UStG), also of new vehicles (`newVehicle()`). Not for small businesses, except new vehicles (`DE-USTG-14`). Issue the invoice by the 15th of the following month (`DE-USTG-15`). |
 | `TriangularTransaction` | `de.triangular_transaction` | `AE` | 0 | `VATEX-EU-AE` | Intra-community triangular transaction (section 25b UStG), in which the last customer owes the VAT; wording of section 14a (7) UStG, also as note (BT-22). Both VAT identifiers are required. |
 | `Export` | `de.export` | `G` | 0 | `VATEX-EU-G` | VAT-exempt export supply (section 4 no. 1a with section 6 UStG) |
-| `NotTaxableInGermany` | `de.not_taxable` | `O` | none | `VATEX-EU-O` | Supply not taxable in Germany (place of supply abroad). EN 16931 allows no VAT identifiers with category `O` (BR-O-02): state the tax number (BT-32) instead. |
-| `BusinessTransfer` | `de.business_transfer` | `O` | none | `VATEX-EU-O` | Transfer of a business as a whole (Geschäftsveräußerung im Ganzen, section 1 (1a) UStG), not subject to VAT. As with `NotTaxableInGermany`, state the tax numbers instead of VAT identifiers (BR-O-02). VAT shown on such an invoice would be owed under section 14c (1) UStG; category `O` cannot carry any. |
+| `NotTaxableInGermany` | `de.not_taxable` | `O` | none | `VATEX-EU-O` | Supply not taxable in Germany (place of supply abroad). EN 16931 allows no VAT identifiers with category `O` (BR-O-02); the pack leaves them out when the seller's tax number is given ([Category O](#vat-identifiers-on-invoices-of-category-o)). |
+| `BusinessTransfer` | `de.business_transfer` | `O` | none | `VATEX-EU-O` | Transfer of a business as a whole (Geschäftsveräußerung im Ganzen, section 1 (1a) UStG), not subject to VAT. VAT identifiers as with `NotTaxableInGermany`. VAT shown on such an invoice would be owed under section 14c (1) UStG; category `O` cannot carry any. |
 | `MarginSecondHand` | `de.margin_second_hand` | `E` | 0 | `VATEX-EU-F` | Margin scheme, second-hand goods; wording of section 14a (6) UStG, also as note (BT-22) |
 | `MarginArt` | `de.margin_art` | `E` | 0 | `VATEX-EU-I` | Margin scheme, works of art; also as note (BT-22) |
 | `MarginAntiques` | `de.margin_antiques` | `E` | 0 | `VATEX-EU-J` | Margin scheme, collectors' items and antiques; also as note (BT-22) |
@@ -546,6 +546,16 @@ $reminder->flatRate('RE-2026-0042');   // 40.00 EUR for this claim, "Pauschale f
 
 A complete reminder is in [Examples: Payment reminder](examples.md#payment-reminder).
 
+#### VAT identifiers on invoices of category O
+
+EN 16931 allows no VAT identifiers of seller (BT-31), buyer (BT-48) or tax representative (BT-63) on an invoice of supplies not subject to VAT (category `O`, rule BR-O-02), and such an invoice has no other VAT category (BR-O-11). In Laravel the seller's VAT identifier comes from the configuration, so every such invoice would fail. `CountryDE::complete()` therefore leaves out the VAT identifiers of seller and buyer when:
+
+- every line is of category `O` (`VatPreset::NotTaxableInGermany`, `BusinessTransfer` or your own),
+- the seller has a tax number (BT-32), which satisfies section 14 (4) sentence 1 no. 2 UStG instead,
+- and there is no tax representative: EN 16931 requires its VAT identifier (BR-56) and forbids it here, so such an invoice cannot be issued at all.
+
+The invoice gets the flag `de.vat_ids_omitted` and the info `DE-CATEGORY-O-01`. The rendered data (`$result->data()`), XML and PDF are without the VAT identifiers; the builder keeps them. Without a tax number or with a tax representative nothing changes: `BR-O-02` stays an error, and the info `DE-CATEGORY-O-02` names what is missing. Switch the completion off with `quittio.countries.de.omit_vat_ids_for_category_o = false`.
+
 #### Default notice for consumers
 
 `CountryDE` completes invoices before they are calculated and rendered (`Quittio\Core\Countries\Capabilities\CompletesInvoices`): an invoice for a consumer (`->consumer()` on the buyer) gets the note `LegalTexts::CONSUMER_DEFAULT` with subject `PMT`, "Sie kommen spätestens in Verzug, wenn Sie nicht innerhalb von 30 Tagen nach Fälligkeit und Zugang dieser Rechnung zahlen (§ 286 Abs. 3 BGB)." in the language of the invoice. Credit notes and invoices that already have such a note (a note containing "286") are left alone. The note is part of the rendered data (`$result->data()`), not of the builder.
@@ -678,6 +688,8 @@ You rarely need this table up front: a failing rule names its code, the field an
 | `DE-USTG-20` | warning (BT-113 `prepaidAmount`) | `deductAdvance()` deducted an advance invoice without `received:` (flag `de.advance_receipt_unconfirmed`). Only advance payments actually received are deducted. | section 14 (5) sentence 2 UStG, section 14.8 (2), (5) and (10) UStAE | `received: GermanInvoice::RECEIVED_IN_FULL` or the amount received. |
 | `DE-EINVOICE-01` | error (no field) | The run produces no e-invoice although section 14 (1) and section 27 (38) UStG require one ([E-invoice obligation](#e-invoice-obligation)). Only checked while rendering (option `e_invoice`). | section 14 (1), (2), section 27 (38) UStG | Render `zugferd` (EN 16931) or `xrechnung`. |
 | `DE-EINVOICE-02` | warning (no field) | The run produces no e-invoice, and the transition of section 27 (38) UStG still allows an other invoice; a PDF needs the buyer's consent. | section 27 (38) UStG, section 14 (1) sentence 5 UStG | Get the buyer's consent or render an e-invoice. |
+| `DE-CATEGORY-O-01` | info (BT-31 `seller.vatId`) | The VAT identifiers of seller and buyer were left out of an invoice of category `O` only (flag `de.vat_ids_omitted`). | BR-O-02; section 14 (4) sentence 1 no. 2 UStG | Nothing to do. |
+| `DE-CATEGORY-O-02` | info (BT-32 `seller.taxNumber`) | An invoice of category `O` only states a VAT identifier, and Quittio could not leave it out: no tax number of the seller, or a tax representative. | BR-O-02, BR-56 | Set the seller's tax number. |
 
 Helpers used by the rules and available to you:
 
@@ -806,6 +818,7 @@ The pack marks German special cases with meta flags on the invoice (`InvoiceData
 | `SELF_BILLED_ADVANCE` | `de.self_billed_advance` | `deductAdvance()` of a self-billed advance (389) | `DE-USTG-19` |
 | `EXPECTED_SERVICE_DATE` | `de.expected_service_date` | `advance()` with a date or month | no `DE-USTG-03` warning for a prepayment invoice without service date |
 | `TICKET` | `de.ticket` | `ticket()` | ticket for the carriage of passengers (section 34 UStDV): no `DE-EINVOICE-*` |
+| `VAT_IDS_OMITTED` | `de.vat_ids_omitted` | `CountryDE::complete()` | `DE-CATEGORY-O-01` |
 | `ADVANCE_RECEIPT_UNCONFIRMED` | `de.advance_receipt_unconfirmed` | `deductAdvance()` without `received:` | `DE-USTG-20` |
 | `SMALL_BUSINESS` | `small_business` (`Meta::FLAG_SMALL_BUSINESS`) | seller configuration, Managed issuer, `->flag()`, `smallBusinessId()` | small business invoice (section 34a UStDV): `DE-USTG-03`, `DE-USTG-09`, `DE-USTG-11`, `DE-USTG-14`, `DE-TAX-NUMBER`, mandatory output |
 | `SMALL_AMOUNT_LIMIT` | `250.00` | – | deprecated: the limit depends on the supply date, see `TaxTables::smallAmountLimitOn()` |

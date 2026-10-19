@@ -219,7 +219,8 @@ it('treats the transfer of a business as a whole as not subject to VAT (section 
         ->and($invoice->lines[0]->vat->exemptionReasonCode)->toBe(VatExemptionReasonCode::NotSubjectToVat)
         ->and($invoice->lines[0]->vat->exemptionReason)->toBe('Nicht steuerbare Geschäftsveräußerung im Ganzen (§ 1 Abs. 1a UStG).')
         ->and($quittio->make($builder)->format('xrechnung-cii')->check()->errors())->toBe([])
-        ->and(array_map(static fn ($m): string => $m->code, $quittio->make($withVatIds)->format('xrechnung-cii')->check()->errors()))->toContain('BR-O-02');
+        // With the seller's tax number the VAT identifiers are left out (see CategoryOVatIdsTest).
+        ->and($quittio->make($withVatIds)->format('xrechnung-cii')->check()->errors())->toBe([]);
 });
 
 it('names the place of supply abroad for supplies not taxable in Germany', function () {

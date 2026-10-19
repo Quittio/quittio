@@ -250,6 +250,14 @@ return [
         'message' => 'The final invoice deducts an advance invoice in full without the amount received being confirmed. Only advance payments actually received are deducted (section 14 (5) sentence 2 UStG, section 14.8 (2), (5) and (10) UStAE).',
         'hint' => 'Pass the amount received: ->de()->deductAdvance($advance, received: \'500.00\') for a part, received: GermanInvoice::RECEIVED_IN_FULL for the whole advance. Do not deduct an advance that was not paid.',
     ],
+    'DE-CATEGORY-O-01' => [
+        'message' => 'The VAT identifiers of seller and buyer were left out: EN 16931 allows none on an invoice of supplies not subject to VAT (BR-O-02); the seller\'s tax number (BT-32) is stated instead (section 14 (4) sentence 1 no. 2 UStG).',
+        'hint' => 'Nothing to do. Switch it off with quittio.countries.de.omit_vat_ids_for_category_o = false.',
+    ],
+    'DE-CATEGORY-O-02' => [
+        'message' => 'An invoice of supplies not subject to VAT (category O) must not state VAT identifiers (BR-O-02). Quittio leaves them out when the seller\'s tax number (BT-32) is given and there is no tax representative.',
+        'hint' => 'Set the seller\'s tax number (quittio.seller.tax_number or ->taxNumber()). With a tax representative an invoice of category O cannot be issued according to EN 16931 (BR-56).',
+    ],
     'DE-EINVOICE-01' => [
         'message' => 'The invoice must be issued as e-invoice: :reason (section 14 (1) and section 27 (38) UStG). A PDF, MINIMUM or BASIC WL is an "other invoice".',
         'hint' => 'Render it as zugferd (EN 16931) or xrechnung. For 2027, quittio.countries.de.prior_year_turnover_above_800k tells whether the transition applies to you. An "other invoice" instead of an e-invoice is no administrative offence (BMF letter of 15 October 2026, marginal no. 28), but the buyer may lose the input tax deduction.',

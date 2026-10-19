@@ -50,4 +50,14 @@ return [
     */
     'prior_year_turnover_above_800k' => false,
 
+    /*
+    |--------------------------------------------------------------------------
+    | VAT identifiers on invoices not subject to VAT (category O)
+    |--------------------------------------------------------------------------
+    | EN 16931 allows no VAT identifiers on such invoices (BR-O-02), e.g. for
+    | the transfer of a business as a whole. true = leave out the VAT identifiers
+    | of seller and buyer when the seller's tax number is given.
+    */
+    'omit_vat_ids_for_category_o' => true,
+
 ];

@@ -5700,8 +5700,10 @@
             "public retention(): Quittio\\Core\\Countries\\RetentionRule",
             "public rules(): array",
             "public serializers(): array",
+            "public static canOmitVatIds(Quittio\\Core\\Data\\InvoiceData $invoice): bool",
             "public static germanDunningLaw(): Quittio\\Core\\Countries\\DunningLaw",
             "public static locales(): array",
+            "public static onlyCategoryO(Quittio\\Core\\Data\\InvoiceData $invoice): bool",
             "public static registerTranslations(): void",
             "public taxPresets(): Quittio\\Core\\Tax\\TaxPresetCollection",
             "public translationPath(): string"
@@ -5965,7 +5967,8 @@
             "SMALL_AMOUNT",
             "SMALL_AMOUNT_LIMIT",
             "SMALL_BUSINESS",
-            "TICKET"
+            "TICKET",
+            "VAT_IDS_OMITTED"
         ]
     },
     "Quittio\\Country\\DE\\Support\\LeitwegId": {
