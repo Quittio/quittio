@@ -1,0 +1,64 @@
+{
+    "name": "quittio/country-be",
+    "description": "Quittio country pack for Belgium: VAT presets and invoice mentions, Peppol BIS for domestic business invoices, enterprise numbers, default interest of the law of 2 August 2002.",
+    "keywords": [
+        "php",
+        "e-invoice",
+        "peppol",
+        "e-facture",
+        "btw",
+        "belgium"
+    ],
+    "type": "library",
+    "license": "MIT",
+    "homepage": "https://docs.quittio.dev",
+    "support": {
+        "issues": "https://github.com/Quittio/quittio/issues",
+        "source": "https://github.com/Quittio/quittio",
+        "docs": "https://docs.quittio.dev"
+    },
+    "authors": [
+        {
+            "name": "Niklas Forst"
+        }
+    ],
+    "require": {
+        "php": "^8.3",
+        "brick/math": "^1.0",
+        "brick/money": "^0.15.2",
+        "quittio/core": "self.version"
+    },
+    "require-dev": {
+        "pestphp/pest": "^4.7 || ^5.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Quittio\\Country\\BE\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Quittio\\Country\\BE\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "quittio": {
+            "country-packs": [
+                "Quittio\\Country\\BE\\CountryBE"
+            ]
+        },
+        "branch-alias": {
+            "dev-master": "0.6.x-dev"
+        }
+    },
+    "minimum-stability": "stable",
+    "scripts": {
+        "test": "pest"
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    }
+}

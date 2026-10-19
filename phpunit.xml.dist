@@ -19,6 +19,9 @@
         <testsuite name="country-ch">
             <directory>packages/country-ch/tests</directory>
         </testsuite>
+        <testsuite name="country-be">
+            <directory>packages/country-be/tests</directory>
+        </testsuite>
         <testsuite name="laravel">
             <directory>packages/laravel/tests</directory>
         </testsuite>
@@ -32,6 +35,7 @@
             <directory>packages/country-de/src</directory>
             <directory>packages/country-at/src</directory>
             <directory>packages/country-ch/src</directory>
+            <directory>packages/country-be/src</directory>
             <directory>packages/laravel/src</directory>
         </include>
     </source>

@@ -18,6 +18,7 @@
 # Country packs that are not released yet (see their README).
 /packages/country-at export-ignore
 /packages/country-ch export-ignore
+/packages/country-be export-ignore
 /packages/*/.github export-ignore
 /packages/*/.gitattributes export-ignore
 /testbench.yaml export-ignore

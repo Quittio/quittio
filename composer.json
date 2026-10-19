@@ -84,7 +84,9 @@
             "Quittio\\Country\\AT\\": "packages/country-at/src/",
             "Quittio\\Country\\AT\\Tests\\": "packages/country-at/tests/",
             "Quittio\\Country\\CH\\": "packages/country-ch/src/",
-            "Quittio\\Country\\CH\\Tests\\": "packages/country-ch/tests/"
+            "Quittio\\Country\\CH\\Tests\\": "packages/country-ch/tests/",
+            "Quittio\\Country\\BE\\": "packages/country-be/src/",
+            "Quittio\\Country\\BE\\Tests\\": "packages/country-be/tests/"
         }
     },
     "extra": {
