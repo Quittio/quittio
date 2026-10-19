@@ -82,7 +82,9 @@
             "Quittio\\Tests\\": "packages/laravel/tests/",
             "Quittio\\Country\\DE\\Tests\\": "packages/country-de/tests/",
             "Quittio\\Country\\AT\\": "packages/country-at/src/",
-            "Quittio\\Country\\AT\\Tests\\": "packages/country-at/tests/"
+            "Quittio\\Country\\AT\\Tests\\": "packages/country-at/tests/",
+            "Quittio\\Country\\CH\\": "packages/country-ch/src/",
+            "Quittio\\Country\\CH\\Tests\\": "packages/country-ch/tests/"
         }
     },
     "extra": {

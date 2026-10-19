@@ -13,6 +13,7 @@ parameters:
         - packages/core/src
         - packages/country-de/src
         - packages/country-at/src
+        - packages/country-ch/src
         - packages/laravel/src
         - tools/validate-fixtures.php
         - tools/docs/generate.php
