@@ -9,6 +9,8 @@ use Brick\Math\RoundingMode;
 use Closure;
 use Quittio\Core\Calculation\LineCalculator;
 use Quittio\Core\Codes\CodeList;
+use Quittio\Core\Data\AllowanceCharge\DocumentAllowance;
+use Quittio\Core\Data\AllowanceCharge\DocumentCharge;
 use Quittio\Core\Data\InvoiceData;
 use Quittio\Core\Data\Party\Address;
 use Quittio\Core\Data\Party\Contact;
@@ -50,15 +52,17 @@ final class PeppolRules
         $r = CallbackRule::l3(...);
 
         return [
+            // The writer leaves out an empty business process (cbc:ProfileID); one of only whitespace is
+            // written and violates R007 and R008, as with the official rules.
             $r('PEPPOL-EN16931-R001', 'The business process (BT-23) must be provided.', function (InvoiceData $i, RuleReporter $report): void {
-                if (! Inspect::filled($i->businessProcess ?? PeppolBis3::BUSINESS_PROCESS)) {
+                if (($i->businessProcess ?? PeppolBis3::BUSINESS_PROCESS) === '') {
                     $report->error('BT-23', 'businessProcess');
                 }
             }),
-            // A missing business process is reported by R001 only.
+            // As the official rule, also for a missing business process (with R001).
             $r('PEPPOL-EN16931-R007', 'The business process (BT-23) ":value" must be in the format urn:fdc:peppol.eu:2017:poacc:billing:NN:1.0, where NN is the process number.', function (InvoiceData $i, RuleReporter $report): void {
                 $process = $i->businessProcess ?? PeppolBis3::BUSINESS_PROCESS;
-                if (Inspect::filled($process) && self::process($i) === null) {
+                if (self::process($i) === null) {
                     $report->error('BT-23', 'businessProcess', ['value' => $process]);
                 }
             }),
@@ -112,14 +116,7 @@ final class PeppolRules
                 }
             }),
             $r('PEPPOL-EN16931-R040', 'An allowance or charge amount must equal base amount × percentage / 100 if base amount and percentage are given.', function (InvoiceData $i, RuleReporter $report): void {
-                $entries = [];
-                foreach ($i->allowances as $index => $a) {
-                    $entries["allowances[{$index}]"] = $a;
-                }
-                foreach ($i->charges as $index => $c) {
-                    $entries["charges[{$index}]"] = $c;
-                }
-                foreach ($entries as $path => $entry) {
+                foreach (self::allowancesAndCharges($i) as $path => $entry) {
                     if ($entry->amount === null || $entry->baseAmount === null || $entry->percent === null) {
                         continue;
                     }
@@ -130,16 +127,16 @@ final class PeppolRules
                 }
             }),
             $r('PEPPOL-EN16931-R041', 'An allowance or charge base amount must be provided when a percentage is provided.', function (InvoiceData $i, RuleReporter $report): void {
-                foreach ([...$i->allowances, ...$i->charges] as $entry) {
+                foreach (self::allowancesAndCharges($i) as $path => $entry) {
                     if ($entry->percent !== null && $entry->baseAmount === null) {
-                        $report->error($entry->isCharge() ? 'BT-100' : 'BT-93');
+                        $report->error($entry->isCharge() ? 'BT-100' : 'BT-93', $path.'.baseAmount');
                     }
                 }
             }),
             $r('PEPPOL-EN16931-R042', 'An allowance or charge percentage must be provided when a base amount is provided.', function (InvoiceData $i, RuleReporter $report): void {
-                foreach ([...$i->allowances, ...$i->charges] as $entry) {
+                foreach (self::allowancesAndCharges($i) as $path => $entry) {
                     if ($entry->baseAmount !== null && $entry->percent === null) {
-                        $report->error($entry->isCharge() ? 'BT-101' : 'BT-94');
+                        $report->error($entry->isCharge() ? 'BT-101' : 'BT-94', $path.'.percent');
                     }
                 }
             }),
@@ -356,6 +353,24 @@ final class PeppolRules
     }
 
     /**
+     * The document level allowances and charges by path (PEPPOL-EN16931-R040 … R042).
+     *
+     * @return array<string, DocumentAllowance|DocumentCharge>
+     */
+    private static function allowancesAndCharges(InvoiceData $invoice): array
+    {
+        $entries = [];
+        foreach ($invoice->allowances as $index => $allowance) {
+            $entries["allowances[{$index}]"] = $allowance;
+        }
+        foreach ($invoice->charges as $index => $charge) {
+            $entries["charges[{$index}]"] = $charge;
+        }
+
+        return $entries;
+    }
+
+    /**
      * Both seller and buyer have a German postal address (PEPPOL-EN16931-R002, P0112).
      */
     private static function german(InvoiceData $invoice): bool
@@ -383,6 +398,7 @@ final class PeppolRules
         $buyer = $i->buyer;
         $payment = $i->paymentInstructions;
         $texts = [
+            'businessProcess' => ['BT-23', $i->businessProcess],
             'buyerReference' => ['BT-10', $i->buyerReference],
             'projectReference.id' => ['BT-11', $i->projectReference?->id],
             'contractReference' => ['BT-12', $i->contractReference],

@@ -4,6 +4,12 @@ All notable changes to this project are documented in this file. The format foll
 
 ## [Unreleased]
 
+### Fixed
+
+- The Peppol rules treat the business process (BT-23) as the official rules do: an empty one is reported by `PEPPOL-EN16931-R001` and `-R007`, one of only whitespace by `-R007` and `-R008` instead of `-R001`.
+- `PEPPOL-EN16931-R041` and `PEPPOL-EN16931-R042` report the path of the allowance or charge (`allowances[0].baseAmount`, `charges[0].percent`). Without it, an allowance and a charge with the same error were reported as one finding.
+- CI ran every job on PHP 8.5, so PHP 8.3 and 8.4 were not tested; the jobs now use the PHP version they name, and PHPStan analyses for PHP 8.3 to 8.5.
+
 ## [0.6.0] - 2026-10-19
 
 The legal wording, rules and defaults of the country pack Germany were reviewed against the UStG, the UStDV, the UStAE, the BMF letters of 15 October 2025 and 15 October 2026 and the case law, and confirmed by a tax adviser in October 2026. The changes below follow from that review. Quittio remains software, not tax advice; see the legal review and the disclaimer in the README.

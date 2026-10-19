@@ -2,13 +2,16 @@
 
 declare(strict_types=1);
 
+use Brick\Money\Money;
 use Quittio\Core\Builder\InvoiceBuilder;
 use Quittio\Core\Calculation\En16931Calculator;
 use Quittio\Core\Codes\CodeList;
 use Quittio\Core\Codes\CodeListGenerator;
 use Quittio\Core\Data\Identifier;
+use Quittio\Core\Data\Party\Address;
 use Quittio\Core\Enums\InvoiceTypeCode;
 use Quittio\Core\Enums\MimeType;
+use Quittio\Core\Enums\PaymentMeansCode;
 use Quittio\Core\Enums\UnitCode;
 use Quittio\Core\Enums\VatCategory;
 use Quittio\Core\Profiles\ProfileRegistry;
@@ -98,7 +101,74 @@ function peppolRuleCases(): array
             'PEPPOL-EN16931-P0112',
             fn () => peppolParticipants(Scenarios::make('simple'))->type(InvoiceTypeCode::CorrectedInvoice)->precedingInvoice('RE-2026-0001', '2026-09-01'),
         ],
+        'P0112 partial invoice outside Germany' => [
+            fn () => peppolBuilder()->type(InvoiceTypeCode::PartialInvoice),
+            'PEPPOL-EN16931-P0112',
+            fn () => peppolParticipants(Scenarios::make('simple'))->type(InvoiceTypeCode::PartialInvoice),
+        ],
+        'R001 empty business process' => [
+            fn () => peppolBuilder()->businessProcess(''),
+            'PEPPOL-EN16931-R001',
+            fn () => peppolBuilder()->businessProcess(null),
+        ],
+        'R007 business process of only whitespace' => [
+            fn () => peppolBuilder()->businessProcess(' '),
+            'PEPPOL-EN16931-R007',
+            fn () => peppolBuilder()->businessProcess(null),
+        ],
+        'R002 two notes outside Germany' => [
+            fn () => peppolBuilder()->note('First')->note('Second'),
+            'PEPPOL-EN16931-R002',
+            fn () => peppolParticipants(Scenarios::make('simple'))->note('First')->note('Second'),
+        ],
+        'R003 neither buyer reference nor purchase order reference' => [
+            fn () => peppolBuilder()->buyerReference(null),
+            'PEPPOL-EN16931-R003',
+            fn () => peppolBuilder()->buyerReference(null)->purchaseOrderReference('PO-2'),
+        ],
+        'CL008 electronic address by e-mail' => [
+            fn () => peppolBuilder()->buyer(fn ($b) => $b->electronicAddress('ap@klant.be', 'EM')),
+            'PEPPOL-EN16931-CL008',
+            fn () => peppolBuilder()->buyer(fn ($b) => $b->electronicAddress('0123456749', '0208')),
+        ],
+        'CL007 accounting currency unknown to Peppol' => [
+            fn () => peppolBuilder()->taxCurrency('XCG', '1.1'),
+            'PEPPOL-EN16931-CL007',
+            fn () => peppolBuilder()->taxCurrency('USD', '1.1'),
+        ],
+        'R061 direct debit without mandate reference' => [
+            fn () => peppolBuilder()->payment(PaymentMeansCode::SepaDirectDebit)->directDebit(null, 'DE98ZZZ09999999999', 'DE02120300000000202051'),
+            'PEPPOL-EN16931-R061',
+            fn () => peppolBuilder()->payment(PaymentMeansCode::SepaDirectDebit)->directDebit('M-1', 'DE98ZZZ09999999999', 'DE02120300000000202051'),
+        ],
+        'R121 base quantity of zero' => [
+            fn () => peppolLine(peppolBuilder(), fn ($l) => $l->quantity(1, UnitCode::Piece)->netPrice('10.00', 0)),
+            'PEPPOL-EN16931-R121',
+            fn () => peppolLine(peppolBuilder(), fn ($l) => $l->quantity(1, UnitCode::Piece)->netPrice('10.00', 1)),
+        ],
+        'R130 base quantity unit other than the quantity unit' => [
+            fn () => peppolLine(peppolBuilder(), fn ($l) => $l->quantity(1, UnitCode::Piece)->netPrice('10.00', 1, UnitCode::Hour)),
+            'PEPPOL-EN16931-R130',
+            fn () => peppolLine(peppolBuilder(), fn ($l) => $l->quantity(1, UnitCode::Piece)->netPrice('10.00', 1, UnitCode::Piece)),
+        ],
     ];
+
+    // [document level allowance or charge, amount, percent, base amount]
+    $allowancesAndCharges = [
+        'R040 allowance amount not base × percentage' => ['allowance', '11.00', '1', '1000.00', 'PEPPOL-EN16931-R040', '10.00'],
+        'R040 charge amount not base × percentage' => ['charge', '21.00', '2', '1000.00', 'PEPPOL-EN16931-R040', '20.00'],
+        'R041 allowance percentage without base amount' => ['allowance', '10.00', '1', null, 'PEPPOL-EN16931-R041', null],
+        'R041 charge percentage without base amount' => ['charge', '10.00', '1', null, 'PEPPOL-EN16931-R041', null],
+        'R042 allowance base amount without percentage' => ['allowance', '10.00', null, '1000.00', 'PEPPOL-EN16931-R042', null],
+        'R042 charge base amount without percentage' => ['charge', '10.00', null, '1000.00', 'PEPPOL-EN16931-R042', null],
+    ];
+    foreach ($allowancesAndCharges as $name => [$kind, $amount, $percent, $base, $code, $correct]) {
+        $entry = fn (string $amount, ?string $percent, ?string $base) => fn () => peppolBuilder()->{$kind}(
+            VatCategory::ReverseCharge, '0', amount: $amount, percent: $percent, reason: 'Agreed', reasonCode: $kind === 'charge' ? 'FC' : '95',
+            baseAmount: $base, exemptionReason: 'Reverse charge', exemptionReasonCode: 'VATEX-EU-AE',
+        );
+        $cases[$name] = [$entry($amount, $percent, $base), $code, $correct === null ? $entry($amount, '1', '1000.00') : $entry($correct, $percent, $base)];
+    }
 
     $exemptions = [
         'P0104' => ['VATEX-EU-G', VatCategory::Exempt, VatCategory::Export],
@@ -148,11 +218,308 @@ function peppolRuleCases(): array
 
 it('reports each Peppol rule only in the Peppol profile', function (Closure $violating, string $code, Closure $satisfying) {
     $invoice = $violating()->build();
+    $messages = array_filter(Validate::data($invoice, 'peppol')->messages, fn ($m) => $m->code === $code);
 
     expect(Validate::codes(Validate::data($invoice, 'peppol')))->toContain($code)
+        // Every placeholder of the message is replaced.
+        ->and(array_filter($messages, fn ($m) => preg_match('/:(value|line|field|bt|category)\b/', $m->message) === 1))->toBe([])
         ->and(Validate::codes(Validate::data($invoice)))->not->toContain($code)
         ->and(Validate::codes(Validate::data($satisfying()->build(), 'peppol')))->not->toContain($code);
 })->with(peppolRuleCases());
+
+/**
+ * A Peppol invoice with every field the Peppol rules check; $text maps each optional text value.
+ */
+function peppolComplete(Closure $text): InvoiceBuilder
+{
+    $address = fn (string $country, string $prefix) => new Address(
+        countryCode: $country, line1: $text($prefix.' 1'), postcode: $text('12345'), city: $text($prefix.'stadt'),
+        line2: $text('Hof'), line3: $text('Etage 2'), subdivision: $text('BY'),
+    );
+
+    return peppolBuilder()
+        ->note($text('Thank you for your order.'))
+        ->projectReference($text('PRJ-1'), 'Project')
+        ->contractReference($text('C-1'))
+        ->purchaseOrderReference($text('PO-9'))
+        ->salesOrderReference($text('SO-1'))
+        ->receivingAdviceReference($text('RA-1'))
+        ->despatchAdviceReference($text('DA-1'))
+        ->tenderReference($text('T-1'))
+        ->invoicedObject($text('OBJ-1'), 'AAA')
+        ->buyerAccountingReference($text('ACC-1'))
+        ->invoicingPeriod('2026-09-01', '2026-09-30')
+        ->seller(fn ($s) => $s->tradingName($text('Muster'))->identifier($text('4000001000005'), '0088')->legalRegistration($text('HRB 1'))
+            ->taxNumber($text('12/345/67890'))->additionalLegalInfo($text('Amtsgericht Musterstadt'))
+            ->postalAddress($address('DE', 'Haupt'))->contact($text('Max Muster'), $text('+49 123'), $text('max@muster.de')))
+        ->buyer(fn ($b) => $b->tradingName($text('Klant'))->legalRegistration($text('0123456749'), '0208')
+            ->postalAddress($address('BE', 'Kerk'))->contact($text('Jan Klant'), $text('+32 123'), $text('jan@klant.be')))
+        ->payee('Factoring AG', $text('4000001000005'), $text('0123456749'), '0088', '0208')
+        ->taxRepresentative('Vertreter GmbH', 'DE111111111', $address('DE', 'Vertreter'))
+        ->deliverTo($text('Lager'), $address('DE', 'Lager'), Identifier::of($text('4000001000005'), '0088'))
+        ->allowance(VatCategory::ReverseCharge, '0', amount: '10.00', percent: '1', reason: $text('Discount'), reasonCode: '95', baseAmount: '1000.00', exemptionReason: 'Reverse charge', exemptionReasonCode: 'VATEX-EU-AE')
+        ->charge(VatCategory::ReverseCharge, '0', amount: '20.00', percent: '2', reason: $text('Freight'), reasonCode: 'FC', baseAmount: '1000.00', exemptionReason: 'Reverse charge', exemptionReasonCode: 'VATEX-EU-AE')
+        ->attachment('A-1', null, null, null, $text('Timesheet'), 'https://example.com/timesheet')
+        ->line(fn ($l) => $l->name('Licence')->description($text('Annual licence'))->note($text('Renewal'))->quantity(2, UnitCode::Piece)
+            ->netPrice('45.00', 1, UnitCode::Piece)->listPrice('50.00', '5.00')->period('2026-09-01', '2026-09-30')
+            ->sellerId($text('S-1'))->buyerId($text('B-1'))->standardId($text('4000001000005'))->classification($text('43232408'), 'STI')
+            ->orderLineReference($text('1'))->buyerAccountingReference($text('ACC-2'))->objectId($text('OBJ-2'), 'AAA')
+            ->allowance('1.00', reason: $text('Line discount'), reasonCode: '95')->charge('2.00', reason: $text('Line freight'), reasonCode: 'FC')
+            ->vat(VatCategory::ReverseCharge, '0', 'Reverse charge', 'VATEX-EU-AE'));
+}
+
+it('reports nothing for a Peppol invoice with every field the Peppol rules check', function () {
+    $invoice = peppolComplete(fn (string $value) => $value)
+        ->seller(fn ($s) => $s->identifier('987654325', '0192')->identifier('DK12345678', '0184')->identifier('0123456749', '0208')
+            ->identifier('ABC123', '0201')->identifier('RSSMRA85T10A562S', '0210')->identifier('IT00743110157', '0211')
+            ->identifier('5560360793', '0007')->identifier('51824753556', '0151')->identifier('1234567890', '0096')->identifier('DK12345678', '0198'))
+        ->directDebit('M-1', 'DE98ZZZ09999999999', 'DE02120300000000202051')
+        ->build();
+
+    expect(Validate::codes(Validate::data($invoice, 'peppol')))->toBe([]);
+});
+
+it('reports every optional text of only whitespace with its business term and path', function (Closure $builder, array $expected) {
+    $messages = array_filter(Validate::data($builder()->build(), 'peppol')->messages, fn ($m) => $m->code === 'PEPPOL-EN16931-R008');
+
+    expect(array_values(array_map(fn ($m) => [$m->bt, $m->path], $messages)))->toEqualCanonicalizing($expected)
+        ->and(array_values($messages)[0]->message)->toBe("The value of {$expected[0][1]} ({$expected[0][0]}) contains only whitespace. Peppol does not allow empty elements.");
+})->with([
+    'references, parties, delivery, allowances, attachments and lines' => [
+        fn () => peppolComplete(fn (string $value) => ' '),
+        [
+            ['BT-11', 'projectReference.id'], ['BT-12', 'contractReference'], ['BT-13', 'purchaseOrderReference'], ['BT-14', 'salesOrderReference'],
+            ['BT-15', 'receivingAdviceReference'], ['BT-16', 'despatchAdviceReference'], ['BT-17', 'tenderReference'], ['BT-18', 'invoicedObject.value'],
+            ['BT-19', 'buyerAccountingReference'], ['BT-28', 'seller.tradingName'], ['BT-30', 'seller.legalRegistration.value'], ['BT-32', 'seller.taxNumber'],
+            ['BT-33', 'seller.additionalLegalInfo'], ['BT-35', 'seller.address.line1'], ['BT-36', 'seller.address.line2'], ['BT-162', 'seller.address.line3'],
+            ['BT-37', 'seller.address.city'], ['BT-38', 'seller.address.postcode'], ['BT-39', 'seller.address.subdivision'], ['BT-41', 'seller.contact.name'],
+            ['BT-42', 'seller.contact.phone'], ['BT-43', 'seller.contact.email'], ['BT-45', 'buyer.tradingName'], ['BT-47', 'buyer.legalRegistration.value'],
+            ['BT-50', 'buyer.address.line1'], ['BT-51', 'buyer.address.line2'], ['BT-163', 'buyer.address.line3'], ['BT-52', 'buyer.address.city'],
+            ['BT-53', 'buyer.address.postcode'], ['BT-54', 'buyer.address.subdivision'], ['BT-56', 'buyer.contact.name'], ['BT-57', 'buyer.contact.phone'],
+            ['BT-58', 'buyer.contact.email'], ['BT-60', 'payee.identifier.value'], ['BT-61', 'payee.legalRegistration.value'],
+            ['BT-64', 'sellerTaxRepresentative.address.line1'], ['BT-65', 'sellerTaxRepresentative.address.line2'], ['BT-164', 'sellerTaxRepresentative.address.line3'],
+            ['BT-66', 'sellerTaxRepresentative.address.city'], ['BT-67', 'sellerTaxRepresentative.address.postcode'], ['BT-68', 'sellerTaxRepresentative.address.subdivision'],
+            ['BT-70', 'delivery.recipientName'], ['BT-71', 'delivery.locationId.value'], ['BT-75', 'delivery.address.line1'], ['BT-76', 'delivery.address.line2'],
+            ['BT-165', 'delivery.address.line3'], ['BT-77', 'delivery.address.city'], ['BT-78', 'delivery.address.postcode'], ['BT-79', 'delivery.address.subdivision'],
+            ['BT-22', 'notes[0].content'], ['BT-29', 'seller.identifiers[0].value'], ['BT-97', 'allowances[0].reason'], ['BT-104', 'charges[0].reason'],
+            ['BT-123', 'attachments[0].description'], ['BT-127', 'line 2.note'], ['BT-128', 'line 2.objectId.value'], ['BT-132', 'line 2.orderLineReference'],
+            ['BT-133', 'line 2.buyerAccountingReference'], ['BT-139', 'line 2.allowances[0].reason'], ['BT-144', 'line 2.charges[0].reason'],
+            ['BT-154', 'line 2.item.description'], ['BT-155', 'line 2.item.sellerId'], ['BT-156', 'line 2.item.buyerId'], ['BT-157', 'line 2.item.standardId.value'],
+            ['BT-158', 'line 2.item.classifications[0].code'],
+        ],
+    ],
+    'buyer reference, electronic addresses, credit transfers and external attachment' => [
+        fn () => peppolBuilder()->buyerReference(' ')->purchaseOrderReference('PO-2')
+            ->seller(fn ($s) => $s->electronicAddress(' ', '9930'))
+            ->buyer(fn ($b) => $b->electronicAddress(' ', '0208'))
+            ->payment(PaymentMeansCode::SepaCreditTransfer, iban: 'DE02120300000000202051', accountName: ' ', remittanceInformation: ' ')
+            ->creditTransfer('DE89370400440532013000', ' ', ' ')
+            ->attachment('A-1', null, null, null, 'Timesheet', ' '),
+        [
+            ['BT-10', 'buyerReference'], ['BT-34', 'seller.electronicAddress.value'], ['BT-49', 'buyer.electronicAddress.value'],
+            ['BT-83', 'paymentInstructions.remittanceInformation'], ['BT-85', 'paymentInstructions.creditTransfers[0].accountName'],
+            ['BT-85', 'paymentInstructions.creditTransfers[1].accountName'], ['BT-86', 'paymentInstructions.creditTransfers[1].serviceProviderId'],
+            ['BT-124', 'attachments[0].externalUri'],
+        ],
+    ],
+    'payment card' => [
+        fn () => peppolBuilder()->payment(PaymentMeansCode::BankCard)->paymentCard(' ', ' '),
+        [['BT-87', 'paymentInstructions.card.primaryAccountNumber'], ['BT-88', 'paymentInstructions.card.holderName']],
+    ],
+    'direct debit' => [
+        fn () => peppolBuilder()->payment(PaymentMeansCode::SepaDirectDebit)->directDebit(' ', ' '),
+        [['BT-89', 'paymentInstructions.directDebit.mandateReference'], ['BT-90', 'paymentInstructions.directDebit.creditorId']],
+    ],
+]);
+
+// Values computed independently from the published algorithms, with digits in every position; an
+// invalid value changes the check digit.
+it('checks the check digits of the identifier schemes', function (string $scheme, string $code, array $valid, array $invalid) {
+    $codes = fn (string $value) => Validate::codes(Validate::data(peppolBuilder()->seller(fn ($s) => $s->identifier($value, $scheme))->build(), 'peppol'));
+
+    foreach ($valid as $value) {
+        expect($codes($value))->not->toContain($code);
+    }
+    foreach ($invalid as $value) {
+        expect($codes($value))->toContain($code);
+    }
+})->with([
+    'GLN' => ['0088', 'PEPPOL-COMMON-R040', ['6371292619411', '2772429712410', '7141935739252'], ['6371292619412', '2772429712419', '7141935739253']],
+    'Norwegian organisation number' => ['0192', 'PEPPOL-COMMON-R041', ['932462923', '148976880', '654342598'], ['932462924', '148976881', '654342597', '000000000']],
+    'Belgian enterprise number' => ['0208', 'PEPPOL-COMMON-R043', ['0868522954', '0736387178', '0296668857'], ['0868522955', '0736387177']],
+    'Swedish organisation number' => ['0007', 'PEPPOL-COMMON-R049', ['2258215850', '7618632819', '4534778230'], ['2258215851', '7618632818', '4534778239']],
+    'Australian Business Number' => ['0151', 'PEPPOL-COMMON-R050', ['16044319829', '31023281556', '14281152896'], ['16044319828', '31023281557']],
+    'partita IVA' => ['0211', 'PEPPOL-COMMON-R047', ['IT34377662480', 'IT92257843588', 'it74348296414'], ['IT34377662481', 'IT92257843587', 'IT1234567890']],
+    'Danish ERSTORG number' => ['0198', 'PEPPOL-COMMON-R053', ['DK12345678'], ['XX12345678', 'DK1234567']],
+]);
+
+it('reports the format warnings of the Italian and Danish identifiers as warnings', function (InvoiceBuilder $builder, string $code) {
+    $messages = array_filter(Validate::data($builder->build(), 'peppol')->messages, fn ($m) => $m->code === $code);
+
+    expect(array_values(array_unique(array_map(fn ($m) => $m->severity, $messages), SORT_REGULAR)))->toBe([Severity::Warning]);
+})->with([
+    'R045' => [fn () => peppolBuilder()->seller(fn ($s) => $s->identifier('RSSMRA85T10A56', '0210')), 'PEPPOL-COMMON-R045'],
+    'R046' => [fn () => peppolBuilder()->seller(fn ($s) => $s->electronicAddress('RSSMRA85T10A56', '9907')), 'PEPPOL-COMMON-R046'],
+    'R047' => [fn () => peppolBuilder()->seller(fn ($s) => $s->identifier('IT00743110158', '0211')), 'PEPPOL-COMMON-R047'],
+    'R053' => [fn () => peppolBuilder()->seller(fn ($s) => $s->identifier('12345678', '0198')), 'PEPPOL-COMMON-R053'],
+]);
+
+it('checks the Italian tax code of scheme 9907 in the seller electronic address but not in a legal registration', function () {
+    $endpoint = peppolBuilder()->seller(fn ($s) => $s->electronicAddress('RSSMRA85T10A56', '9907'))->build();
+    $registration = peppolBuilder()->buyer(fn ($b) => $b->legalRegistration('RSSMRA85T10A56', '9907'))->build();
+
+    expect(Validate::codes(Validate::data($endpoint, 'peppol')))->toContain('PEPPOL-COMMON-R046')
+        ->and(Validate::codes(Validate::data($registration, 'peppol')))->not->toContain('PEPPOL-COMMON-R046');
+});
+
+it('states the value of the business process that has the wrong format', function () {
+    $messages = array_filter(Validate::data(peppolBuilder()->businessProcess('urn:fdc:peppol.eu:2017:poacc:billing:1:1.0')->build(), 'peppol')->messages, fn ($m) => $m->code === 'PEPPOL-EN16931-R007');
+
+    expect(array_values(array_map(fn ($m) => [$m->bt, $m->path, $m->message], $messages)))->toBe([[
+        'BT-23', 'businessProcess', 'The business process (BT-23) "urn:fdc:peppol.eu:2017:poacc:billing:1:1.0" must be in the format urn:fdc:peppol.eu:2017:poacc:billing:NN:1.0, where NN is the process number.',
+    ]]);
+});
+
+it('recognises German organisations by their country code as the Schematron compares it', function () {
+    $invoice = peppolParticipants(Scenarios::make('simple'))->type(InvoiceTypeCode::CorrectedInvoice)->precedingInvoice('RE-2026-0001', '2026-09-01')->build();
+    $invoice = $invoice->with([
+        'seller' => $invoice->seller->with(['address' => $invoice->seller->address->with(['countryCode' => ' de'])]),
+        'buyer' => $invoice->buyer->with(['address' => $invoice->buyer->address->with(['countryCode' => "de\t"])]),
+    ]);
+
+    expect(Validate::codes(Validate::data($invoice, 'peppol', calculate: false)))->not->toContain('PEPPOL-EN16931-P0112');
+});
+
+it('checks an invoice without payment instructions and delivery', function () {
+    $invoice = peppolBuilder()->build();
+    $invoice = $invoice->with(['paymentInstructions' => null, 'delivery' => null]);
+    $directDebit = peppolBuilder()->payment(PaymentMeansCode::SepaDirectDebit)->build();
+
+    expect(array_filter(Validate::codes(Validate::data($invoice, 'peppol')), fn (string $code) => str_starts_with($code, 'PEPPOL')))->toBe([])
+        ->and(Validate::codes(Validate::data($directDebit, 'peppol')))->toContain('PEPPOL-EN16931-R061');
+});
+
+it('reports no operational sign of a VAT total without accounting currency', function () {
+    $invoice = peppolParticipants(Scenarios::make('simple'))->build();
+
+    expect((string) $invoice->totals?->vatTotal?->getAmount())->not->toBe('0.00')
+        ->and(Validate::codes(Validate::data($invoice, 'peppol')))->not->toContain('PEPPOL-EN16931-R055');
+});
+
+it('checks every allowance and charge amount against its base amount', function () {
+    $allowance = fn (string $amount, ?string $percent, ?string $base) => [VatCategory::ReverseCharge, '0', $amount, $percent, 'Agreed', '95', $base, 'Reverse charge', 'VATEX-EU-AE'];
+    // The amount is rounded to two decimals: 1 % of 1000.55 is 10.01.
+    $rounded = peppolBuilder()->allowance(...$allowance('10.01', '1', '1000.55'))->build();
+    $second = peppolBuilder()->allowance(...$allowance('5.00', null, null))->allowance(...$allowance('11.00', '1', '1000.00'))->build();
+
+    expect(Validate::codes(Validate::data($rounded, 'peppol')))->not->toContain('PEPPOL-EN16931-R040')
+        ->and(array_values(array_map(fn ($m) => $m->path, array_filter(Validate::data($second, 'peppol')->messages, fn ($m) => $m->code === 'PEPPOL-EN16931-R040'))))->toBe(['allowances[1].amount']);
+});
+
+it('checks the net amount of every line after a line without one', function () {
+    $invoice = peppolLine(peppolBuilder(), fn ($l) => $l->netPrice('10.00'))->build();
+    $invoice = $invoice->with(['lines' => [$invoice->lines[0]->with(['netAmount' => null]), $invoice->lines[1]->with(['netAmount' => Money::of('10.05', 'EUR')])]]);
+    $messages = array_filter(Validate::data($invoice, 'peppol', calculate: false)->messages, fn ($m) => $m->code === 'PEPPOL-EN16931-R120');
+
+    expect(array_values(array_map(fn ($m) => $m->path, $messages)))->toBe(["line {$invoice->lines[1]->id}.netAmount"]);
+});
+
+it('reports no empty text as whitespace', function () {
+    $invoice = peppolBuilder()->build()->with(['contractReference' => '']);
+
+    expect(Validate::codes(Validate::data($invoice, 'peppol')))->not->toContain('PEPPOL-EN16931-R008');
+});
+
+it('reports the business term and the path of each finding', function (Closure $builder, string $code, array $expected) {
+    $messages = array_filter(Validate::data($builder()->build(), 'peppol')->messages, fn ($m) => $m->code === $code);
+
+    expect(array_values(array_map(fn ($m) => [$m->severity, $m->bt, $m->path], $messages)))->toBe($expected);
+})->with([
+    'R005' => [fn () => peppolBuilder()->taxCurrency('EUR'), 'PEPPOL-EN16931-R005', [[Severity::Warning, 'BT-6', 'taxCurrency']]],
+    'CL008' => [
+        fn () => peppolBuilder()->seller(fn ($s) => $s->electronicAddress('rechnung@muster.de', 'EM'))->buyer(fn ($b) => $b->electronicAddress('ap@klant.be', 'EM')),
+        'PEPPOL-EN16931-CL008',
+        [[Severity::Error, 'BT-34-1', 'seller.electronicAddress.scheme'], [Severity::Error, 'BT-49-1', 'buyer.electronicAddress.scheme']],
+    ],
+    'R040 allowance and charge' => [
+        fn () => peppolBuilder()
+            ->allowance(VatCategory::ReverseCharge, '0', amount: '11.00', percent: '1', reason: 'Discount', reasonCode: '95', baseAmount: '1000.00', exemptionReason: 'Reverse charge', exemptionReasonCode: 'VATEX-EU-AE')
+            ->charge(VatCategory::ReverseCharge, '0', amount: '21.00', percent: '2', reason: 'Freight', reasonCode: 'FC', baseAmount: '1000.00', exemptionReason: 'Reverse charge', exemptionReasonCode: 'VATEX-EU-AE'),
+        'PEPPOL-EN16931-R040',
+        [[Severity::Error, 'BT-92', 'allowances[0].amount'], [Severity::Error, 'BT-99', 'charges[0].amount']],
+    ],
+    'R041 allowance and charge' => [
+        fn () => peppolBuilder()
+            ->allowance(VatCategory::ReverseCharge, '0', amount: '10.00', percent: '1', reason: 'Discount', reasonCode: '95', exemptionReason: 'Reverse charge', exemptionReasonCode: 'VATEX-EU-AE')
+            ->charge(VatCategory::ReverseCharge, '0', amount: '10.00', percent: '1', reason: 'Freight', reasonCode: 'FC', exemptionReason: 'Reverse charge', exemptionReasonCode: 'VATEX-EU-AE'),
+        'PEPPOL-EN16931-R041',
+        [[Severity::Error, 'BT-93', 'allowances[0].baseAmount'], [Severity::Error, 'BT-100', 'charges[0].baseAmount']],
+    ],
+    'R042 allowance and charge' => [
+        fn () => peppolBuilder()
+            ->allowance(VatCategory::ReverseCharge, '0', amount: '10.00', reason: 'Discount', reasonCode: '95', baseAmount: '1000.00', exemptionReason: 'Reverse charge', exemptionReasonCode: 'VATEX-EU-AE')
+            ->charge(VatCategory::ReverseCharge, '0', amount: '10.00', reason: 'Freight', reasonCode: 'FC', baseAmount: '1000.00', exemptionReason: 'Reverse charge', exemptionReasonCode: 'VATEX-EU-AE'),
+        'PEPPOL-EN16931-R042',
+        [[Severity::Error, 'BT-94', 'allowances[0].percent'], [Severity::Error, 'BT-101', 'charges[0].percent']],
+    ],
+    'R061' => [fn () => peppolBuilder()->payment(PaymentMeansCode::SepaDirectDebit)->directDebit(null, 'DE98ZZZ09999999999'), 'PEPPOL-EN16931-R061', [[Severity::Error, 'BT-89', 'paymentInstructions.directDebit.mandateReference']]],
+    'R121' => [fn () => peppolLine(peppolBuilder(), fn ($l) => $l->netPrice('10.00', -1)), 'PEPPOL-EN16931-R121', [[Severity::Error, 'BT-149', 'line 2.price.baseQuantity']]],
+    'R130' => [fn () => peppolLine(peppolBuilder(), fn ($l) => $l->netPrice('10.00', 1, UnitCode::Day)), 'PEPPOL-EN16931-R130', [[Severity::Error, 'BT-150', 'line 2.price.baseQuantityUnit']]],
+    'CL007' => [fn () => peppolBuilder()->taxCurrency('XCG', '1.1'), 'PEPPOL-EN16931-CL007', [[Severity::Error, 'BT-6', 'taxCurrency']]],
+    'P0112' => [fn () => peppolBuilder()->type(InvoiceTypeCode::PartialInvoice), 'PEPPOL-EN16931-P0112', [[Severity::Error, 'BT-3', 'typeCode']]],
+    'R002' => [fn () => peppolBuilder()->note('First')->note('Second'), 'PEPPOL-EN16931-R002', [[Severity::Error, 'BG-1', 'notes']]],
+    'R003' => [fn () => peppolBuilder()->buyerReference(null), 'PEPPOL-EN16931-R003', [[Severity::Error, 'BT-10', 'buyerReference']]],
+]);
+
+it('requires the electronic addresses of seller and buyer', function () {
+    $invoice = peppolBuilder()->build();
+    $invoice = $invoice->with([
+        'seller' => $invoice->seller->with(['electronicAddress' => null]),
+        'buyer' => $invoice->buyer->with(['electronicAddress' => null]),
+    ]);
+    $messages = array_filter(Validate::data($invoice, 'peppol')->messages, fn ($m) => in_array($m->code, ['PEPPOL-EN16931-R010', 'PEPPOL-EN16931-R020'], true));
+
+    expect(array_values(array_map(fn ($m) => [$m->code, $m->bt, $m->path], $messages)))->toBe([
+        ['PEPPOL-EN16931-R010', 'BT-49', 'buyer.electronicAddress'],
+        ['PEPPOL-EN16931-R020', 'BT-34', 'seller.electronicAddress'],
+    ])
+        // Without an electronic address there is no scheme to check.
+        ->and(Validate::codes(Validate::data($invoice, 'peppol')))->not->toContain('PEPPOL-EN16931-CL008')
+        ->and(Validate::codes(Validate::data(peppolBuilder()->build(), 'peppol')))->not->toContain('PEPPOL-EN16931-R010', 'PEPPOL-EN16931-R020');
+});
+
+it('accepts a line net amount within 0.02 of the exact amount', function (string $netAmount, bool $reported) {
+    $invoice = peppolBuilder()->build();
+    $line = $invoice->lines[0];
+    $invoice = $invoice->with(['lines' => [$line->with(['netAmount' => Money::of($netAmount, 'EUR')])]]);
+    $messages = array_filter(Validate::data($invoice, 'peppol', calculate: false)->messages, fn ($m) => $m->code === 'PEPPOL-EN16931-R120');
+
+    expect(array_values(array_map(fn ($m) => [$m->bt, $m->path], $messages)))->toBe($reported ? [['BT-131', "line {$line->id}.netAmount"]] : []);
+})->with([
+    'exact' => ['1000.00', false],
+    '0.02 above' => ['1000.02', false],
+    '0.02 below' => ['999.98', false],
+    '0.03 above' => ['1000.03', true],
+    '0.03 below' => ['999.97', true],
+]);
+
+it('checks the format of every date the UBL writer writes', function () {
+    $date = Date::of(10000, 1, 1);
+    $invoice = peppolBuilder()->issueDate($date)->taxPointDate($date)->dueDate($date)->deliveryDate($date)->invoicingPeriod($date, $date)
+        ->precedingInvoice('RE-2026-0001', $date)
+        ->line(fn ($l) => $l->name('Support')->quantity(1, UnitCode::Hour)->netPrice('10.00')->period($date, $date)->vat(VatCategory::ReverseCharge, '0', 'Reverse charge', 'VATEX-EU-AE'))
+        ->build();
+    $creditNote = peppolBuilder()->type(InvoiceTypeCode::CreditNote)->precedingInvoice('RE-2026-0001', '2026-09-01')->dueDate($date)->build();
+    $messages = array_filter(Validate::data($invoice, 'peppol')->messages, fn ($m) => $m->code === 'PEPPOL-EN16931-F001');
+
+    expect(array_values(array_map(fn ($m) => [$m->bt, $m->path], $messages)))->toEqualCanonicalizing([
+        ['BT-2', 'issueDate'], ['BT-7', 'taxPointDate'], ['BT-9', 'dueDate'], ['BT-72', 'delivery.actualDeliveryDate'],
+        ['BT-73', 'invoicingPeriod.start'], ['BT-74', 'invoicingPeriod.end'], ['BT-26', 'precedingInvoices[0].issueDate'],
+        ['BT-134', 'line 2.period.start'], ['BT-135', 'line 2.period.end'],
+    ])->and(array_values($messages)[0]->message)->toContain('10000-01-01')
+        // A credit note carries the due date as cbc:PaymentDueDate, which the rule does not check.
+        ->and(Validate::codes(Validate::data($creditNote, 'peppol')))->not->toContain('PEPPOL-EN16931-F001');
+});
 
 it('reports the Peppol rules with the severity of the Schematron', function () {
     $severity = fn (InvoiceBuilder $builder, string $code) => array_values(array_unique(array_map(
@@ -355,3 +722,7 @@ it('agrees with the official Peppol rules on every violation and its correction'
 
     expect($official)->toBe($expected);
 })->group('official')->skip(fn () => ! Official::available() || ! is_file(Official::root().'/peppol/PEPPOL-EN16931-UBL.xsl'), 'KoSIT validator or Peppol artifacts are not available (run tools/schemas/download.sh).');
+
+it('warns about an accounting currency only when it equals the invoice currency', function () {
+    expect(Validate::codes(Validate::data(peppolBuilder()->taxCurrency('USD', '1.1')->build(), 'peppol')))->not->toContain('PEPPOL-EN16931-R005');
+});
