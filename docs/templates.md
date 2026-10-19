@@ -291,7 +291,7 @@ The locale (language) of a run is the first of:
 
 A regional locale such as `de_CH` or `de-AT` takes the texts of its language (`de`) where it has none of its own, and English after that; numbers and dates follow the regional locale (with `intl`).
 
-Labels and code names (units, VAT categories, payment means, type codes …) exist in German, English and French; other locales fall back to English. The XML texts generated for the run (e.g. payment terms) use the same locale.
+Labels and code names (units, VAT categories, payment means, type codes …) exist in German, English, French and Dutch; other locales fall back to English. The XML texts generated for the run (e.g. payment terms) use the same locale.
 
 | Source | Where |
 |---|---|

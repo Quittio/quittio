@@ -67,7 +67,7 @@ it('has a label for every enum case in every shipped language', function () {
             continue;
         }
         foreach ($class::cases() as $case) {
-            foreach (['de', 'en', 'fr'] as $locale) {
+            foreach (['de', 'en', 'fr', 'nl'] as $locale) {
                 $key = 'quittio::codes.'.$class::labelGroup().'.'.$case->value;
                 expect(Quittio\Core\I18n\Translations::translator()->has($key, $locale))
                     ->toBeTrue("Missing {$locale} label for {$class}::{$case->name}");

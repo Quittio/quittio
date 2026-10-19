@@ -11,6 +11,7 @@ All notable changes to this project are documented in this file. The format foll
 - Liberation Sans (SIL Open Font License) is bundled as font family `liberationsans`, for the payment slip.
 - `QrImage::svg()`, `png()` and `dataUri()` take `border: false` for a code without quiet zone.
 - A regional locale such as `de_CH` takes the texts of its language (`de`) where it has none of its own, before English, in the core translator and the Laravel translator bridge; numbers and dates keep the regional format.
+- Dutch labels, code names and payment terms texts (`nl`), e.g. for invoices from Flanders.
 
 ### Fixed
 

@@ -548,7 +548,7 @@ Quittio::make($invoice)->template('mytheme::invoice')->render();
 
 ## Translations
 
-Invoices are printed in the language of the invoice, with Quittio's labels ("Rechnung", "Invoice" …). Labels, rule messages, code names and terms come from the core's language files `labels.php`, `rules.php`, `codes.php` and `terms.php`. They exist in German, English and French; French has no rule messages. They are in the translation namespace `quittio`.
+Invoices are printed in the language of the invoice, with Quittio's labels ("Rechnung", "Invoice" …). Labels, rule messages, code names and terms come from the core's language files `labels.php`, `rules.php`, `codes.php` and `terms.php`. They exist in German, English, French and Dutch; French and Dutch have no rule messages. They are in the translation namespace `quittio`.
 
 The core translates through Laravel's translator, so the usual overrides work:
 
