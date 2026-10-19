@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Quittio\Laravel\Support;
 
 use Illuminate\Translation\Translator as IlluminateTranslator;
+use Quittio\Core\I18n\ArrayTranslator;
 use Quittio\Core\I18n\Translator;
 
 /**
@@ -21,6 +22,11 @@ final class LaravelTranslator implements Translator
 
     public function get(string $key, array $replace = [], ?string $locale = null): string
     {
+        // A regional locale ("de_CH") takes the text of its language before the fallback locale.
+        $language = ArrayTranslator::language($locale ?? $this->translator->getLocale());
+        if ($locale !== null && $language !== $locale && ! $this->translator->has($key, $locale, false) && $this->translator->has($key, $language, false)) {
+            $locale = $language;
+        }
         $value = $this->translator->get($key, $replace, $locale);
 
         return is_string($value) ? $value : $key;

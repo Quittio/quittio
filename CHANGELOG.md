@@ -6,7 +6,11 @@ All notable changes to this project are documented in this file. The format foll
 
 ### Added
 
-- `DunningLaw::$b2cFixedRate`: a fixed default interest rate for consumers instead of the reference rate plus points (e.g. 4 % in Austria, section 1000 (1) ABGB). `DefaultInterest` charges it for the whole time.
+- `DunningLaw::$b2cFixedRate` and `$b2bFixedRate`: fixed default interest rates for consumers and businesses instead of the reference rate plus points (e.g. 4 % for consumers in Austria, section 1000 (1) ABGB; 5 % in Switzerland, Art. 104 OR). `DefaultInterest` charges them for the whole time; `DefaultInterest::forCountry()` accepts a pack without reference rates when both rates are fixed (`DunningLaw::hasFixedRates()`).
+- Payment slips: a payment QR code generator that implements `Pdf\Qr\ProvidesPaymentSlip` returns a `PaymentSlip`, which the default templates (plain PHP and Blade, partial `payment-slip`) print after the payment part of the Swiss QR bill: receipt and payment part at the bottom of a page of its own, the code at 46 × 46 mm without quiet zone. The view model has it as `payment.qrCode.slip`.
+- Liberation Sans (SIL Open Font License) is bundled as font family `liberationsans`, for the payment slip.
+- `QrImage::svg()`, `png()` and `dataUri()` take `border: false` for a code without quiet zone.
+- A regional locale such as `de_CH` takes the texts of its language (`de`) where it has none of its own, before English, in the core translator and the Laravel translator bridge; numbers and dates keep the regional format.
 
 ### Fixed
 

@@ -753,6 +753,7 @@
         "properties": [
             "public readonly ?int $consumerDefaultAfterDays",
             "public readonly ?int $dayCount",
+            "public readonly ?string $b2bFixedRate",
             "public readonly ?string $b2bFlatRate",
             "public readonly ?string $b2cFixedRate",
             "public readonly ?string $referenceRateName",
@@ -760,7 +761,8 @@
             "public readonly string $b2cInterestPoints"
         ],
         "methods": [
-            "public __construct(string $b2bInterestPoints = \"8.00\", string $b2cInterestPoints = \"0.00\", ?string $b2bFlatRate = \"40.00\", ?int $dayCount = 365, ?int $consumerDefaultAfterDays = null, ?string $referenceRateName = null, ?string $b2cFixedRate = null)"
+            "public __construct(string $b2bInterestPoints = \"8.00\", string $b2cInterestPoints = \"0.00\", ?string $b2bFlatRate = \"40.00\", ?int $dayCount = 365, ?int $consumerDefaultAfterDays = null, ?string $referenceRateName = null, ?string $b2cFixedRate = null, ?string $b2bFixedRate = null)",
+            "public hasFixedRates(): bool"
         ]
     },
     "Quittio\\Core\\Countries\\Exporter": {
@@ -1970,7 +1972,7 @@
     "Quittio\\Core\\Dunning\\DefaultInterest": {
         "kind": "final readonly class",
         "methods": [
-            "public __construct(Quittio\\Core\\Dunning\\ReferenceRates $rates, Quittio\\Core\\Countries\\DunningLaw $law, ?Closure $describe = null)",
+            "public __construct(?Quittio\\Core\\Dunning\\ReferenceRates $rates, Quittio\\Core\\Countries\\DunningLaw $law, ?Closure $describe = null)",
             "public calculate(Brick\\Money\\Money $amount, Quittio\\Core\\Support\\Date $from, Quittio\\Core\\Support\\Date $until, bool $consumer = false, string $locale = \"en\"): array",
             "public flatRate(string $currency = \"EUR\"): ?Brick\\Money\\Money",
             "public static forCountry(Quittio\\Core\\Countries\\CountryPack $pack): Quittio\\Core\\Dunning\\DefaultInterest"
@@ -2671,7 +2673,8 @@
             "public get(string $key, array $replace = [], ?string $locale = null): string",
             "public has(string $key, ?string $locale = null): bool",
             "public locale(): string",
-            "public setLocale(string $locale): Quittio\\Core\\I18n\\ArrayTranslator"
+            "public setLocale(string $locale): Quittio\\Core\\I18n\\ArrayTranslator",
+            "public static language(string $locale): string"
         ]
     },
     "Quittio\\Core\\I18n\\Translations": {
@@ -2945,12 +2948,44 @@
             "abstract public supports(Quittio\\Core\\Data\\InvoiceData $invoice): bool"
         ]
     },
+    "Quittio\\Core\\Pdf\\Qr\\PaymentSlip": {
+        "kind": "final readonly class",
+        "properties": [
+            "public readonly ?string $amount",
+            "public readonly ?string $mark",
+            "public readonly array $receiptSections",
+            "public readonly array $sections",
+            "public readonly string $acceptancePoint",
+            "public readonly string $amountHeading",
+            "public readonly string $currency",
+            "public readonly string $currencyHeading",
+            "public readonly string $receiptTitle",
+            "public readonly string $separationNote",
+            "public readonly string $title"
+        ],
+        "methods": [
+            "public __construct(string $title, string $receiptTitle, array $sections, array $receiptSections, string $currencyHeading, string $amountHeading, string $currency, ?string $amount, string $acceptancePoint, string $separationNote, ?string $mark = null)",
+            "public toArray(): array"
+        ]
+    },
+    "Quittio\\Core\\Pdf\\Qr\\ProvidesPaymentSlip": {
+        "kind": "interface",
+        "implements": [
+            "Quittio\\Core\\Pdf\\Qr\\PaymentQrGenerator"
+        ],
+        "methods": [
+            "abstract public key(): string",
+            "abstract public payload(Quittio\\Core\\Data\\InvoiceData $invoice, array $options = []): ?string",
+            "abstract public slip(Quittio\\Core\\Data\\InvoiceData $invoice, string $payload, string $locale): ?Quittio\\Core\\Pdf\\Qr\\PaymentSlip",
+            "abstract public supports(Quittio\\Core\\Data\\InvoiceData $invoice): bool"
+        ]
+    },
     "Quittio\\Core\\Pdf\\Qr\\QrImage": {
         "kind": "final class",
         "methods": [
-            "public static dataUri(string $payload, int $size = 400, string $errorCorrection = \"M\"): string",
-            "public static png(string $payload, int $size = 400, string $errorCorrection = \"M\"): string",
-            "public static svg(string $payload, int $size = 200, string $errorCorrection = \"M\"): string"
+            "public static dataUri(string $payload, int $size = 400, string $errorCorrection = \"M\", bool $border = true): string",
+            "public static png(string $payload, int $size = 400, string $errorCorrection = \"M\", bool $border = true): string",
+            "public static svg(string $payload, int $size = 200, string $errorCorrection = \"M\", bool $border = true): string"
         ]
     },
     "Quittio\\Core\\Pdf\\RemoteImageFetcher": {
@@ -5141,6 +5176,56 @@
         ]
     },
     "Quittio\\Core\\View\\Model\\PayeeView": {
+        "kind": "final class",
+        "extends": "Quittio\\Core\\View\\ViewNode",
+        "implements": [
+            "ArrayAccess",
+            "Countable",
+            "IteratorAggregate",
+            "JsonSerializable",
+            "Traversable"
+        ],
+        "methods": [
+            "public __construct(array $data, Quittio\\Core\\View\\AccessLog $log, string $path = \"\")",
+            "public __get(string $name): mixed",
+            "public __isset(string $name): bool",
+            "public count(): int",
+            "public getIterator(): Traversable",
+            "public isEmpty(): bool",
+            "public jsonSerialize(): mixed",
+            "public offsetExists(mixed $offset): bool",
+            "public offsetGet(mixed $offset): mixed",
+            "public offsetSet(mixed $offset, mixed $value): void",
+            "public offsetUnset(mixed $offset): void",
+            "public toArray(): array"
+        ]
+    },
+    "Quittio\\Core\\View\\Model\\PaymentSlipSectionView": {
+        "kind": "final class",
+        "extends": "Quittio\\Core\\View\\ViewNode",
+        "implements": [
+            "ArrayAccess",
+            "Countable",
+            "IteratorAggregate",
+            "JsonSerializable",
+            "Traversable"
+        ],
+        "methods": [
+            "public __construct(array $data, Quittio\\Core\\View\\AccessLog $log, string $path = \"\")",
+            "public __get(string $name): mixed",
+            "public __isset(string $name): bool",
+            "public count(): int",
+            "public getIterator(): Traversable",
+            "public isEmpty(): bool",
+            "public jsonSerialize(): mixed",
+            "public offsetExists(mixed $offset): bool",
+            "public offsetGet(mixed $offset): mixed",
+            "public offsetSet(mixed $offset, mixed $value): void",
+            "public offsetUnset(mixed $offset): void",
+            "public toArray(): array"
+        ]
+    },
+    "Quittio\\Core\\View\\Model\\PaymentSlipView": {
         "kind": "final class",
         "extends": "Quittio\\Core\\View\\ViewNode",
         "implements": [

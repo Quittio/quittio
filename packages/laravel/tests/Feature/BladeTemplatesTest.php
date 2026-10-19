@@ -2,8 +2,11 @@
 
 declare(strict_types=1);
 
+use Quittio\Core\Data\InvoiceData;
 use Quittio\Core\Enums\PaymentMeansCode;
 use Quittio\Core\Enums\UnitCode;
+use Quittio\Core\Pdf\Qr\PaymentSlip;
+use Quittio\Core\Pdf\Qr\ProvidesPaymentSlip;
 use Quittio\Core\Testing\Scenarios;
 use Quittio\Country\DE\Tax\VatPreset;
 use Quittio\Laravel\Facades\Quittio;
@@ -73,4 +76,36 @@ it('shows the refund of a negative invoice as a positive amount in the Blade tem
     expect(preg_match('#<tr class="grand"><td class="grand-label">([^<]*)</td><td class="right amount">([^<]*)</td>#u', $html, $due))->toBe(1)
         ->and($due[1])->toBe('Erstattungsbetrag')
         ->and($due[2])->toContain('2.747,71')->not->toContain('-')->not->toContain('−');
+});
+
+it('prints the payment slip of a generator that provides one in the Blade template', function () {
+    Quittio::core()->setPaymentQrGenerator(new class implements ProvidesPaymentSlip
+    {
+        public function key(): string
+        {
+            return 'swiss-qr-bill';
+        }
+
+        public function supports(InvoiceData $invoice): bool
+        {
+            return true;
+        }
+
+        public function payload(InvoiceData $invoice, array $options = []): ?string
+        {
+            return "SPC\n0200\n1";
+        }
+
+        public function slip(InvoiceData $invoice, string $payload, string $locale): PaymentSlip
+        {
+            return new PaymentSlip('Payment part', 'Receipt', [['heading' => 'Account / Payable to', 'lines' => ['CH44 3199 9123 0008 8901 2']]], [], 'Currency', 'Amount', 'CHF', '1 590.00', 'Acceptance point', 'Separate before paying in');
+        }
+    });
+    $html = (string) Quittio::make(Scenarios::simple()->build())->format('html')->validate(false)->render()->html();
+    Quittio::flush();
+
+    expect($html)->toContain('<pagebreak page-selector="slip" />')
+        ->and($html)->toContain('CH44 3199 9123 0008 8901 2')
+        ->and($html)->toContain('1 590.00')
+        ->and($html)->not->toContain('class="qr"');
 });

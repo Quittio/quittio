@@ -18,5 +18,6 @@ use Quittio\Core\View\ViewNode;
  * @property-read string $dataUri Image as data URI
  * @property-read ?FormattedValue $amount Amount in the code
  * @property-read ?string $note Note on the amount, e.g. the validity of a discounted amount
+ * @property-read ?PaymentSlipView $slip Payment slip of the code (ProvidesPaymentSlip), e.g. of the Swiss QR bill
  */
 final class QrCodeView extends ViewNode {}

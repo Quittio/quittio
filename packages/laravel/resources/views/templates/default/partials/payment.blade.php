@@ -4,6 +4,8 @@
 @php($debit = $invoice->payment && $invoice->payment->directDebit && ! $invoice->payment->isRefund && ! $invoice->payment->isPayout)
 @php($terms = $invoice->paymentTerms || $debit)
 @php($qr = $invoice->payment ? $invoice->payment->qrCode : null)
+{{-- A code with a payment slip (Swiss QR bill) is printed on the slip at the end (partial payment-slip), not next to the bank details. --}}
+@php($qr = $qr && $qr->slip ? null : $qr)
 @if ($terms || $accounts)
 <div class="section">
     {{-- Headings in a row of their own: mPDF ignores the padding of blocks inside table cells. --}}

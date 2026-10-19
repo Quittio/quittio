@@ -59,6 +59,7 @@
 @include($partials.'.notes')
 @include($partials.'.attachments')
 @include($partials.'.closing')
+@include($partials.'.payment-slip')
 
 </body>
 </html>

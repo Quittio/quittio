@@ -68,23 +68,29 @@ final readonly class RunScope
     private static function loadLabels(ViewContext $context, string $locale): array
     {
         $translator = $context->translator();
-        $labels = [];
-        foreach (InvoiceTitle::keys() as $key) {
-            $labels[$key] = $translator->get('quittio::labels.'.$key, [], $locale);
-        }
+        // A regional locale such as "de_CH" takes the labels of its language where it has none of its own.
+        $language = strtolower(explode('_', str_replace('-', '_', $locale))[0]);
+        $label = static function (string $id) use ($translator, $locale, $language): ?string {
+            foreach (array_unique([$locale, $language]) as $candidate) {
+                if ($translator->has($id, $candidate)) {
+                    return $translator->get($id, [], $candidate);
+                }
+            }
+
+            return null;
+        };
 
         $file = dirname(__DIR__, 3).'/resources/lang/en/labels.php';
-        $keys = is_file($file) ? array_keys((array) require $file) : [];
+        $keys = [...InvoiceTitle::keys(), ...(is_file($file) ? array_map(strval(...), array_keys((array) require $file)) : [])];
+        $labels = [];
         foreach ($keys as $key) {
-            $labels[(string) $key] = $translator->get('quittio::labels.'.$key, [], $locale);
+            $labels[$key] = $label('quittio::labels.'.$key) ?? $translator->get('quittio::labels.'.$key, [], $locale);
         }
 
         if ($context->country !== null) {
             $namespace = 'quittio-'.strtolower($context->country->code());
             foreach (array_keys($labels) as $key) {
-                if ($translator->has($namespace.'::labels.'.$key, $locale)) {
-                    $labels[$key] = $translator->get($namespace.'::labels.'.$key, [], $locale);
-                }
+                $labels[$key] = $label($namespace.'::labels.'.$key) ?? $labels[$key];
             }
         }
 

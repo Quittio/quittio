@@ -220,12 +220,12 @@ it('publishes the fonts so that the renderer finds them', function () {
     config()->set('quittio.pdf.fonts', ['publishedtest' => ['R' => 'PublishedTest-Regular.ttf', 'B' => 'PublishedTest-Bold.ttf']]);
     config()->set('quittio.pdf.font', 'publishedtest');
 
-    expect($directories())->toBe(['/configured/fonts', $published, $published.'/geist', $published.'/inter'])
+    expect($directories())->toBe(['/configured/fonts', $published, $published.'/geist', $published.'/inter', $published.'/liberation'])
         ->and(Quittio::make(Scenarios::make('simple')->build())->format('pdf')->render()->pdf())->toStartWith('%PDF-');
 
     // Configured explicitly, a directory is not added twice and keeps its position.
     config()->set('quittio.pdf.font_directories', [$published.'/inter/', '/configured/fonts']);
-    expect($directories())->toBe([$published.'/inter/', '/configured/fonts', $published, $published.'/geist']);
+    expect($directories())->toBe([$published.'/inter/', '/configured/fonts', $published, $published.'/geist', $published.'/liberation']);
     File::deleteDirectory($base);
 });
 

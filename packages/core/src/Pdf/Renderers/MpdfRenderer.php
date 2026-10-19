@@ -24,7 +24,7 @@ final class MpdfRenderer implements PdfRenderer
 {
     /**
      * @param  array<string, array<string, string>>  $fonts  additional fonts: family => [R => file, B => file, I => file, BI => file]
-     * @param  list<string>  $fontDirectories  searched first, before the bundled Geist and Inter and the fonts
+     * @param  list<string>  $fontDirectories  searched first, before the bundled Geist, Inter and Liberation Sans and the fonts
      *         of mPDF, so that files with the same name (e.g. a published and edited Inter) replace them
      */
     public function __construct(
@@ -131,6 +131,8 @@ final class MpdfRenderer implements PdfRenderer
             // mPDF knows only normal and bold: the medium weights of Geist as a family of their own.
             'geistmedium' => ['R' => 'Geist-Medium.ttf', 'B' => 'Geist-SemiBold.ttf'],
             'inter' => ['R' => 'Inter-Regular.ttf', 'B' => 'Inter-Bold.ttf', 'I' => 'Inter-Italic.ttf', 'BI' => 'Inter-BoldItalic.ttf'],
+            // Metrically compatible with Arial, as the payment slip of the Swiss QR bill requires.
+            'liberationsans' => ['R' => 'LiberationSans-Regular.ttf', 'B' => 'LiberationSans-Bold.ttf'],
             ...$this->fonts,
         ];
 
@@ -139,7 +141,7 @@ final class MpdfRenderer implements PdfRenderer
             'format' => $request->paper,
             'tempDir' => $tempDir,
             // The first directory with the file wins: configured directories before the bundled ones.
-            'fontDir' => [...$this->fontDirectories, dirname(__DIR__, 3).'/resources/fonts/geist', dirname(__DIR__, 3).'/resources/fonts/inter', ...$defaultFontDirs],
+            'fontDir' => [...$this->fontDirectories, dirname(__DIR__, 3).'/resources/fonts/geist', dirname(__DIR__, 3).'/resources/fonts/inter', dirname(__DIR__, 3).'/resources/fonts/liberation', ...$defaultFontDirs],
             'fontdata' => [...$defaultFontData, ...$fontData],
             'default_font' => $request->font ?? $this->defaultFont,
             'margin_left' => 20,

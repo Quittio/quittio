@@ -1,3 +1,4 @@
+<htmlpagefooter name="quittioNoFooter"></htmlpagefooter>
 <htmlpagefooter name="quittioFooter">
     @if (count($design->footerColumns) > 0)
         <div class="footer-rule"><table class="footer"><tr>

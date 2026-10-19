@@ -15,21 +15,22 @@ final class QrImage
 {
     /**
      * @param  'L'|'M'|'Q'|'H'  $errorCorrection
+     * @param  bool  $border  with the quiet zone of four modules; without it the image is the code alone,
+     *         e.g. for a code printed at a fixed size such as the 46 mm of the Swiss QR bill
      */
-    public static function svg(string $payload, int $size = 200, string $errorCorrection = 'M'): string
+    public static function svg(string $payload, int $size = 200, string $errorCorrection = 'M', bool $border = true): string
     {
-        $code = new QrCode($payload, $errorCorrection);
-
-        return (new Svg)->output($code, $size);
+        return (new Svg)->output(self::code($payload, $errorCorrection, $border), $size);
     }
 
     /**
      * @param  'L'|'M'|'Q'|'H'  $errorCorrection
+     * @param  bool  $border  with the quiet zone of four modules
      */
-    public static function png(string $payload, int $size = 400, string $errorCorrection = 'M'): string
+    public static function png(string $payload, int $size = 400, string $errorCorrection = 'M', bool $border = true): string
     {
         // Compression 9: the default (0) writes about 480 KB per code into every PDF.
-        return (new Png)->output(new QrCode($payload, $errorCorrection), $size, [255, 255, 255], [0, 0, 0], 9);
+        return (new Png)->output(self::code($payload, $errorCorrection, $border), $size, [255, 255, 255], [0, 0, 0], 9);
     }
 
     /**
@@ -37,13 +38,27 @@ final class QrImage
      * without resource dictionary, which violates PDF/A (clause 6.2.2).
      *
      * @param  'L'|'M'|'Q'|'H'  $errorCorrection
+     * @param  bool  $border  with the quiet zone of four modules
      */
-    public static function dataUri(string $payload, int $size = 400, string $errorCorrection = 'M'): string
+    public static function dataUri(string $payload, int $size = 400, string $errorCorrection = 'M', bool $border = true): string
     {
         if (function_exists('imagecreatetruecolor')) {
-            return 'data:image/png;base64,'.base64_encode(self::png($payload, $size, $errorCorrection));
+            return 'data:image/png;base64,'.base64_encode(self::png($payload, $size, $errorCorrection, $border));
         }
 
-        return 'data:image/svg+xml;base64,'.base64_encode(self::svg($payload, $size, $errorCorrection));
+        return 'data:image/svg+xml;base64,'.base64_encode(self::svg($payload, $size, $errorCorrection, $border));
+    }
+
+    /**
+     * @param  'L'|'M'|'Q'|'H'  $errorCorrection
+     */
+    private static function code(string $payload, string $errorCorrection, bool $border): QrCode
+    {
+        $code = new QrCode($payload, $errorCorrection);
+        if (! $border) {
+            $code->disableBorder();
+        }
+
+        return $code;
     }
 }

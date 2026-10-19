@@ -33,6 +33,8 @@ use Quittio\Core\View\Model\OpenItemView;
 use Quittio\Core\View\Model\PackageView;
 use Quittio\Core\View\Model\PartyView;
 use Quittio\Core\View\Model\PayeeView;
+use Quittio\Core\View\Model\PaymentSlipSectionView;
+use Quittio\Core\View\Model\PaymentSlipView;
 use Quittio\Core\View\Model\PaymentTermsView;
 use Quittio\Core\View\Model\PaymentView;
 use Quittio\Core\View\Model\PrecedingInvoiceView;
@@ -123,6 +125,16 @@ final class NodeTypes
             'card' => CardView::class,
             'directDebit' => DirectDebitView::class,
             'qrCode' => QrCodeView::class,
+        ],
+        QrCodeView::class => [
+            'slip' => PaymentSlipView::class,
+        ],
+        PaymentSlipView::class => [
+            'sections' => PaymentSlipSectionView::class.'[]',
+            'receiptSections' => PaymentSlipSectionView::class.'[]',
+        ],
+        PaymentSlipSectionView::class => [
+            'lines' => '[]',
         ],
         PaymentTermsView::class => [
             'lines' => '[]',

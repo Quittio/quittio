@@ -11,6 +11,8 @@
     /* Following pages start below their header (logo, title, number and buyer); the first page with the letterhead. */
     @page { margin: {{ $design->continuationMarginTop }}mm 19mm 37mm 20mm; margin-header: 14.6mm; margin-footer: 5.5mm; header: html_quittioHeader; footer: html_quittioFooter; }
     @page :first { margin-top: {{ $design->pageMarginTop }}mm; header: html_quittioFirstHeader; }
+    /* The page of the payment slip: no footer, the slip takes the bottom 105 mm. */
+    @page slip { footer: html_quittioNoFooter; }
     body { font-family: {{ $design->font }}; font-size: 9.75pt; color: {{ $text }}; line-height: 1.45; }
     table { border-collapse: collapse; width: 100%; }
     td, th { vertical-align: top; padding: 0; line-height: 1.5; }
@@ -64,6 +66,14 @@
     .running td { vertical-align: top; }
     .running-title { font-size: 11.25pt; font-weight: bold; color: {{ $primary }}; }
     .running-meta { font-size: 9pt; color: {{ $muted }}; }
+    /* Payment slip (Swiss QR bill): receipt 62 mm and payment part 148 mm, 105 mm high, at the bottom of the page. */
+    .slip { position: absolute; font-family: liberationsans; color: #000; line-height: 1.15; }
+    .slip-title { font-size: 11pt; font-weight: bold; }
+    .slip-heading { font-size: 8pt; font-weight: bold; padding-top: 2.6mm; }
+    .slip-value { font-size: 10pt; }
+    .receipt .slip-heading { font-size: 6pt; padding-top: 2.4mm; }
+    .receipt .slip-value { font-size: 8pt; }
+    .slip-field { border: 0.26mm solid #000; }
     .footer-rule { border-top: 0.26mm solid #e6e8ec; }
     .footer td { font-size: 7.9pt; color: {{ $muted }}; padding: 3.4mm 3mm 0 0; }
     .page-number { font-size: 7.9pt; color: {{ $muted }}; text-align: center; padding-top: 6.9mm; }

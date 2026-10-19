@@ -62,6 +62,27 @@ it('charges consumers a fixed rate of the law for the whole time', function () {
         ->and($interest->calculate(Amount::of('1000.00', 'EUR'), Date::fromIsoDate('2026-07-16'), Date::fromIsoDate('2026-07-16'), consumer: true))->toBe([]);
 });
 
+it('charges the fixed rates of a law without reference rates', function () {
+    $pack = new class extends AbstractCountryPack
+    {
+        public function code(): string
+        {
+            return 'XX';
+        }
+
+        public function dunningLaw(): DunningLaw
+        {
+            return new DunningLaw(b2bFlatRate: null, b2cFixedRate: '5.00', b2bFixedRate: '5.00');
+        }
+    };
+    $interest = DefaultInterest::forCountry($pack);
+
+    expect(array_map(fn ($c) => (string) $c->ratePercent, $interest->calculate(Amount::of('1000.00', 'EUR'), Date::fromIsoDate('2026-06-16'), Date::fromIsoDate('2026-07-16'))))->toBe(['5.00'])
+        ->and(array_map(fn ($c) => (string) $c->ratePercent, $interest->calculate(Amount::of('1000.00', 'EUR'), Date::fromIsoDate('2026-06-16'), Date::fromIsoDate('2026-07-16'), consumer: true)))->toBe(['5.00'])
+        ->and($interest->flatRate('EUR'))->toBeNull()
+        ->and(fn () => (new DefaultInterest(null, new DunningLaw(b2cFixedRate: '4.00')))->calculate(Amount::of('1000.00', 'EUR'), Date::fromIsoDate('2026-06-16'), Date::fromIsoDate('2026-07-16')))->toThrow(ConfigurationException::class, 'reference rates');
+});
+
 it('needs a country pack with reference rates', function () {
     $pack = new class extends AbstractCountryPack
     {

@@ -9,7 +9,8 @@ namespace Quittio\Core\I18n;
  *
  * Keys follow Laravel's convention "namespace::group.key". Paths are registered
  * per namespace; later paths override earlier ones. Missing keys fall back to the
- * fallback locale and finally to the key itself. Item keys may contain dots
+ * language of a regional locale ("de" for "de_CH"), to the fallback locale and finally to the
+ * key itself. Item keys may contain dots
  * (e.g. "de.standard"); a flat key wins over a nested lookup.
  */
 final class ArrayTranslator implements Translator
@@ -54,7 +55,10 @@ final class ArrayTranslator implements Translator
 
     public function get(string $key, array $replace = [], ?string $locale = null): string
     {
-        $value = $this->lookup($key, $locale ?? $this->locale)
+        $locale ??= $this->locale;
+        $language = self::language($locale);
+        $value = $this->lookup($key, $locale)
+            ?? ($language === $locale ? null : $this->lookup($key, $language))
             ?? $this->lookup($key, $this->fallbackLocale)
             ?? $key;
 
@@ -68,6 +72,14 @@ final class ArrayTranslator implements Translator
     public function has(string $key, ?string $locale = null): bool
     {
         return $this->lookup($key, $locale ?? $this->locale) !== null;
+    }
+
+    /**
+     * The language of a regional locale: "de" for "de_CH" or "de-CH".
+     */
+    public static function language(string $locale): string
+    {
+        return strtolower(explode('_', str_replace('-', '_', $locale))[0]);
     }
 
     private function lookup(string $key, string $locale): ?string

@@ -11,6 +11,7 @@ use Quittio\Core\Documents\DocumentType;
 use Quittio\Core\Exceptions\ConfigurationException;
 use Quittio\Core\Pdf\Qr\EpcGiroCodeGenerator;
 use Quittio\Core\Pdf\Qr\PaymentQrGenerator;
+use Quittio\Core\Pdf\Qr\ProvidesPaymentSlip;
 use Quittio\Core\Pdf\Qr\QrImage;
 use Quittio\Core\Support\Amount;
 use Quittio\Core\Validation\Plausibility\Iban;
@@ -90,12 +91,17 @@ final readonly class PaymentSection
             }
         }
 
+        // The slip of the code itself, not of the codes of discounted amounts.
+        $slip = $value === null && $generator instanceof ProvidesPaymentSlip ? $generator->slip($invoice, $payload, $scope->locale) : null;
+
         return [
             'type' => $generator->key(),
             'payload' => $payload,
             'dataUri' => QrImage::dataUri($payload),
             'amount' => $amount,
             'note' => $note,
+            // Printed at 46 mm: the code without quiet zone, at a resolution above 600 dpi.
+            ...($slip === null ? [] : ['slip' => [...$slip->toArray(), 'dataUri' => QrImage::dataUri($payload, 1200, 'M', border: false)]]),
         ];
     }
 

@@ -201,7 +201,7 @@ Register more fonts in the `pdf` section of `config/quittio.php`:
 
 - Use lower case family names, as mPDF looks fonts up in lower case.
 - Fonts must be embeddable TrueType fonts (PDF/A embeds all fonts).
-- `php artisan vendor:publish --tag=quittio-fonts` copies Geist and Inter to `resources/fonts/quittio/geist` and `resources/fonts/quittio/inter`.
+- `php artisan vendor:publish --tag=quittio-fonts` copies Geist, Inter and Liberation Sans to `resources/fonts/quittio/geist`, `…/inter` and `…/liberation`.
 - The Laravel renderer searches `pdf.font_directories`, then `resources/fonts/quittio` and its subdirectories automatically. Fonts placed there only need an entry in `pdf.fonts`.
 - Font files are taken from the first directory that has them. The configured directories come before the bundled fonts and those of mPDF, so a published and edited font replaces the bundled one.
 - Without Laravel, pass the fonts to the renderer: `new MpdfRenderer(tempDir: …, fonts: [...], fontDirectories: [...], defaultFont: 'corporate')`.
@@ -266,6 +266,12 @@ Its payload contains the BIC (optional), the IBAN, the amount, the beneficiary (
 
 `payment.qrCode` in the view model holds `type` (e.g. `girocode`), `payload`, `dataUri` (PNG data URI rendered with GD, SVG without GD; PNG because mPDF's SVG output violates PDF/A), `amount` and `note`. `Quittio\Core\Pdf\Qr\QrImage::svg()`, `png()` and `dataUri()` render any payload. Own generators implement `PaymentQrGenerator` (`key()`, `supports(InvoiceData)`, `payload(InvoiceData, array $options)`) and are returned by a country pack's `paymentQr()`.
 
+#### Payment slips
+
+A generator that also implements `Quittio\Core\Pdf\Qr\ProvidesPaymentSlip` (`slip(InvoiceData $invoice, string $payload, string $locale): ?PaymentSlip`) prints its code on a payment slip instead of next to the bank details, laid out after the payment part of the Swiss QR bill: a receipt of 62 mm and a payment part of 148 mm, 105 mm high, at the bottom of a page of its own without footer, the code at 46 × 46 mm without quiet zone, separated by dashed lines with a note. `PaymentSlip` holds the titles, the headed sections of payment part and receipt (a section without lines and a missing amount are printed as empty fields to fill in by hand), the currency and amount with their headings, the acceptance point, the separation note and an optional image in the middle of the code (`mark`, e.g. the Swiss cross). The texts are printed in Liberation Sans, which Quittio bundles for it.
+
+`payment.qrCode.slip` in the view model holds these values (`title`, `receiptTitle`, `sections[].heading`, `sections[].lines`, `receiptSections`, `currencyHeading`, `amountHeading`, `currency`, `amount`, `acceptancePoint`, `separationNote`, `mark`) and `dataUri`, the code without quiet zone; codes without slip have no `slip`. Own templates print the slip with the partial `payment-slip` (Blade) or the end of `default.php`.
+
 ### Texts and Markdown
 
 Line descriptions and notes are also part of the e-invoice XML. The templates therefore print them as plain text (`lines[].description.html`, `notes[].html`: escaped, line breaks kept).
@@ -282,6 +288,8 @@ The locale (language) of a run is the first of:
 2. the invoice's locale (`InvoiceBuilder::locale()`),
 3. `defaults.locale` (`locale` in `Quittio::create()`),
 4. the country pack default (Germany: `de`).
+
+A regional locale such as `de_CH` or `de-AT` takes the texts of its language (`de`) where it has none of its own, and English after that; numbers and dates follow the regional locale (with `intl`).
 
 Labels and code names (units, VAT categories, payment means, type codes …) exist in German, English and French; other locales fall back to English. The XML texts generated for the run (e.g. payment terms) use the same locale.
 
