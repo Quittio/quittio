@@ -8,6 +8,7 @@ use Brick\Math\BigDecimal;
 use Brick\Money\Money;
 use Quittio\Core\Data\Delivery\Period;
 use Quittio\Core\Data\InvoiceData;
+use Quittio\Core\Data\Lines\InvoiceLine;
 use Quittio\Core\Data\Presentation\Presentation;
 use Quittio\Core\Documents\DocumentData;
 use Quittio\Core\Enums\InvoiceTypeCode;
@@ -92,7 +93,8 @@ final readonly class RunScope
 
     /**
      * Margin scheme or travel agents (section 25, 25a UStG): the exempt VAT group carries one
-     * of their exemption codes. Taxed on the margin, without a separate VAT statement.
+     * of their exemption codes, or all its lines do (with different codes the group has none).
+     * Taxed on the margin, without a separate VAT statement.
      */
     public function isSpecialScheme(VatCategory $category): bool
     {
@@ -104,8 +106,18 @@ final readonly class RunScope
                 return true;
             }
         }
+        $lines = array_filter($this->invoice->lines, static fn (InvoiceLine $line): bool => $line->vat->category === VatCategory::Exempt);
 
-        return false;
+        return $lines !== [] && array_filter($lines, static fn (InvoiceLine $line): bool => ! ViewModelFactory::isSpecialSchemeLine($line)) === [];
+    }
+
+    /**
+     * A line of a margin scheme or travel agents: by its own exemption code, or as part of a
+     * special scheme group (isSpecialScheme()).
+     */
+    public function isSpecialSchemeLine(InvoiceLine $line): bool
+    {
+        return ViewModelFactory::isSpecialSchemeLine($line) || $this->isSpecialScheme($line->vat->category);
     }
 
     /**

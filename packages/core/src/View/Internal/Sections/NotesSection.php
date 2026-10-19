@@ -27,9 +27,10 @@ final readonly class NotesSection
 
         $legalNotes = ViewModelFactory::legalNoteTexts($this->scope->invoice);
         // A PDF next to an XML-only e-invoice (run option visualization_of): its readable copy.
+        // Appended, so that the indexes of legalNoteTexts() (MandatoryFieldGuard::notePath()) stay valid.
         $visualizes = $this->scope->context->options['visualization_of'] ?? null;
         if (is_string($visualizes) && $visualizes !== '') {
-            array_unshift($legalNotes, strtr($this->scope->labels['einvoice_visualization'] ?? '', [':format' => $visualizes, ':number' => $this->scope->invoice->number]));
+            array_push($legalNotes, strtr($this->scope->labels['einvoice_visualization'] ?? '', [':format' => $visualizes, ':number' => $this->scope->invoice->number]));
         }
 
         return [

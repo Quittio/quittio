@@ -160,13 +160,14 @@ class CountryDE extends AbstractCountryPack implements CompletesInvoices, Provid
         }
 
         $legalNotes = ViewModelFactory::legalNoteTexts($invoice);
+        $rowIndexes = ViewModelFactory::vatRowIndexes($invoice);
         foreach ($invoice->vatBreakdown as $index => $row) {
             if (! in_array($row->category, [VatCategory::ReverseCharge, VatCategory::IntraCommunitySupply], true)) {
                 continue;
             }
             // The exemption text (BT-120), or the VAT row that names reverse charge or the exemption.
             $note = $row->exemptionReason === null ? false : array_search($row->exemptionReason, $legalNotes, true);
-            $fields[] = new MandatoryField('vatRows['.$index.'].label'.($note === false ? '' : '|legalNotes['.$note.']'), 'Reverse charge or exemption note', '§ 14a UStG');
+            $fields[] = new MandatoryField('vatRows['.$rowIndexes[$index].'].label'.($note === false ? '' : '|legalNotes['.$note.']'), 'Reverse charge or exemption note', '§ 14a UStG');
         }
         $reverseCharge = Inspect::uses($invoice, VatCategory::ReverseCharge);
         $intraCommunity = Inspect::uses($invoice, VatCategory::IntraCommunitySupply);

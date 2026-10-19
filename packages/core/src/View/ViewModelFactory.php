@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Quittio\Core\View;
 
+use Brick\Math\BigDecimal;
 use Quittio\Core\Calculation\CalculationException;
 use Quittio\Core\Data\InvoiceData;
+use Quittio\Core\Data\Lines\InvoiceLine;
 use Quittio\Core\Data\Note;
 use Quittio\Core\Data\Presentation\Presentation;
 use Quittio\Core\Documents\DocumentData;
@@ -28,6 +30,82 @@ final class ViewModelFactory
 
     /** Margin schemes and travel agents (section 25, 25a UStG): no separate VAT statement. */
     public const array SPECIAL_SCHEME_CODES = ['VATEX-EU-D', 'VATEX-EU-F', 'VATEX-EU-I', 'VATEX-EU-J'];
+
+    /**
+     * Whether a line is taxed under a margin scheme or the special scheme for travel agents
+     * (section 25, 25a UStG): category E with one of SPECIAL_SCHEME_CODES on the line.
+     */
+    public static function isSpecialSchemeLine(InvoiceLine $line): bool
+    {
+        return $line->vat->category === VatCategory::Exempt
+            && in_array(strtoupper((string) $line->vat->exemptionReasonCode?->value), self::SPECIAL_SCHEME_CODES, true);
+    }
+
+    /**
+     * The exempt VAT group (category E) when it mixes lines of a special scheme with other
+     * exempt lines: EN 16931 allows only one E group (BR-E-01), whose code then conflicts. The
+     * PDF shows the two parts in rows of their own when the line net amounts add up to the
+     * taxable amount of the group and no document level allowance or charge is exempt: then
+     * ['special' => net amount, 'other' => net amount]; ['special' => null, 'other' => null]
+     * when they cannot be told apart; null when the group does not mix.
+     *
+     * @return array{special: ?BigDecimal, other: ?BigDecimal}|null
+     */
+    public static function mixedExemptGroup(InvoiceData $invoice): ?array
+    {
+        $special = BigDecimal::zero();
+        $other = BigDecimal::zero();
+        $hasSpecial = false;
+        $hasOther = false;
+        $known = true;
+        foreach ($invoice->lines as $line) {
+            if ($line->vat->category !== VatCategory::Exempt) {
+                continue;
+            }
+            $net = $line->netAmount?->getAmount();
+            $known = $known && $net !== null;
+            if (self::isSpecialSchemeLine($line)) {
+                $hasSpecial = true;
+                $special = $special->plus($net ?? BigDecimal::zero());
+            } else {
+                $hasOther = true;
+                $other = $other->plus($net ?? BigDecimal::zero());
+            }
+        }
+        if (! $hasSpecial || ! $hasOther) {
+            return null;
+        }
+        foreach ([...$invoice->allowances, ...$invoice->charges] as $entry) {
+            $known = $known && $entry->vatCategory !== VatCategory::Exempt;
+        }
+        $group = null;
+        foreach ($invoice->vatBreakdown as $row) {
+            $group = $row->category === VatCategory::Exempt ? $row : $group;
+        }
+        $known = $known && $group !== null && $group->taxableAmount->getAmount()->isEqualTo($special->plus($other));
+
+        return $known ? ['special' => $special, 'other' => $other] : ['special' => null, 'other' => null];
+    }
+
+    /**
+     * The index of the row of the view model's "vatRows" that shows each VAT breakdown row
+     * (BG-23), by the index of the breakdown: a mixed exempt group (mixedExemptGroup()) takes two
+     * rows, its first one is given.
+     *
+     * @return array<int, int>
+     */
+    public static function vatRowIndexes(InvoiceData $invoice): array
+    {
+        $split = self::mixedExemptGroup($invoice)['special'] ?? null;
+        $indexes = [];
+        $next = 0;
+        foreach ($invoice->vatBreakdown as $index => $row) {
+            $indexes[$index] = $next;
+            $next += $split !== null && $row->category === VatCategory::Exempt ? 2 : 1;
+        }
+
+        return $indexes;
+    }
 
     /**
      * The view model of an invoice.

@@ -58,6 +58,7 @@ return [
     'vat_row_zero_rated' => 'TVA 0 % (taux zéro) sur :base',
     'vat_row_not_subject' => 'Non soumis à la TVA : :base',
     'vat_row_special_scheme' => 'Régime particulier, sans mention distincte de la TVA : :base',
+    'vat_row_exempt_special_scheme' => 'Exonéré ou régime particulier, sans mention distincte de la TVA : :base',
     'vat_row_igic' => 'IGIC :rate sur :base',
     'vat_row_ipsi' => 'IPSI :rate sur :base',
     'allowance_vat_rate' => 'TVA :rate',

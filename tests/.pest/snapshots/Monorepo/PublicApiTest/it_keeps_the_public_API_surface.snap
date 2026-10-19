@@ -5481,10 +5481,13 @@
         "methods": [
             "public build(Quittio\\Core\\Data\\InvoiceData $invoice, Quittio\\Core\\View\\ViewContext $context = new Quittio\\Core\\View\\ViewContext): Quittio\\Core\\View\\InvoiceViewModel",
             "public buildDocument(Quittio\\Core\\Documents\\DocumentData $document, Quittio\\Core\\View\\ViewContext $context = new Quittio\\Core\\View\\ViewContext): Quittio\\Core\\View\\InvoiceViewModel",
+            "public static isSpecialSchemeLine(Quittio\\Core\\Data\\Lines\\InvoiceLine $line): bool",
             "public static legalNoteTexts(Quittio\\Core\\Data\\InvoiceData $invoice): array",
             "public static mergePresentation(Quittio\\Core\\Data\\Presentation\\Presentation $own, Quittio\\Core\\Data\\Presentation\\Presentation $defaults): Quittio\\Core\\Data\\Presentation\\Presentation",
+            "public static mixedExemptGroup(Quittio\\Core\\Data\\InvoiceData $invoice): ?array",
             "public static otherNotes(Quittio\\Core\\Data\\InvoiceData $invoice): array",
-            "public static remittance(Quittio\\Core\\Data\\InvoiceData $invoice): string"
+            "public static remittance(Quittio\\Core\\Data\\InvoiceData $invoice): string",
+            "public static vatRowIndexes(Quittio\\Core\\Data\\InvoiceData $invoice): array"
         ]
     },
     "Quittio\\Core\\View\\ViewNode": {

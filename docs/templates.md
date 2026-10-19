@@ -681,11 +681,13 @@ Every `address` has `lines`, `street`, `additional`, `line3`, `postcode`, `city`
 | `category`, `categoryLabel` | Category code and name |
 | `rate` | Rate (BT-119) |
 | `base` | Taxable amount (BT-116) |
-| `amount` | VAT amount (BT-117); `null` for margin schemes and travel agents (exemption reason codes `VATEX-EU-D`, `-F`, `-I`, `-J`) |
+| `amount` | VAT amount (BT-117); `null` for margin schemes and travel agents (exemption reason codes `VATEX-EU-D`, `-F`, `-I`, `-J` on the group or on all its lines) |
 | `isSpecialScheme` | Margin scheme or travel agents |
 | `exemptionReason`, `exemptionReasonCode` | BT-120, BT-121 |
 
 Reverse charge means that the buyer owes the VAT ([German terms](concepts.md#german-terms)). Margin schemes and travel agents are special VAT schemes (sections 25 and 25a of the German VAT Act, UStG) that state no separate VAT.
+
+Usually there is one row per VAT breakdown row (BG-23). An exempt group (category `E`) that mixes a special scheme with other exemptions takes two rows, the special scheme part (`isSpecialScheme`, `base` its share) and the exempt part, or one row "Exempt or special scheme, no separate VAT statement: …" without `amount` when the parts cannot be told apart. `ViewModelFactory::vatRowIndexes($invoice)` maps the index of a breakdown row to its first row in `vatRows`.
 
 ### Totals
 

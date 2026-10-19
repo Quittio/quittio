@@ -123,7 +123,8 @@ How presets behave:
 - **Preset key.** The key stays on the line (`$line->vat->presetKey`). `DE-USTG-09`, `DE-USTG-11`, `DE-USTG-14`, `DE-USTG-15` and the small business detection rely on it.
 - **VAT breakdown.** Category, rate, code and text flow into the VAT breakdown (BG-23). When lines of one category and rate have different texts, the texts are joined in BT-120. The code (BT-121) is kept only when all codes agree; otherwise Quittio warns with `QUITTIO-EXEMPTION-CONFLICT`.
 - **Invoice notes.** The mapping table of KoSIT and FeRD (recommended by the BMF letter of 15 October 2026) puts the statements of section 14a (6) and (7) UStG into the invoice note (BG-1). The margin scheme, travel agency and triangular presets therefore add their text once as note (BT-22, subject `REG`) as well, and `ZeroRatedPv` its reference to section 12 (3) UStG. A note with the same text is not added twice. Presets of other packs can do the same by implementing `Quittio\Core\Tax\StatesInvoiceNote`.
-- **PDF.** The PDF lists the BT-120 texts of all categories other than the standard rate in its legal notes (`legalNotes`), together with the regulatory notes and without duplicates. Margin scheme and travel agency rows show no VAT amount (section 14a (6) UStG).
+- **PDF.** The PDF lists the BT-120 texts of all categories other than the standard rate in its legal notes (`legalNotes`), together with the regulatory notes and without duplicates. Margin scheme and travel agency rows show no VAT amount and their lines no rate (section 14a (6) UStG), recognised by the code of the line.
+- **Margin scheme next to an exemption.** EN 16931 allows one VAT group of category `E` only (BR-E-01). A margin scheme line and a line exempt under section 4 UStG therefore share it in the XML, with both texts in BT-120 and no code in BT-121 (`QUITTIO-EXEMPTION-CONFLICT`). The PDF shows the two parts in rows of their own, "Sonderregelung, kein gesonderter Steuerausweis: 500,00 €" and "Umsatzsteuerfrei (Steuerbefreit) auf 90,00 €", which add up to the group in the XML. With a document level allowance or charge of category `E` the parts cannot be told apart; then one row reads "Steuerfrei bzw. Sonderregelung, kein gesonderter Steuerausweis: 590,00 €" (label `vat_row_exempt_special_scheme`). Either way no "0 %" appears next to the margin scheme.
 - **Allowances and charges.** Document level allowances and charges take a category and a rate, not a preset: `->charge(VatCategory::StandardRate, '19', amount: '10.00', reason: 'Shipping')`.
 - **Lookup by key**, e.g. from a database column: `VatPreset::from('de.standard')`, `(new CountryDE)->taxPresets()->get('de.standard')` or, across all installed packs, `$quittio->countries()->taxPreset('de.standard')`. `de.exempt` is not part of the collection.
 
@@ -444,8 +445,14 @@ In self-billing, the buyer issues the invoice for the seller's supply. German la
 
 - `->de()->selfBilled()` sets type code 389 and adds the note "Gutschrift" (English variant: "Gutschrift (self-billed invoice)").
 - The PDF is titled "Gutschrift" in German and "Self-billed invoice (Gutschrift)" in English, and shows the buyer as issuer.
-- `DE-USTG-04` requires the label on every self-billed type code (389, 261, 527).
+- `DE-USTG-04` requires the label on every self-billed type code (389, 261, 527); in an e-invoice the type code is label enough, so there it is a warning.
 - The mandatory output requires the title and the "Gutschrift" note in the PDF.
+
+What Quittio cannot check, and you must make sure of:
+
+- **Prior agreement.** Self-billing must be agreed before the first self-billed invoice (section 14 (2) sentence 2 UStG), best in writing, e.g. in the framework contract with the supplier. Without the agreement the document is no invoice, and the issuer loses the input tax deduction. The agreement is not stated on the document, so Quittio does not ask for it.
+- **Objection.** The supplier may object to a self-billed invoice (section 14 (2) sentence 6 UStG). It then loses its effect as invoice, for the future only (BFH XI R 41/20), and the supplier issues an invoice of its own. An objection is no cancellation; do not issue a cancellation for it.
+- **Corrections and cancellations** of a self-billed invoice come from its issuer, the buyer (section 14.11 (2) sentence 2 UStAE). `Quittio::cancellation()` keeps the document self-billed (261, or 389 negative for XRechnung).
 
 A complete example is in [Examples: Self-billing](examples.md#self-billing).
 

@@ -333,6 +333,7 @@ $result->filename();                                   // Gutschrift_GS-2026-001
 - `->seller()` replaces the seller of the configuration, and with it the configured bank account and small business setting. `payment()` sends the payment to the supplier's account.
 - `selfBilled()` sets type code 389 and the note "Gutschrift". The PDF is titled "Gutschrift" ([Self-billing](country-packs.md#self-billing-gutschrift)).
 - "Gutschrift" is used only for self-billing. Cancellations are titled "Stornorechnung" (cancellation invoice).
+- Self-billing needs a prior agreement with the supplier, e.g. in the agency contract (section 14 (2) sentence 2 UStG). Without it the document is no invoice. The supplier may object to it; it then loses its effect as invoice for the future ([Self-billing](country-packs.md#self-billing-gutschrift)).
 
 ### Continuing invoices
 

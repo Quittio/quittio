@@ -68,7 +68,7 @@ final readonly class LinesSection
             'showGrossPrice' => $showGross && $line->price->priceInclVat !== null,
             'total' => $scope->money($line->netAmount),
             // Margin schemes and travel agents: no rate either (no separate VAT statement).
-            'vatRate' => $line->vat->rate === null || $scope->isSpecialScheme($line->vat->category) ? null : $scope->percent($line->vat->rate),
+            'vatRate' => $line->vat->rate === null || $scope->isSpecialSchemeLine($line) ? null : $scope->percent($line->vat->rate),
             'vatCategory' => $line->vat->category->value,
             'period' => $line->period === null ? null : $scope->period($line->period),
             'attributes' => array_map(static fn ($a): array => ['name' => $a->name, 'value' => $a->value], $line->item->attributes),

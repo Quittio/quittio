@@ -6356,6 +6356,7 @@
             "vat_row_zero_rated": "0 % USt. (Nullsatz) auf :base",
             "vat_row_not_subject": "Nicht steuerbar: :base",
             "vat_row_special_scheme": "Sonderregelung, kein gesonderter Steuerausweis: :base",
+            "vat_row_exempt_special_scheme": "Steuerfrei bzw. Sonderregelung, kein gesonderter Steuerausweis: :base",
             "vat_row_igic": ":rate IGIC auf :base",
             "vat_row_ipsi": ":rate IPSI auf :base",
             "allowance_vat_rate": ":rate USt.",

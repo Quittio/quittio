@@ -186,6 +186,8 @@ final readonly class GermanInvoice
 
     /**
      * Self-billed invoice (type code 389) with the note "Gutschrift" (section 14 (4) no. 10 UStG).
+     * Self-billing must be agreed with the supplier beforehand (section 14 (2) sentence 2 UStG);
+     * Quittio cannot check the agreement, which is not stated on the document.
      *
      * @return TBuilder
      */
