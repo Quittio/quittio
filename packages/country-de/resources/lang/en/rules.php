@@ -250,6 +250,14 @@ return [
         'message' => 'The final invoice deducts an advance invoice in full without the amount received being confirmed. Only advance payments actually received are deducted (section 14 (5) sentence 2 UStG, section 14.8 (2), (5) and (10) UStAE).',
         'hint' => 'Pass the amount received: ->de()->deductAdvance($advance, received: \'500.00\') for a part, received: GermanInvoice::RECEIVED_IN_FULL for the whole advance. Do not deduct an advance that was not paid.',
     ],
+    'DE-EINVOICE-01' => [
+        'message' => 'The invoice must be issued as e-invoice: :reason (section 14 (1) and section 27 (38) UStG). A PDF, MINIMUM or BASIC WL is an "other invoice".',
+        'hint' => 'Render it as zugferd (EN 16931) or xrechnung. For 2027, quittio.countries.de.prior_year_turnover_above_800k tells whether the transition applies to you. An "other invoice" instead of an e-invoice is no administrative offence (BMF letter of 15 October 2026, marginal no. 28), but the buyer may lose the input tax deduction.',
+    ],
+    'DE-EINVOICE-02' => [
+        'message' => 'Until :until an "other invoice" is allowed for this supply instead of an e-invoice, as PDF only with the consent of the buyer (section 27 (38) UStG, section 14 (1) sentence 5 UStG).',
+        'hint' => 'Make sure the buyer agrees to a PDF invoice, or render an e-invoice (zugferd, xrechnung).',
+    ],
     'DE-LEITWEG-ID' => [
         'message' => 'The check digits of the Leitweg-ID ":value" (BT-10) are wrong.',
         'hint' => 'Check the Leitweg-ID with the public buyer.',

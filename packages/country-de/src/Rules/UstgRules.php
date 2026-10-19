@@ -270,12 +270,85 @@ final class UstgRules
                     $report->warning('BT-113', 'prepaidAmount');
                 }
             }),
+            $r('DE-EINVOICE-01', 'The invoice must be issued as e-invoice: :reason (section 14 (1) and section 27 (38) UStG). A PDF, MINIMUM or BASIC WL is an "other invoice".', function (InvoiceData $i, RuleReporter $report): void {
+                if ($report->context()->option('e_invoice') === false && ($reason = self::eInvoiceObligation($i, $report)) !== null && $reason[0]) {
+                    $report->error(null, null, ['reason' => $reason[1]]);
+                }
+            }),
+            $r('DE-EINVOICE-02', 'Until :until an "other invoice" is allowed for this supply instead of an e-invoice, as PDF only with the consent of the buyer (section 27 (38) UStG, section 14 (1) sentence 5 UStG).', function (InvoiceData $i, RuleReporter $report): void {
+                if ($report->context()->option('e_invoice') === false && ($reason = self::eInvoiceObligation($i, $report)) !== null && ! $reason[0]) {
+                    $report->warning(null, null, ['until' => $reason[1]]);
+                }
+            }),
             $r('DE-USTG-19', 'The final invoice deducts an advance that was settled by self-billing (Gutschrift), but is no self-billed invoice itself. The advance must be deducted (section 14 (2) sentence 5 UStG); changing the way of invoicing is allowed but unusual.', function (InvoiceData $i, RuleReporter $report): void {
                 if ($i->meta->hasFlag(Flags::SELF_BILLED_ADVANCE) && ! ($i->typeCode instanceof InvoiceTypeCode && $i->typeCode->isSelfBilled())) {
                     $report->info('BT-3', 'typeCode');
                 }
             }),
         ];
+    }
+
+    /**
+     * Whether a domestic B2B invoice must be an e-invoice (section 14 (1), (2) and section 27 (38)
+     * UStG): [true, reason] when it must, [false, last day of the transition] when another invoice
+     * is still allowed, null when the obligation does not apply. Not for consumers or buyers or
+     * sellers outside the Inland, supplies exempt under section 4 no. 8 to 29 UStG only, small
+     * amount invoices up to the limit (section 33 sentence 4 UStDV), small businesses (section
+     * 34a sentence 4 UStDV), tickets (section 34 UStDV), cancellations and corrections of earlier
+     * invoices (section 14.11 (1) sentence 9 UStAE) and before 2025. A prepayment invoice counts
+     * with its issue date (BMF letter of 15 October 2026, marginal no. 2), other invoices with the
+     * supply date. Prior-year turnover above 800,000 EUR (setting
+     * prior_year_turnover_above_800k of quittio.countries.de) ends the transition for 2027.
+     *
+     * @return array{bool, string}|null
+     */
+    private static function eInvoiceObligation(InvoiceData $invoice, RuleReporter $report): ?array
+    {
+        $inland = static fn (Address $address): bool => $address->countryCode === '' || VatTerritory::memberState($address->countryCode, $address->postcode) === CountryDE::CODE;
+        if ($invoice->buyer->isConsumer || ! $inland($invoice->seller->address) || ! $inland($invoice->buyer->address)
+            || self::isSmallBusinessInvoice($invoice) || $invoice->meta->hasFlag(Flags::TICKET)
+            || ($invoice->typeCode !== InvoiceTypeCode::PrepaymentInvoice && self::refersToOriginal($invoice))
+            || self::onlyExemptFinancialAndSocial($invoice)) {
+            return null;
+        }
+        $date = $invoice->typeCode === InvoiceTypeCode::PrepaymentInvoice ? $invoice->issueDate : (self::supplyDate($invoice) ?? $invoice->issueDate);
+        $gross = $invoice->totals?->grossTotal;
+        if ($gross !== null && $invoice->currency === 'EUR' && ! $gross->getAmount()->isGreaterThan(TaxTables::smallAmountLimitOn($date))) {
+            return null;
+        }
+        $settings = $report->context()->option('countries');
+        $above800k = is_array($settings) && is_array($settings['de'] ?? null) && ($settings['de']['prior_year_turnover_above_800k'] ?? false) === true;
+
+        return match (true) {
+            $date->isBefore(Date::of(2025, 1, 1)) => null,
+            $date->isBefore(Date::of(2027, 1, 1)) => $invoice->issueDate->isAfter(Date::of(2026, 12, 31))
+                ? [true, 'the transition for supplies of 2025 and 2026 ended on 31 December 2026']
+                : [false, '2026-12-31'],
+            $date->isBefore(Date::of(2028, 1, 1)) => match (true) {
+                $above800k => [true, 'supply of 2027 by a business with a prior-year turnover above 800,000 EUR'],
+                $invoice->issueDate->isAfter(Date::of(2027, 12, 31)) => [true, 'the transition for supplies of 2027 ended on 31 December 2027'],
+                default => [false, '2027-12-31'],
+            },
+            default => [true, 'supply from 2028'],
+        };
+    }
+
+    /**
+     * All lines are exempt under section 4 no. 8 to 29 UStG (financial, insurance, medical, social
+     * and similar supplies), told by the legal reference or the VATEX code of Article 132 or 135.
+     */
+    private static function onlyExemptFinancialAndSocial(InvoiceData $invoice): bool
+    {
+        $lines = $invoice->allLines();
+        foreach ($lines as $line) {
+            $code = $line->vat->exemptionReasonCode === null ? '' : (string) $line->vat->exemptionReasonCode->value;
+            $paragraph = preg_match('/§\s*4\s*Nr\.?\s*(\d+)/u', (string) $line->vat->exemptionReason, $match) === 1 ? (int) $match[1] : 0;
+            if ($line->vat->category !== VatCategory::Exempt || (($paragraph < 8 || $paragraph > 29) && ! str_starts_with($code, 'VATEX-EU-132') && ! str_starts_with($code, 'VATEX-EU-135'))) {
+                return false;
+            }
+        }
+
+        return $lines !== [];
     }
 
     /**

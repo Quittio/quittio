@@ -250,6 +250,14 @@ return [
         'message' => 'Die Schlussrechnung zieht eine Anzahlungsrechnung vollständig ab, ohne dass der vereinnahmte Betrag bestätigt ist. Abzuziehen sind nur tatsächlich vereinnahmte Anzahlungen (§ 14 Abs. 5 Satz 2 UStG, Abschnitt 14.8 Abs. 2, 5 und 10 UStAE).',
         'hint' => 'Geben Sie den vereinnahmten Betrag an: ->de()->deductAdvance($anzahlung, received: \'500.00\') für einen Teil, received: GermanInvoice::RECEIVED_IN_FULL für die ganze Anzahlung. Eine nicht bezahlte Anzahlung ziehen Sie nicht ab.',
     ],
+    'DE-EINVOICE-01' => [
+        'message' => 'Die Rechnung muss als E-Rechnung ausgestellt werden: :reason (§ 14 Abs. 1 und § 27 Abs. 38 UStG). Ein PDF, MINIMUM oder BASIC WL ist eine „sonstige Rechnung“.',
+        'hint' => 'Erzeugen Sie zugferd (EN 16931) oder xrechnung. Für 2027 gibt quittio.countries.de.prior_year_turnover_above_800k an, ob die Übergangsregel für Sie gilt. Eine sonstige Rechnung statt einer E-Rechnung ist keine Ordnungswidrigkeit (BMF-Schreiben vom 15.10.2026, Rn. 28), der Empfänger kann aber den Vorsteuerabzug verlieren.',
+    ],
+    'DE-EINVOICE-02' => [
+        'message' => 'Bis :until ist für diesen Umsatz statt einer E-Rechnung eine „sonstige Rechnung“ zulässig, als PDF nur mit Zustimmung des Empfängers (§ 27 Abs. 38 UStG, § 14 Abs. 1 Satz 5 UStG).',
+        'hint' => 'Stellen Sie sicher, dass der Empfänger einer PDF-Rechnung zustimmt, oder erzeugen Sie eine E-Rechnung (zugferd, xrechnung).',
+    ],
     'DE-LEITWEG-ID' => [
         'message' => 'Die Prüfziffer der Leitweg-ID „:value“ (BT-10) ist falsch.',
         'hint' => 'Prüfen Sie die Leitweg-ID beim öffentlichen Auftraggeber.',

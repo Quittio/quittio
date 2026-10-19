@@ -199,6 +199,30 @@ Everything else follows the [general order of the resolver](formats.md#automatic
 
 A complete invoice to a public buyer is in [Examples: Public sector](examples.md#public-sector).
 
+#### E-invoice obligation
+
+When an explicit format or profile produces no e-invoice, the German rules check whether one was required (section 14 (1) and (2), section 27 (38) UStG). A run produces an e-invoice when one of its formats writes XML of an EN 16931 profile; MINIMUM, BASIC WL and a plain `pdf` do not. `xrechnung-cii` with `pdf` in one run is an e-invoice with a readable copy. Drafts and previews (watermark) are not checked.
+
+The obligation applies when seller and buyer are in the German Inland and the buyer is a business. It does not apply to:
+
+- consumers (`->consumer()`);
+- supplies exempt only under section 4 no. 8 to 29 UStG, told by the legal reference ("§ 4 Nr. 14 UStG") or a VATEX code of Article 132 or 135;
+- small amount invoices up to 250 EUR gross (section 33 sentence 4 UStDV), with or without `->de()->smallAmount()`;
+- small businesses (section 34a sentence 4 UStDV);
+- tickets (section 34 UStDV, `->de()->ticket()`, flag `de.ticket`);
+- cancellations and corrections of earlier invoices (section 14.11 (1) sentence 9 UStAE).
+
+The supply date decides (`UstgRules::supplyDate()`, otherwise the issue date); for a prepayment invoice the issue date (BMF letter of 15 October 2026, marginal no. 2):
+
+| Supply | Other invoice (PDF, MINIMUM, BASIC WL) |
+|---|---|
+| before 2025 | no finding |
+| 2025 and 2026 | allowed if issued by 31 December 2026: warning `DE-EINVOICE-02` (a PDF needs the buyer's consent); issued later: error `DE-EINVOICE-01` |
+| 2027 | prior-year turnover above 800,000 EUR: error `DE-EINVOICE-01`. Otherwise allowed if issued by 31 December 2027: warning `DE-EINVOICE-02`; later: error |
+| from 2028 | error `DE-EINVOICE-01` |
+
+Set the turnover with `quittio.countries.de.prior_year_turnover_above_800k` (core: `Quittio::create(['countries' => ['de' => ['prior_year_turnover_above_800k' => true]]], …)`); the default is `false`. Both findings belong to the BMF error class "Formatfehler" (format error, marginal no. 6a). An other invoice instead of a required e-invoice is no administrative offence (marginal no. 28), but it is no proper invoice, and the buyer may lose the input tax deduction.
+
 ### XRechnung profiles
 
 XRechnung is the German e-invoice standard for public buyers: EN 16931 with additional German rules, as an XML file in the CII or UBL syntax (see [Formats](concepts.md#formats)). The pack registers three profiles for it. XRechnung 3.0 is the one you normally use. The extension allows data that XRechnung 3.0 does not, such as sub lines. XRechnung CVD is XRechnung 3.0 for the procurement of road vehicles under the Clean Vehicles Directive (CVD, Directive (EU) 2019/1161). How Quittio writes XRechnung files is described in [Formats: XRechnung](formats.md#xrechnung).
@@ -634,6 +658,8 @@ You rarely need this table up front: a failing rule names its code, the field an
 | `DE-USTG-18` | warning (BT-22 `notes`) | A corrected invoice (384) has no note that contains "berichtigt", "ersetzt", "korrigiert", "corrects", "replaces", "rectifie" or "remplace". | section 31 (5) UStDV, section 15.2a (7) UStAE | `Quittio::correction()` adds "Diese Rechnung berichtigt und ersetzt die Rechnung … vom …". |
 | `DE-USTG-19` | info (BT-3 `typeCode`) | A final invoice deducted an advance settled by self-billing (389, flag `de.self_billed_advance` set by `deductAdvance()`), but is no self-billed invoice. The deduction is required; changing the way of invoicing is allowed but unusual. | section 14 (2) sentence 5, (5) sentence 2 UStG | Check with the buyer who settles the final payment. |
 | `DE-USTG-20` | warning (BT-113 `prepaidAmount`) | `deductAdvance()` deducted an advance invoice without `received:` (flag `de.advance_receipt_unconfirmed`). Only advance payments actually received are deducted. | section 14 (5) sentence 2 UStG, section 14.8 (2), (5) and (10) UStAE | `received: GermanInvoice::RECEIVED_IN_FULL` or the amount received. |
+| `DE-EINVOICE-01` | error (no field) | The run produces no e-invoice although section 14 (1) and section 27 (38) UStG require one ([E-invoice obligation](#e-invoice-obligation)). Only checked while rendering (option `e_invoice`). | section 14 (1), (2), section 27 (38) UStG | Render `zugferd` (EN 16931) or `xrechnung`. |
+| `DE-EINVOICE-02` | warning (no field) | The run produces no e-invoice, and the transition of section 27 (38) UStG still allows an other invoice; a PDF needs the buyer's consent. | section 27 (38) UStG, section 14 (1) sentence 5 UStG | Get the buyer's consent or render an e-invoice. |
 
 Helpers used by the rules and available to you:
 
@@ -761,6 +787,7 @@ The pack marks German special cases with meta flags on the invoice (`InvoiceData
 | `SERVICE_DATE_OPEN` | `de.service_date_open` | `serviceDateOpen()` | no `DE-USTG-03` warning for a prepayment invoice without service date |
 | `SELF_BILLED_ADVANCE` | `de.self_billed_advance` | `deductAdvance()` of a self-billed advance (389) | `DE-USTG-19` |
 | `EXPECTED_SERVICE_DATE` | `de.expected_service_date` | `advance()` with a date or month | no `DE-USTG-03` warning for a prepayment invoice without service date |
+| `TICKET` | `de.ticket` | `ticket()` | ticket for the carriage of passengers (section 34 UStDV): no `DE-EINVOICE-*` |
 | `ADVANCE_RECEIPT_UNCONFIRMED` | `de.advance_receipt_unconfirmed` | `deductAdvance()` without `received:` | `DE-USTG-20` |
 | `SMALL_BUSINESS` | `small_business` (`Meta::FLAG_SMALL_BUSINESS`) | seller configuration, Managed issuer, `->flag()`, `smallBusinessId()` | small business invoice (section 34a UStDV): `DE-USTG-03`, `DE-USTG-09`, `DE-USTG-11`, `DE-USTG-14`, `DE-TAX-NUMBER`, mandatory output |
 | `SMALL_AMOUNT_LIMIT` | `250.00` | – | deprecated: the limit depends on the supply date, see `TaxTables::smallAmountLimitOn()` |

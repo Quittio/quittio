@@ -5646,7 +5646,8 @@
             "public selfBilled(string $locale = \"de\"): Quittio\\Core\\Builder\\InvoiceBuilder",
             "public serviceDateOpen(string $locale = \"de\"): Quittio\\Core\\Builder\\InvoiceBuilder",
             "public smallAmount(): Quittio\\Core\\Builder\\InvoiceBuilder",
-            "public smallBusinessId(string $id): Quittio\\Core\\Builder\\InvoiceBuilder"
+            "public smallBusinessId(string $id): Quittio\\Core\\Builder\\InvoiceBuilder",
+            "public ticket(): Quittio\\Core\\Builder\\InvoiceBuilder"
         ]
     },
     "Quittio\\Country\\DE\\Builder\\GermanInvoiceMacros": {
@@ -5960,7 +5961,8 @@
             "SERVICE_DATE_OPEN",
             "SMALL_AMOUNT",
             "SMALL_AMOUNT_LIMIT",
-            "SMALL_BUSINESS"
+            "SMALL_BUSINESS",
+            "TICKET"
         ]
     },
     "Quittio\\Country\\DE\\Support\\LeitwegId": {

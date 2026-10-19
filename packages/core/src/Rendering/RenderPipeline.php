@@ -94,8 +94,10 @@ final readonly class RenderPipeline
         $locale = $options->locale ?? $invoice->meta->locale ?? $this->config->locale ?? $countries->leading->defaults()->locale;
 
         $results = [];
-        foreach ($this->formats->choose($invoice, $countries, $options) as [$format, $profile]) {
-            $results[$format->key] = $this->renderFormat($invoice, $countries, $format, $profile, $locale, $options);
+        $chosen = $this->formats->choose($invoice, $countries, $options);
+        $eInvoice = $this->producesEInvoice($chosen, $this->presentation->hasWatermark($invoice->presentation, $options));
+        foreach ($chosen as [$format, $profile]) {
+            $results[$format->key] = $this->renderFormat($invoice, $countries, $format, $profile, $locale, $options, $eInvoice);
         }
 
         foreach ($results as $result) {
@@ -117,10 +119,12 @@ final readonly class RenderPipeline
 
         $result = new ValidationResult;
         $formats = [];
-        foreach ($this->formats->choose($invoice, $countries, $options) as [$format, $profile]) {
+        $chosen = $this->formats->choose($invoice, $countries, $options);
+        $eInvoice = $this->producesEInvoice($chosen, $watermarked);
+        foreach ($chosen as [$format, $profile]) {
             $syntax = $this->formats->xmlSyntax($format, $watermarked);
             $formats[$format->key] = $syntax === null ? null : $profile;
-            $subject = new ValidationSubject($invoice, $this->validationContext($profile, $countries, $locale, $options, $syntax));
+            $subject = new ValidationSubject($invoice, $this->validationContext($profile, $countries, $locale, $options, $syntax, $eInvoice));
             $result = $result->merge($this->validateStage($subject, 'data', $format));
             if ($syntax !== null) {
                 $xml = $this->serializer($syntax)->serialize($invoice, $profile, new SerializationOptions($locale));
@@ -192,7 +196,28 @@ final readonly class RenderPipeline
         return $result;
     }
 
-    private function renderFormat(InvoiceData $invoice, ResolvedCountries $countries, OutputFormat $format, Profile $profile, string $locale, RenderOptions $options): RenderedInvoice
+    /**
+     * Whether a format of the run produces an e-invoice: XML of an EN 16931 compliant profile
+     * (not MINIMUM or BASIC WL). Null for a watermarked run (draft or preview), which issues no
+     * invoice.
+     *
+     * @param  list<array{OutputFormat, Profile}>  $chosen
+     */
+    private function producesEInvoice(array $chosen, bool $watermarked): ?bool
+    {
+        if ($watermarked) {
+            return null;
+        }
+        foreach ($chosen as [$format, $profile]) {
+            if ($this->formats->xmlSyntax($format, false) !== null && $profile->isEn16931Compliant()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function renderFormat(InvoiceData $invoice, ResolvedCountries $countries, OutputFormat $format, Profile $profile, string $locale, RenderOptions $options, ?bool $eInvoice = null): RenderedInvoice
     {
         // Checked for the whole run in render(); kept here for formats with XML (defence in depth).
         $watermarked = $this->presentation->hasWatermark($invoice->presentation, $options);
@@ -201,7 +226,7 @@ final readonly class RenderPipeline
         }
 
         $syntax = $this->formats->xmlSyntax($format, $watermarked);
-        $subject = new ValidationSubject($invoice, $this->validationContext($profile, $countries, $locale, $options, $syntax));
+        $subject = new ValidationSubject($invoice, $this->validationContext($profile, $countries, $locale, $options, $syntax, $eInvoice));
         $mode = $options->validation ?? $this->config->validation;
         $result = $this->validated($this->validateStage($subject, 'data', $format, $mode), $mode);
 
@@ -359,15 +384,23 @@ final readonly class RenderPipeline
 
     /**
      * The syntax of the XML that will be written (option "syntax") lets syntax specific rules
-     * apply, e.g. BR-DEX-15 or third party payments that only UBL can carry.
+     * apply, e.g. BR-DEX-15 or third party payments that only UBL can carry. The option
+     * "e_invoice" tells whether the run produces an e-invoice (rules on the obligation to issue
+     * one), the option "countries" holds the settings of the country packs.
      */
-    private function validationContext(Profile $profile, ResolvedCountries $countries, string $locale, ?RenderOptions $options = null, ?Syntax $syntax = null): ValidationContext
+    private function validationContext(Profile $profile, ResolvedCountries $countries, string $locale, ?RenderOptions $options = null, ?Syntax $syntax = null, ?bool $eInvoice = null): ValidationContext
     {
         return new ValidationContext(
             profile: $profile,
             countryPacks: $countries->all(),
             locale: $locale,
-            options: [...$this->config->options, ...($options->options ?? []), ...($syntax === null ? [] : ['syntax' => $syntax])],
+            options: [
+                ...$this->config->options,
+                ...($options->options ?? []),
+                ...($syntax === null ? [] : ['syntax' => $syntax]),
+                ...($eInvoice === null ? [] : ['e_invoice' => $eInvoice]),
+                'countries' => $this->config->countrySettings,
+            ],
             messageLocale: match ($this->config->validationLocale) {
                 null, '', 'invoice' => null,
                 'app' => Translations::translator()->locale(),

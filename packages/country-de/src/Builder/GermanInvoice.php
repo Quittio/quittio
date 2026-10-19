@@ -150,6 +150,17 @@ final readonly class GermanInvoice
     }
 
     /**
+     * Ticket for the carriage of passengers (section 34 UStDV): it may always be issued as other
+     * invoice, DE-EINVOICE-01 and -02 do not apply.
+     *
+     * @return TBuilder
+     */
+    public function ticket(): InvoiceBuilder
+    {
+        return $this->builder->flag(Flags::TICKET);
+    }
+
+    /**
      * Service in connection with a property to a non-business buyer, with the retention note
      * (section 14 (4) no. 9 UStG).
      *

@@ -44,6 +44,9 @@ final class Flags
      */
     public const string SELF_BILLED_ADVANCE = 'de.self_billed_advance';
 
+    /** Ticket for the carriage of passengers (section 34 UStDV): no e-invoice obligation. */
+    public const string TICKET = 'de.ticket';
+
     /** The seller is a small business (section 19 UStG), e.g. from config quittio.seller.small_business. */
     public const string SMALL_BUSINESS = Meta::FLAG_SMALL_BUSINESS;
 

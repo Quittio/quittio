@@ -22,13 +22,18 @@ enum BmfErrorClass: string
     case Content = 'content';
 
     /**
-     * The error class of a finding: the UStG rules are content errors, the other findings are
+     * The error class of a finding: the UStG rules are content errors, the missing e-invoice
+     * (DE-EINVOICE-*) a format error, the other findings are
      * format, business rule or content errors by their validation level.
      */
     public static function of(ValidationMessage $message): self
     {
         if (str_starts_with($message->code, 'DE-USTG-')) {
             return self::Content;
+        }
+        // A document that should have been an e-invoice is an "other invoice" (Rz. 6a).
+        if (str_starts_with($message->code, 'DE-EINVOICE-')) {
+            return self::Format;
         }
 
         return match ($message->level) {
