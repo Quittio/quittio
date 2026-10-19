@@ -21,7 +21,7 @@ E-invoicing for PHP and Laravel. Quittio creates, validates, reads and renders e
 
 Germany is the first market; everything country-specific lives in country packs, so the core stays country-neutral.
 
-**Website: [quittio.dev](https://quittio.dev) ([English](https://quittio.dev/en)) · Documentation: [docs.quittio.dev](https://docs.quittio.dev)**
+**Website: [quittio.dev](https://quittio.dev) · Documentation: [docs.quittio.dev](https://docs.quittio.dev)**
 
 > **Status:** version 0.5.0. Implemented: data model, calculation, validation L1–L7, CII/UBL writers and readers, ZUGFeRD/Factur-X PDF/A-3, XRechnung, Peppol BIS, the Laravel integration and the country pack Germany. The Managed layer (issuer profiles, drafts, gapless numbering, archive, cancellations, corrections, mail delivery, audit log) will follow as the separate commercial package `quittio/managed` for Laravel; it is not released yet. APIs may still change until version 1.0.0. The legal wording of the country pack Germany was reviewed by a tax adviser in October 2026 (see [Legal review](#legal-review) and [Disclaimer](#disclaimer)).
 
@@ -139,7 +139,7 @@ The documentation is published at **[docs.quittio.dev](https://docs.quittio.dev)
 - [Field reference](docs/field-reference.md) (generated)
 - [AI assistants](docs/ai.md): llms.txt, the MCP server `https://docs.quittio.dev/mcp` and Laravel Boost
 
-The website **[quittio.dev](https://quittio.dev)** ([English](https://quittio.dev/en)) explains e-invoicing in Germany and shows Quittio in practice:
+The website **[quittio.dev](https://quittio.dev)** explains e-invoicing in Germany and shows Quittio in practice:
 
 - guides, e.g. [e-invoices with PHP without Laravel](https://quittio.dev/en/guides/e-invoices-with-php-without-laravel), [with Laravel](https://quittio.dev/en/guides/create-e-invoices-with-laravel), [cancellations and corrections](https://quittio.dev/en/guides/cancellation-partial-cancellation-correction) and [validating with KoSIT and veraPDF](https://quittio.dev/en/guides/validating-e-invoices-kosit-verapdf);
 - the [e-invoicing mandate in Germany](https://quittio.dev/en/e-invoicing-mandate-germany) and the [formats](https://quittio.dev/en/formats);
