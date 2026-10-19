@@ -1,7 +1,7 @@
 # Quittio
 {: .fs-9 }
 
-E-invoicing for Laravel. Quittio creates, validates, reads and renders electronic invoices based on the European standard EN 16931 – ZUGFeRD/Factur-X, XRechnung, UBL and Peppol BIS from one data model.
+E-invoicing for PHP and Laravel. Quittio creates, validates, reads and renders electronic invoices based on the European standard EN 16931 – ZUGFeRD/Factur-X, XRechnung, UBL and Peppol BIS from one data model. The core runs in any PHP application; the Laravel integration adds facade, configuration and commands.
 {: .fs-6 .fw-300 }
 
 [Get started](getting-started.md){: .btn .btn-primary .fs-5 .mb-4 .mb-md-0 .mr-2 }

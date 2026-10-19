@@ -2,6 +2,7 @@
     "name": "quittio/core",
     "description": "Country-neutral e-invoicing core: EN 16931 data model, calculation, validation, CII/UBL, ZUGFeRD/Factur-X PDF/A-3.",
     "keywords": [
+        "php",
         "e-invoice",
         "einvoice",
         "en16931",

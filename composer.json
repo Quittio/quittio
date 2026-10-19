@@ -1,7 +1,8 @@
 {
     "name": "quittio/quittio",
-    "description": "E-invoicing for Laravel: create, validate, read and render EN 16931 invoices (ZUGFeRD/Factur-X, XRechnung, UBL, Peppol BIS), with the country pack for Germany.",
+    "description": "E-invoicing for PHP and Laravel: create, validate, read and render EN 16931 invoices (ZUGFeRD/Factur-X, XRechnung, UBL, Peppol BIS). Bundles the core, the Laravel integration and the country pack for Germany; without Laravel use quittio/core and quittio/country-de.",
     "keywords": [
+        "php",
         "laravel",
         "e-invoice",
         "einvoice",
