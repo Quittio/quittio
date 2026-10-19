@@ -77,14 +77,24 @@ function publicApiDefault(ReflectionParameter $parameter): string
     };
 }
 
+/**
+ * The type as written, with self resolved to the declaring class: PHP 8.5 resolves it in
+ * reflection, older versions print "self".
+ */
+function publicApiType(?ReflectionType $type, ReflectionClass $class): string
+{
+    return (string) preg_replace('/(?<![\\w\\\\])self(?![\\w\\\\])/', $class->getName(), (string) $type);
+}
+
 function publicApiMethod(ReflectionMethod $method): string
 {
+    $class = $method->getDeclaringClass();
     $parameters = array_map(
-        fn (ReflectionParameter $p) => trim(($p->getType() ?? '').' '.($p->isPassedByReference() ? '&' : '').($p->isVariadic() ? '...' : '').'$'.$p->getName().publicApiDefault($p)),
+        fn (ReflectionParameter $p) => trim(publicApiType($p->getType(), $class).' '.($p->isPassedByReference() ? '&' : '').($p->isVariadic() ? '...' : '').'$'.$p->getName().publicApiDefault($p)),
         $method->getParameters(),
     );
     $modifiers = implode(' ', Reflection::getModifierNames($method->getModifiers()));
-    $return = $method->hasReturnType() ? ': '.$method->getReturnType() : '';
+    $return = $method->hasReturnType() ? ': '.publicApiType($method->getReturnType(), $class) : '';
 
     return $modifiers.' '.$method->getName().'('.implode(', ', $parameters).')'.$return;
 }
@@ -124,7 +134,7 @@ function publicApiOf(string $class): array
             $property->isPublic() ? 'public' : 'protected',
             $property->isStatic() ? 'static' : '',
             $property->isReadOnly() ? 'readonly' : '',
-            (string) $property->getType(),
+            publicApiType($property->getType(), $property->getDeclaringClass()),
             '$'.$property->getName(),
         ]));
     }

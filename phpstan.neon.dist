@@ -5,6 +5,10 @@ includes:
 
 parameters:
     level: max
+    # The supported PHP versions (composer.json: ^8.3), whichever PHP runs the analysis.
+    phpVersion:
+        min: 80300
+        max: 80599
     paths:
         - packages/core/src
         - packages/country-de/src

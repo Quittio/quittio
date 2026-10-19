@@ -98,7 +98,7 @@ it('has only PHP code blocks that parse', function () {
                 token_get_all($source, TOKEN_PARSE);
 
                 return true;
-            } catch (ParseError) {
+            } catch (CompileError) {   // ParseError, and on PHP 8.3 e.g. a final property
                 return false;
             }
         });
