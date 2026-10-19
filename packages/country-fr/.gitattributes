@@ -1,0 +1,9 @@
+* text=auto eol=lf
+*.pdf binary
+*.png binary
+*.ttf binary
+*.icc binary
+/tests export-ignore
+/phpunit.xml.dist export-ignore
+/.github export-ignore
+/.gitattributes export-ignore

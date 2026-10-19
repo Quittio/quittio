@@ -15,6 +15,7 @@ parameters:
         - packages/country-at/src
         - packages/country-ch/src
         - packages/country-be/src
+        - packages/country-fr/src
         - packages/laravel/src
         - tools/validate-fixtures.php
         - tools/docs/generate.php

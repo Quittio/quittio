@@ -19,6 +19,7 @@
 /packages/country-at export-ignore
 /packages/country-ch export-ignore
 /packages/country-be export-ignore
+/packages/country-fr export-ignore
 /packages/*/.github export-ignore
 /packages/*/.gitattributes export-ignore
 /testbench.yaml export-ignore

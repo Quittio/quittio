@@ -1,0 +1,64 @@
+{
+    "name": "quittio/country-fr",
+    "description": "Quittio country pack for France: VAT presets and invoice mentions (CGI, Code de commerce), the mentions of the e-invoicing reform of 2026, SIREN, late payment penalties.",
+    "keywords": [
+        "php",
+        "e-invoice",
+        "factur-x",
+        "facture-electronique",
+        "tva",
+        "france"
+    ],
+    "type": "library",
+    "license": "MIT",
+    "homepage": "https://docs.quittio.dev",
+    "support": {
+        "issues": "https://github.com/Quittio/quittio/issues",
+        "source": "https://github.com/Quittio/quittio",
+        "docs": "https://docs.quittio.dev"
+    },
+    "authors": [
+        {
+            "name": "Niklas Forst"
+        }
+    ],
+    "require": {
+        "php": "^8.3",
+        "brick/math": "^1.0",
+        "brick/money": "^0.15.2",
+        "quittio/core": "self.version"
+    },
+    "require-dev": {
+        "pestphp/pest": "^4.7 || ^5.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Quittio\\Country\\FR\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Quittio\\Country\\FR\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "quittio": {
+            "country-packs": [
+                "Quittio\\Country\\FR\\CountryFR"
+            ]
+        },
+        "branch-alias": {
+            "dev-master": "0.6.x-dev"
+        }
+    },
+    "minimum-stability": "stable",
+    "scripts": {
+        "test": "pest"
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    }
+}

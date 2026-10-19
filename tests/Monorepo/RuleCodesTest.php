@@ -15,6 +15,7 @@ use Quittio\Country\AT\CountryAT;
 use Quittio\Country\BE\CountryBE;
 use Quittio\Country\CH\CountryCH;
 use Quittio\Country\DE\CountryDE;
+use Quittio\Country\FR\CountryFR;
 
 /*
  * Rule overrides address rules by code, so a code belongs to one rule: unique within the core
@@ -22,7 +23,7 @@ use Quittio\Country\DE\CountryDE;
  * Profiles may share rules with each other (XRechnung and its extension run the same BR-DE rules).
  */
 it('gives every rule its own code across core, profiles and country packs', function () {
-    $quittio = Quittio::create([], [new CountryDE, new CountryAT, new CountryCH, new CountryBE]);
+    $quittio = Quittio::create([], [new CountryDE, new CountryAT, new CountryCH, new CountryBE, new CountryFR]);
     $groups = ['core' => [
         ...StructureRules::all(), ...En16931Rules::all(), ...VatCategoryRules::all(), ...CodeListRules::all(),
         ...QuittioRules::all(), ...PlausibilityRules::all(), new FieldMatrixRule,
