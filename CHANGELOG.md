@@ -4,6 +4,8 @@ All notable changes to this project are documented in this file. The format foll
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-10-19
+
 The legal wording, rules and defaults of the country pack Germany were reviewed against the UStG, the UStDV, the UStAE, the BMF letters of 15 October 2025 and 15 October 2026 and the case law, and confirmed by a tax adviser in October 2026. The changes below follow from that review. Quittio remains software, not tax advice; see the legal review and the disclaimer in the README.
 
 ### Added
@@ -311,7 +313,8 @@ First release.
 - `pdf.paper` and the VIES verification (`validation.drivers.vies.enabled`) take effect; file names of XML-only formats no longer contain a raw translation key.
 - Watermarks (draft and preview PDFs) were never printed: mPDF needs `showWatermarkText`, and PDF/A forbids their transparency. Watermarked PDFs without embedded XML are now rendered without PDF/A.
 
-[Unreleased]: https://github.com/Quittio/quittio/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/Quittio/quittio/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/Quittio/quittio/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/Quittio/quittio/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/Quittio/quittio/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/Quittio/quittio/compare/v0.2.0...v0.3.0

@@ -2,7 +2,7 @@
 
 ## Supported versions
 
-Security fixes are released for the latest minor version (currently 0.5.x) of `quittio/quittio`, `quittio/core`, `quittio/laravel` and `quittio/country-de`.
+Security fixes are released for the latest minor version (currently 0.6.x) of `quittio/quittio`, `quittio/core`, `quittio/laravel` and `quittio/country-de`.
 
 ## Reporting a vulnerability
 
