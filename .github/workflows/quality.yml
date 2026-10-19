@@ -61,5 +61,12 @@ jobs:
           extensions: dom, libxml, mbstring, xmlwriter, zlib, intl, gd, bcmath
           coverage: pcov
       - uses: ramsey/composer-install@65e4f84970763564f46a70b8a54b90d033b3bdda # 4.0.0
+      # The official XRechnung test suite: its golden files (read, write back, rules) kill many
+      # mutants in Xml and the rules, and the minimums above were measured with it.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: packages/country-de/tests/Fixtures/xrechnung-testsuite
+          key: xrechnung-testsuite-${{ hashFiles('tools/fixtures/download.sh') }}
+      - run: tools/fixtures/download.sh
       # The tests of phpunit.mutation.xml against the mutated code.
       - run: vendor/bin/pest -c phpunit.mutation.xml --mutate --everything --parallel --exclude-group=official,visual --path=${{ matrix.path }} --min=${{ matrix.min }}
