@@ -96,8 +96,9 @@ final readonly class RenderPipeline
         $results = [];
         $chosen = $this->formats->choose($invoice, $countries, $options);
         $eInvoice = $this->producesEInvoice($chosen, $this->presentation->hasWatermark($invoice->presentation, $options));
+        $visualizes = $eInvoice === true ? $this->xmlOnlyEInvoice($chosen) : null;
         foreach ($chosen as [$format, $profile]) {
-            $results[$format->key] = $this->renderFormat($invoice, $countries, $format, $profile, $locale, $options, $eInvoice);
+            $results[$format->key] = $this->renderFormat($invoice, $countries, $format, $profile, $locale, $options, $eInvoice, $visualizes);
         }
 
         foreach ($results as $result) {
@@ -217,7 +218,24 @@ final readonly class RenderPipeline
         return false;
     }
 
-    private function renderFormat(InvoiceData $invoice, ResolvedCountries $countries, OutputFormat $format, Profile $profile, string $locale, RenderOptions $options, ?bool $eInvoice = null): RenderedInvoice
+    /**
+     * The name of the profile of an e-invoice of the run that is XML only (e.g. "XRechnung 3.0"):
+     * a PDF or HTML of the same run is a readable copy of it. Null without one.
+     *
+     * @param  list<array{OutputFormat, Profile}>  $chosen
+     */
+    private function xmlOnlyEInvoice(array $chosen): ?string
+    {
+        foreach ($chosen as [$format, $profile]) {
+            if ($format->syntax !== null && ! $format->pdf && $profile->isEn16931Compliant()) {
+                return $profile->name();
+            }
+        }
+
+        return null;
+    }
+
+    private function renderFormat(InvoiceData $invoice, ResolvedCountries $countries, OutputFormat $format, Profile $profile, string $locale, RenderOptions $options, ?bool $eInvoice = null, ?string $visualizes = null): RenderedInvoice
     {
         // Checked for the whole run in render(); kept here for formats with XML (defence in depth).
         $watermarked = $this->presentation->hasWatermark($invoice->presentation, $options);
@@ -243,7 +261,10 @@ final readonly class RenderPipeline
         if ($format->pdf || $format->html) {
             // PDF/A for embedded XML, otherwise as configured; watermarks need transparency (no PDF/A).
             $pdfa = $format->pdf && ($xml !== null || ($this->config->pdfa && ! $watermarked));
-            $view = (new ViewModelFactory)->build($invoice, $this->viewContext($locale, $countries, $profile, $options, $pdfa, $invoice->presentation));
+            // A PDF or HTML next to an XML-only e-invoice is marked as its readable copy, unless
+            // the option visualization_notice is false.
+            $copy = $xml === null && $visualizes !== null && ($options->options['visualization_notice'] ?? $this->config->options['visualization_notice'] ?? true) !== false;
+            $view = (new ViewModelFactory)->build($invoice, $this->viewContext($locale, $countries, $profile, $options, $pdfa, $invoice->presentation, $copy ? ['visualization_of' => $visualizes] : []));
             $html = $this->templates->render($this->presentation->template($invoice->presentation, $options), $view);
             $title = $view->title();
 
@@ -413,7 +434,10 @@ final readonly class RenderPipeline
      * The context of the view model, with the logo of the presentation already resolved
      * (downloaded, checked, scaled and prepared for PDF/A), so that the view layer does no I/O.
      */
-    private function viewContext(string $locale, ResolvedCountries $countries, ?Profile $profile, RenderOptions $options, bool $pdfa, ?Presentation $own): ViewContext
+    /**
+     * @param  array<string, mixed>  $run  options set by the run, e.g. visualization_of
+     */
+    private function viewContext(string $locale, ResolvedCountries $countries, ?Profile $profile, RenderOptions $options, bool $pdfa, ?Presentation $own, array $run = []): ViewContext
     {
         $defaults = $this->presentation->defaults($options);
         $logo = ($own === null ? $defaults : ViewModelFactory::mergePresentation($own, $defaults ?? new Presentation))?->logo;
@@ -433,6 +457,7 @@ final readonly class RenderPipeline
                 ...$options->options,
                 // Set by the run, not configurable: logos are prepared for PDF/A (no transparency, no SVG).
                 'pdfa' => $pdfa,
+                ...$run,
             ],
             logo: $logo === null || $logo === '' ? null : new ResolvedLogo($logo, (new LogoCache($cache, pdfa: $pdfa))->resolve($logo)),
         );

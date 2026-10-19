@@ -443,6 +443,7 @@
             "packages": "Packages",
             "weight": "Weight",
             "tracking_number": "Tracking number",
+            "einvoice_visualization": "Readable copy of the e-invoice (:format) no. :number – a copy with the same content. Only the XML file is authoritative.",
             "proforma_notice": "This proforma invoice is not an invoice for tax purposes.",
             "acceptance": "Order placed:",
             "acceptance_signature": "Date, signature",

@@ -230,7 +230,7 @@ $result->as('pdf')->save('invoices', '2026/');         // 2026/Rechnung_RE-2026-
 ```
 
 - The Leitweg-ID goes into the buyer reference (BT-10). With a Leitweg-ID there, the automatic choice selects XRechnung in the CII syntax (`xrechnung-cii`) by itself ([Syntaxes](concepts.md#syntaxes-cii-and-ubl)). The buyer's electronic address is the Leitweg-ID as well, with the scheme `0204`.
-- `render()` without a format would render `xrechnung-cii` alone. The list `['xrechnung-cii', 'pdf']` renders both formats from the same calculation, like `->formats([...])`. The first format is the main result, and `as('pdf')` returns the PDF. The XML is the invoice, the PDF only a readable copy.
+- `render()` without a format would render `xrechnung-cii` alone. The list `['xrechnung-cii', 'pdf']` renders both formats from the same calculation, like `->formats([...])`. The first format is the main result, and `as('pdf')` returns the PDF. The XML is the invoice, the PDF only a readable copy. The PDF says so in its legal notes: "Lesbare Darstellung der E-Rechnung (XRechnung 3.0) Nr. RE-2026-0104 – inhaltsgleiches Mehrstück. Maßgeblich ist ausschließlich die XML-Datei." (readable copy of the e-invoice, a copy with the same content; only the XML file is authoritative; label `einvoice_visualization`). The BMF letter of 15 October 2024 (marginal no. 6) allows such an additional PDF; keep it with the XML. The render option `visualization_notice` set to `false` (`->option('visualization_notice', false)`; in the core also `Quittio::create(['options' => ['visualization_notice' => false]])`) leaves the notice out.
 - XRechnung requires the seller contact with name, phone and email, the electronic addresses of both parties and payment instructions. The seller configuration at the top of this page provides them ([XRechnung](formats.md#xrechnung)).
 - Quittio creates the file but does not send it. Upload it to the portal the authority names, or send it via Peppol.
 
@@ -333,6 +333,33 @@ $result->filename();                                   // Gutschrift_GS-2026-001
 - `->seller()` replaces the seller of the configuration, and with it the configured bank account and small business setting. `payment()` sends the payment to the supplier's account.
 - `selfBilled()` sets type code 389 and the note "Gutschrift". The PDF is titled "Gutschrift" ([Self-billing](country-packs.md#self-billing-gutschrift)).
 - "Gutschrift" is used only for self-billing. Cancellations are titled "Stornorechnung" (cancellation invoice).
+
+### Continuing invoices
+
+A maintenance contract runs for a year and is paid monthly. Instead of an invoice every month you may issue one e-invoice for the first month that is the invoice for the whole term (a "Dauerrechnung", continuing invoice). The example shows what it must contain.
+
+```php
+use Quittio\Core\Builder\Party;
+use Quittio\Core\Enums\UnitCode;
+use Quittio\Laravel\Facades\Quittio;
+
+$result = Quittio::invoice()
+    ->number('WV-2027-001')                              // a number from the contract is enough
+    ->issueDate('2026-12-15')
+    ->invoicingPeriod('2027-01-01', '2027-01-31')        // the first partial period
+    ->contractReference('WV-2027-001')
+    ->buyer(Party::make('Kunde AG')
+        ->vatId('DE987654321')
+        ->address('Bahnhofstraße 5', '54321', 'Beispielstadt', 'DE'))
+    ->line('Server maintenance, monthly', netPrice: '250.00', unit: UnitCode::Month)
+    ->paymentTerms('Dauerrechnung für den Wartungsvertrag WV-2027-001: Diese Rechnung gilt für jeden Monat von Januar bis Dezember 2027. Zahlen Sie monatlich 250,00 € zzgl. 19 % Umsatzsteuer 47,50 €, zusammen 297,50 €, bis zum 3. des Monats.')
+    ->render();
+```
+
+- In Germany one e-invoice for the first partial period is enough if it makes clear that it is a continuing invoice: either the contract is attached (`->attachment()`, BG-24) or its content says so, as the payment terms (BT-20) above do (section 14.1 (19) UStAE). An external link to the contract is not enough.
+- Net amount and VAT of each partial period, and the period itself, must be in the structured part: here the line and the invoicing period (BG-14) of the first month, and the payment schedule in BT-20 (BMF letter of 15 October 2025, marginal no. 35). The invoice number may be a number from the contract (section 14.5 (12) UStAE).
+- When the price, the VAT rate or another mandatory detail changes, issue a new e-invoice; a letter is not enough (section 14.1 (19) sentence 3 UStAE). A continuing invoice issued lawfully as paper or PDF before the obligation needs no new e-invoice until something changes (sentence 4).
+- Monthly invoices are allowed as well and easier for the buyer's accounting; they avoid the change problem. Quittio has no recurring invoices of its own.
 
 ## Customers abroad
 

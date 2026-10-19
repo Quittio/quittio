@@ -2122,6 +2122,11 @@ QUITTIO_DB=pgsql QUITTIO_DB_TRIGGERS=1 vendor/bin/pest --testsuite=managed
   anonymisation.
 - The default cancellation and correction strategies and the one-cent VAT alignment of partial
   cancellations are to be confirmed by a tax adviser (see the legal review in the README).
+- The PDF visualisation sent with an XRechnung (`delivery.mail.xrechnung_visualization`) is
+  not archived. Keep it with the XML if you send it.
+- A future DATEV export has to show cash discounts taken per VAT rate with the reduction of
+  net amount and VAT, the invoice number as document field and the payment date, as the
+  reduction is corrected in the period of the payment (section 17 UStG).
 
 ## Configuration
 

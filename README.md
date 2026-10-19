@@ -125,19 +125,16 @@ php tools/docs/generate.php        # JSON schema and field reference after model
 
 ## Legal review
 
-The legal wording, legal references and defaults of the country pack Germany and the Managed layer are being reviewed by a tax adviser and may change before version 1.0. Under review:
+The legal wording, legal references and defaults of the country pack Germany and the Managed layer were checked in October 2026 against the UStG, the UStDV, the UStAE (as of 2 June 2026), the BMF letters of 15 October 2025 and 15 October 2026 on e-invoicing, the mapping table of KoSIT and FeRD and the case law, with test invoices validated by KoSIT and veraPDF. The changes that followed are listed in the [changelog](CHANGELOG.md) under "Unreleased". This check does not replace the confirmation by a licensed tax adviser, which is still pending before version 1.0.0. Open or to be confirmed:
 
-- **Cancellations:** type code 381 with positive amounts by default, configurable (`corrections.cancellation_strategy`). The VAT of partial cancellations is rounded cumulatively, so that all of them together reverse exactly the VAT of the original; a single part may differ by one cent from taxable amount × rate (within BR-CO-17, noted on the document).
-- **Corrections:** cancel and reissue by default, corrected invoice 384 configurable (`quittio-managed.correction.strategy`).
-- **Price reductions:** when a price reduction needs a new e-invoice or a document at all (e.g. a used cash discount), a document type of its own instead of a partial cancellation, reductions over several invoices such as annual bonuses (section 17 (4) UStG).
-- **Final invoices:** `->de()->deductAdvance()` creates the EN 16931 variant (full service with full VAT, advance invoices referenced, deducted in BT-113 and itemised with their VAT per rate, section 14 (5) sentence 2 UStG). Under review: the EXTENDED variant, unpaid and partially paid advance invoices, deducting advance invoices as negative lines, deducting self-billed invoices (389).
-- **Continuing invoices:** representation of the payment schedule in the XML.
-- **Self-billed invoices:** their cancellation (type code 261, title "Storno-Gutschrift").
-- **XRechnung:** the optional visualisation PDF sent with the XML.
-- **Texts and rules:** wording and legal references of the tax presets, legal texts and UStG rules, including the prepayment notice, a text for non-taxable transactions in Germany, the severity of the rules (e.g. `DE-USTG-06`) and the rules `DE-USTG-14` and `DE-USTG-15`.
-- **Dunning:** default fees, the flat rate of section 288 (5) BGB together with dunning fees, the start of default, dunning charges without VAT.
-- **E-invoicing obligation:** whether a plain PDF and the profiles MINIMUM and BASIC WL are blocked or only warned about for domestic B2B invoices (section 27 (38) UStG).
-- **Retention:** 8 years from the end of the year of issue, and which files are kept.
+- **Cancellations:** the cumulative rounding of the VAT of partial cancellations, so that all of them together correct exactly the VAT of the original; a single part may differ by one cent from taxable amount × rate (within BR-CO-17, noted on the document). No ruling or administrative instruction deals with it explicitly.
+- **Price reductions:** a document over several invoices, such as for annual bonuses (section 17 (4) UStG), is not available yet.
+- **Final invoices:** the acceptance of the prepaid amount (BT-113) with the itemisation in BT-22 ends on 30 June 2030 (BMF letter of 15 October 2026, marginal no. 3); the default will be reviewed then.
+- **Continuing invoices:** no feature of their own; how to build them is described in the [examples](docs/examples.md#continuing-invoices).
+- **Self-billed invoices in the Managed layer:** who may cancel them, the objection of the supplier and the agreement on self-billing.
+- **Texts and rules:** the small amount limit of the supply date (`DE-USTG-08`, based on secondary sources), the issuing deadline of triangular transactions (`DE-USTG-15`), the detection of supplies exempt under section 4 no. 8 to 29 UStG for the e-invoice obligation (`DE-EINVOICE-*`).
+- **Dunning:** default interest counted actual/actual in leap years; no federal court has decided the day count of section 288 BGB.
+- **Accounting export:** a DATEV export with cash discounts per VAT rate does not exist yet.
 
 ## Licence
 

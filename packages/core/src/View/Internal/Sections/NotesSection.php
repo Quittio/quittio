@@ -25,9 +25,16 @@ final readonly class NotesSection
     {
         $presentation = $this->scope->presentation;
 
+        $legalNotes = ViewModelFactory::legalNoteTexts($this->scope->invoice);
+        // A PDF next to an XML-only e-invoice (run option visualization_of): its readable copy.
+        $visualizes = $this->scope->context->options['visualization_of'] ?? null;
+        if (is_string($visualizes) && $visualizes !== '') {
+            array_unshift($legalNotes, strtr($this->scope->labels['einvoice_visualization'] ?? '', [':format' => $visualizes, ':number' => $this->scope->invoice->number]));
+        }
+
         return [
             // Exemption reasons and regulatory notes that must appear on the invoice.
-            'legalNotes' => ViewModelFactory::legalNoteTexts($this->scope->invoice),
+            'legalNotes' => $legalNotes,
             'notes' => $this->notes(),
             'attachments' => array_map(static fn ($a): array => [
                 'id' => $a->id,

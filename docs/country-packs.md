@@ -93,7 +93,7 @@ InvoiceBuilder::make()
     ->line('Desk', netPrice: '400.00', vat: VatPreset::Standard);   // 16 %
 ```
 
-`VatPreset::Standard->rate()` returns the rate of today. The plausibility rule `DE-VAT-RATE` warns when a line of category `S` within the German VAT territory has a rate that applied neither as standard nor as reduced rate on its supply date. Average rates of agriculture and forestry (section 24 UStG) are a legitimate exception; switch the rule off for them with `validation.rules.disabled` ([Switching rules off](validation.md#switching-rules-off-and-changing-their-severity)).
+`VatPreset::Standard->rate()` returns the rate of today. The plausibility rule `DE-VAT-RATE` warns when a line of category `S` within the German VAT territory has a rate that applied neither as standard nor as reduced rate on its supply date. It cannot tell whether the right one of the two was chosen: 19 % on restaurant meals, which are reduced again since 1 January 2026 (section 12 (2) no. 15 UStG, not for drinks), passes unnoticed. Average rates of agriculture and forestry (section 24 UStG) are a legitimate exception; switch the rule off for them with `validation.rules.disabled` ([Switching rules off](validation.md#switching-rules-off-and-changing-their-severity)).
 
 Up to version 0.2 the presets were called `Standard19` (`de.standard_19`) and `Reduced7` (`de.reduced_7`). These cases are deprecated and follow the dates as well; their keys stay readable: `taxPresets()->get('de.standard_19')` and `quittio.defaults.vat` find `Standard`, and lines of stored invoices keep their key. `VatPreset::fromKey($key)?->canonical()` turns an old key into the current case.
 
@@ -222,6 +222,10 @@ The supply date decides (`UstgRules::supplyDate()`, otherwise the issue date); f
 | from 2028 | error `DE-EINVOICE-01` |
 
 Set the turnover with `quittio.countries.de.prior_year_turnover_above_800k` (core: `Quittio::create(['countries' => ['de' => ['prior_year_turnover_above_800k' => true]]], …)`); the default is `false`. Both findings belong to the BMF error class "Formatfehler" (format error, marginal no. 6a). An other invoice instead of a required e-invoice is no administrative offence (marginal no. 28), but it is no proper invoice, and the buyer may lose the input tax deduction.
+
+#### Mapping table of KoSIT and FeRD
+
+Which mandatory detail of the UStG goes into which field of an e-invoice is set out in the mapping table of KoSIT and FeRD (Empfehlungen zu Pflichtangaben in einer E-Rechnung, as of 25 July 2025), which the BMF letter of 15 October 2026 recommends (marginal no. 8 f.). The pack follows it: exemption and reverse charge texts in BT-120 with the code in BT-121, the statements of section 14a (6) and (7) UStG also as note, the retention notice and "Gutschrift" as note, vehicle details as item attributes (BG-32), the date of receipt of an advance payment in BT-7, a service month as invoicing period (BG-14). Details such as time sheets may go into an embedded attachment, the type, quantity and kind of the service must be in the structured part (marginal no. 10 to 12).
 
 ### XRechnung profiles
 
@@ -457,6 +461,13 @@ Both cancellation strategies are permitted in Germany. Change them with `quittio
 A self-billed invoice (389) with a Leitweg-ID (BT-10), i.e. sent as XRechnung, is cancelled by a negative self-billed invoice (389) instead of a self-billed credit note (261): XRechnung lists 261 not among its type codes and warns (`BR-DE-17`). Receiving portals of public buyers may treat that warning strictly. An explicit `$strategy` or `corrections.cancellation_strategy` still wins. ZUGFeRD keeps 261.
 
 A corrected invoice (384) should state that it corrects and replaces the original (`DE-USTG-18`); `Quittio::correction()` adds the note. A price reduction (`Quittio::priceReduction()`) is titled "Entgeltminderung".
+
+What a correction does for the parties (for your users' information, not checked by Quittio):
+
+- **Seller.** VAT shown too high (section 14c (1) UStG) is corrected in the period of the correction (section 17 (1) sentence 7 UStG), whichever way you correct.
+- **Buyer.** A correction, also by cancellation and new invoice, takes effect back to the original invoice if it had the minimum details of seller, buyer, supply, consideration and VAT and the correction refers to it specifically (BFH V R 26/15, XI R 10/17; BMF letter of 18 September 2020). Quittio refers by number and date (BG-3) and the note.
+- **Procedure.** A correction is no retroactive event under section 175 (1) sentence 1 no. 2 and section 233a (2a) AO (section 14 (4) sentence 4 UStG).
+- **Double invoices.** If an invoice was issued twice, cancel the second one: its VAT is owed under section 14c (1) UStG until it is corrected.
 
 The policy also sets the document titles:
 
@@ -795,6 +806,10 @@ The pack marks German special cases with meta flags on the invoice (`InvoiceData
 ### Retention
 
 `CountryDE::retention()` returns `new RetentionRule(8, fromEndOfCalendarYear: true)`: invoices are kept for 8 years from the end of the calendar year of issue (section 14b UStG, section 147 AO as amended in 2025). An invoice issued on 3 October 2026 is kept until 31 December 2034. The Managed layer stores this date (`retention_until`); `quittio-managed.retention.years` may only lengthen it.
+
+- **Suspension.** Section 147 (3) AO stays unaffected: documents that matter for taxes not yet time-barred, e.g. during a tax audit or an objection, must not be deleted after the 8 years. The Managed layer keeps them with a legal hold (`legal_hold`).
+- **Files.** Keep every invoice in the format it was issued in: ZUGFeRD as the PDF with its embedded XML, XRechnung as the XML. At least the structured part must stay unchanged (section 14b.1 (1) UStAE). Keep a PDF sent with an XRechnung as well, and the validation report as evidence (BMF letter of 15 October 2025, marginal no. 35a). `RenderedInvoice::save()` stores the main output only; save the siblings with `->as('pdf')->save()`.
+- **Supervised institutions.** For credit and financial services institutions, insurers and investment firms the 8 years apply only to invoices whose 10-year period had not expired on 1 January 2026 (section 27 (40) sentence 2 UStG); for everybody else, to invoices whose period was still running on 31 December 2024.
 
 ### BMF error classes
 

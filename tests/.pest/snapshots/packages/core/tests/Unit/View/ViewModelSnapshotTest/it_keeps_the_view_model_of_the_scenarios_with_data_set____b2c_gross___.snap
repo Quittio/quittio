@@ -740,6 +740,7 @@
             "packages": "Packstücke",
             "weight": "Gewicht",
             "tracking_number": "Sendungsnummer",
+            "einvoice_visualization": "Lesbare Darstellung der E-Rechnung (:format) Nr. :number – inhaltsgleiches Mehrstück. Maßgeblich ist ausschließlich die XML-Datei.",
             "proforma_notice": "Diese Proforma-Rechnung ist keine Rechnung im steuerlichen Sinne.",
             "acceptance": "Auftrag erteilt:",
             "acceptance_signature": "Datum, Unterschrift",

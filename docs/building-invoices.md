@@ -875,6 +875,8 @@ Restrictions:
 
 Violations throw a `CalculationException` when the invoice is calculated.
 
+The VAT per rate is rounded commercially from the gross sums (section 14.5 (20) UStAE), and the lines add up exactly to the gross prices; a rounding amount (BT-114) is only needed when net amount and VAT cannot reproduce the gross sum. So the fallback the BMF letter of 15 October 2026 (marginal no. 19) allows for gross price e-invoices until 2027, sums per rate with the lines in an attachment, is not needed.
+
 To change a price later, `InvoiceLine::withPriceInclVat()` changes a gross price line and `withNetPrice()` a net price line. Each throws an `InvalidArgumentException` for a line of the other mode.
 
 ## Changing existing data

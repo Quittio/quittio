@@ -127,6 +127,7 @@ return [
     'packages' => 'Colis',
     'weight' => 'Poids',
     'tracking_number' => 'Numéro de suivi',
+    'einvoice_visualization' => 'Représentation lisible de la facture électronique (:format) n° :number – copie au contenu identique. Seul le fichier XML fait foi.',
     'proforma_notice' => 'Cette facture proforma n\'est pas une facture au sens fiscal.',
     'acceptance' => 'Bon pour accord :',
     'acceptance_signature' => 'Date, signature',
