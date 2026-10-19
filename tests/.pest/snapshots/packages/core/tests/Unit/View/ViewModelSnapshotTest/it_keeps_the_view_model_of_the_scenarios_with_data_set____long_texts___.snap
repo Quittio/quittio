@@ -549,7 +549,7 @@
             "balance": "Saldo",
             "dunning_flat_rate": "Pauschale für Beitreibungskosten (§ 288 Abs. 5 BGB), Forderung :claim",
             "bonus_line": "Bonus",
-            "bonus_on_revenue": ":percent auf den Nettoumsatz von :revenue",
+            "bonus_on_revenue": ":percent auf den Nettoumsatz (Entgelt) von :revenue",
             "bonus_label_unit_price": "Minderung",
             "bonus_label_total": "Summe",
             "bonus_label_net_total": "Minderung Entgelt gesamt",

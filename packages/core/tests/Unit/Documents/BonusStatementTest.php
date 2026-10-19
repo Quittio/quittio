@@ -37,7 +37,7 @@ it('reduces the consideration of a period per VAT rate (section 17 (4) UStG)', f
         ->and($document->bonus?->agreement)->toBe('der Bonusvereinbarung vom 15.01.2026')
         ->and($document->bonus?->invoices)->toBe(['RE-2026-0001', 'RE-2026-0002'])
         ->and($document->lines[0]->item->name)->toBe('Bonus')
-        ->and($document->lines[0]->item->description)->toBe("3\u{00A0}% auf den Nettoumsatz von 100.000,00\u{00A0}€")
+        ->and($document->lines[0]->item->description)->toBe("3\u{00A0}% auf den Nettoumsatz (Entgelt) von 100.000,00\u{00A0}€")
         ->and($rows)->toContain(['S', '19', '3000.00', '570.00'], ['S', '7', '600.00', '42.00'], ['E', '0', '150.00', '0.00'])
         ->and($document->totals?->grossTotal->getAmount()->toString())->toBe('4362.00')
         ->and(DocumentData::fromJson($document->toJson())->bonus?->invoices)->toBe(['RE-2026-0001', 'RE-2026-0002']);

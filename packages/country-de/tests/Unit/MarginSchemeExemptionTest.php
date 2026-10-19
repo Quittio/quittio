@@ -97,3 +97,16 @@ it('keeps the mandatory output of reverse charge rows after a split E group', fu
         ->and(marginRows(marginView($builder))[$rowIndexes[$ae]][0])->toContain('Steuerschuldnerschaft')
         ->and(Quittio::create(['mandatory_fields' => 'exception'], [new CountryDE])->make($builder)->format('pdf')->validate(false)->render()->pdf())->toStartWith('%PDF');
 });
+
+it('prints the text of the special scheme once next to an exemption', function () {
+    $invoice = (new En16931Calculator)->calculate(Scenarios::base()
+        ->line(fn ($l) => $l->name('Heilbehandlung')->quantity(1, UnitCode::Piece)->netPrice('90.00')->vat(VatPreset::exempt('§ 4 Nr. 14 UStG')))
+        ->line(fn ($l) => $l->name('Gebrauchtes Gerät')->quantity(1, UnitCode::Piece)->netPrice('500.00')->vat(VatPreset::MarginSecondHand))
+        ->build());
+    $printed = implode("\n", ViewModelFactory::legalNoteTexts($invoice));
+
+    expect(substr_count($printed, 'Gebrauchtgegenstände/Sonderregelung'))->toBe(1)
+        ->and($printed)->toContain('Steuerfrei nach § 4 Nr. 14 UStG')
+        // The note stays in the XML (BT-22).
+        ->and(array_map(static fn ($n): string => $n->content, $invoice->notes))->toContain('Gebrauchtgegenstände/Sonderregelung');
+});

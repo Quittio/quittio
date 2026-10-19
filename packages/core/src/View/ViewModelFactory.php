@@ -162,13 +162,17 @@ final class ViewModelFactory
     public static function legalNoteTexts(InvoiceData $invoice): array
     {
         $notes = [];
+        $reasons = '';
         foreach ($invoice->vatBreakdown as $row) {
             if ($row->exemptionReason !== null && $row->category !== VatCategory::StandardRate) {
                 $notes[] = $row->exemptionReason;
+                $reasons .= '; '.$row->exemptionReason;
             }
         }
         foreach ($invoice->notes as $note) {
-            if (in_array($note->subjectCode, MandatoryFieldGuard::LEGAL_NOTE_SUBJECTS, true)) {
+            // A note that repeats an exemption reason, also one joined with others in BT-120
+            // (e.g. a margin scheme next to an exemption), is printed once.
+            if (in_array($note->subjectCode, MandatoryFieldGuard::LEGAL_NOTE_SUBJECTS, true) && ! str_contains($reasons.'; ', '; '.trim($note->content).'; ')) {
                 $notes[] = $note->content;
             }
         }
