@@ -80,7 +80,9 @@
         "psr-4": {
             "Quittio\\Core\\Tests\\": "packages/core/tests/",
             "Quittio\\Tests\\": "packages/laravel/tests/",
-            "Quittio\\Country\\DE\\Tests\\": "packages/country-de/tests/"
+            "Quittio\\Country\\DE\\Tests\\": "packages/country-de/tests/",
+            "Quittio\\Country\\AT\\": "packages/country-at/src/",
+            "Quittio\\Country\\AT\\Tests\\": "packages/country-at/tests/"
         }
     },
     "extra": {

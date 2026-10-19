@@ -8,6 +8,8 @@ XRECHNUNG_CONFIG_TAG="${XRECHNUNG_CONFIG_TAG:-v2026-08-31}"
 XRECHNUNG_CONFIG_FILE="${XRECHNUNG_CONFIG_FILE:-xrechnung-3.0.2-validator-configuration-2026-08-31.zip}"
 PEPPOL_BIS_TAG="${PEPPOL_BIS_TAG:-v3.0.20}"
 SCHXSLT_VERSION="${SCHXSLT_VERSION:-1.10.1}"
+# Commit of austriapro/ebinterface-standards with the schema of ebInterface 6.1 (country pack Austria).
+EBINTERFACE_COMMIT="${EBINTERFACE_COMMIT:-a3cf861e87f481e2432385a6038834956786605a}"
 
 # SHA-256 of the pinned versions (the same as KositArtifacts::SHA256). The validator JAR is run with
 # java and release tags can be moved, so a download that does not match is discarded. Versions
@@ -18,6 +20,7 @@ expected_sha256() {
         xrechnung-3.0.2-validator-configuration-2026-08-31.zip) echo 2530cd107c414511c5d0462ec10f886910395abfca820db82e83d70bf01221a8 ;;
         PEPPOL-EN16931-UBL.sch@v3.0.20) echo 5ddf3a2f6633147b20b7805df9902d825af1a984f10014fcee186d4170364b1d ;;
         schxslt-1.10.1.jar) echo 4f4f21edab7b37f96ad59ae12a344d3510f1092ac46b6d81a4efa0120b73cb58 ;;
+        ebinterface-6p1-Invoice.xsd@a3cf861e87f481e2432385a6038834956786605a) echo 8c736ca0953c5b0128210bc75dfa1b8b96e9743e856b5d339eaf825c137fab7c ;;
     esac
 }
 
@@ -81,6 +84,13 @@ if [[ ! -f peppol/PEPPOL-EN16931-UBL.xsl ]]; then
         -s:peppol/PEPPOL-EN16931-UBL.sch \
         -xsl:peppol/schxslt/xslt/2.0/pipeline-for-svrl.xsl \
         -o:peppol/PEPPOL-EN16931-UBL.xsl
+fi
+
+if [[ ! -f ebinterface/6p1/Invoice.xsd ]]; then
+    echo "Downloading the ebInterface 6.1 schema"
+    mkdir -p ebinterface/6p1
+    download "https://raw.githubusercontent.com/austriapro/ebinterface-standards/${EBINTERFACE_COMMIT}/schemas/ebInterface6p1/Invoice.xsd" \
+        ebinterface/6p1/Invoice.xsd "ebinterface-6p1-Invoice.xsd@${EBINTERFACE_COMMIT}"
 fi
 
 echo "Validator artifacts are available in ${TARGET}"

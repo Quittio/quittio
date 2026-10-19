@@ -12,6 +12,7 @@ parameters:
     paths:
         - packages/core/src
         - packages/country-de/src
+        - packages/country-at/src
         - packages/laravel/src
         - tools/validate-fixtures.php
         - tools/docs/generate.php
