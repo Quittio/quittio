@@ -147,8 +147,13 @@ final readonly class DesignSection
         // Register entry and further legal information (BT-33), e.g. "Amtsgericht Musterstadt · Geschäftsführer: …", one part per line.
         $additional = $string($issuer['additionalLegalInfo'] ?? null);
         $parts = $additional === null ? false : preg_split('/\s+·\s+|\R/u', $additional);
-        $legal = RunScope::filled([$string($issuer['legalRegistration'] ?? null), ...array_map(trim(...), $parts === false ? [] : $parts)]);
+        $registration = $string($issuer['legalRegistration'] ?? null);
+        $legal = RunScope::filled([$registration, ...array_map(trim(...), $parts === false ? [] : $parts)]);
         if ($legal !== []) {
+            if ($registration !== null) {
+                // The register number (BT-30) counts as printed for the mandatory field guard, as the tax identifiers below.
+                $aliases[sprintf('design.footerColumns[%d][0]', count($columns))] = 'issuer.legalRegistration';
+            }
             $columns[] = $legal;
         }
 

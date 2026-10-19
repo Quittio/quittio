@@ -823,6 +823,7 @@
         "issuer": "seller",
         "recipient": "buyer",
         "design.footerColumns[0]": "issuer.address.lines",
+        "design.footerColumns[2][0]": "issuer.legalRegistration",
         "design.footerColumns[3][0]": "issuer.vatId",
         "design.footerColumns[3][1]": "issuer.taxNumber"
     }
