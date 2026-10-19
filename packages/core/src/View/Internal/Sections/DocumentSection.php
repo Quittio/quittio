@@ -68,6 +68,27 @@ final readonly class DocumentSection
         if ($type === DocumentType::Proforma) {
             $data['legalNotes'] = [...(array) $data['legalNotes'], $labels['proforma_notice'] ?? ''];
         }
+        if ($document->bonus !== null) {
+            // The statement of section 17 (4) UStG: period and agreement; the reduction per VAT
+            // rate is the VAT breakdown. The seller pays: no bank details, QR code or amount due.
+            $bonus = $document->bonus;
+            $notes = [str_replace(
+                [':from', ':until', ':agreement'],
+                [(string) $this->scope->date($bonus->period->start), (string) $this->scope->date($bonus->period->end), $bonus->agreement],
+                $labels['bonus_statement_note'] ?? '',
+            )];
+            if ($bonus->invoices !== []) {
+                $notes[] = str_replace(':invoices', implode(', ', $bonus->invoices), $labels['bonus_statement_invoices'] ?? '');
+            }
+            if ($document->paymentTerms === null) {
+                $notes[] = $labels['bonus_statement_payout'] ?? '';
+            }
+            $data['legalNotes'] = [...(array) $data['legalNotes'], ...$notes];
+            $data['payment'] = null;
+            if (is_array($data['totals'])) {
+                $data['totals']['amountDue'] = null;
+            }
+        }
         if (in_array($type, [DocumentType::Quote, DocumentType::OrderConfirmation], true)) {
             // Offers are no request to pay: no bank details, no payment QR code, no amount due.
             $data['payment'] = null;

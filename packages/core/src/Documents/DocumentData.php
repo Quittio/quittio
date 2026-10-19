@@ -31,9 +31,9 @@ use Quittio\Core\Serialization\Snapshots\SnapshotVersionException;
 use Quittio\Core\Support\Date;
 
 /**
- * Quote, order confirmation, delivery note, proforma invoice, payment reminder or account
- * statement. Shares parties, lines and calculation with {@see InvoiceData}, but never
- * produces e-invoice XML. Payment reminders and account statements
+ * Quote, order confirmation, delivery note, proforma invoice, payment reminder, account
+ * statement or bonus statement. Shares parties, lines and calculation with {@see InvoiceData},
+ * but never produces e-invoice XML. Payment reminders and account statements
  * have no lines: their amount comes from {@see Dunning} and {@see AccountStatement}.
  */
 final readonly class DocumentData
@@ -86,7 +86,11 @@ final readonly class DocumentData
         public array $vatBreakdown = [],
         public ?Presentation $presentation = null,
         public Meta $meta = new Meta,
+        public ?BonusStatement $bonus = null,
     ) {
+        if ($type === DocumentType::BonusStatement && $bonus === null) {
+            throw new InvalidArgumentException('A bonus statement requires its period and agreement (bonusPeriod(), bonusAgreement()).');
+        }
         if ($type === DocumentType::PaymentReminder && $dunning === null) {
             throw new InvalidArgumentException('A payment reminder requires dunning data.');
         }

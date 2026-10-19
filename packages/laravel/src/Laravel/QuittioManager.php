@@ -197,6 +197,14 @@ class QuittioManager
     }
 
     /**
+     * A new bonus statement (Bonusabrechnung, section 17 (4) UStG) with the seller and its defaults.
+     */
+    public function bonusStatement(): RenderableDocumentBuilder
+    {
+        return $this->withDefaults(RenderableDocumentBuilder::bonusStatement());
+    }
+
+    /**
      * A new account statement with the seller and its defaults.
      */
     public function accountStatement(): RenderableDocumentBuilder

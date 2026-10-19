@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Quittio\Core\Documents;
 
 use Brick\Math\BigDecimal;
+use Brick\Math\RoundingMode;
 use DateTimeInterface;
 use Quittio\Core\Builder\InvoiceBuilder;
 use Quittio\Core\Builder\Line;
@@ -34,6 +35,7 @@ use Quittio\Core\Support\Date;
 use Quittio\Core\Support\Decimal;
 use Quittio\Core\Support\Macroable;
 use Quittio\Core\Tax\TaxPreset;
+use Quittio\Core\View\IntlFormatter;
 
 /**
  * Fluent builder for documents. Parties, lines, notes, discounts and
@@ -73,6 +75,16 @@ class DocumentBuilder
     private array $interest = [];
 
     private ?Period $statementPeriod = null;
+
+    private ?Period $bonusPeriod = null;
+
+    private ?string $bonusAgreement = null;
+
+    /** @var list<string> */
+    private array $bonusInvoices = [];
+
+    /** @var list<array{net: BigDecimal, revenue: ?BigDecimal, percent: ?BigDecimal, vat: TaxPreset|VatCategory, rate: BigDecimal|int|string|null, reason: ?string, code: VatExemptionReasonCode|RawCode|string|null, description: ?string}> */
+    private array $bonuses = [];
 
     private ?string $openingBalance = null;
 
@@ -131,6 +143,16 @@ class DocumentBuilder
         $builder->dunningLevel = $level;
 
         return $builder;
+    }
+
+    /**
+     * A bonus statement (Bonusabrechnung): the reduction of the consideration of the supplies of a
+     * bonusPeriod() under a bonusAgreement(), per VAT rate with bonus() or bonusOnRevenue()
+     * (in Germany section 17 (4) UStG).
+     */
+    public static function bonusStatement(): static
+    {
+        return static::make(DocumentType::BonusStatement);
     }
 
     /**
@@ -557,6 +579,104 @@ class DocumentBuilder
     }
 
     /**
+     * Period of the supplies a bonus statement reduces, e.g. a calendar year.
+     */
+    public function bonusPeriod(Date|DateTimeInterface|string $start, Date|DateTimeInterface|string $end): static
+    {
+        $this->bonusPeriod = new Period(Date::parse($start), Date::parse($end));
+
+        return $this;
+    }
+
+    /**
+     * The agreement a bonus statement is based on, e.g. "der Bonusvereinbarung vom
+     * 15.01.2026"; the statement names it.
+     */
+    public function bonusAgreement(string $agreement): static
+    {
+        $this->bonusAgreement = $agreement;
+
+        return $this;
+    }
+
+    /**
+     * Numbers of the invoices a bonus statement concerns (optional, listed on the statement).
+     */
+    public function bonusInvoices(string ...$numbers): static
+    {
+        $this->bonusInvoices = [...$this->bonusInvoices, ...array_values($numbers)];
+
+        return $this;
+    }
+
+    /**
+     * The reduction of the net amount of one VAT rate of a bonus statement, as a line; the VAT
+     * of the reduction follows from the rate. For exempt supplies pass their category and
+     * exemption reason.
+     */
+    public function bonus(
+        BigDecimal|int|string $net,
+        TaxPreset|VatCategory $vat,
+        BigDecimal|int|string|null $rate = null,
+        ?string $exemptionReason = null,
+        VatExemptionReasonCode|RawCode|string|null $exemptionReasonCode = null,
+        ?string $description = null,
+    ): static {
+        $this->bonuses[] = ['net' => Decimal::of($net), 'revenue' => null, 'percent' => null, 'vat' => $vat, 'rate' => $rate, 'reason' => $exemptionReason, 'code' => $exemptionReasonCode, 'description' => $description];
+
+        return $this;
+    }
+
+    /**
+     * The reduction of one VAT rate as a percentage of the revenue of that rate in the period,
+     * e.g. 3 % of 100,000.00: a line of 3,000.00 with the revenue and the percentage as description.
+     */
+    public function bonusOnRevenue(
+        BigDecimal|int|string $revenue,
+        BigDecimal|int|string $percent,
+        TaxPreset|VatCategory $vat,
+        BigDecimal|int|string|null $rate = null,
+        ?string $exemptionReason = null,
+        VatExemptionReasonCode|RawCode|string|null $exemptionReasonCode = null,
+    ): static {
+        $revenue = Decimal::of($revenue);
+        $percent = Decimal::of($percent);
+        $this->bonuses[] = [
+            'net' => $revenue->multipliedBy($percent)->dividedBy(100, Amount::SCALE, RoundingMode::HalfUp),
+            'revenue' => $revenue, 'percent' => $percent, 'vat' => $vat, 'rate' => $rate, 'reason' => $exemptionReason, 'code' => $exemptionReasonCode, 'description' => null,
+        ];
+
+        return $this;
+    }
+
+    /**
+     * The invoice builder with the lines of bonus() and bonusOnRevenue(), named in the locale
+     * and with amounts in the currency of the document.
+     */
+    private function withBonusLines(): InvoiceBuilder
+    {
+        if ($this->bonuses === []) {
+            return $this->invoice;
+        }
+        $settings = $this->invoice->buildDraft();
+        $locale = $settings->meta->locale ?? 'en';
+        $translator = Translations::translator();
+        $formatter = new IntlFormatter;
+        $invoice = clone $this->invoice;
+        foreach ($this->bonuses as $bonus) {
+            $description = $bonus['description'] ?? ($bonus['revenue'] === null || $bonus['percent'] === null ? null : $translator->get('quittio::labels.bonus_on_revenue', [
+                'percent' => $formatter->percent($bonus['percent'], $locale),
+                'revenue' => $formatter->money(Amount::of($bonus['revenue']->toScale(Amount::SCALE, RoundingMode::HalfUp), $settings->currency), $locale),
+            ], $locale));
+            $name = $translator->get('quittio::labels.bonus_line', [], $locale);
+            $invoice->line(static fn (LineBuilder $line): LineBuilder => $line->name($name)->description($description)->quantity(1, UnitCode::LumpSum)
+                ->netPrice($bonus['net'])->vat($bonus['vat'], $bonus['rate'], $bonus['reason'], $bonus['code']));
+        }
+
+        return $invoice;
+    }
+
+    /**
      * Period of an account statement.
      */
     public function statementPeriod(Date|DateTimeInterface|string $start, Date|DateTimeInterface|string $end): static
@@ -630,7 +750,7 @@ class DocumentBuilder
      */
     public function build(): DocumentData
     {
-        $draft = $this->invoice->buildDraft();
+        $draft = $this->withBonusLines()->buildDraft();
         $currency = $draft->currency;
 
         $lineOptions = [];
@@ -661,6 +781,13 @@ class DocumentBuilder
             packages: $this->packages,
             dunning: $this->type === DocumentType::PaymentReminder
                 ? $this->buildDunning($currency, $draft->meta->locale ?? 'en', $draft->buyer->isConsumer)
+                : null,
+            bonus: $this->type === DocumentType::BonusStatement
+                ? new BonusStatement(
+                    period: $this->bonusPeriod ?? throw new InvalidArgumentException('A bonus statement requires its period: bonusPeriod($start, $end).'),
+                    agreement: $this->bonusAgreement ?? throw new InvalidArgumentException('A bonus statement requires the agreement it is based on: bonusAgreement(…).'),
+                    invoices: $this->bonusInvoices,
+                )
                 : null,
             statement: $this->type === DocumentType::AccountStatement
                 ? new AccountStatement(

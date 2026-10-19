@@ -262,6 +262,23 @@ it('renders documents', function () {
         ->and($pdf->pdf())->toStartWith('%PDF-');
 });
 
+it('renders bonus statements with the seller of the configuration (section 17 (4) UStG)', function () {
+    $statement = Quittio::bonusStatement()->number('BO-1')->issueDate('2027-01-20')->locale('de')
+        ->buyer(fn ($b) => $b->name('Handel AG')->address('Ring 1', '54321', 'Beispielstadt', 'DE'))
+        ->bonusPeriod('2026-01-01', '2026-12-31')
+        ->bonusAgreement('der Bonusvereinbarung vom 15.01.2026')
+        ->bonusOnRevenue('100000.00', '3', VatCategory::StandardRate, '19');
+
+    $html = Quittio::document($statement)->htmlOnly()->render()->html();
+    $pdf = Quittio::document($statement)->render()->pdf();
+
+    expect($html)->toContain('<h1>Bonusabrechnung</h1>')
+        ->and($html)->toContain('vom 01.01.2026 bis 31.12.2026 gemäß der Bonusvereinbarung vom 15.01.2026 (§ 17 Abs. 4 UStG).')
+        ->and($html)->toContain('3.000,00')
+        ->and($html)->toContain('570,00')
+        ->and($pdf)->toStartWith('%PDF');
+});
+
 it('dispatches events and passes options for documents', function () {
     Event::fake([DocumentRendering::class, DocumentRendered::class]);
     $quote = DocumentBuilder::quote()->number('AN-1')->issueDate('2026-10-01')

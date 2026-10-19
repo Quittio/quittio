@@ -85,6 +85,7 @@ Documents start the same way, with the seller and bank account of the configurat
 | `Quittio::proforma()` | Proforma invoice |
 | `Quittio::paymentReminder(int $level = 0)` | Payment reminder (level 0) or reminder (level 1, 2 …) |
 | `Quittio::accountStatement()` | Account statement |
+| `Quittio::bonusStatement()` | Bonus statement (reduction of the consideration of a period, section 17 (4) UStG) |
 
 ### Another seller
 
@@ -730,7 +731,7 @@ Instead of the facade you can inject `Quittio\Laravel\QuittioManager`; both are 
 |---|---|---|
 | `make(InvoiceData\|ProvidesInvoiceData\|InvoiceBuilder $data)` | `PendingInvoice` | Starts a render call. A builder is built, a `ProvidesInvoiceData` model converted with `toInvoiceData()`. See [Rendering invoices](#rendering-invoices). |
 | `invoice()` | `RenderableInvoiceBuilder` | A new invoice with the seller of the configuration (or of the current issuer of the Managed layer); ends with `build()` or `render()` (see [Starting invoices](#starting-invoices)). |
-| `quote()`, `orderConfirmation()`, `deliveryNote()`, `proforma()`, `paymentReminder(int $level = 0)`, `accountStatement()` | `RenderableDocumentBuilder` | A new document with the seller of the configuration; ends with `build()` or `render()`. |
+| `quote()`, `orderConfirmation()`, `deliveryNote()`, `proforma()`, `paymentReminder(int $level = 0)`, `accountStatement()`, `bonusStatement()` | `RenderableDocumentBuilder` | A new document with the seller of the configuration; ends with `build()` or `render()`. |
 | `document(DocumentData\|DocumentBuilder $document)` | `PendingDocument` | Starts a render call for a quote, order confirmation, delivery note, proforma invoice, payment reminder or account statement (see [Documents](#documents)). |
 | `cancellation(InvoiceData $original, string $number, ?string $reason = null, ?string $strategy = null, ?Date $issueDate = null, ?array $lines = null, ?CancellationHistory $history = null, ?string $title = null)` | `InvoiceBuilder` | Builder for the cancellation of an issued invoice; render it with `make()`. `$title` is the document title in the PDF, e.g. "Stornorechnung" (cancellation invoice); `null` = the title of the country pack's correction policy. See [Cancellations](#cancellations). |
 | `check(InvoiceData $invoice, RenderOptions $options)` | `ValidationResult` | Validates like a render run; the fluent form is `Quittio::make($invoice)->check()`. |

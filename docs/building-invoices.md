@@ -1106,7 +1106,7 @@ $builder = $quittio->priceReduction($original, 'EM-2026-0003', PriceReductionRea
 - Credit notes, self-billed documents and uncalculated invoices cannot be reduced (`InvalidArgumentException`).
 - `PriceReduction::of(…)` (`Quittio\Core\Corrections\PriceReduction`) does the same without a `Quittio` instance.
 
-An annual bonus over several invoices (section 17 (4) UStG) is not covered yet.
+An annual bonus over several invoices (section 17 (4) UStG) is documented by a bonus statement ([Documents: Bonus statements](documents.md#bonus-statements)).
 
 ## Extensions
 

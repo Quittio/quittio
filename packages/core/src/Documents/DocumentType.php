@@ -18,6 +18,12 @@ enum DocumentType: string
     case AccountStatement = 'account_statement';
 
     /**
+     * Reduction of the consideration of the supplies of a period, e.g. an annual bonus, per VAT
+     * rate (in Germany section 17 (4) UStG); its lines are the reductions.
+     */
+    case BonusStatement = 'bonus_statement';
+
+    /**
      * Whether line prices and totals are shown.
      */
     public function showsPrices(): bool
@@ -30,7 +36,7 @@ enum DocumentType: string
      */
     public function hasLineTotals(): bool
     {
-        return in_array($this, [self::Quote, self::OrderConfirmation, self::Proforma], true);
+        return in_array($this, [self::Quote, self::OrderConfirmation, self::Proforma, self::BonusStatement], true);
     }
 
     public function labelKey(): string

@@ -1,6 +1,6 @@
 # Quotes, delivery notes and other documents
 
-Besides invoices, a business sends other documents: quotes, order confirmations, delivery notes, proforma invoices, payment reminders and account statements. This page shows how to create them with Quittio. It assumes you know the invoice builder from [Getting started](getting-started.md).
+Besides invoices, a business sends other documents: quotes, order confirmations, delivery notes, proforma invoices, payment reminders, account statements and bonus statements. This page shows how to create them with Quittio. It assumes you know the invoice builder from [Getting started](getting-started.md).
 
 Documents share parties, lines, calculation, design and templates with invoices, but they are no invoices. They never produce e-invoice XML ([What an e-invoice is](concepts.md#what-an-e-invoice-is)), are not validated and are rendered as PDF or HTML only.
 
@@ -12,12 +12,13 @@ Documents share parties, lines, calculation, design and templates with invoices,
 | Proforma invoice | `Proforma` (`proforma`) | `proforma()` | required | yes | payment terms, bank details, QR code |
 | Payment reminder | `PaymentReminder` (`payment_reminder`) | `paymentReminder(int $level = 0)` | not allowed | open items, fees, interest | bank details, QR code over the total |
 | Account statement | `AccountStatement` (`account_statement`) | `accountStatement()` | not allowed | open items, balance | bank details |
+| Bonus statement | `BonusStatement` (`bonus_statement`) | `bonusStatement()` | required (one per VAT rate) | yes | none (the seller pays) |
 
-The printed title depends on the locale. In English it is the name in the first column; reminders from level 1 on are titled "Reminder no. 1", "Reminder no. 2" … ([Payment reminders](#payment-reminders)). German documents are titled "Angebot" (quote), "Auftragsbestätigung" (order confirmation), "Lieferschein" (delivery note), "Proforma-Rechnung" (proforma invoice), "Zahlungserinnerung" (payment reminder), "1. Mahnung" (first reminder) and "Kontoauszug" (account statement).
+The printed title depends on the locale. In English it is the name in the first column; reminders from level 1 on are titled "Reminder no. 1", "Reminder no. 2" … ([Payment reminders](#payment-reminders)). German documents are titled "Angebot" (quote), "Auftragsbestätigung" (order confirmation), "Lieferschein" (delivery note), "Proforma-Rechnung" (proforma invoice), "Zahlungserinnerung" (payment reminder), "1. Mahnung" (first reminder), "Kontoauszug" (account statement) and "Bonusabrechnung" (bonus statement).
 
 ## Creating a document
 
-In Laravel, start with the facade: `Quittio::quote()`, `Quittio::orderConfirmation()`, `Quittio::deliveryNote()`, `Quittio::proforma()`, `Quittio::paymentReminder(int $level = 0)` or `Quittio::accountStatement()`. Like `Quittio::invoice()`, these methods start the builder with the seller, the first bank account and the small business setting of `config/quittio.php` ([Starting invoices](laravel.md#starting-invoices)). `->render()` at the end of the chain renders the PDF.
+In Laravel, start with the facade: `Quittio::quote()`, `Quittio::orderConfirmation()`, `Quittio::deliveryNote()`, `Quittio::proforma()`, `Quittio::paymentReminder(int $level = 0)`, `Quittio::accountStatement()` or `Quittio::bonusStatement()`. Like `Quittio::invoice()`, these methods start the builder with the seller, the first bank account and the small business setting of `config/quittio.php` ([Starting invoices](laravel.md#starting-invoices)). `->render()` at the end of the chain renders the PDF.
 
 ```php
 use Quittio\Core\Builder\Party;
@@ -187,6 +188,33 @@ Violations throw an `InvalidArgumentException`, as does a period that ends befor
 
 `AccountStatement` (`$document->statement`) has `period`, `items`, `openingBalance`, `openItems()` (unsettled items) and `balance($currency)`. The template lists all items, the period, the opening balance and the balance; the payment block shows the bank details without QR code.
 
+## Bonus statements
+
+A bonus agreed for a period, e.g. 3 % on the annual revenue, reduces the consideration of all invoices of that period afterwards. Instead of one document per invoice, a bonus statement documents the reduction once, per VAT rate. In Germany section 17 (4) UStG requires such a document when the reduction concerns supplies taxed at different rates; it need not be an e-invoice (section 17.1 (3a) UStAE).
+
+```php
+use Quittio\Core\Enums\VatCategory;
+use Quittio\Laravel\Facades\Quittio;
+
+$statement = Quittio::bonusStatement()
+    ->number('BO-2027-0001')
+    ->buyer($buyer)
+    ->bonusPeriod('2026-01-01', '2026-12-31')
+    ->bonusAgreement('der Bonusvereinbarung vom 15.01.2026')
+    ->bonusOnRevenue('100000.00', '3', VatCategory::StandardRate, '19')   // 3,000.00 plus VAT 570.00
+    ->bonusOnRevenue('20000.00', '3', VatCategory::StandardRate, '7')     // 600.00 plus VAT 42.00
+    ->bonusInvoices('RE-2026-0001', 'RE-2026-0002')                       // optional
+    ->render();
+```
+
+- `bonusPeriod($start, $end)` is the period of the supplies, `bonusAgreement(string $agreement)` the agreement the bonus is based on. Both are required; `build()` throws an `InvalidArgumentException` without them.
+- Each reduction is a line "Bonus" with the VAT of its rate: `bonusOnRevenue($revenue, $percent, $vat, $rate = null, ?string $exemptionReason = null, $exemptionReasonCode = null)` calculates it from the revenue of that rate (description "3 % auf den Umsatz von 100.000,00 €"), `bonus($net, $vat, …, ?string $description = null)` takes the net amount. Exempt revenue gets a line of its own with category `E` and the exemption reason. The VAT breakdown then shows the reduction of net amount and VAT per rate.
+- The statement names the period and the agreement: "Nachträgliche Minderung der Entgelte für die Lieferungen und sonstigen Leistungen vom 01.01.2026 bis 31.12.2026 gemäß der Bonusvereinbarung vom 15.01.2026 (§ 17 Abs. 4 UStG)." (label `bonus_statement_note`; the German pack adds the reference), the invoices of `bonusInvoices()` if given, and, without payment terms of your own, "Der Bonus wird mit offenen Forderungen verrechnet oder ausgezahlt." (label `bonus_statement_payout`).
+- The seller pays the bonus: the statement shows no bank details, QR code or amount due.
+- `BonusStatement` (`$document->bonus`) has `period`, `agreement` and `invoices`. The revenue per rate comes from your accounting; Quittio does not know it.
+
+For a reduction of a single invoice, e.g. a cash discount taken, use `priceReduction()` instead ([Price reductions](building-invoices.md#price-reductions)).
+
 ## From document to invoice
 
 When the customer accepts a quote or the goods are delivered, turn the document into an invoice:
@@ -315,6 +343,8 @@ Dates accept `Date`, `DateTimeInterface` or a string; amounts are strings.
 | `interestCharge(InterestCharge ...$charges)` | Calculated interest charges, e.g. of `DefaultInterest::calculate()`, with their day count and texts |
 | `deadline($date)` | Payment deadline of a reminder |
 | `statementPeriod($start, $end)` | Period of an account statement |
+| `bonusPeriod($start, $end)`, `bonusAgreement(string $agreement)`, `bonusInvoices(string ...$numbers)` | Period, agreement and invoices of a bonus statement |
+| `bonus($net, TaxPreset\|VatCategory $vat, $rate = null, ?string $exemptionReason = null, $exemptionReasonCode = null, ?string $description = null)`, `bonusOnRevenue($revenue, $percent, TaxPreset\|VatCategory $vat, …)` | Reduction of one VAT rate of a bonus statement, as a line |
 | `openingBalance(BigDecimal\|int\|string $amount)` | Opening balance of an account statement |
 | `presentation(Presentation\|array\|callable $presentation)` | Design of this document ([Templates](templates.md#presentation)) |
 | `locale(string $locale)` | Locale |
@@ -326,11 +356,11 @@ Dates accept `Date`, `DateTimeInterface` or a string; amounts are strings.
 
 `tap()` reaches every invoice builder method, but the document keeps only number, date, currency, parties, lines, allowances, charges, notes, buyer reference, purchase order reference, delivery, payment terms, payment instructions, presentation and meta. Other values set through `tap()` are dropped.
 
-`build()` throws an `InvalidArgumentException` when a quote, order confirmation, proforma or delivery note has no line, or when a reminder or account statement has lines, allowances or charges.
+`build()` throws an `InvalidArgumentException` when a quote, order confirmation, proforma, delivery note or bonus statement has no line, when a bonus statement has no period or agreement, or when a reminder or account statement has lines, allowances or charges.
 
 ## DocumentData
 
-`build()` returns `Quittio\Core\Documents\DocumentData` (immutable; change values with `with()`). Its properties: `type`, `number`, `issueDate`, `currency`, `seller`, `buyer`, `lines`, `lineOptions` (`DocumentLineOptions` keyed by line identifier), `allowances`, `charges`, `notes`, `validUntil`, `reference`, `referenceDate`, `buyerReference`, `purchaseOrderReference`, `delivery`, `packages`, `dunning`, `statement`, `paymentTerms`, `paymentInstructions`, `totals`, `vatBreakdown`, `presentation` and `meta`.
+`build()` returns `Quittio\Core\Documents\DocumentData` (immutable; change values with `with()`). Its properties: `type`, `number`, `issueDate`, `currency`, `seller`, `buyer`, `lines`, `lineOptions` (`DocumentLineOptions` keyed by line identifier), `allowances`, `charges`, `notes`, `validUntil`, `reference`, `referenceDate`, `buyerReference`, `purchaseOrderReference`, `delivery`, `packages`, `dunning`, `statement`, `bonus`, `paymentTerms`, `paymentInstructions`, `totals`, `vatBreakdown`, `presentation` and `meta`.
 
 | Method | Returns |
 |---|---|
