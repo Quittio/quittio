@@ -294,7 +294,7 @@ class CountryDE extends AbstractCountryPack implements CompletesInvoices, Provid
      * Cancellation by credit note, correction by cancel and reissue. A self-billed invoice sent
      * as XRechnung (with a Leitweg-ID) is cancelled by a negative self-billed invoice (389): the
      * self-billed credit note (261) is not among the type codes of XRechnung (warning BR-DE-17).
-     * To be confirmed with a tax adviser (legal review in the README).
+     * Confirmed by a tax adviser in October 2026 (legal review in the README).
      */
     public function correctionPolicy(): CorrectionPolicy
     {

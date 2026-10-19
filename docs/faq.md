@@ -25,7 +25,7 @@ An e-invoice in this sense is a structured format that conforms to EN 16931. Wit
 
 A plain `pdf` is no e-invoice. MINIMUM and BASIC WL carry no lines and do not conform to EN 16931; the validation warns with `QUITTIO-PROFILE-NOT-EINVOICE`. The German country pack chooses `zugferd` for domestic business invoices, XRechnung for public buyers and `pdf` for consumers and small amount invoices ([German format choice](country-packs.md#format-choice)). If you choose another format yourself, it checks the obligation by the supply date: a warning during the transition (`DE-EINVOICE-02`), an error once an e-invoice is required (`DE-EINVOICE-01`, [E-invoice obligation](country-packs.md#e-invoice-obligation)).
 
-This is a summary, not legal advice; the legal wording of the country pack is still under review (see the README of the repository).
+This is a summary, not legal advice. The legal wording of the country pack was reviewed by a tax adviser in October 2026; see the legal review and the disclaimer in the README of the repository.
 
 ## Do I need Java?
 

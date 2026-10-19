@@ -1465,8 +1465,8 @@ How it is recorded:
   invoice is recalculated with Quittio's rounding when it is issued, also a draft started with
   `InvoiceBuilder::from()` on data another system rounded.
 
-The one-cent alignment is to be confirmed by a tax adviser (see the legal review in the
-README).
+The one-cent alignment was confirmed by a tax adviser in October 2026 (see the legal review in
+the README).
 
 ### Sign strategies and credit notes
 
@@ -1575,7 +1575,8 @@ relation type) is written on the original.
 - A correction draft whose original was cancelled, partially cancelled or replaced meanwhile
   can no longer be issued; `quittio:drafts:prune` deletes it.
 
-The default strategy is to be confirmed by a tax adviser (see the legal review in the README).
+The default strategy, cancel and reissue, was confirmed by a tax adviser in October 2026 (see the
+legal review in the README).
 
 ### Left-behind drafts
 
@@ -2120,8 +2121,6 @@ QUITTIO_DB=pgsql QUITTIO_DB_TRIGGERS=1 vendor/bin/pest --testsuite=managed
 - Different notations of one tax number are not unified for the number spaces.
 - Issued invoices can be deleted only after their retention period; there is no early
   anonymisation.
-- The default cancellation and correction strategies and the one-cent VAT alignment of partial
-  cancellations are to be confirmed by a tax adviser (see the legal review in the README).
 - The PDF visualisation sent with an XRechnung (`delivery.mail.xrechnung_visualization`) is
   not archived. Keep it with the XML if you send it.
 - A future DATEV export has to show cash discounts taken per VAT rate with the reduction of

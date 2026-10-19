@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-// Legal and informational texts of German invoices. To be confirmed by a tax adviser before the first release.
+// Legal and informational texts of German invoices. Confirmed by a tax adviser in October 2026.
 // Override them in lang/vendor/quittio-de/en/legal.php.
 return [
     'self_billing' => 'Gutschrift (self-billed invoice)',

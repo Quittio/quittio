@@ -4,6 +4,8 @@ All notable changes to this project are documented in this file. The format foll
 
 ## [Unreleased]
 
+The legal wording, rules and defaults of the country pack Germany were reviewed against the UStG, the UStDV, the UStAE, the BMF letters of 15 October 2025 and 15 October 2026 and the case law, and confirmed by a tax adviser in October 2026. The changes below follow from that review. Quittio remains software, not tax advice; see the legal review and the disclaimer in the README.
+
 ### Added
 
 - `DE-USTG-16` (warning): an invoice to a business, or for a service in connection with a property, issued more than six months after the supply (section 14 (2) sentence 2 UStG). Cancellations, corrections, prepayment invoices and re-issued invoices are skipped.

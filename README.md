@@ -18,7 +18,7 @@ E-invoicing for Laravel. Quittio creates, validates, reads and renders electroni
 
 **Documentation: [docs.quittio.dev](https://docs.quittio.dev)**
 
-> **Status:** version 0.5. Implemented: data model, calculation, validation L1–L7, CII/UBL writers and readers, ZUGFeRD/Factur-X PDF/A-3, XRechnung, Peppol BIS, Laravel integration and the country pack Germany. The Managed layer (issuer profiles, drafts, gapless numbering, archive, cancellations, corrections, mail delivery, audit log) will follow as the separate commercial package `quittio/managed`; it is not released yet. APIs may still change until version 1.0, and the legal wording is under review (see [Legal review](#legal-review)).
+> **Status:** version 0.5.0. Implemented: data model, calculation, validation L1–L7, CII/UBL writers and readers, ZUGFeRD/Factur-X PDF/A-3, XRechnung, Peppol BIS, Laravel integration and the country pack Germany. The Managed layer (issuer profiles, drafts, gapless numbering, archive, cancellations, corrections, mail delivery, audit log) will follow as the separate commercial package `quittio/managed`; it is not released yet. APIs may still change until version 1.0.0. The legal wording of the country pack Germany was reviewed by a tax adviser in October 2026 (see [Legal review](#legal-review) and [Disclaimer](#disclaimer)).
 
 ## Packages
 
@@ -125,15 +125,20 @@ php tools/docs/generate.php        # JSON schema and field reference after model
 
 ## Legal review
 
-The legal wording, legal references and defaults of the country pack Germany and the Managed layer were checked in October 2026 against the UStG, the UStDV, the UStAE (as of 2 June 2026), the BMF letters of 15 October 2025 and 15 October 2026 on e-invoicing, the mapping table of KoSIT and FeRD and the case law, with test invoices validated by KoSIT and veraPDF. The changes that followed are listed in the [changelog](CHANGELOG.md) under "Unreleased". This check does not replace the confirmation by a licensed tax adviser, which is still pending before version 1.0.0. Open or to be confirmed:
+The legal wording, legal references, rules and defaults of the country pack Germany were reviewed in October 2026 against the UStG, the UStDV, the UStAE (as of 2 June 2026), the BMF letters of 15 October 2025 and 15 October 2026 on e-invoicing, the mapping table of KoSIT and FeRD and the case law, with test invoices validated by KoSIT and veraPDF. The changes that followed are listed in the [changelog](CHANGELOG.md) under "Unreleased". A tax adviser (Steuerberater) went through the review and its implementation and confirmed the results in October 2026.
 
-- **Cancellations:** the cumulative rounding of the VAT of partial cancellations, so that all of them together correct exactly the VAT of the original; a single part may differ by one cent from taxable amount × rate (within BR-CO-17, noted on the document). No ruling or administrative instruction deals with it explicitly.
+The review reflects the law and administrative practice of October 2026. Not covered by it or still open:
+
+- **Managed layer:** its tests were not part of the review; self-billing (who may cancel, the objection of the supplier, the agreement on self-billing) is not implemented there yet.
 - **Final invoices:** the acceptance of the prepaid amount (BT-113) with the itemisation in BT-22 ends on 30 June 2030 (BMF letter of 15 October 2026, marginal no. 3); the default will be reviewed then.
 - **Continuing invoices:** no feature of their own; how to build them is described in the [examples](docs/examples.md#continuing-invoices).
-- **Self-billed invoices in the Managed layer:** who may cancel them, the objection of the supplier and the agreement on self-billing.
-- **Texts and rules:** the small amount limit of the supply date (`DE-USTG-08`, based on secondary sources), the issuing deadline of triangular transactions (`DE-USTG-15`), the detection of supplies exempt under section 4 no. 8 to 29 UStG for the e-invoice obligation (`DE-EINVOICE-*`).
-- **Dunning:** default interest counted actual/actual in leap years; no federal court has decided the day count of section 288 BGB.
 - **Accounting export:** a DATEV export with cash discounts per VAT rate does not exist yet.
+
+## Disclaimer
+
+Quittio is software, not tax or legal advice. The review described above lowers the risk of errors but does not exclude them: texts, rules, defaults and calculations may still be wrong, incomplete or become outdated when laws, administrative instructions or case law change. Whether an invoice meets the legal requirements in the individual case remains the responsibility of the business that issues it; have your invoicing checked by your own tax adviser where in doubt.
+
+The open source packages are provided under the MIT licence "as is", without warranty of any kind; the authors are not liable for damages arising from their use, to the extent permitted by law (see [LICENSE](LICENSE)). The commercial package `quittio/managed` is subject to the terms of its licence agreement. Mandatory statutory liability, e.g. for intent, remains unaffected.
 
 ## Licence
 

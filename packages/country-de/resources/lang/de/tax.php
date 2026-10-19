@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-// Exemption reason texts of the German tax presets (BT-120). To be confirmed by a tax adviser.
+// Exemption reason texts of the German tax presets (BT-120). Confirmed by a tax adviser in October 2026.
 return [
     'de.small_business' => 'Steuerfreie Leistung nach § 19 Abs. 1 UStG (Steuerbefreiung für Kleinunternehmer).',
     'de.reverse_charge_domestic' => 'Steuerschuldnerschaft des Leistungsempfängers (§ 13b UStG)',

@@ -27,7 +27,9 @@ Ich bin nicht bereit und nicht verpflichtet, an Streitbeilegungsverfahren vor ei
 
 ## Haftung für Inhalte
 
-Die Inhalte dieser Website werden mit Sorgfalt erstellt. Sie beschreiben die Verwendung der Software Quittio und ersetzen keine steuerliche oder rechtliche Beratung; insbesondere die Rechtstexte der Länderpakete sind von einer Steuerberaterin oder einem Steuerberater zu bestätigen. Für die Richtigkeit, Vollständigkeit und Aktualität der Inhalte kann ich keine Gewähr übernehmen; die Haftung nach den allgemeinen Gesetzen bleibt unberührt.
+Die Inhalte dieser Website werden mit Sorgfalt erstellt. Sie beschreiben die Verwendung der Software Quittio und ersetzen keine steuerliche oder rechtliche Beratung. Die Rechtstexte, Regeln und Voreinstellungen des Länderpakets Deutschland wurden im Oktober 2026 geprüft und von einem Steuerberater bestätigt; sie geben den Rechtsstand dieses Zeitpunkts wieder. Auch nach dieser Prüfung können Fehler nicht ausgeschlossen werden, und spätere Änderungen von Gesetzen, Verwaltungsanweisungen oder Rechtsprechung sind nicht berücksichtigt. Für die Richtigkeit, Vollständigkeit und Aktualität der Inhalte kann ich keine Gewähr übernehmen. Ob eine Rechnung im Einzelfall den gesetzlichen Anforderungen genügt, verantwortet das ausstellende Unternehmen; lassen Sie dies im Zweifel von Ihrer Steuerberatung prüfen.
+
+Die Open-Source-Pakete werden unter der MIT-Lizenz ohne Gewährleistung bereitgestellt; für das kommerzielle Paket `quittio/managed` gelten dessen Lizenzbedingungen. Die Haftung nach den allgemeinen Gesetzen, etwa für Vorsatz und grobe Fahrlässigkeit, bleibt unberührt.
 
 ## Haftung für Links
 

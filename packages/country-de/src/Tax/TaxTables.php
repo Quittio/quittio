@@ -11,8 +11,8 @@ use Quittio\Core\Support\DatedValues;
 /**
  * German tax values that changed over time, each valid from its date on.
  *
- * The dates and values are proposals and must be confirmed by a tax adviser before the first
- * release (legal review in the README), like the note texts of the presets.
+ * The dates and values were confirmed by a tax adviser in October 2026 (legal review in the
+ * README), like the note texts of the presets.
  */
 final class TaxTables
 {

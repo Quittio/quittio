@@ -11,7 +11,7 @@ The page has two parts:
 | **Using the German pack** | Everyone who invoices as a seller in Germany (most readers) | [Germany (`quittio/country-de`)](#germany-quittiocountry-de) |
 | **Writing a country pack** | Developers who add another country or change how a pack behaves | [How a pack is selected](#how-a-pack-is-selected), [Writing your own country pack](#writing-your-own-country-pack), [The `CountryPack` contract](#the-countrypack-contract) |
 
-The legal wording and references of the packs are proposals that must be confirmed by a tax adviser (see the legal review in the README).
+The legal wording, references, rules and defaults of the German pack were reviewed in October 2026 and confirmed by a tax adviser; they reflect the law of that time. Quittio is no tax advice, and the issuer of an invoice remains responsible for it (see the legal review and the disclaimer in the README).
 
 ## Germany (`quittio/country-de`)
 
@@ -894,7 +894,7 @@ For pack authors, this is how `CountryDE` fills the [`CountryPack` contract](#th
 
 ### Known limitations
 
-- The legal wording and references of presets, rules and texts are proposals that must be confirmed by a tax adviser (see the legal review in the README). The default correction strategy and the cancellation of self-billed invoices are under review as well.
+- The legal wording, references and defaults reflect the law and administrative practice of October 2026, when a tax adviser confirmed them (see the legal review and the disclaimer in the README). Later changes of the law need a new release.
 - Final invoices: the EN 16931 variants of `deductAdvance()` (prepaid amount or remainder invoice) exist; the EXTENDED variant does not. The tax review found it unnecessary.
 - The shipped base rate table ends with 1 July 2026. Later rates come from `quittio.countries.de.base_rates` or `php artisan quittio:base-rate:update` (see [Base rate table](#base-rate-table)).
 - The documents layer checks the section 288 (5) BGB flat rate within one reminder (once per claim, not for consumers); across reminders the application or the Managed layer must track it.

@@ -26,8 +26,8 @@ use Quittio\Country\DE\Texts\LegalTexts;
  * The special schemes of section 14a (6) and (7) UStG and the zero rate for photovoltaic
  * systems add their statement as invoice note (BT-22) as well (invoiceNote()).
  *
- * The note texts and legal references are proposals and must be confirmed by a
- * tax adviser before the first release (legal review in the README).
+ * The note texts and legal references were confirmed by a tax adviser in October 2026 (legal
+ * review in the README).
  */
 enum VatPreset: string implements DatedTaxPreset, StatesInvoiceNote
 {

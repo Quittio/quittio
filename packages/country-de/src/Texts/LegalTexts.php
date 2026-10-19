@@ -15,8 +15,8 @@ use Quittio\Country\DE\Tax\VatPreset;
  * The notices that a tax preset also states (reverse charge, intra-Community supply, export,
  * small business) are the preset's exemption reason texts, so that one notice has one wording.
  *
- * The wording and legal references are proposals; confirm them with a tax adviser
- * before the first release (legal review in the README).
+ * The wording and legal references were confirmed by a tax adviser in October 2026 (legal
+ * review in the README); they reflect the law of that time.
  */
 final class LegalTexts
 {

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-// Exemption reason texts of the German tax presets (BT-120). To be confirmed by a tax adviser.
+// Exemption reason texts of the German tax presets (BT-120). Confirmed by a tax adviser in October 2026.
 return [
     'de.small_business' => 'VAT-exempt supply under section 19 (1) UStG (small business exemption).',
     'de.reverse_charge_domestic' => 'Reverse charge, the recipient is liable for VAT (section 13b UStG)',
