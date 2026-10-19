@@ -489,6 +489,10 @@ return [
         'message' => 'The VAT identifier ":value" does not match the format of its country.',
         'hint' => 'Check the VAT identifier for typing errors.',
     ],
+    'QUITTIO-DUNNING-FLAT-RATE-FEES' => [
+        'message' => 'The reminder claims fees of :fees besides the flat rate for recovery costs of :flat_rate. Reminder fees are recovery costs and count towards the flat rate (Article 6 (3) Directive 2011/7/EU, section 288 (5) sentence 3 BGB): claim them only in so far as they exceed it.',
+        'hint' => 'Leave out the reminder fee, or claim only the flat rate. Fees above the flat rate may be claimed for the part that exceeds it.',
+    ],
     'QUITTIO-SME-ID' => [
         'message' => '":value" is a small business identification number (suffix EX), not a VAT identifier.',
         'hint' => 'The number of the cross-border small business scheme belongs to the seller\'s tax registration (BT-32, ->taxNumber()), not to the VAT identifier: it is no VAT identifier (Article 284 (3) VAT Directive) and cannot be checked in VIES.',

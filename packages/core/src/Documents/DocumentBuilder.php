@@ -650,6 +650,31 @@ class DocumentBuilder
     }
 
     /**
+     * The VAT of a bonus line. Intra-community supplies and exports state the reduction of their
+     * consideration instead of the exemption text of a supply, unless a reason is given.
+     *
+     * @param  array{net: BigDecimal, revenue: ?BigDecimal, percent: ?BigDecimal, vat: TaxPreset|VatCategory, rate: BigDecimal|int|string|null, reason: ?string, code: VatExemptionReasonCode|RawCode|string|null, description: ?string}  $bonus
+     * @return array{TaxPreset|VatCategory, BigDecimal|int|string|null, ?string, VatExemptionReasonCode|RawCode|string|null}
+     */
+    private static function bonusVat(array $bonus, string $intraCommunity, string $export): array
+    {
+        $vat = $bonus['vat'];
+        $category = $vat instanceof TaxPreset ? $vat->category() : $vat;
+        $reason = match ($category) {
+            VatCategory::IntraCommunitySupply => $intraCommunity,
+            VatCategory::Export => $export,
+            default => null,
+        };
+        if ($reason === null || $bonus['reason'] !== null) {
+            return [$vat, $bonus['rate'], $bonus['reason'], $bonus['code']];
+        }
+        $code = $bonus['code'] ?? ($vat instanceof TaxPreset ? $vat->exemptionReasonCode() : null)
+            ?? ($category === VatCategory::IntraCommunitySupply ? VatExemptionReasonCode::IntraCommunitySupply : VatExemptionReasonCode::Export);
+
+        return [$category, $bonus['rate'] ?? ($vat instanceof TaxPreset ? $vat->rate() : null) ?? '0', $reason, $code];
+    }
+
+    /**
      * The invoice builder with the lines of bonus() and bonusOnRevenue(), named in the locale
      * and with amounts in the currency of the document.
      */
@@ -669,8 +694,9 @@ class DocumentBuilder
                 'revenue' => $formatter->money(Amount::of($bonus['revenue']->toScale(Amount::SCALE, RoundingMode::HalfUp), $settings->currency), $locale),
             ], $locale));
             $name = $translator->get('quittio::labels.bonus_line', [], $locale);
+            [$vat, $rate, $reason, $code] = self::bonusVat($bonus, $translator->get('quittio::labels.bonus_reason_intra_community', [], $locale), $translator->get('quittio::labels.bonus_reason_export', [], $locale));
             $invoice->line(static fn (LineBuilder $line): LineBuilder => $line->name($name)->description($description)->quantity(1, UnitCode::LumpSum)
-                ->netPrice($bonus['net'])->vat($bonus['vat'], $bonus['rate'], $bonus['reason'], $bonus['code']));
+                ->netPrice($bonus['net'])->vat($vat, $rate, $reason, $code));
         }
 
         return $invoice;

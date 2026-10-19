@@ -279,6 +279,18 @@ it('renders bonus statements with the seller of the configuration (section 17 (4
         ->and($pdf)->toStartWith('%PDF');
 });
 
+it('returns the notices of a document with the rendered result', function () {
+    $reminder = Quittio::paymentReminder(1)->number('M-1')->issueDate('2026-10-01')->locale('de')
+        ->buyer(fn ($b) => $b->name('Kunde AG')->address('Weg 1', '54321', 'Beispielstadt', 'DE'))
+        ->openItem('RE-1', '2026-08-01', '1190.00', '2026-08-15')
+        ->flatRate('RE-1')
+        ->fee('Mahngebühr', '5.00');
+
+    $result = Quittio::document($reminder)->htmlOnly()->render();
+
+    expect(array_map(static fn ($n): string => $n->code, $result->notices()))->toBe(['QUITTIO-DUNNING-FLAT-RATE-FEES']);
+});
+
 it('dispatches events and passes options for documents', function () {
     Event::fake([DocumentRendering::class, DocumentRendered::class]);
     $quote = DocumentBuilder::quote()->number('AN-1')->issueDate('2026-10-01')

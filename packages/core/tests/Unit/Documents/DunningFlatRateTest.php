@@ -43,3 +43,17 @@ it('rejects the flat rate for consumers', function () {
     expect(fn () => flatRateReminder()->buyer(fn ($b) => $b->consumer())->flatRate('RE-1')->build())
         ->toThrow(InvalidArgumentException::class, 'applies only to businesses');
 });
+
+it('notes that reminder fees count towards the flat rate (section 288 (5) sentence 3 BGB)', function () {
+    $combined = flatRateReminder()->flatRate('RE-1')->fee('Mahngebühr', '5.00')->build();
+    $notices = $combined->notices('de');
+
+    expect($notices)->toHaveCount(1)
+        ->and($notices[0]->code)->toBe('QUITTIO-DUNNING-FLAT-RATE-FEES')
+        ->and($notices[0]->severity->value)->toBe('warning')
+        ->and($notices[0]->message)->toContain("Gebühren von 5,00\u{00A0}€ neben der Pauschale für Beitreibungskosten von 40,00\u{00A0}€")
+        ->and($notices[0]->message)->toContain('§ 288 Abs. 5 Satz 3 BGB')
+        ->and($combined->notices('en')[0]->message)->toStartWith('The reminder claims fees of')
+        ->and(flatRateReminder()->flatRate('RE-1')->build()->notices())->toBe([])
+        ->and(flatRateReminder()->fee('Mahngebühr', '5.00')->build()->notices())->toBe([]);
+});

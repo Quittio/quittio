@@ -489,6 +489,10 @@ return [
         'message' => 'Die USt-IdNr. „:value“ entspricht nicht dem Format ihres Landes.',
         'hint' => 'Prüfen Sie die USt-IdNr. auf Tippfehler.',
     ],
+    'QUITTIO-DUNNING-FLAT-RATE-FEES' => [
+        'message' => 'Die Mahnung verlangt Gebühren von :fees neben der Pauschale für Beitreibungskosten von :flat_rate. Mahngebühren sind Beitreibungskosten und werden auf die Pauschale angerechnet (Art. 6 Abs. 3 Richtlinie 2011/7/EU, § 288 Abs. 5 Satz 3 BGB): Verlangen Sie sie nur, soweit sie die Pauschale übersteigen.',
+        'hint' => 'Lassen Sie die Mahngebühr weg oder verlangen Sie nur die Pauschale. Gebühren über der Pauschale dürfen Sie in Höhe des übersteigenden Betrags verlangen.',
+    ],
     'QUITTIO-SME-ID' => [
         'message' => '„:value“ ist eine Kleinunternehmer-Identifikationsnummer (Suffix EX), keine USt-IdNr.',
         'hint' => 'Die Nummer der grenzüberschreitenden Kleinunternehmerregelung gehört in die Steuernummer des Verkäufers (BT-32, ->taxNumber()), nicht in die USt-IdNr.: Sie ist keine USt-IdNr. (Art. 284 Abs. 3 MwStSystRL) und lässt sich nicht über VIES prüfen.',

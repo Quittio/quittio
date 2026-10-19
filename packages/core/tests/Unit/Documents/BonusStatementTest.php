@@ -37,7 +37,7 @@ it('reduces the consideration of a period per VAT rate (section 17 (4) UStG)', f
         ->and($document->bonus?->agreement)->toBe('der Bonusvereinbarung vom 15.01.2026')
         ->and($document->bonus?->invoices)->toBe(['RE-2026-0001', 'RE-2026-0002'])
         ->and($document->lines[0]->item->name)->toBe('Bonus')
-        ->and($document->lines[0]->item->description)->toBe("3\u{00A0}% auf den Umsatz von 100.000,00\u{00A0}€")
+        ->and($document->lines[0]->item->description)->toBe("3\u{00A0}% auf den Nettoumsatz von 100.000,00\u{00A0}€")
         ->and($rows)->toContain(['S', '19', '3000.00', '570.00'], ['S', '7', '600.00', '42.00'], ['E', '0', '150.00', '0.00'])
         ->and($document->totals?->grossTotal->getAmount()->toString())->toBe('4362.00')
         ->and(DocumentData::fromJson($document->toJson())->bonus?->invoices)->toBe(['RE-2026-0001', 'RE-2026-0002']);
@@ -63,4 +63,30 @@ it('requires period, agreement and a reduction', function (Closure $build, strin
     'no period' => [fn () => DocumentBuilder::bonusStatement()->number('B')->seller(fn ($s) => $s->name('S')->address('a', '1', 'b', 'DE'))->buyer(fn ($b) => $b->name('B')->address('a', '1', 'b', 'DE'))->bonusAgreement('x')->bonus('1', VatCategory::StandardRate, '19')->build(), 'requires its period'],
     'no agreement' => [fn () => bonusStatement()->bonusAgreement(' ')->bonus('1', VatCategory::StandardRate, '19')->build(), 'must name the agreement'],
     'no reduction' => [fn () => bonusStatement()->build(), 'requires at least one line'],
+]);
+
+it('names reductions instead of prices, VAT and amounts, so that it does not read like an invoice', function () {
+    $document = (new DocumentCalculator)->calculate(bonusStatement()
+        ->bonus('3000.00', VatCategory::StandardRate, '19')
+        ->bonus('300.00', VatCategory::IntraCommunitySupply, '0')
+        ->build());
+    $view = (new ViewModelFactory)->buildDocument($document, new ViewContext(locale: 'de'));
+    $rows = array_map(static fn ($row): string => (string) $row->label, iterator_to_array($view->vatRows));
+
+    expect((string) $view->labels->unit_price)->toBe('Minderung')
+        ->and((string) $view->labels->total)->toBe('Summe')
+        ->and((string) $view->labels->net_total)->toBe('Minderung Entgelt gesamt')
+        ->and((string) $view->labels->gross_total)->toBe('Bonus gesamt (brutto)')
+        ->and($rows)->toContain("Minderung USt. 19\u{00A0}%", 'Minderung ohne USt. (Innergemeinschaftliche Lieferung)');
+});
+
+it('states the reduction for intra-community supplies and exports instead of the exemption of a supply', function (VatCategory $category, string $reason, string $code) {
+    $document = bonusStatement()->bonus('300.00', $category)->build();
+
+    expect($document->lines[0]->vat->exemptionReason)->toBe($reason)
+        ->and((string) $document->lines[0]->vat->exemptionReasonCode?->value)->toBe($code)
+        ->and(bonusStatement()->bonus('300.00', $category, '0', 'Eigener Text')->build()->lines[0]->vat->exemptionReason)->toBe('Eigener Text');
+})->with([
+    'intra-community supply' => [VatCategory::IntraCommunitySupply, 'Minderung des Entgelts für steuerfreie innergemeinschaftliche Lieferungen', 'VATEX-EU-IC'],
+    'export' => [VatCategory::Export, 'Minderung des Entgelts für steuerfreie Ausfuhrlieferungen', 'VATEX-EU-G'],
 ]);

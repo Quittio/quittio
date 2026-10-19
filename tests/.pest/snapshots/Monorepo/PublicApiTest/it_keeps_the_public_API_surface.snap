@@ -1812,6 +1812,7 @@
             "public __construct(Quittio\\Core\\Documents\\DocumentType $type, string $number, Quittio\\Core\\Support\\Date $issueDate, string $currency, Quittio\\Core\\Data\\Party\\SellerParty $seller, Quittio\\Core\\Data\\Party\\BuyerParty $buyer, array $lines = [], array $lineOptions = [], array $allowances = [], array $charges = [], array $notes = [], ?Quittio\\Core\\Support\\Date $validUntil = null, ?string $reference = null, ?Quittio\\Core\\Support\\Date $referenceDate = null, ?string $buyerReference = null, ?string $purchaseOrderReference = null, ?Quittio\\Core\\Data\\Delivery\\Delivery $delivery = null, array $packages = [], ?Quittio\\Core\\Documents\\Dunning $dunning = null, ?Quittio\\Core\\Documents\\AccountStatement $statement = null, ?Quittio\\Core\\Data\\Payment\\PaymentTerms $paymentTerms = null, ?Quittio\\Core\\Data\\Payment\\PaymentInstructions $paymentInstructions = null, ?Quittio\\Core\\Data\\Totals\\Totals $totals = null, array $vatBreakdown = [], ?Quittio\\Core\\Data\\Presentation\\Presentation $presentation = null, Quittio\\Core\\Data\\Meta $meta = new Quittio\\Core\\Data\\Meta, ?Quittio\\Core\\Documents\\BonusStatement $bonus = null)",
             "public billableLines(): array",
             "public isCalculated(): bool",
+            "public notices(string $locale = \"en\"): array",
             "public options(string $lineId): Quittio\\Core\\Documents\\DocumentLineOptions",
             "public static fromArray(array $data): Quittio\\Core\\Documents\\DocumentData",
             "public static fromJson(string $json): Quittio\\Core\\Documents\\DocumentData",
@@ -3519,13 +3520,14 @@
     "Quittio\\Core\\Rendering\\RenderedDocument": {
         "kind": "final readonly class",
         "methods": [
-            "public __construct(Quittio\\Core\\Documents\\DocumentData $data, string $html, string $filenamePattern, ?string $pdf = null)",
+            "public __construct(Quittio\\Core\\Documents\\DocumentData $data, string $html, string $filenamePattern, ?string $pdf = null, array $notices = [])",
             "public contents(): string",
             "public data(): Quittio\\Core\\Documents\\DocumentData",
             "public filename(?string $extension = null): string",
             "public hasPdf(): bool",
             "public html(): string",
             "public mimeType(): string",
+            "public notices(): array",
             "public pdf(): string",
             "public save(string $path): string"
         ]
@@ -6719,6 +6721,7 @@
             "public hasPdf(): bool",
             "public html(): string",
             "public mimeType(): string",
+            "public notices(): array",
             "public pdf(): string",
             "public save(?string $disk = null, ?string $path = null): string",
             "public stream(?string $filename = null): Symfony\\Component\\HttpFoundation\\Response",

@@ -10,8 +10,10 @@ use Quittio\Core\Documents\DunningFee;
 use Quittio\Core\Documents\InterestCharge;
 use Quittio\Core\Documents\OpenItem;
 use Quittio\Core\Documents\Package;
+use Quittio\Core\Enums\VatCategory;
 use Quittio\Core\View\FormattedValue;
 use Quittio\Core\View\Internal\RunScope;
+use Stringable;
 
 /**
  * Quotes, delivery notes, reminders and other documents: the "documentInfo" node and what
@@ -88,6 +90,9 @@ final readonly class DocumentSection
             if (is_array($data['totals'])) {
                 $data['totals']['amountDue'] = null;
             }
+            // Read on its own the statement must not look like an invoice with VAT shown: the
+            // columns, the VAT rows and the totals name reductions.
+            $data = $this->bonusLabels($data);
         }
         if (in_array($type, [DocumentType::Quote, DocumentType::OrderConfirmation], true)) {
             // Offers are no request to pay: no bank details, no payment QR code, no amount due.
@@ -107,6 +112,38 @@ final readonly class DocumentSection
             $data['payment']['remittance'] = $remittance;
             $data['payment']['qrCode'] = $this->payment->qrCode($document->dunning->total($document->currency)->getAmount(), $remittance);
         }
+
+        return $data;
+    }
+
+    /**
+     * The labels of a bonus statement: reductions instead of prices, VAT and amounts.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function bonusLabels(array $data): array
+    {
+        $labels = $this->scope->labels;
+        if (is_array($data['labels'] ?? null)) {
+            foreach (['unit_price', 'total', 'net_total', 'gross_total'] as $key) {
+                $data['labels'][$key] = $labels['bonus_label_'.$key] ?? $data['labels'][$key] ?? '';
+            }
+        }
+        $text = static fn (mixed $value): string => is_string($value) || $value instanceof Stringable ? (string) $value : '';
+        $rows = [];
+        foreach (is_array($data['vatRows'] ?? null) ? $data['vatRows'] : [] as $row) {
+            if (is_array($row)) {
+                $taxed = in_array($row['category'] ?? null, [VatCategory::StandardRate->value, VatCategory::CanaryIslands->value, VatCategory::CeutaMelilla->value], true);
+                $row['label'] = str_replace(
+                    [':rate', ':base', ':category'],
+                    [$text($row['rate'] ?? null), $text($row['base'] ?? null), $text($row['categoryLabel'] ?? null)],
+                    $taxed ? ($labels['bonus_vat_row'] ?? '') : ($labels['bonus_vat_row_untaxed'] ?? ''),
+                );
+            }
+            $rows[] = $row;
+        }
+        $data['vatRows'] = $rows;
 
         return $data;
     }

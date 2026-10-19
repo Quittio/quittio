@@ -159,7 +159,13 @@ final readonly class RenderPipeline
             pdfa: $pdfa,
         ));
 
-        return new RenderedDocument($document, $html, $this->filenamePattern($view->title(), $document->number, $document->issueDate->toIsoString(), $document->type->value), $pdf);
+        // Documents are not validated: their plausibility hints are returned and logged.
+        $notices = $document->notices($locale);
+        foreach ($notices as $notice) {
+            $this->logger?->warning(sprintf('[%s] %s', $notice->code, $notice->message), ['document' => $document->number]);
+        }
+
+        return new RenderedDocument($document, $html, $this->filenamePattern($view->title(), $document->number, $document->issueDate->toIsoString(), $document->type->value), $pdf, $notices);
     }
 
     /**

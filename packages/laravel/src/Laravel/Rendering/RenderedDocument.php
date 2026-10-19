@@ -31,6 +31,17 @@ final class RenderedDocument implements Attachable, Responsable
     }
 
     /**
+     * Plausibility hints on the document, e.g. a reminder that claims reminder fees besides the
+     * flat rate (see Quittio\Core\Documents\DocumentData::notices()).
+     *
+     * @return list<\Quittio\Core\Validation\ValidationMessage>
+     */
+    public function notices(): array
+    {
+        return $this->result->notices();
+    }
+
+    /**
      * Whether a PDF was rendered (false after htmlOnly()).
      */
     public function hasPdf(): bool
