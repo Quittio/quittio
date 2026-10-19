@@ -177,7 +177,7 @@ php tools/docs/generate.php        # JSON schema and field reference after model
 
 ## Legal review
 
-The legal wording, legal references, rules and defaults of the country pack Germany were reviewed in October 2026 against the UStG, the UStDV, the UStAE (as of 2 June 2026), the BMF letters of 15 October 2025 and 15 October 2026 on e-invoicing, the mapping table of KoSIT and FeRD and the case law, with test invoices validated by KoSIT and veraPDF. The changes that followed are listed in the [changelog](CHANGELOG.md) under "Unreleased". A tax adviser (Steuerberater) went through the review and its implementation and confirmed the results in October 2026.
+The legal wording, legal references, rules and defaults of the country pack Germany were reviewed in October 2026 against the UStG, the UStDV, the UStAE (as of 2 June 2026), the BMF letters of 15 October 2025 and 15 October 2026 on e-invoicing, the mapping table of KoSIT and FeRD and the case law, with test invoices validated by KoSIT and veraPDF. The changes that followed are listed in the [changelog](CHANGELOG.md) under 0.6.0. A tax adviser (Steuerberater) went through the review and its implementation and confirmed the results in October 2026.
 
 The review reflects the law and administrative practice of October 2026. Not covered by it or still open:
 
