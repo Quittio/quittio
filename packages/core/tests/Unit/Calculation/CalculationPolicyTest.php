@@ -116,3 +116,11 @@ it('uses a calculator given to create() for renders, cancellations and edits', f
         ->and($rendered)->toBeGreaterThan(0)
         ->and($spy->calls)->toBeGreaterThan($rendered);
 });
+
+it('takes the mode as enum or in any case and names an unknown one', function () {
+    expect(CalculationPolicy::fromArray(['declared_amounts' => DeclaredAmountsMode::Reject])->declaredAmounts)->toBe(DeclaredAmountsMode::Reject)
+        ->and(CalculationPolicy::fromArray(['declared_amounts' => 'RECALCULATE'])->declaredAmounts)->toBe(DeclaredAmountsMode::Recalculate)
+        ->and(CalculationPolicy::fromArray(['declared_amounts' => ''])->declaredAmounts)->toBe(DeclaredAmountsMode::Keep)
+        ->and(fn () => CalculationPolicy::fromArray(['declared_amounts' => 'round']))->toThrow(ConfigurationException::class, 'Unknown declared amounts mode "round"')
+        ->and(fn () => CalculationPolicy::fromArray(['declared_amounts' => ['keep']]))->toThrow(ConfigurationException::class, 'Unknown declared amounts mode "array"');
+});

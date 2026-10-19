@@ -295,3 +295,23 @@ it('states a VAT total of zero in tax currency without exchange rate', function 
     expect(amount($invoice->totals?->vatTotalInTaxCurrency))->toBe('0.00')
         ->and($invoice->totals?->vatTotalInTaxCurrency?->getCurrency()->getCurrencyCode())->toBe('EUR');
 });
+
+it('rounds a percentage document allowance to cents', function () {
+    // 1 % of 1000.55 = 10.0055
+    $invoice = calc(Invoices::base()
+        ->line(fn ($l) => $l->name('Item')->quantity(1)->netPrice('1000.55')->vat(VatCategory::StandardRate, '19'))
+        ->allowance(VatCategory::StandardRate, '19', percent: '1', reason: 'Discount')
+        ->build());
+
+    expect(amount($invoice->allowances[0]->amount))->toBe('10.01');
+});
+
+it('adds the rounding of the gross price mode to a rounding amount of the invoice', function () {
+    $invoice = calc(Invoices::base()
+        ->line(fn ($l) => $l->name('Shirt')->quantity(3)->priceInclVat('9.99')->vat(VatCategory::StandardRate, '19'))
+        ->rounding('0.02')
+        ->build());
+
+    expect(amount($invoice->totals?->roundingAmount))->toBe('0.03')
+        ->and(amount($invoice->totals?->amountDue))->toBe('29.99');
+});

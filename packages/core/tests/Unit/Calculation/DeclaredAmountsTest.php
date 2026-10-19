@@ -2,8 +2,10 @@
 
 declare(strict_types=1);
 
+use Brick\Math\BigDecimal;
 use Brick\Money\Money;
 use Quittio\Core\Builder\InvoiceBuilder;
+use Quittio\Core\Calculation\DeclaredAmounts;
 use Quittio\Core\Calculation\En16931Calculator;
 use Quittio\Core\Calculation\LineCalculator;
 use Quittio\Core\Corrections\Cancellation;
@@ -356,9 +358,53 @@ it('recalculates read data that was edited before from()', function (string $syn
     // Price 33.333 → 33.334 directly on the read data (e.g. a stored snapshot edited by hand): 3 × 33.334
     // = 100.002 is within 0.02 of the declared 99.99, so only the fingerprint reveals the edit.
     $line = $read->lines[0];
-    $edited = $read->with(['lines' => [$line->with(['price' => $line->price->with(['netPrice' => Brick\Math\BigDecimal::of('33.334')])]), $read->lines[1]]]);
+    $edited = $read->with(['lines' => [$line->with(['price' => $line->price->with(['netPrice' => BigDecimal::of('33.334')])]), $read->lines[1]]]);
     $result = (new En16931Calculator)->calculate(InvoiceBuilder::from($edited)->build());
 
     expect((string) $result->lines[0]->netAmount?->getAmount())->toBe('100.00')
         ->and($result->meta->hasFlag(Meta::FLAG_DECLARED_AMOUNTS))->toBeFalse();
 })->with(['cii', 'ubl']);
+
+it('needs no declared amounts for data without amounts or without VAT breakdown', function () {
+    $invoice = (new En16931Calculator)->calculate(Invoices::base()->line(fn ($l) => $l->name('Item')->quantity(3)->netPrice('0.333')->vat(VatCategory::StandardRate, '19'))->build());
+    $withoutAmounts = $invoice->with(['lines' => [$invoice->lines[0]->with(['netAmount' => null])], 'vatBreakdown' => []]);
+
+    expect(DeclaredAmounts::needed($withoutAmounts))->toBeFalse()
+        ->and(DeclaredAmounts::needed($invoice->with(['vatBreakdown' => []])))->toBeFalse();
+});
+
+it('needs declared amounts when a sub line amount differs', function () {
+    $invoice = Invoices::base()->line(fn ($l) => $l->name('Set')->quantity(1)->vat(VatCategory::StandardRate, '19')
+        ->subLine('Part A', '10.00', 1, vat: VatCategory::StandardRate)->subLine('Part B', '5.00', 1, vat: VatCategory::StandardRate))->build();
+    $parent = $invoice->lines[0];
+    $changed = $invoice->with(['lines' => [$parent->with(['subLines' => [$parent->subLines[0], $parent->subLines[1]->with(['netAmount' => Money::of('5.01', 'EUR')])]])]]);
+
+    expect(DeclaredAmounts::needed($invoice))->toBeFalse()
+        ->and(DeclaredAmounts::needed($changed))->toBeTrue();
+});
+
+it('keeps the declared amounts of sub lines and a parent line that states their sum', function () {
+    $calculated = (new En16931Calculator)->calculate(Invoices::base()->line(fn ($l) => $l->name('Set')->quantity(1, UnitCode::Piece)->vat(VatCategory::StandardRate, '19')
+        ->subLine('Widget', '0.333', 3, vat: VatCategory::StandardRate)->subLine('Part', '5.00', 1, vat: VatCategory::StandardRate))->build());
+    $parent = $calculated->lines[0];
+    // Another system rounded the widgets to 0.99 instead of 1.00.
+    $foreign = $calculated->with(['lines' => [$parent->with([
+        'netAmount' => Amount::of('5.99', 'EUR'),
+        'subLines' => [$parent->subLines[0]->with(['netAmount' => Amount::of('0.99', 'EUR')]), $parent->subLines[1]],
+    ])]]);
+    $read = (new InvoiceReader)->read((new CiiWriter)->serialize($foreign, ProfileRegistry::withDefaults()->get('extended')))->data;
+    $line = (new En16931Calculator)->calculate(InvoiceBuilder::from($read)->build())->lines[0];
+
+    expect([(string) $line->netAmount?->getAmount(), (string) $line->subLines[0]->netAmount?->getAmount(), (string) $line->subLines[1]->netAmount?->getAmount()])
+        ->toBe(['5.99', '0.99', '5.00']);
+});
+
+it('needs declared amounts for data the calculator rejects (a line without net price) or a VAT breakdown it does not reproduce', function () {
+    $invoice = (new En16931Calculator)->calculate(Invoices::base()->line(fn ($l) => $l->name('Item')->quantity(1)->netPrice('10.00')->vat(VatCategory::StandardRate, '19'))->build());
+    $withoutPrice = $invoice->with(['lines' => [$invoice->lines[0]->with(['price' => $invoice->lines[0]->price->with(['netPrice' => null])])]]);
+    $extraEntry = $invoice->with(['vatBreakdown' => [...$invoice->vatBreakdown, $invoice->vatBreakdown[0]->with(['category' => VatCategory::ZeroRated, 'rate' => BigDecimal::zero()])]]);
+
+    expect(DeclaredAmounts::needed($invoice))->toBeFalse()
+        ->and(DeclaredAmounts::needed($withoutPrice))->toBeTrue()
+        ->and(DeclaredAmounts::needed($extraEntry))->toBeTrue();
+});
