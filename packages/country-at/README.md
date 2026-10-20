@@ -1,6 +1,12 @@
 # Quittio country pack Austria
 
-> **Not released.** This pack lives in the Quittio monorepo only. Its legal wording, rules and defaults have **not been reviewed by an Austrian tax adviser** yet; until they are, it is not split into its own repository, not published on Packagist and not part of `quittio/quittio`. Do not rely on it for real invoices.
+> **Not reviewed by a tax adviser yet.** The legal wording, rules and defaults of this pack have **not been reviewed by an Austrian tax adviser**. Check the mentions and rates of your invoices before you rely on them. Quittio is software, not tax or legal advice: the business that issues an invoice remains responsible for it. The package is provided "as is", without warranty, under the MIT licence ([disclaimer](https://github.com/Quittio/quittio#disclaimer)).
+
+```bash
+composer require quittio/country-at
+```
+
+The pack is not part of `quittio/quittio`; install it next to it or next to `quittio/core`. Developed in [`packages/country-at`](https://github.com/Quittio/quittio/tree/master/packages/country-at) of the monorepo [Quittio/quittio](https://github.com/Quittio/quittio) and published as the read-only repository [Quittio/country-at](https://github.com/Quittio/country-at). Please open issues and pull requests in the monorepo.
 
 The pack implements the Austrian VAT act (UStG 1994), the national CIUS of EN 16931 and the Austrian law on late payment. Its class is `Quittio\Country\AT\CountryAT` (code `AT`, translation namespace `quittio-at`).
 

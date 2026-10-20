@@ -34,7 +34,7 @@ use Quittio\Country\AT\Texts\LegalTexts;
 /**
  * Country pack for Austria.
  *
- * Not reviewed by a tax adviser yet and not released (see the README of the pack).
+ * Not reviewed by a tax adviser yet (see the README of the pack).
  */
 class CountryAT extends AbstractCountryPack implements ProvidesReferenceRates
 {

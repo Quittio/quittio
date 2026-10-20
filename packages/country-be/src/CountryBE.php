@@ -32,7 +32,7 @@ use Quittio\Country\BE\Tax\VatPreset;
 /**
  * Country pack for Belgium.
  *
- * Not reviewed by a tax adviser yet and not released (see the README of the pack).
+ * Not reviewed by a tax adviser yet (see the README of the pack).
  */
 class CountryBE extends AbstractCountryPack implements CompletesInvoices, ProvidesReferenceRates
 {

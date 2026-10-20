@@ -37,7 +37,7 @@ use Quittio\Country\FR\Texts\LegalTexts;
 /**
  * Country pack for France (metropolitan France and Monaco).
  *
- * Not reviewed by a tax adviser yet and not released (see the README of the pack).
+ * Not reviewed by a tax adviser yet (see the README of the pack).
  */
 class CountryFR extends AbstractCountryPack implements CompletesInvoices, ProvidesReferenceRates
 {

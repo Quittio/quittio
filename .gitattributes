@@ -15,7 +15,7 @@
 /pint.json export-ignore
 /tests export-ignore
 /packages/*/tests export-ignore
-# Country packs that are not released yet (see their README).
+# Country packs published on their own, not part of quittio/quittio.
 /packages/country-at export-ignore
 /packages/country-ch export-ignore
 /packages/country-be export-ignore

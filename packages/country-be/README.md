@@ -1,6 +1,12 @@
 # Quittio country pack Belgium
 
-> **Not released.** This pack lives in the Quittio monorepo only. Its legal wording, rules and defaults have **not been reviewed by a Belgian tax adviser** yet; until they are, it is not split into its own repository, not published on Packagist and not part of `quittio/quittio`. Do not rely on it for real invoices.
+> **Not reviewed by a tax adviser yet.** The legal wording, rules and defaults of this pack have **not been reviewed by a Belgian tax adviser**. Check the mentions and rates of your invoices before you rely on them. Quittio is software, not tax or legal advice: the business that issues an invoice remains responsible for it. The package is provided "as is", without warranty, under the MIT licence ([disclaimer](https://github.com/Quittio/quittio#disclaimer)).
+
+```bash
+composer require quittio/country-be
+```
+
+The pack is not part of `quittio/quittio`; install it next to it or next to `quittio/core`. Developed in [`packages/country-be`](https://github.com/Quittio/quittio/tree/master/packages/country-be) of the monorepo [Quittio/quittio](https://github.com/Quittio/quittio) and published as the read-only repository [Quittio/country-be](https://github.com/Quittio/country-be). Please open issues and pull requests in the monorepo.
 
 The pack implements the invoice mentions of the Belgian VAT Code and of Royal Decree No. 1, the e-invoicing obligation of 2026 and the law on late payment of 2 August 2002. Its class is `Quittio\Country\BE\CountryBE` (code `BE`, translation namespace `quittio-be`). Texts exist in Dutch, French, German and English; the core has Dutch labels as well.
 

@@ -1,0 +1,27 @@
+name: Close pull request
+
+# This repository is a read-only copy of packages/country-fr in Quittio/quittio, updated by the split of
+# its CI. Pull requests here would be overwritten, so they are closed with a pointer to the
+# monorepo. pull_request_target runs without checking out the pull request.
+
+on:
+  pull_request_target:
+    types: [opened, reopened]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  close:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - run: gh pr close "${NUMBER}" --repo "${REPOSITORY}" --comment "${COMMENT}"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NUMBER: ${{ github.event.pull_request.number }}
+          REPOSITORY: ${{ github.repository }}
+          COMMENT: >-
+            Thank you for your pull request. This repository is a read-only copy of
+            packages/country-fr in the monorepo, so changes here would be overwritten. Please open
+            your pull request at https://github.com/Quittio/quittio.

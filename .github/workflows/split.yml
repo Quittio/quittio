@@ -1,7 +1,7 @@
 name: Split
 
 # Copies packages/* into the read-only repositories quittio/core, quittio/laravel and
-# quittio/country-de for every push to master and every tag (with the same tag). Called by the
+# quittio/country-de, -at, -be, -ch and -fr for every push to master and every tag (with the same tag). Called by the
 # job "split" of ci.yml once lint, analysis, tests and the official validation passed, so that
 # nothing reaches the split repositories and Packagist that failed CI.
 # Secret SPLIT_TOKEN: a token with write access to these repositories: "Contents: Read and write" and,
@@ -27,7 +27,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        package: [core, laravel, country-de]
+        package: [core, laravel, country-de, country-at, country-be, country-ch, country-fr]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 

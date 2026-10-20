@@ -1,6 +1,12 @@
 # Quittio country pack France
 
-> **Not released.** This pack lives in the Quittio monorepo only. Its legal wording, rules and defaults have **not been reviewed by a French tax adviser** yet; until they are, it is not split into its own repository, not published on Packagist and not part of `quittio/quittio`. Do not rely on it for real invoices.
+> **Not reviewed by a tax adviser yet.** The legal wording, rules and defaults of this pack have **not been reviewed by a French tax adviser**. Check the mentions and rates of your invoices before you rely on them. Quittio is software, not tax or legal advice: the business that issues an invoice remains responsible for it. The package is provided "as is", without warranty, under the MIT licence ([disclaimer](https://github.com/Quittio/quittio#disclaimer)).
+
+```bash
+composer require quittio/country-fr
+```
+
+The pack is not part of `quittio/quittio`; install it next to it or next to `quittio/core`. Developed in [`packages/country-fr`](https://github.com/Quittio/quittio/tree/master/packages/country-fr) of the monorepo [Quittio/quittio](https://github.com/Quittio/quittio) and published as the read-only repository [Quittio/country-fr](https://github.com/Quittio/country-fr). Please open issues and pull requests in the monorepo.
 
 The pack implements the invoice mentions of the French Tax Code (art. 242 nonies A of annex II to the CGI) with the mentions of the e-invoicing reform from 1 September 2026, the mentions of the Code de commerce for invoices between businesses and the late payment penalties. Its class is `Quittio\Country\FR\CountryFR` (code `FR`, translation namespace `quittio-fr`). It covers metropolitan France and Monaco; the overseas departments have VAT rates of their own, which are not modelled.
 

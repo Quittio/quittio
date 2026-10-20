@@ -26,7 +26,7 @@ use Quittio\Country\CH\Tax\VatPreset;
 /**
  * Country pack for Switzerland.
  *
- * Not reviewed by a tax adviser yet and not released (see the README of the pack).
+ * Not reviewed by a tax adviser yet (see the README of the pack).
  */
 class CountryCH extends AbstractCountryPack implements CompletesInvoices
 {
