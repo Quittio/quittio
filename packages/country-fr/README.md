@@ -62,7 +62,7 @@ Invoices between businesses get the mention of `FR-COM-02` from the pack (`compl
 
 ## Late payment
 
-Art. L441-10 Code de commerce: the refinancing rate of the ECB on the first day of the half-year plus 10 points (12.40 % in the second half of 2026) and a fixed indemnity of 40 EUR. `EcbRateTable` holds the ECB rates from 2023; add later half-years with `withRate()`. Consumers owe the legal interest rate for individuals, 6.84 % in the second half of 2026 (`b2cFixedRate`; it changes every half-year).
+Art. L441-10 Code de commerce: the refinancing rate of the ECB on the first day of the half-year plus 10 points (12.40 % in the second half of 2026) and a fixed indemnity of 40 EUR. `EcbRateTable` holds the ECB rates from 2023; add later half-years with `withRate()`. Consumers owe the legal interest rate (art. 1231-6 Code civil). Its category depends on the creditor (art. L313-2 Code monétaire et financier): a business claims the rate for all other cases, 2.75 % in the second half of 2026 (`b2cFixedRate`; it changes every half-year), not the rate for creditors who are individuals (6.84 %).
 
 ## Other defaults
 

@@ -147,8 +147,10 @@ class CountryFR extends AbstractCountryPack implements CompletesInvoices, Provid
 
     /**
      * Art. L441-10 Code de commerce: the ECB rate plus 10 points between businesses and a fixed
-     * indemnity of 40 EUR; consumers owe the legal interest rate for individuals, 6.84 % in the
-     * second half of 2026.
+     * indemnity of 40 EUR; consumers owe the legal interest rate (art. 1231-6 Code civil). The
+     * rate depends on the creditor (art. L313-2 Code monétaire et financier): a business claims
+     * the rate "for all other cases", 2.75 % in the second half of 2026 (arrêté of 26 June 2026),
+     * not the higher rate for creditors who are individuals.
      */
     public function dunningLaw(): DunningLaw
     {
@@ -164,7 +166,7 @@ class CountryFR extends AbstractCountryPack implements CompletesInvoices, Provid
             dayCount: 365,
             consumerDefaultAfterDays: null,
             referenceRateName: 'Taux de refinancement de la BCE (art. L441-10 Code de commerce)',
-            b2cFixedRate: '6.84',
+            b2cFixedRate: '2.75',
         );
     }
 

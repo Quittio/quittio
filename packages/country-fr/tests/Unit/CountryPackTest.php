@@ -52,6 +52,13 @@ it('calculates late payment penalties of the ECB rate plus 10 points', function 
         ->and((string) $interest->flatRate())->toBe('EUR 40.00');
 });
 
+it('charges consumers the legal interest rate of a business creditor', function () {
+    $interest = DefaultInterest::forCountry(new CountryFR);
+    $charges = $interest->calculate(Money::of('1000.00', 'EUR'), Date::of(2026, 7, 1), Date::of(2026, 8, 1), consumer: true);
+
+    expect((string) $charges[0]->ratePercent)->toBe('2.75');
+});
+
 it('keeps invoices for ten years and calls a credit note "Avoir"', function () {
     expect((new CountryFR)->retention()->until(Date::of(2026, 10, 5))->toIsoString())->toBe('2036-12-31')
         ->and((new CountryFR)->correctionPolicy()->title('cancellation', 'fr'))->toBe('Avoir');
