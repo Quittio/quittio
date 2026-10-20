@@ -8,6 +8,7 @@ use Brick\Math\BigDecimal;
 use Quittio\Core\Codes\RawCode;
 use Quittio\Core\Enums\VatCategory;
 use Quittio\Core\Enums\VatExemptionReasonCode;
+use Quittio\Core\I18n\ArrayTranslator;
 use Quittio\Core\Support\Decimal;
 
 /**
@@ -69,12 +70,16 @@ final readonly class CustomTaxPreset implements TaxPreset
         return $this->code;
     }
 
+    /**
+     * The text of the locale, else of its language ("de" for "de_CH"), else the English or the first one.
+     */
     public function exemptionReason(?string $locale = null): ?string
     {
         if ($this->reasons === []) {
             return null;
         }
+        $locale ??= 'en';
 
-        return $this->reasons[$locale ?? 'en'] ?? $this->reasons['en'] ?? array_values($this->reasons)[0] ?? null;
+        return $this->reasons[$locale] ?? $this->reasons[ArrayTranslator::language($locale)] ?? $this->reasons['en'] ?? array_values($this->reasons)[0] ?? null;
     }
 }

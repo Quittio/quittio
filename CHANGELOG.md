@@ -16,6 +16,7 @@ All notable changes to this project are documented in this file. The format foll
 
 ### Fixed
 
+- `CustomTaxPreset::exemptionReason()` takes the text of the language of a regional locale (`fr` for `fr_BE`, `de` for `de_CH`) before the English one, so an exemption from `VatPreset::exempt()` of a country pack is printed in the language of an invoice with a regional locale.
 - The mandatory field guard counts the register number (BT-30) as printed when the default templates show it in the footer, as it does for the tax identifiers.
 - The Peppol rules treat the business process (BT-23) as the official rules do: an empty one is reported by `PEPPOL-EN16931-R001` and `-R007`, one of only whitespace by `-R007` and `-R008` instead of `-R001`.
 - `PEPPOL-EN16931-R041` and `PEPPOL-EN16931-R042` report the path of the allowance or charge (`allowances[0].baseAmount`, `charges[0].percent`). Without it, an allowance and a charge with the same error were reported as one finding.

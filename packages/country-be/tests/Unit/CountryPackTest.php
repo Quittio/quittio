@@ -33,7 +33,8 @@ it('states the mentions in the languages of Belgium', function () {
     expect(VatPreset::ReverseChargeDomestic->exemptionReason())->toBe('Verlegging van heffing – KB nr. 1, art. 20')
         ->and(VatPreset::ReverseChargeDomestic->exemptionReason('fr'))->toBe('Autoliquidation – A.R. n° 1, art. 20')
         ->and(VatPreset::SmallBusiness->exemptionReason('fr_BE'))->toBe('Régime particulier de franchise des petites entreprises')
-        ->and(VatPreset::exempt('artikel 44, § 2, 1° Wetboek btw')->exemptionReason())->toBe('Vrijgesteld van btw – artikel 44, § 2, 1° Wetboek btw');
+        ->and(VatPreset::exempt('artikel 44, § 2, 1° Wetboek btw')->exemptionReason())->toBe('Vrijgesteld van btw – artikel 44, § 2, 1° Wetboek btw')
+        ->and(VatPreset::exempt('article 44, § 2, 1° du Code de la TVA')->exemptionReason('fr_BE'))->toBe('Exempté de la TVA – article 44, § 2, 1° du Code de la TVA');
 });
 
 it('checks and formats enterprise numbers', function () {
