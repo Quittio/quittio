@@ -155,9 +155,9 @@ $reminder = Quittio::paymentReminder(1)
 $reminder->interestCharge(...(new DefaultInterest)->calculate(Money::of('1000.00', 'EUR'), Date::parse('2026-06-16'), Date::parse('2026-10-05'), consumer: false));
 ```
 
-`interestCharge()` takes the charges with their day count (actual/actual in Germany) and texts. For any country pack with a reference rate, `Quittio\Core\Dunning\DefaultInterest::forCountry($pack)` calculates the same with the pack's `referenceRates()` and `dunningLaw()`; the German class adds the German texts. The descriptions are German by default; any other locale, e.g. `calculate(…, locale: 'en')`, returns English ones.
+`interestCharge()` takes the charges with their day count (actual/actual in Germany) and texts. For any country pack with a reference rate, or with fixed rates for businesses and consumers (`DunningLaw::hasFixedRates()`), `Quittio\Core\Dunning\DefaultInterest::forCountry($pack)` calculates the same with the pack's `referenceRates()` and `dunningLaw()`; the German class adds the German texts. The descriptions are German by default; any other locale, e.g. `calculate(…, locale: 'en')`, returns English ones.
 
-The base rate table, the flat rate and the conditions of default are described in [Country packs](country-packs.md#dunning-law). The country-neutral contract is `CountryPack::dunningLaw()` (`DunningLaw`: `b2bInterestPoints`, `b2cInterestPoints`, `b2bFlatRate`, `dayCount`, `consumerDefaultAfterDays`, `referenceRateName`, `b2cFixedRate`).
+The base rate table, the flat rate and the conditions of default are described in [Country packs](country-packs.md#dunning-law). The country-neutral contract is `CountryPack::dunningLaw()` (`DunningLaw`: `b2bInterestPoints`, `b2cInterestPoints`, `b2bFlatRate`, `dayCount`, `consumerDefaultAfterDays`, `referenceRateName`, `b2cFixedRate`, `b2bFixedRate`).
 
 ## Account statements
 

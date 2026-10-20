@@ -182,12 +182,13 @@ Set the logo with `pdf.logo` or `Presentation::$logo`. The default templates pri
 
 ### Fonts
 
-Two fonts are bundled (SIL Open Font License):
+Three fonts are bundled (SIL Open Font License):
 
 | Family | Files | Script |
 |---|---|---|
 | `geist` (default, `pdf.font = 'geist'`) | Regular, Bold, Italic, Bold Italic; `geistmedium` with Medium and SemiBold | Latin and Cyrillic |
 | `inter` | Regular, Bold, Italic, Bold Italic | Latin, Cyrillic and Greek |
+| `liberationsans` | Regular, Bold; used for the [payment slip](#payment-slips) | Latin, Cyrillic and Greek |
 
 Set `pdf.font = 'inter'` for Greek names or texts: mPDF prints no characters the font does not have. The font name is used as CSS `font-family` in the templates and as default font of mPDF.
 
@@ -264,7 +265,7 @@ Its payload contains the BIC (optional), the IBAN, the amount, the beneficiary (
 
 `pdf.payment_qr.girocode_amount` (option `girocode_amount`) is `due` (the amount due) or `discounted` (the amount after the first cash discount). With `discounted`, `qrCode.note` says until when the code is valid ("QR code with the amount after cash discount (…), valid until …"). Payment reminders get a code over the total of the reminder ([Payment reminders](documents.md#payment-reminders)).
 
-`payment.qrCode` in the view model holds `type` (e.g. `girocode`), `payload`, `dataUri` (PNG data URI rendered with GD, SVG without GD; PNG because mPDF's SVG output violates PDF/A), `amount` and `note`. `Quittio\Core\Pdf\Qr\QrImage::svg()`, `png()` and `dataUri()` render any payload. Own generators implement `PaymentQrGenerator` (`key()`, `supports(InvoiceData)`, `payload(InvoiceData, array $options)`) and are returned by a country pack's `paymentQr()`.
+`payment.qrCode` in the view model holds `type` (e.g. `girocode`), `payload`, `dataUri` (PNG data URI rendered with GD, SVG without GD; PNG because mPDF's SVG output violates PDF/A), `amount` and `note`. `Quittio\Core\Pdf\Qr\QrImage::svg()`, `png()` and `dataUri()` render any payload; `border: false` leaves out the quiet zone of four modules (the code alone, as on the payment slip). Own generators implement `PaymentQrGenerator` (`key()`, `supports(InvoiceData)`, `payload(InvoiceData, array $options)`) and are returned by a country pack's `paymentQr()`.
 
 #### Payment slips
 
