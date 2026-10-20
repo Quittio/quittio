@@ -250,7 +250,7 @@ The default templates print a QR code next to the bank details that banking apps
 |---|---|
 | `auto` (default) | A registered generator (`setPaymentQrGenerator()`, Laravel `pdf.payment_qr.generator`). Otherwise what the country pack names in `CountryDefaults::$paymentQr`: `none` prints no code; for other values the country pack's generator (`paymentQr()`), otherwise the EPC GiroCode for `girocode` (the default, also without country pack) and no code for other types |
 | `girocode` | EPC GiroCode, the European QR code for SEPA credit transfers |
-| `swiss-qr-bill` | The generator registered with `setPaymentQrGenerator()` (Laravel: `pdf.payment_qr.generator`). Quittio ships no generator for the Swiss QR bill; without one, the render run fails with a `ConfigurationException` |
+| `swiss-qr-bill` | The generator registered with `setPaymentQrGenerator()` (Laravel: `pdf.payment_qr.generator`), otherwise the QR bill of the country pack Switzerland ([`quittio/country-ch`](country-ch.md#qr-bill)) for its sellers. Without either, the render run fails with a `ConfigurationException` |
 | `none` | No code |
 
 No code is printed on refunds (credit notes, negative invoices) and on self-billed invoices.

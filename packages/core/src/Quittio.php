@@ -586,9 +586,9 @@ final class Quittio
     }
 
     /**
-     * Payment QR code generator for the type "auto" (before the country pack's) and the type
-     * "swiss-qr-bill", for which Quittio ships no generator; null removes it. Changes this
-     * instance.
+     * Payment QR code generator for the type "auto" (before the country pack's) and for other
+     * types such as "swiss-qr-bill" (before the country pack's generator of that type); null
+     * removes it. Changes this instance.
      */
     public function setPaymentQrGenerator(?PaymentQrGenerator $generator): self
     {

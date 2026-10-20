@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Quittio\Core\Data\Presentation\Presentation;
 use Quittio\Core\Enums\PaymentMeansCode;
 use Quittio\Core\Quittio;
 use Quittio\Core\Validation\ValidationLevel;
@@ -103,6 +104,13 @@ it('puts the slip into the view model of a Swiss invoice', function () {
         ->and($model->payment?->qrCode?->slip?->title)->toBe('Zahlteil')
         ->and($model->payment?->qrCode?->slip?->dataUri)->toStartWith('data:image/png;base64,')
         ->and($quittio->countries()->get('CH'))->toBeInstanceOf(CountryCH::class);
+});
+
+it('prints the QR bill of the pack for the type swiss-qr-bill', function () {
+    $context = new ViewContext(locale: 'de_CH', country: new CountryCH, defaults: new Presentation(paymentQr: Presentation::PAYMENT_QR_SWISS));
+    $model = (new ViewModelFactory)->build(Swiss::calculated(Swiss::invoice()), $context);
+
+    expect($model->payment?->qrCode?->type)->toBe('swiss-qr-bill');
 });
 
 it('renders the payment part on a page of its own', function () {

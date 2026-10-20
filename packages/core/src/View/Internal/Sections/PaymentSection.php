@@ -60,8 +60,9 @@ final readonly class PaymentSection
         $generator = match (true) {
             $mode === Presentation::PAYMENT_QR_AUTO => $scope->context->paymentQr ?? $this->countryPaymentQr(),
             $mode === Presentation::PAYMENT_QR_GIROCODE => new EpcGiroCodeGenerator,
-            default => $scope->context->paymentQr ?? throw new ConfigurationException(sprintf(
-                'The payment QR code type "%s" needs a generator, and Quittio ships none. Register one with setPaymentQrGenerator() (Laravel: quittio.pdf.payment_qr.generator), or use the type "auto", "girocode" or "none".',
+            // Another type: the registered generator, else the country pack's generator of this type.
+            default => $scope->context->paymentQr ?? $this->countryPaymentQrOfType($mode) ?? throw new ConfigurationException(sprintf(
+                'The payment QR code type "%s" needs a generator, and neither a registered one nor the country pack has one. Install the country pack that provides it (e.g. quittio/country-ch), register one with setPaymentQrGenerator() (Laravel: quittio.pdf.payment_qr.generator), or use the type "auto", "girocode" or "none".',
                 $mode,
             )),
         };
@@ -156,6 +157,16 @@ final readonly class PaymentSection
         }
 
         return $country?->paymentQr() ?? ($type === Presentation::PAYMENT_QR_GIROCODE ? new EpcGiroCodeGenerator : null);
+    }
+
+    /**
+     * The country pack's generator if it has the type $type, e.g. "swiss-qr-bill" of the Swiss pack.
+     */
+    private function countryPaymentQrOfType(string $type): ?PaymentQrGenerator
+    {
+        $generator = $this->scope->context->country?->paymentQr();
+
+        return $generator?->key() === $type ? $generator : null;
     }
 
     /**
