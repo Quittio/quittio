@@ -34,7 +34,7 @@ $quittio->countries()->get('CH');   // the registered CountryCH
 The pack leads every invoice whose seller has the country code `CH` (BT-40). It then checks the [MWSTG rules](#rules), prints the [QR bill](#qr-bill), applies the [rounding to 5 Rappen](#rounding-to-5-rappen) when asked for, and provides its [defaults](#defaults): the locale `de_CH` (unless the invoice or the configuration sets one), A4 paper and the Swiss VAT labels. How Quittio chooses the leading pack is described in [How a pack is selected](country-packs.md#how-a-pack-is-selected).
 
 - **Currencies.** The rules apply to invoices in any currency. The QR bill is printed for invoices in CHF and EUR only; the rounding to 5 Rappen applies to CHF only.
-- **Liechtenstein.** The QR bill accepts bank accounts of Liechtenstein (IBAN `LI…`). A seller with the country code `LI` is not led by this pack: Quittio uses the generic pack for it (warning `QUITTIO-GENERIC-COUNTRY`) and prints no QR bill. Force the Swiss pack for such an invoice with `->country('CH')` on the pending invoice.
+- **Liechtenstein.** Switzerland and Liechtenstein form one area of application of the VAT (treaty of 28 November 1994); Liechtenstein takes over the material provisions of the Swiss VAT law into its own law. The pack therefore also leads the invoices of sellers with the country code `LI` ([`VatTerritory::vatCountry()`](country-packs.md#how-a-pack-is-selected)), and an invoice between Switzerland and Liechtenstein is domestic. The rules cite the Swiss MWSTG. The QR bill accepts bank accounts of Liechtenstein (IBAN `LI…`).
 - **Buyers in Switzerland.** The pack defines no rules for buyers, so it adds nothing to an invoice of a foreign seller to a Swiss buyer.
 - **Formats.** The pack defines no profiles and no format rules. The automatic choice of Quittio gives an invoice between two Swiss businesses the format `zugferd` (a PDF with embedded EN 16931 XML) and an invoice to a buyer in another country usually a plain `pdf` ([Automatic choice](formats.md#automatic-choice)). Request `->format('pdf')` when your customers want no XML in the PDF.
 
@@ -471,8 +471,6 @@ Translations::translator()->addPath(__DIR__.'/lang', 'quittio-ch');   // lang/de
 - Swiss letter layouts with the window left or right (SN 10130:2026 "Geschäftsbrief", which replaced SN 010130; Swiss Post specifications for the address window) are not included; the pack uses the layout `free`.
 - Labels and code names in Italian are missing in the core; Italian invoices show English labels.
 - There is no Laravel service provider with a configuration file of the pack; the setting `cash_rounding` goes into `config/quittio.php`.
-- A seller with the country code `LI` is not led by the pack without `->country('CH')`.
-- Payment reminders carry the Swiss QR Code without payment part and receipt ([Payment reminders](#payment-reminders)).
 - 20 years of retention for immovable property are not modelled.
 
 ## Complete example

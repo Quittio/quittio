@@ -16,6 +16,7 @@ it('maps countries to the VAT territory they belong to', function (string $count
     ['MC', 'FR'],
     ['IM', 'GB'],
     ['EL', 'GR'],
+    ['LI', 'CH'],
     ['xi', 'XI'],
     ['de', 'DE'],
 ]);

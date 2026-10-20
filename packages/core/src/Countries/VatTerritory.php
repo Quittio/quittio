@@ -11,7 +11,9 @@ namespace Quittio\Core\Countries;
  * - The 27 member states with their ISO 3166-1 codes (Greece is "GR"; "EL" is only the VAT prefix).
  * - Northern Ireland belongs to it for goods only (Windsor Framework). It is recognised by the
  *   code "XI" and by United Kingdom addresses with a "BT" postcode.
- * - Monaco is treated as France and the Isle of Man as the United Kingdom (Art. 7).
+ * - Monaco is treated as France and the Isle of Man as the United Kingdom (Art. 7). Outside the
+ *   EU, Liechtenstein is treated as Switzerland: both form one area of application of the VAT
+ *   (treaty of 28 November 1994).
  * - Territories excluded by Art. 6 are recognised by their postcode where it identifies them
  *   reliably: Büsingen am Hochrhein and Heligoland (DE, also not part of the German Inland under
  *   section 1 (2) UStG), the Canary Islands, Ceuta and Melilla (ES), Livigno and Campione d'Italia
@@ -32,7 +34,7 @@ final class VatTerritory
     public const string NORTHERN_IRELAND = 'XI';
 
     /** @var array<string, string> countries that belong to the VAT territory of another country */
-    private const array VAT_COUNTRY = ['MC' => 'FR', 'IM' => 'GB', 'EL' => 'GR'];
+    private const array VAT_COUNTRY = ['MC' => 'FR', 'IM' => 'GB', 'EL' => 'GR', 'LI' => 'CH'];
 
     /**
      * Excluded territories per country: postcode pattern (digits only) => name.
@@ -49,7 +51,8 @@ final class VatTerritory
     ];
 
     /**
-     * The country whose VAT territory the given country belongs to (MC → FR, IM → GB, EL → GR).
+     * The country whose VAT territory the given country belongs to (MC → FR, IM → GB, EL → GR,
+     * LI → CH).
      */
     public static function vatCountry(string $country): string
     {

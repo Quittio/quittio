@@ -2,11 +2,14 @@
 
 declare(strict_types=1);
 
+use Quittio\Core\Countries\CountryRegistry;
+use Quittio\Core\Countries\DefaultCountryResolver;
 use Quittio\Core\Data\Meta;
 use Quittio\Core\Enums\InvoiceTypeCode;
 use Quittio\Core\Enums\UnitCode;
 use Quittio\Core\Enums\VatCategory;
 use Quittio\Core\Profiles\Syntax;
+use Quittio\Country\FR\CountryFR;
 use Quittio\Country\FR\Support\Siren;
 use Quittio\Country\FR\Tax\VatPreset;
 use Quittio\Country\FR\Tests\Support\French;
@@ -20,6 +23,15 @@ it('requires the SIREN and VAT number of the seller', function () {
         ->and(French::codes(French::validate(French::invoice()->seller(fn ($s) => $s->legalRegistration('732829321', '0002')))))->toBe(['FR-CGI-01'])
         ->and(French::codes(French::validate(French::invoice()->seller(fn ($s) => $s->legalRegistration('73282932000009', '0009')))))->toBe([])
         ->and(French::codes(French::validate(French::invoice()->seller(fn ($s) => $s->vatId(null)))))->toBe(['FR-CGI-02']);
+});
+
+it('leads the invoices of sellers in Monaco without asking for a SIREN', function () {
+    $monaco = French::invoice()->seller(fn ($s) => $s->legalRegistration(null)->address('7 avenue de Grande-Bretagne', '98000', 'Monaco', 'MC'));
+    $toMonaco = French::invoice()->buyer(fn ($b) => $b->legalRegistration(null)->address('2 boulevard des Moulins', '98000', 'Monaco', 'MC'));
+
+    expect((new DefaultCountryResolver(new CountryRegistry([new CountryFR])))->resolve($monaco->build())->leading)->toBeInstanceOf(CountryFR::class)
+        ->and(French::codes(French::validate($monaco)))->toBe([])
+        ->and(French::codes(French::validate($toMonaco)))->toBe([]);
 });
 
 it('lets a small business under the franchise invoice without VAT number but not with VAT', function () {

@@ -49,6 +49,10 @@ final class FrenchRules
 
         return [
             $r('FR-CGI-01', 'The seller\'s SIREN or SIRET (BT-30, scheme 0002 or 0009) must be stated (art. 242 nonies A annex II CGI, art. R123-237 Code de commerce).', function (InvoiceData $i, RuleReporter $report): void {
+                // A business in Monaco has no SIREN; it is registered in the Monegasque register (RCI).
+                if (self::inMonaco($i->seller->address)) {
+                    return;
+                }
                 $registration = $i->seller->legalRegistration?->value;
                 if ($registration === null || (! Siren::isSiren($registration) && ! Siren::isSiret($registration))) {
                     $report->error('BT-30', 'seller.legalRegistration');
@@ -109,7 +113,7 @@ final class FrenchRules
                 $report->error('BT-22', 'notes');
             }),
             $r('FR-CGI-08', 'From 1 September 2026, an invoice to a business established in France states the buyer\'s SIREN (BT-47, scheme 0002) (art. 242 nonies A annex II CGI).', function (InvoiceData $i, RuleReporter $report): void {
-                if (! self::afterReform($i) || $i->buyer->isConsumer || ! self::inFrance($i->buyer->address)) {
+                if (! self::afterReform($i) || $i->buyer->isConsumer || ! self::inFrance($i->buyer->address) || self::inMonaco($i->buyer->address)) {
                     return;
                 }
                 $registration = $i->buyer->legalRegistration?->value;
@@ -157,6 +161,14 @@ final class FrenchRules
     public static function inFrance(Address $address): bool
     {
         return VatTerritory::memberState($address->countryCode, $address->postcode) === CountryFR::CODE;
+    }
+
+    /**
+     * An address in Monaco, which belongs to the French VAT territory but has no SIREN.
+     */
+    public static function inMonaco(Address $address): bool
+    {
+        return strtoupper(trim($address->countryCode)) === 'MC';
     }
 
     private static function afterReform(InvoiceData $invoice): bool

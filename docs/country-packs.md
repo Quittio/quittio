@@ -932,9 +932,9 @@ This and the following sections are for authors of country packs, and for reader
    - the configured default country (`quittio.defaults.country`, core config key `country`);
    - otherwise `XX`.
 
-   The registry returns the installed pack for that code, or a generic pack (`CountryGeneric`).
+   The registry returns the installed pack for that code. A country without a pack of its own takes the pack of the country whose VAT territory it belongs to ([`VatTerritory::vatCountry()`](#vatterritory)): a seller in Monaco the French pack, a seller in Liechtenstein the Swiss pack. Otherwise Quittio uses a generic pack (`CountryGeneric`).
 
-2. **Buyer pack.** If the buyer's country code (BT-55) is set and differs from the leading pack's code, the installed pack of the buyer's country is added. No generic pack is created for the buyer.
+2. **Buyer pack.** If the buyer's country code (BT-55) is set and differs from the leading pack's code, the installed pack of the buyer's country (or of the country whose VAT territory it belongs to) is added, unless it is the leading pack. No generic pack is created for the buyer.
 
 ```php
 use Quittio\Laravel\Facades\Quittio;
@@ -1374,7 +1374,7 @@ Used by Managed numbering (see [Managed: numbering](managed.md#numbering)).
 |---|---|
 | `EU_MEMBER_STATES` | the 27 member states (Greece is `GR`) |
 | `NORTHERN_IRELAND` | `XI` |
-| `vatCountry(string $country): string` | the country whose VAT territory a country belongs to: `MC` → `FR`, `IM` → `GB`, `EL` → `GR` |
+| `vatCountry(string $country): string` | the country whose VAT territory a country belongs to: `MC` → `FR`, `IM` → `GB`, `EL` → `GR`; outside the EU `LI` → `CH` (one area of application of the Swiss and Liechtenstein VAT) |
 | `isEuMemberState(string $country): bool` | member state after `vatCountry()` |
 | `excludedTerritory(string $country, ?string $postcode): ?string` | name of an excluded territory the address lies in, or null |
 | `isEuVatTerritory(string $country, ?string $postcode = null, bool $goods = true): bool` | address inside the EU VAT territory |
