@@ -21,7 +21,6 @@ Quittio\Core\Contracts\ProvidesParty::fillParty
 Quittio\Core\Corrections\CancellationHistory::closes
 Quittio\Core\Corrections\CancellationHistory::tax
 Quittio\Core\Corrections\CancellationHistory::taxable
-Quittio\Core\Countries\CorrectionPolicy::title
 Quittio\Core\Countries\CountryGeneric::isGeneric
 Quittio\Core\Countries\CountryRegistry::get
 Quittio\Core\Countries\CountryRegistry::has

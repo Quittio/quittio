@@ -89,6 +89,7 @@ it('keeps invoices for ten years and uses Swiss titles', function () {
 
     expect($pack->retention()->until(Date::of(2026, 10, 5))->toIsoString())->toBe('2036-12-31')
         ->and($pack->correctionPolicy()->title('cancellation', 'fr'))->toBe('Note de crédit')
+        ->and($pack->correctionPolicy()->title('cancellation', 'de_CH'))->toBe('Gutschrift')
         ->and($pack->numberingRules()->gapless)->toBeFalse();
 });
 

@@ -6,6 +6,7 @@ namespace Quittio\Core\Countries;
 
 use Closure;
 use Quittio\Core\Data\InvoiceData;
+use Quittio\Core\I18n\ArrayTranslator;
 
 /**
  * Default handling of cancellations and corrections in a country, and the titles of these
@@ -47,9 +48,12 @@ final readonly class CorrectionPolicy
         return ($this->strategyResolver === null ? null : ($this->strategyResolver)($original)) ?? $this->cancellationStrategy;
     }
 
+    /**
+     * The title in the locale, else in its language ("de" for "de_CH"), else in English.
+     */
     public function title(string $kind, string $locale = 'en'): ?string
     {
-        return $this->titles[$kind][$locale] ?? $this->titles[$kind]['en'] ?? null;
+        return $this->titles[$kind][$locale] ?? $this->titles[$kind][ArrayTranslator::language($locale)] ?? $this->titles[$kind]['en'] ?? null;
     }
 
     /**
