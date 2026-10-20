@@ -93,4 +93,4 @@ $xml = (new EbInterfaceWriter)->write((new En16931Calculator)->calculate($invoic
 ## Not yet included
 
 - ebInterface as a format of `render()`.
-- A letter layout after ÖNORM A 1080 and a Laravel service provider with settings.
+- An Austrian letter layout (ÖNORM A 1080 was withdrawn without a successor) and a Laravel service provider with settings.
