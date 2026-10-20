@@ -15,7 +15,7 @@ use Quittio\Tests\TestCase;
 | documentation in docs/ and the sources of all packages.
 */
 
-foreach (['core', 'country-de', 'laravel'] as $package) {
+foreach (['core', 'country-de', 'country-at', 'country-be', 'country-ch', 'country-fr', 'laravel'] as $package) {
     $bootstrap = dirname(__DIR__).'/packages/'.$package.'/tests/Pest.php';
     if (is_file($bootstrap)) {
         require $bootstrap;
