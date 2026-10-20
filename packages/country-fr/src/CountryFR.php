@@ -14,12 +14,17 @@ use Quittio\Core\Countries\MandatoryField;
 use Quittio\Core\Countries\MandatoryFieldList;
 use Quittio\Core\Countries\NumberingRules;
 use Quittio\Core\Countries\RetentionRule;
+use Quittio\Core\Data\AllowanceCharge\DocumentAllowance;
+use Quittio\Core\Data\AllowanceCharge\DocumentCharge;
 use Quittio\Core\Data\InvoiceData;
+use Quittio\Core\Data\Lines\InvoiceLine;
 use Quittio\Core\Data\Note;
+use Quittio\Core\Data\Totals\VatBreakdown;
 use Quittio\Core\Dunning\ReferenceRates;
 use Quittio\Core\Enums\NoteSubjectCode;
 use Quittio\Core\Enums\VatCategory;
 use Quittio\Core\I18n\Translations;
+use Quittio\Core\Support\Date;
 use Quittio\Core\Tax\TaxPresetCollection;
 use Quittio\Core\Validation\Rules\Inspect;
 use Quittio\Core\View\ViewModelFactory;
@@ -113,10 +118,13 @@ class CountryFR extends AbstractCountryPack implements CompletesInvoices, Provid
      * Adds to invoices between businesses the mention of late payment penalties, the fixed
      * indemnity of 40 EUR and the discount (art. L441-9 Code de commerce), unless the invoice
      * mentions penalties already or the setting payment_mentions is false (quittio.countries.fr);
-     * with the flag FLAG_VAT_ON_DEBITS the option to pay VAT on debits.
+     * with the flag FLAG_VAT_ON_DEBITS the option to pay VAT on debits. An invoice issued from
+     * 1 January 2027 cites the CIBS instead of the CGI in the texts of the presets
+     * (VatPreset::exemptionReasonOn()).
      */
     public function complete(InvoiceData $invoice, array $settings): InvoiceData
     {
+        $invoice = self::withCibsReferences($invoice);
         $notes = $invoice->notes;
         $texts = mb_strtolower(implode("\n", array_map(static fn (Note $note): string => $note->content, $notes)));
         $locale = $invoice->meta->locale ?? 'fr';
@@ -129,6 +137,52 @@ class CountryFR extends AbstractCountryPack implements CompletesInvoices, Provid
         }
 
         return $notes === $invoice->notes ? $invoice : $invoice->with(['notes' => $notes]);
+    }
+
+    /**
+     * Replaces the texts of the presets that cite the CGI by those that cite the CIBS on an
+     * invoice issued from 1 January 2027, in lines, document allowances and charges and the VAT
+     * breakdown. Texts that differ from those of the presets stay as they are.
+     */
+    private static function withCibsReferences(InvoiceData $invoice): InvoiceData
+    {
+        if ($invoice->issueDate->isBefore(Date::parse(VatPreset::CIBS_FROM))) {
+            return $invoice;
+        }
+        $texts = [];
+        foreach ([VatPreset::SmallBusiness, VatPreset::IntraCommunitySupply, VatPreset::Export] as $preset) {
+            foreach (self::locales() as $locale) {
+                $texts[(string) $preset->exemptionReason($locale)] = (string) $preset->exemptionReasonOn($invoice->issueDate, $locale);
+            }
+        }
+
+        return $invoice->with([
+            'lines' => self::withCibsLines($invoice->lines, $texts),
+            'allowances' => array_map(static fn (DocumentAllowance $a): DocumentAllowance => $a->with(['exemptionReason' => self::replaced($a->exemptionReason, $texts)]), $invoice->allowances),
+            'charges' => array_map(static fn (DocumentCharge $c): DocumentCharge => $c->with(['exemptionReason' => self::replaced($c->exemptionReason, $texts)]), $invoice->charges),
+            'vatBreakdown' => array_map(static fn (VatBreakdown $row): VatBreakdown => $row->with(['exemptionReason' => self::replaced($row->exemptionReason, $texts)]), $invoice->vatBreakdown),
+        ]);
+    }
+
+    /**
+     * @param  list<InvoiceLine>  $lines
+     * @param  array<string, string>  $texts  CGI text => CIBS text
+     * @return list<InvoiceLine>
+     */
+    private static function withCibsLines(array $lines, array $texts): array
+    {
+        return array_map(static fn (InvoiceLine $line): InvoiceLine => $line->with([
+            'vat' => $line->vat->with(['exemptionReason' => self::replaced($line->vat->exemptionReason, $texts)]),
+            'subLines' => self::withCibsLines($line->subLines, $texts),
+        ]), $lines);
+    }
+
+    /**
+     * @param  array<string, string>  $texts  CGI text => CIBS text
+     */
+    private static function replaced(?string $text, array $texts): ?string
+    {
+        return $text === null ? null : $texts[$text] ?? $text;
     }
 
     /**

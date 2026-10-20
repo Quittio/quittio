@@ -15,4 +15,8 @@ return [
     'fr.margin_antiques' => 'Régime particulier – Objets de collection et d\'antiquité',
     'fr.travel_agency' => 'Régime particulier – Agences de voyages',
     'fr.exempt' => 'Exonération de TVA, :paragraph',
+    // Invoices issued from 1 January 2027 cite the CIBS (ordonnance n° 2026-671).
+    'fr.small_business_cibs' => 'TVA non applicable, art. L. 233-3 du CIBS',
+    'fr.intra_community_supply_cibs' => 'Exonération de TVA, article L. 213-12, 1° du CIBS',
+    'fr.export_cibs' => 'Exonération de TVA, article L. 213-12, 2° du CIBS',
 ];

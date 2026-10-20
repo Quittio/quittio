@@ -22,7 +22,17 @@ The four new mentions from 1 September 2026:
 - the delivery address if it differs from the buyer's address (the deliver-to address BG-15; not checked);
 - the option to pay VAT on debits: the flag `CountryFR::FLAG_VAT_ON_DEBITS` adds "Option pour le paiement de la taxe d'après les débits".
 
-On 1 September 2026 the VAT rules of the CGI moved into the Code des impositions sur les biens et services (CIBS). The presets keep the references to the CGI, which remain accepted until the end of 2027; the new references are to be checked with a tax adviser.
+On 1 January 2027 the VAT rules of the CGI move into the Code des impositions sur les biens et services (CIBS); ordonnance n° 2026-671 of 27 July 2026 postponed the date from 1 September 2026. References to the CGI, also in the mentions of an invoice, remain accepted until 30 June 2028 (art. 46 II ordonnance n° 2025-1247, BOI-RES-TVA-000253). Art. 242 nonies A of annex II stays in the CGI; its 12° accepts the reference to the CGI, to the VAT Directive or any other mention of the exemption.
+
+On invoices issued from 1 January 2027, the pack replaces the texts of three presets by texts that cite the CIBS (`complete()`, `VatPreset::exemptionReasonOn()`); texts of your own, e.g. from `VatPreset::exempt()`, stay as they are:
+
+| Case | Issued until 31 December 2026 | Issued from 1 January 2027 |
+|---|---|---|
+| `SmallBusiness` | TVA non applicable, art. 293 B du CGI | TVA non applicable, art. L. 233-3 du CIBS |
+| `IntraCommunitySupply` | Exonération de TVA, article 262 ter I du CGI | Exonération de TVA, article L. 213-12, 1° du CIBS |
+| `Export` | Exonération de TVA, article 262 I du CGI | Exonération de TVA, article L. 213-12, 2° du CIBS |
+
+Art. L. 213-12 CIBS states the exemptions of intra-European supplies (1°) and exports (2°); art. L. 213-13 and L. 213-14 set their conditions. Art. L. 233-3 defines the small business under the franchise. A decree or the BOFiP may still prescribe other wording.
 
 ## Tax presets
 

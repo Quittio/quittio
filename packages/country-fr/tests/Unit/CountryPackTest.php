@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Brick\Money\Money;
 use Quittio\Core\Countries\ResolvedCountries;
 use Quittio\Core\Dunning\DefaultInterest;
+use Quittio\Core\Enums\UnitCode;
 use Quittio\Core\Formats\DefaultFormatResolver;
 use Quittio\Core\Quittio;
 use Quittio\Core\Support\Date;
@@ -35,6 +36,19 @@ it('states the option to pay VAT on debits with its flag', function () {
     $completed = (new CountryFR)->complete(French::invoice()->flag(CountryFR::FLAG_VAT_ON_DEBITS)->build(), ['payment_mentions' => false]);
 
     expect(array_map(fn ($n) => $n->content, $completed->notes))->toBe(['Option pour le paiement de la taxe d\'après les débits']);
+});
+
+it('cites the CIBS instead of the CGI on invoices issued from 1 January 2027', function () {
+    $reasons = fn (string $issueDate) => array_map(fn ($row) => $row->exemptionReason, French::calculated(French::base()->issueDate($issueDate)
+        ->line(fn ($l) => $l->name('Machine')->quantity(1, UnitCode::Piece)->netPrice('1000.00')->vat(VatPreset::Export))
+        ->line(fn ($l) => $l->name('Pièces')->quantity(1, UnitCode::Piece)->netPrice('200.00')->vat(VatPreset::IntraCommunitySupply))
+        ->line(fn ($l) => $l->name('Soins')->quantity(1, UnitCode::Piece)->netPrice('50.00')->vat(VatPreset::exempt('article 261-4-1° du CGI'))), ['payment_mentions' => false])->vatBreakdown);
+
+    expect($reasons('2026-12-31'))->toEqualCanonicalizing(['Exonération de TVA, article 262 I du CGI', 'Exonération de TVA, article 262 ter I du CGI', 'Exonération de TVA, article 261-4-1° du CGI'])
+        ->and($reasons('2027-01-04'))->toEqualCanonicalizing(['Exonération de TVA, article L. 213-12, 2° du CIBS', 'Exonération de TVA, article L. 213-12, 1° du CIBS', 'Exonération de TVA, article 261-4-1° du CGI'])
+        ->and(VatPreset::SmallBusiness->exemptionReasonOn(Date::of(2027, 1, 1)))->toBe('TVA non applicable, art. L. 233-3 du CIBS')
+        ->and(VatPreset::SmallBusiness->exemptionReasonOn(Date::of(2026, 12, 31), 'en'))->toBe('VAT not applicable, art. 293 B of the French Tax Code (CGI)')
+        ->and(VatPreset::ReverseChargeEu->exemptionReasonOn(Date::of(2027, 1, 1)))->toBe('Autoliquidation');
 });
 
 it('sends domestic business invoices as Factur-X', function () {

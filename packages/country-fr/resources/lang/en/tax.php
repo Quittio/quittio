@@ -15,4 +15,8 @@ return [
     'fr.margin_antiques' => 'Margin scheme – Collector\'s items and antiques',
     'fr.travel_agency' => 'Margin scheme – Travel agents',
     'fr.exempt' => 'VAT exempt, :paragraph',
+    // Invoices issued from 1 January 2027 cite the CIBS (ordonnance n° 2026-671).
+    'fr.small_business_cibs' => 'VAT not applicable, art. L. 233-3 of the French Code on Taxes on Goods and Services (CIBS)',
+    'fr.intra_community_supply_cibs' => 'VAT exempt, article L. 213-12, 1° CIBS',
+    'fr.export_cibs' => 'VAT exempt, article L. 213-12, 2° CIBS',
 ];

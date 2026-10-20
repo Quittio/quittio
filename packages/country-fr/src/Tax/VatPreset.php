@@ -9,18 +9,23 @@ use Quittio\Core\Codes\RawCode;
 use Quittio\Core\Enums\VatCategory;
 use Quittio\Core\Enums\VatExemptionReasonCode;
 use Quittio\Core\I18n\Translations;
+use Quittio\Core\Support\Date;
 use Quittio\Core\Tax\CustomTaxPreset;
 use Quittio\Core\Tax\TaxPreset;
 use Quittio\Country\FR\CountryFR;
 
 /**
- * Tax presets for metropolitan France (CGI, from 1 September 2026 recodified in the CIBS; the
- * references to the CGI remain accepted until the end of 2027).
+ * Tax presets for metropolitan France (CGI, from 1 January 2027 recodified in the CIBS; the
+ * references to the CGI remain accepted until 30 June 2028). exemptionReason() cites the CGI,
+ * exemptionReasonOn() the CIBS for invoices issued from 1 January 2027.
  *
  * The texts are not reviewed by a tax adviser yet (see the README of the pack).
  */
 enum VatPreset: string implements TaxPreset
 {
+    /** Issue date from which the texts cite the CIBS (ordonnance n° 2026-671, art. 17). */
+    public const string CIBS_FROM = '2027-01-01';
+
     /** Standard rate, 20 %. */
     case Standard = 'fr.standard';
 
@@ -33,7 +38,7 @@ enum VatPreset: string implements TaxPreset
     /** Particular rate, 2.1 %. */
     case Particular = 'fr.particular';
 
-    /** Small business exemption (franchise en base, art. 293 B CGI). */
+    /** Small business exemption (franchise en base, art. 293 B CGI; from 2027 art. L. 233-3 CIBS). */
     case SmallBusiness = 'fr.small_business';
 
     /** Domestic reverse charge, e.g. subcontracting in construction (art. 283-2 nonies CGI). */
@@ -42,10 +47,10 @@ enum VatPreset: string implements TaxPreset
     /** Service to a business in another member state, which owes the VAT (art. 283-2 CGI, art. 196 VAT Directive). */
     case ReverseChargeEu = 'fr.reverse_charge_eu';
 
-    /** Intra-community supply (art. 262 ter I CGI). */
+    /** Intra-community supply (art. 262 ter I CGI; from 2027 art. L. 213-12, 1° CIBS). */
     case IntraCommunitySupply = 'fr.intra_community_supply';
 
-    /** Export (art. 262 I CGI). */
+    /** Export (art. 262 I CGI; from 2027 art. L. 213-12, 2° CIBS). */
     case Export = 'fr.export';
 
     /** Supply not taxable in France (place of supply abroad). */
@@ -145,5 +150,20 @@ enum VatPreset: string implements TaxPreset
         CountryFR::registerTranslations();
 
         return Translations::translator()->get(CountryFR::TRANSLATION_NAMESPACE.'::tax.'.$this->value, [], $locale ?? 'fr');
+    }
+
+    /**
+     * The exemption reason of an invoice issued on the date: from 1 January 2027 the texts that
+     * cite an article of the CGI cite the CIBS instead.
+     */
+    public function exemptionReasonOn(Date $issueDate, ?string $locale = null): ?string
+    {
+        if ($issueDate->isBefore(Date::parse(self::CIBS_FROM)) || ! in_array($this, [self::SmallBusiness, self::IntraCommunitySupply, self::Export], true)) {
+            return $this->exemptionReason($locale);
+        }
+
+        CountryFR::registerTranslations();
+
+        return Translations::translator()->get(CountryFR::TRANSLATION_NAMESPACE.'::tax.'.$this->value.'_cibs', [], $locale ?? 'fr');
     }
 }
