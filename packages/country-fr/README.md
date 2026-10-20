@@ -74,4 +74,6 @@ Art. L441-10 Code de commerce: the refinancing rate of the ECB on the first day 
 ## Not yet included
 
 - Connection to approved platforms, lifecycle statuses and e-reporting (planned as quittio/fr-platforms).
-- The French business rules BR-FR-… of the external specifications, overseas rates, the FEC export.
+- The French business rules BR-FR-… (norm AFNOR XP Z12-012, external specifications of the DGFiP) and the FEC export (art. A47 A-1 LPF).
+- Overseas rates: 8.5 %, 2.1 %, 1.75 % and 1.05 % in Guadeloupe, Martinique and La Réunion (art. 296 and 296 bis CGI); no VAT in Guyane and Mayotte (art. 294 CGI).
+- ECB rates from 2027: `EcbRateTable` ends with the second half of 2026; add later half-years with `withRate()`.
