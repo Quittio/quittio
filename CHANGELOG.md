@@ -4,6 +4,10 @@ All notable changes to this project are documented in this file. The format foll
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-10-20
+
+The country packs for Austria, Belgium, Switzerland and France are published as separate packages. Their legal wording, rules and defaults were checked against the law and the official sources of October 2026, but have not been reviewed by a tax adviser yet; check the mentions and rates of your invoices before you rely on them.
+
 ### Added
 
 - Country packs for Austria (`quittio/country-at`), Belgium (`quittio/country-be`), Switzerland (`quittio/country-ch`) and France (`quittio/country-fr`), published as read-only split repositories next to `quittio/country-de` and not part of `quittio/quittio`. Their legal wording, rules and defaults are not reviewed by a tax adviser yet. The documentation has a page for each of them.
@@ -333,7 +337,8 @@ First release.
 - `pdf.paper` and the VIES verification (`validation.drivers.vies.enabled`) take effect; file names of XML-only formats no longer contain a raw translation key.
 - Watermarks (draft and preview PDFs) were never printed: mPDF needs `showWatermarkText`, and PDF/A forbids their transparency. Watermarked PDFs without embedded XML are now rendered without PDF/A.
 
-[Unreleased]: https://github.com/Quittio/quittio/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/Quittio/quittio/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/Quittio/quittio/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/Quittio/quittio/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/Quittio/quittio/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/Quittio/quittio/compare/v0.3.0...v0.4.0
