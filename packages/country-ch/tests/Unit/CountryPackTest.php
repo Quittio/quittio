@@ -93,6 +93,7 @@ it('keeps invoices for ten years and uses Swiss titles', function () {
 });
 
 it('labels VAT as MWST in Swiss German', function () {
+    CountryCH::registerTranslations(); // as Quittio::create() does for a registered pack
     $model = (new ViewModelFactory)->build(Swiss::calculated(Swiss::invoice()), new ViewContext(locale: 'de_CH', country: new CountryCH));
 
     expect($model->labels->vat_rate)->toBe('MWST')
