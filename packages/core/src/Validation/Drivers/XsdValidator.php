@@ -17,7 +17,9 @@ use Quittio\Core\Xml\UnsafeXmlException;
 use Quittio\Core\Xml\XmlSecurity;
 
 /**
- * XML schema validation (level L4) with the bundled CII D16B and UBL 2.1 schemas.
+ * XML schema validation (level L4) with the bundled CII D16B and UBL 2.1 schemas. XML of another
+ * syntax read by the reader of a country pack (e.g. ebInterface) is not checked here: the reader
+ * checks its structure.
  */
 final class XsdValidator implements ValidationDriver
 {
@@ -40,7 +42,17 @@ final class XsdValidator implements ValidationDriver
 
     public function supports(ValidationSubject $subject): bool
     {
-        return $subject->xml !== null;
+        if ($subject->xml === null) {
+            return false;
+        }
+        if ($subject->syntax !== null) {
+            return true;
+        }
+        try {
+            return $this->schemaFor(XmlSecurity::load($subject->xml)) !== null;
+        } catch (UnsafeXmlException) {
+            return true;   // reported as XSD-NOT-WELL-FORMED
+        }
     }
 
     public function validate(ValidationSubject $subject): ValidationResult

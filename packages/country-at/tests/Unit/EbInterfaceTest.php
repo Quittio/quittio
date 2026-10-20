@@ -91,6 +91,13 @@ it('reads what it writes, with the declared amounts matching the recalculation',
         ->and($data->paymentInstructions?->meansCode)->toBe($original->paymentInstructions?->meansCode);
 })->with(ebInterfaceCases());
 
+it('validates a read ebInterface file without the schema check of CII and UBL', function () {
+    $quittio = Quittio::create([], [new CountryAT]);
+    $result = $quittio->validateFile((new EbInterfaceWriter)->write(calculatedAustrian(Austrian::invoice())));
+
+    expect(array_map(fn ($m) => $m->code, $result->errors()))->toBe([]);
+});
+
 it('writes schema-valid ebInterface 6.1', function (Closure $build) {
     $document = new DOMDocument;
     $document->loadXML(ebInterface($build()));

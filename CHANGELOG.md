@@ -4,6 +4,10 @@ All notable changes to this project are documented in this file. The format foll
 
 ## [Unreleased]
 
+### Fixed
+
+- `validateFile()` and `validatePath()` no longer report `XSD-UNKNOWN-ROOT` for files that a reader of a country pack reads, e.g. ebInterface: the XSD level checks CII and UBL only.
+
 ## [0.7.0] - 2026-10-20
 
 The country packs for Austria, Belgium, Switzerland and France are published as separate packages. Their legal wording, rules and defaults were checked against the law and the official sources of October 2026, but have not been reviewed by a tax adviser yet; check the mentions and rates of your invoices before you rely on them.

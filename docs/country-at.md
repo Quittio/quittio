@@ -431,7 +431,7 @@ $read->data->number;            // "RE-2026-0046"
 - It reads ebInterface 6.0 and 6.1 (`EbInterfaceReader::NAMESPACES`). `CountryAT::readers()` registers it, so `read()`, `readFile()`, `validateFile()` and `validatePath()` accept such files once the pack is registered ([Reading incoming invoices](reading.md#reading-a-file)).
 - The mapping is that of the writer in reverse. The result has the syntax `ebinterface` and no profile; the rules use the configured default profile.
 - The language attribute sets the locale of the data, and the declared amounts are compared with a recalculation as for other formats.
-- The XSD level (L4) of the core has no schema for ebInterface: `validateFile()` with the default levels reports the error `XSD-UNKNOWN-ROOT` for every ebInterface file. Leave out L4 to check the content only, e.g. `Quittio::create(['validation' => ['levels' => ['L1', 'L2', 'L3', 'L7']]], [new CountryAT])` ([Incoming files](validation.md#incoming-files)).
+- The XSD level (L4) of the core has schemas for CII and UBL only and skips ebInterface files; the reader checks their structure, the other levels their content ([Incoming files](validation.md#incoming-files)).
 
 ebInterface is not an output format of `render()` yet; the XML formats of the core are CII and UBL ([CII and UBL](formats.md#cii-and-ubl)). Use the writer directly. The pack's tests check its output against the schema of ebInterface 6.1.
 
@@ -677,7 +677,7 @@ A changed reverse charge text still satisfies `AT-USTG-06`, because the rule acc
 ## Known limitations
 
 - The legal wording, references and defaults follow the law and official sources of October 2026 and have not been reviewed by an Austrian tax adviser. Later changes of the law need a new release.
-- ebInterface is not a format of `render()`; use `EbInterfaceWriter`. The XSD level of the core has no ebInterface schema, so `validateFile()` reports `XSD-UNKNOWN-ROOT` for ebInterface files unless L4 is left out ([ebInterface](#ebinterface)).
+- ebInterface is not a format of `render()`; use `EbInterfaceWriter`. `validateFile()` does not check ebInterface files against their schema ([ebInterface](#ebinterface)).
 - There is no Austrian letter layout (ÖNORM A 1080 was withdrawn without a successor), no Laravel service provider and no settings.
 - The shipped base rate table ends with 1 July 2026. Later rates must be added with `withRate()`; there is no configuration key and no automatic update ([Base rate table](#base-rate-table)).
 - There are no builder macros for Austrian special cases: the "Gutschrift" note, prepayment invoices and the conversion of foreign currency amounts are set with the general builder methods.
