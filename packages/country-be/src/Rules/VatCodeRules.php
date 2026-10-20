@@ -121,7 +121,7 @@ final class VatCodeRules
                     $report->warning('BT-2', 'issueDate', ['deadline' => $deadline->toIsoString()]);
                 }
             }),
-            $r('BE-LANG-01', 'A business in the Dutch, French or German language region should issue its invoices to Belgian customers in the language of the region (:language; language decrees of the Flemish and French Communities); the invoice is in :locale.', function (InvoiceData $i, RuleReporter $report): void {
+            $r('BE-LANG-01', 'A business in the Dutch, French or German language region should issue its invoices to Belgian customers in the language of the region (:language; language decrees of the Flemish and French Communities, for the German language region Art. 52 of the laws on the use of languages in administrative matters of 18 July 1966); the invoice is in :locale.', function (InvoiceData $i, RuleReporter $report): void {
                 if (! self::inBelgium($i->seller->address) || ! self::inBelgium($i->buyer->address)) {
                     return;
                 }

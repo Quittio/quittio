@@ -29,6 +29,6 @@ return [
         'message' => 'Die Rechnung ist spätestens am 15. Tag des Monats nach der Lieferung auszustellen (Art. 53 § 2 MwSt.-Gesetzbuch); die Frist endete am :deadline.',
     ],
     'BE-LANG-01' => [
-        'message' => 'Ein Unternehmen im niederländischen, französischen oder deutschen Sprachgebiet stellt Rechnungen an belgische Kunden in der Sprache des Gebiets aus (:language; Sprachendekrete der Flämischen und der Französischen Gemeinschaft); die Rechnung ist in :locale.',
+        'message' => 'Ein Unternehmen im niederländischen, französischen oder deutschen Sprachgebiet stellt Rechnungen an belgische Kunden in der Sprache des Gebiets aus (:language; Sprachendekrete der Flämischen und der Französischen Gemeinschaft, für das deutsche Sprachgebiet Art. 52 der Gesetze über den Sprachengebrauch in Verwaltungsangelegenheiten vom 18. Juli 1966); die Rechnung ist in :locale.',
     ],
 ];

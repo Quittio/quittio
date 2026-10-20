@@ -29,6 +29,6 @@ return [
         'message' => 'La facture doit être émise au plus tard le 15e jour du mois qui suit la livraison (art. 53, § 2, du Code de la TVA) ; le délai expirait le :deadline.',
     ],
     'BE-LANG-01' => [
-        'message' => 'Une entreprise de la région de langue néerlandaise, française ou allemande émet ses factures à des clients belges dans la langue de la région (:language ; décrets linguistiques des Communautés flamande et française) ; la facture est en :locale.',
+        'message' => 'Une entreprise de la région de langue néerlandaise, française ou allemande émet ses factures à des clients belges dans la langue de la région (:language ; décrets linguistiques des Communautés flamande et française, pour la région de langue allemande art. 52 des lois sur l\'emploi des langues en matière administrative du 18 juillet 1966) ; la facture est en :locale.',
     ],
 ];

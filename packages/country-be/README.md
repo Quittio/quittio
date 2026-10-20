@@ -66,5 +66,7 @@ Law of 2 August 2002: between businesses the reference rate plus 8 points, round
 
 ## Not yet included
 
-- A locale chosen from the seller's language region (the warning `BE-LANG-01` points it out instead).
-- Structured communication (OGM/VCS, `+++…+++`) checks, the Belgian payment QR code, a Laravel service provider with settings.
+- A locale chosen from the seller's language region (the warning `BE-LANG-01` points it out instead). Flanders allows a second binding version only for customers in another EU or EEA state, the French language region an additional language of the parties' choice, Brussels Dutch or French.
+- Structured communication (OGM/VCS, `+++…+++`, check digits modulo 97) checks, and the structured communication in the reference field of the GiroCode (EPC069-12 version 002) as the Febelfin guidelines for QR codes on invoices ask; a Laravel service provider with settings.
+- Consumer debts (Book XIX Code of Economic Law): the free first reminder, the waiting period of 14 calendar days, interest of at most the reference rate plus 8 points and the agreed flat rates (20 EUR, 30 EUR plus 10 %, 65 EUR plus 5 %, at most 2,000 EUR) are not modelled.
+- Reference rates from 2027: `ReferenceRateTable` ends with the second half of 2026; add later half-years with `withRate()`.

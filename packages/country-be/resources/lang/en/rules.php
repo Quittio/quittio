@@ -32,7 +32,7 @@ return [
         'message' => 'The invoice must be issued by the 15th day of the month following the supply (Art. 53 § 2 VAT Code); the deadline was :deadline.',
     ],
     'BE-LANG-01' => [
-        'message' => 'A business in the Dutch, French or German language region should issue its invoices to Belgian customers in the language of the region (:language; language decrees of the Flemish and French Communities); the invoice is in :locale.',
+        'message' => 'A business in the Dutch, French or German language region should issue its invoices to Belgian customers in the language of the region (:language; language decrees of the Flemish and French Communities, for the German language region Art. 52 of the laws on the use of languages in administrative matters of 18 July 1966); the invoice is in :locale.',
         'hint' => 'Set ->locale(\'nl_BE\') for a business in Flanders, ->locale(\'fr_BE\') in Wallonia.',
     ],
 ];

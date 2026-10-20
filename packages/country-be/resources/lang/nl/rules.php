@@ -32,7 +32,7 @@ return [
         'message' => 'De factuur moet uiterlijk op de 15e dag van de maand na de levering worden uitgereikt (art. 53, § 2 Wetboek btw); de termijn liep af op :deadline.',
     ],
     'BE-LANG-01' => [
-        'message' => 'Een onderneming in het Nederlandse, Franse of Duitse taalgebied reikt haar facturen aan Belgische afnemers uit in de taal van het taalgebied (:language; taaldecreten van de Vlaamse en de Franse Gemeenschap); de factuur is in :locale.',
+        'message' => 'Een onderneming in het Nederlandse, Franse of Duitse taalgebied reikt haar facturen aan Belgische afnemers uit in de taal van het taalgebied (:language; taaldecreten van de Vlaamse en de Franse Gemeenschap, voor het Duitse taalgebied art. 52 van de wetten op het gebruik van de talen in bestuurszaken van 18 juli 1966); de factuur is in :locale.',
         'hint' => 'Stel ->locale(\'nl_BE\') in voor een onderneming in Vlaanderen.',
     ],
 ];
