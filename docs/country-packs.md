@@ -1,6 +1,6 @@
 # Country packs
 
-A country pack holds everything in Quittio that differs between countries: VAT rates and exemption texts, national invoice rules and profiles, the formats a country prescribes, legal notices, letter layouts, numbering and retention periods, and the law on late payment. The core of Quittio stays country-neutral. Quittio ships a pack for Germany, and `quittio/quittio` installs it.
+A country pack holds everything in Quittio that differs between countries: VAT rates and exemption texts, national invoice rules and profiles, the formats a country prescribes, legal notices, letter layouts, numbering and retention periods, and the law on late payment. The core of Quittio stays country-neutral. Quittio ships a pack for Germany, and `quittio/quittio` installs it. Packs for Austria, Belgium, Switzerland and France are published as separate packages; their legal wording is not reviewed by a tax adviser yet ([Other countries](#other-countries)).
 
 Read this page when you invoice from Germany and need more than a standard invoice: an exemption or reverse charge, a small business invoice, XRechnung for a public buyer, a reminder with default interest or a letter layout after DIN 5008 (the German standard for business letters). Read it also when you want to support another country. If terms such as EN 16931, XRechnung, profile or `BR-DE` codes are new to you, read [E-invoicing basics](concepts.md) first.
 
@@ -901,6 +901,23 @@ For pack authors, this is how `CountryDE` fills the [`CountryPack` contract](#th
 - Distance sales (section 3c UStG) cannot be told from the data; `DE-USTG-12` only warns about possible ones.
 - Tax numbers are checked for format and check digit, not against the list of tax offices. Territories without a distinct postcode cannot be detected.
 - The pack defines no buyer country rules, exporters (e.g. DATEV) or readers yet.
+
+## Other countries
+
+These packs are released with the same version as the rest of Quittio, but are not part of `quittio/quittio`. Their legal wording, rules and defaults have **not been reviewed by a tax adviser** of the country yet: check the mentions and rates of your invoices before you rely on them. Each README describes the presets, rules and defaults of its pack and what is not included yet.
+
+| Package | Country | Covers | README |
+|---|---|---|---|
+| `quittio/country-at` | Austria (`AT`) | mandatory fields of the UStG 1994, tax presets, ebInterface, default interest (UGB, ABGB) | [country-at](https://github.com/Quittio/quittio/tree/master/packages/country-at#readme) |
+| `quittio/country-be` | Belgium (`BE`) | mandatory fields of Royal Decree No. 1, tax presets, Peppol BIS, language regions, default interest (law of 2 August 2002) | [country-be](https://github.com/Quittio/quittio/tree/master/packages/country-be#readme) |
+| `quittio/country-ch` | Switzerland (`CH`) | mandatory fields of the MWSTG, tax presets, QR bill, rounding to 5 Rappen, default interest (Art. 104 OR) | [country-ch](https://github.com/Quittio/quittio/tree/master/packages/country-ch#readme) |
+| `quittio/country-fr` | France (`FR`) | mentions of the CGI and the Code de commerce, the e-invoicing reform of 2026, SIREN, late payment penalties | [country-fr](https://github.com/Quittio/quittio/tree/master/packages/country-fr#readme) |
+
+```bash
+composer require quittio/country-fr
+```
+
+The packs declare themselves in their `composer.json`, so Laravel finds them after the installation; without Laravel, pass them to `Quittio::create()`, e.g. `Quittio::create(['country' => 'FR'], [new CountryFR])` ([Registering packs](#registering-packs)).
 
 ## How a pack is selected
 

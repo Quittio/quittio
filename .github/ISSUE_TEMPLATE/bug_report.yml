@@ -22,6 +22,10 @@ body:
         - quittio/core
         - quittio/laravel
         - quittio/country-de
+        - quittio/country-at
+        - quittio/country-be
+        - quittio/country-ch
+        - quittio/country-fr
         - not sure
     validations:
       required: true

@@ -7,20 +7,20 @@ How a version of Quittio gets from `master` to Packagist, and what has to be kep
 ```mermaid
 flowchart LR
     T["git push origin vX.Y.Z"] --> CI["ci.yml on the tag<br/>lint, analyse, test, visual, official-validation"]
-    CI -->|all green| S["split.yml (job split)<br/>packages/* → Quittio/core, laravel, country-de<br/>with the same tag"]
-    S --> P["Packagist<br/>quittio/core, quittio/laravel, quittio/country-de"]
+    CI -->|all green| S["split.yml (job split)<br/>packages/* → Quittio/core, laravel,<br/>country-de, -at, -be, -ch, -fr<br/>with the same tag"]
+    S --> P["Packagist<br/>quittio/core, quittio/laravel,<br/>quittio/country-de, -at, -be, -ch, -fr"]
     S --> PQ["ci.yml (job packagist)<br/>Packagist: quittio/quittio (this repository)"]
 ```
 
 - `ci.yml` runs for pushes to `master`, for every tag and for pull requests. Its last job, `split`, calls the reusable workflow `split.yml` only for pushes to `Quittio/quittio`, and only after every other job passed. A red tag therefore never reaches the split repositories.
 - `quittio/quittio` is published from this repository itself. The repository has no Packagist webhook; the job `packagist` of `ci.yml` calls the Packagist API after the split, so a tag reaches Packagist only once CI on the tag passed. It needs the repository secrets `PACKAGIST_USERNAME` and `PACKAGIST_TOKEN` (the API token of the Packagist profile). Packagist still crawls packages without a webhook once a week, so push a tag only for a commit whose CI on `master` is green. Do not re-enable the Packagist webhook (Settings → Webhooks) or the GitHub integration of Packagist for this repository.
-- The split needs the repository secret `SPLIT_TOKEN`, a token with "Contents: Read and write" and "Workflows: Read and write" on the three split repositories (classic tokens: the scopes `repo` and `workflow`). The workflow permission is needed because every package contains `.github/workflows/close-pull-request.yml`, which closes pull requests opened in a split repository with a pointer to this one.
+- The split needs the repository secret `SPLIT_TOKEN`, a token with "Contents: Read and write" and "Workflows: Read and write" on the seven split repositories (classic tokens: the scopes `repo` and `workflow`). The workflow permission is needed because every package contains `.github/workflows/close-pull-request.yml`, which closes pull requests opened in a split repository with a pointer to this one.
 
 ## Steps
 
 1. Make sure CI on `master` is green, including `official-validation`.
 2. Update `CHANGELOG.md`: rename `[Unreleased]` to `[X.Y.Z] - YYYY-MM-DD` and start a new empty `[Unreleased]` section above it. The format is [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
-3. For a new minor version (e.g. 0.2.0), raise the branch alias of `dev-master` (e.g. `0.2.x-dev`) in all four `composer.json` files: the root and `packages/core`, `packages/laravel`, `packages/country-de`. Update the supported versions in `SECURITY.md` and the status line in `README.md`.
+3. For a new minor version (e.g. 0.2.0), raise the branch alias of `dev-master` (e.g. `0.2.x-dev`) in all eight `composer.json` files: the root and `packages/core`, `packages/laravel`, `packages/country-de`, `packages/country-at`, `packages/country-be`, `packages/country-ch`, `packages/country-fr`. Update the supported versions in `SECURITY.md` and the status line in `README.md`.
 4. Commit as `chore: prepare release X.Y.Z` and push to `master`; wait for CI.
 5. Tag and push the tag:
 
@@ -29,7 +29,7 @@ flowchart LR
    git push origin vX.Y.Z
    ```
 
-6. Wait for CI on the tag. Check that the jobs `split` and `packagist` passed and that the tag appears in the three split repositories and for all four packages on Packagist.
+6. Wait for CI on the tag. Check that the jobs `split` and `packagist` passed and that the tag appears in the seven split repositories and for all eight packages on Packagist.
 7. Create the GitHub release from the tag with the section of the changelog:
 
    ```bash

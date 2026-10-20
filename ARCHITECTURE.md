@@ -9,11 +9,13 @@ flowchart LR
     core["quittio/core<br/>packages/core"]
     laravel["quittio/laravel<br/>packages/laravel"]
     de["quittio/country-de<br/>packages/country-de"]
+    others["quittio/country-at, -be, -ch, -fr<br/>packages/country-*"]
     all["quittio/quittio<br/>(this repository)"]
     managed["quittio/managed<br/>(private, not released)"]
 
     laravel --> core
     de --> core
+    others --> core
     de -. "optional: service provider,<br/>base rate command" .-> laravel
     managed --> laravel
     all -- "replaces" --> core & laravel & de
@@ -22,6 +24,7 @@ flowchart LR
 - **`quittio/core`** is country-neutral and framework-free. It depends on `brick/math`, `brick/money`, `mpdf/mpdf`, `setasign/fpdi`, `league/commonmark`, `nesbot/carbon` and `psr/log`, never on Laravel.
 - **`quittio/laravel`** depends on core and Laravel 13. It builds the core from `config/quittio.php` and adds the facade, events, Blade templates, storage, the queue job, the preview route and the Artisan commands.
 - **`quittio/country-de`** depends on core only. `src/Laravel` (service provider and `quittio:base-rate:update`) is used when Laravel is installed and is auto-discovered by Laravel; `laravel/framework` is only suggested.
+- **`quittio/country-at`, `-be`, `-ch` and `-fr`** depend on core only and are not part of `quittio/quittio`; they are released with the same version. Their legal wording is not reviewed by a tax adviser yet (see their READMEs).
 - **`quittio/quittio`** is the root `composer.json`: all three packages in one, released in lockstep ([ADR 0001](docs/adr/0001-monorepo-with-lockstep-versions.md)).
 - **`quittio/managed`** (issuer profiles, numbering, archive, audit log) lives in a private repository and depends on the Laravel package ([ADR 0004](docs/adr/0004-open-core.md)).
 

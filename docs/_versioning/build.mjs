@@ -117,7 +117,7 @@ function api(version, destination) {
     const label = version.channel === 'next' ? 'next' : version.name;
     // Relative directories: phpDocumentor reads absolute ones as separate documentation sets.
     execFileSync('php', [resolve(docs, options.api), 'run', '--quiet',
-        '-d', 'core/src', '-d', 'laravel/src', '-d', 'country-de/src',
+        '-d', 'core/src', '-d', 'laravel/src', '-d', 'country-de/src', '-d', 'country-at/src', '-d', 'country-be/src', '-d', 'country-ch/src', '-d', 'country-fr/src',
         '-t', join(destination, 'api'), '--cache-folder', cache,
         '--title', `Quittio ${label} API`, '--visibility=public,protected', '--defaultpackagename=Quittio'], { cwd: packages, stdio: 'inherit' });
 }

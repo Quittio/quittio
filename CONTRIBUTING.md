@@ -1,6 +1,6 @@
 # Contributing
 
-Thank you for helping with Quittio. Issues and pull requests belong in this repository ([Quittio/quittio](https://github.com/Quittio/quittio)); the package repositories `Quittio/core`, `Quittio/laravel` and `Quittio/country-de` are read-only copies. Security issues go through the private channel in [SECURITY.md](SECURITY.md), never into a public issue.
+Thank you for helping with Quittio. Issues and pull requests belong in this repository ([Quittio/quittio](https://github.com/Quittio/quittio)); the package repositories `Quittio/core`, `Quittio/laravel` and `Quittio/country-de`, `-at`, `-be`, `-ch` and `-fr` are read-only copies. Security issues go through the private channel in [SECURITY.md](SECURITY.md), never into a public issue.
 
 Before you change code, read [ARCHITECTURE.md](ARCHITECTURE.md) for how the packages fit together and the [decision records](docs/adr/README.md) for why.
 
@@ -40,7 +40,7 @@ What the package tests still need from elsewhere:
 |---|---|---|
 | `core` | `quittio/country-de` (require-dev) | `CancellationVatAlignmentTest` checks cancellations with German VAT presets |
 | `laravel` | `quittio/country-de` (require-dev) | the test application registers the German pack and a German seller |
-| `country-de` | the helper `Official` of the core tests | official validation tests; the split repository uses a stand-in (`tests/Standalone`) that skips them |
+| `country-de`, `country-at`, `country-be`, `country-fr` | the helper `Official` of the core tests | official validation tests; the split repository uses a stand-in (`tests/Standalone`) that skips them |
 | all | `tools/validators`, the downloaded test suites | the group `official`; skipped without them (in CI, the veraPDF tests fail without the Docker image instead) |
 | `core`, `laravel` | `docs/`, `resources/boost` of the monorepo | the field reference and Boost copy checks; skipped outside the monorepo |
 

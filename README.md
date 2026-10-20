@@ -34,6 +34,10 @@ All open source packages are developed in this repository under [`packages/`](pa
 | `quittio/core` | [`packages/core`](packages/core) → [Quittio/core](https://github.com/Quittio/core) | Country-neutral core: EN 16931 data model, calculation, profiles, CII and UBL writers/readers, ZUGFeRD/Factur-X PDF/A-3, validation. Usable without Laravel. |
 | `quittio/laravel` | [`packages/laravel`](packages/laravel) → [Quittio/laravel](https://github.com/Quittio/laravel) | Laravel integration: facade, configuration, Blade templates, commands, testing helpers. |
 | `quittio/country-de` | [`packages/country-de`](packages/country-de) → [Quittio/country-de](https://github.com/Quittio/country-de) | Country pack for Germany: UStG mandatory fields, tax presets, XRechnung profiles and BR-DE rules, DIN 5008 letter layouts. |
+| `quittio/country-at` | [`packages/country-at`](packages/country-at) → [Quittio/country-at](https://github.com/Quittio/country-at) | Country pack for Austria: UStG mandatory fields, tax presets, ebInterface, default interest. Not reviewed by a tax adviser yet. |
+| `quittio/country-be` | [`packages/country-be`](packages/country-be) → [Quittio/country-be](https://github.com/Quittio/country-be) | Country pack for Belgium: mandatory fields of Royal Decree No. 1, tax presets, Peppol BIS, language regions, default interest. Not reviewed by a tax adviser yet. |
+| `quittio/country-ch` | [`packages/country-ch`](packages/country-ch) → [Quittio/country-ch](https://github.com/Quittio/country-ch) | Country pack for Switzerland: MWSTG mandatory fields, tax presets, QR bill, rounding to 5 Rappen. Not reviewed by a tax adviser yet. |
+| `quittio/country-fr` | [`packages/country-fr`](packages/country-fr) → [Quittio/country-fr](https://github.com/Quittio/country-fr) | Country pack for France: mentions of the CGI and the Code de commerce, the e-invoicing reform of 2026, SIREN, late payment penalties. Not reviewed by a tax adviser yet. |
 | `quittio/quittio` | this repository | Everything in one package for Laravel applications: core, Laravel integration and the country pack Germany. |
 | `quittio/managed` | commercial, not released yet, see [Managed layer](docs/managed.md) | Managed layer for Laravel (commercial licence): issuer profiles, drafts, gapless numbering, archive with hashes, cancellations and corrections, mail delivery, audit log, retention. |
 
@@ -156,7 +160,7 @@ composer analyse     # PHPStan, level max
 composer lint        # Pint
 ```
 
-Development happens in this repository: see [CONTRIBUTING.md](CONTRIBUTING.md) for the setup, the test groups and pull requests, [ARCHITECTURE.md](ARCHITECTURE.md) for how the packages fit together and [RELEASING.md](RELEASING.md) for releases. `packages/core`, `packages/laravel` and `packages/country-de` are copied to the read-only repositories `quittio/core`, `quittio/laravel` and `quittio/country-de` on every push and tag once CI passed (`.github/workflows/split.yml`, called by `ci.yml`); open issues and pull requests here.
+Development happens in this repository: see [CONTRIBUTING.md](CONTRIBUTING.md) for the setup, the test groups and pull requests, [ARCHITECTURE.md](ARCHITECTURE.md) for how the packages fit together and [RELEASING.md](RELEASING.md) for releases. `packages/core`, `packages/laravel` and the country packs `packages/country-*` are copied to the read-only repositories `quittio/core`, `quittio/laravel`, `quittio/country-de`, `-at`, `-be`, `-ch` and `-fr` on every push and tag once CI passed (`.github/workflows/split.yml`, called by `ci.yml`); open issues and pull requests here.
 
 Official validation (KoSIT validator and veraPDF) runs in CI and locally:
 
@@ -194,4 +198,4 @@ The open source packages are provided under the MIT licence "as is", without war
 
 ## Licence
 
-`quittio/core`, `quittio/laravel`, `quittio/country-de` and `quittio/quittio` are released under the MIT licence, see [LICENSE](LICENSE). The Managed layer `quittio/managed` will be a separate package under a commercial licence; it is not released yet.
+`quittio/core`, `quittio/laravel`, the country packs `quittio/country-de`, `-at`, `-be`, `-ch`, `-fr` and `quittio/quittio` are released under the MIT licence, see [LICENSE](LICENSE). The Managed layer `quittio/managed` will be a separate package under a commercial licence; it is not released yet.

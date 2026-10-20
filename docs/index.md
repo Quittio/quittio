@@ -20,6 +20,7 @@ Germany is the first market; everything country-specific (VAT rates, legal texts
 | `quittio/core` | Country-neutral core: EN 16931 data model, calculation, profiles, CII and UBL writers/readers, ZUGFeRD/Factur-X PDF/A-3, validation. Usable without Laravel. |
 | `quittio/laravel` | Laravel integration: facade, configuration, Blade templates, commands, testing helpers. |
 | `quittio/country-de` | Country pack for Germany: UStG mandatory fields, tax presets, XRechnung profiles and BR-DE rules, DIN 5008 letter layouts. |
+| `quittio/country-at`, `quittio/country-be`, `quittio/country-ch`, `quittio/country-fr` | Country packs for Austria, Belgium, Switzerland and France, not reviewed by a tax adviser yet: see [Other countries](country-packs.md#other-countries). |
 | `quittio/quittio` | Everything in one package: core, Laravel integration and the country pack Germany. |
 | `quittio/managed` | Managed layer (commercial licence, not released yet): issuer profiles, drafts, gapless numbering, archive with hashes, cancellations and corrections, mail delivery, audit log, retention. |
 {: .packages }
@@ -92,4 +93,4 @@ New to Quittio? Follow [Getting started](getting-started.md); new to e-invoicing
 
 ## Licence
 
-Open core: `quittio/core`, `quittio/laravel`, `quittio/country-de` and `quittio/quittio` are released under the MIT licence. The Managed layer `quittio/managed` will be commercially licensed; it is not released yet.
+Open core: `quittio/core`, `quittio/laravel`, the country packs `quittio/country-de`, `-at`, `-be`, `-ch`, `-fr` and `quittio/quittio` are released under the MIT licence. The Managed layer `quittio/managed` will be commercially licensed; it is not released yet.
