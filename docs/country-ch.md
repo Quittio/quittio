@@ -163,7 +163,7 @@ The pack checks the elements of an invoice that Art. 26 (2) MWSTG requires, as f
 | `CH-MWSTG-05` | error | BT-117 (`vatBreakdown[].taxAmount`) | A seller that is not registered for VAT must not charge VAT; VAT shown is owed by reason of the invoice (Art. 27 (2) MWSTG). The rule applies when any line uses `VatPreset::NotRegistered` and reports every row of the VAT breakdown with a VAT amount other than zero. |
 
 - **Till receipts.** `MwstgRules::isTillReceipt(InvoiceData $invoice)` is true for a calculated invoice in CHF whose total including VAT (BT-112) is at most CHF 400 (`TaxTables::TILL_RECEIPT_LIMIT`). Such an invoice may leave out the buyer's place. EN 16931 still requires a buyer name (BR-7), e.g. "Barverkauf" (cash sale).
-- **UID numbers.** The builder removes spaces from VAT identifiers (`->vatId('CHE-123.456.789 MWST')` is stored as `CHE-123.456.789MWST`). `CH-MWSTG-03` accepts both forms.
+- **UID numbers.** The builder removes spaces from VAT identifiers, but keeps one before the note of the VAT registration of a UID number (`MWST`, `TVA` or `IVA`): `->vatId('CHE-123.456.789 MWST')` and `->vatId('CHE-123.456.789MWST')` are both stored and printed as "CHE-123.456.789 MWST". `CH-MWSTG-03` accepts both forms.
 - **Other elements.** Art. 26 (2) MWSTG also names the date or period of the supply, the kind and extent of the supply, the amount and the rate. Quittio's EN 16931 rules and the [mandatory field guard](templates.md#mandatory-field-guard) cover these values; the pack has no rule of its own for them.
 - **Messages.** The messages exist in German, French, Italian and English (`resources/lang/{de,fr,it,en}/rules.php`, keys such as `quittio-ch::rules.CH-MWSTG-02.message`); other locales get English. Most German and English messages have a hint with the builder method that fixes the error.
 - **Switching rules off.** Like every rule, a Swiss rule can be switched off or changed in severity with `validation.rules` ([Switching rules off](validation.md#switching-rules-off-and-changing-their-severity)).
@@ -528,7 +528,7 @@ if ($check->isValid()) {
 What the invoice contains:
 
 - Net amount 1'818.00 CHF, 8.1 % MWST on 1'740.00 CHF (140.94 CHF) and 2.6 % MWST on 78.00 CHF (2.03 CHF), total 1'960.97 CHF, rounding −0.02 CHF, amount due 1'960.95 CHF.
-- The date of the supply ("Leistungsdatum 30.09.2026") in the header and the UID number ("MWST-Nr. CHE-123.456.788MWST") in the footer, as the [mandatory output](#mandatory-pdf-output) requires.
+- The date of the supply ("Leistungsdatum 30.09.2026") in the header and the UID number ("MWST-Nr. CHE-123.456.788 MWST") in the footer, as the [mandatory output](#mandatory-pdf-output) requires.
 - On the second page the payment part and the receipt: account CH44 3199 9123 0008 8901 2 with Bergsoft AG, the QR reference `00 00000 00000 00000 02026 00427` made from the invoice number, "RE-2026-0042" as additional information, the buyer under "Zahlbar durch" and the amount 1 960.95 CHF.
 
 With an ordinary IBAN instead of the QR-IBAN, the code has no reference (`NON`) unless the remittance information is a Creditor Reference ([References](#references)). With the locale `fr_CH` (`->locale('fr_CH')` before `build()`), labels, exemption texts and the QR bill headings are French ("Section paiement", "Récépissé").

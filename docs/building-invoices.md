@@ -248,7 +248,7 @@ Quittio::invoice()                                                 // seller fro
 |---|---|---|---|
 | `name(string $name)` | BT-27 | BT-44 | Legal name. Required. |
 | `tradingName(?string $tradingName)` | BT-28 | BT-45 | Trading name. |
-| `vatId(?string $vatId)` | BT-31 | BT-48 | VAT identifier with country prefix, e.g. `DE123456789`; uppercased, spaces removed. |
+| `vatId(?string $vatId)` | BT-31 | BT-48 | VAT identifier with country prefix, e.g. `DE123456789`; uppercased, spaces removed (a Swiss UID number keeps one before its note, "CHE-123.456.789 MWST"). |
 | `taxNumber(?string $taxNumber)` | BT-32 | – | Tax registration number (German "Steuernummer", the number issued by the local tax office); ignored for the buyer. |
 | `legalRegistration(?string $value, IdentifierScheme\|RawCode\|string\|null $scheme = null)` | BT-30 | BT-47 | Legal registration identifier, e.g. the commercial register number. |
 | `additionalLegalInfo(?string $info)` | BT-33 | – | Additional legal information (legal form, share capital …); ignored for the buyer. |

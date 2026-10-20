@@ -129,11 +129,12 @@ final class PartyBuilder
 
     /**
      * VAT identifier with country prefix, e.g. "DE123456789" (seller BT-31, buyer BT-48);
-     * uppercased, spaces removed; null removes it.
+     * uppercased, spaces removed; null removes it. A Swiss UID number keeps one space before the
+     * note of its VAT registration ("CHE-123.456.789 MWST", also TVA and IVA).
      */
     public function vatId(?string $vatId): self
     {
-        $this->vatId = $vatId === null ? null : strtoupper(str_replace(' ', '', $vatId));
+        $this->vatId = $vatId === null ? null : (string) preg_replace('/^(CHE-?\d{3}\.?\d{3}\.?\d{3})(MWST|TVA|IVA)$/', '$1 $2', strtoupper(str_replace(' ', '', $vatId)));
 
         return $this;
     }

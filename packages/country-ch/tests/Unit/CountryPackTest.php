@@ -5,6 +5,8 @@ declare(strict_types=1);
 use Brick\Math\BigDecimal;
 use Brick\Money\Money;
 use Quittio\Core\Calculation\En16931Calculator;
+use Quittio\Core\Countries\CountryRegistry;
+use Quittio\Core\Countries\DefaultCountryResolver;
 use Quittio\Core\Dunning\DefaultInterest;
 use Quittio\Core\Enums\UnitCode;
 use Quittio\Core\Enums\VatCategory;
@@ -91,6 +93,18 @@ it('keeps invoices for ten years and uses Swiss titles', function () {
         ->and($pack->correctionPolicy()->title('cancellation', 'fr'))->toBe('Note de crédit')
         ->and($pack->correctionPolicy()->title('cancellation', 'de_CH'))->toBe('Gutschrift')
         ->and($pack->numberingRules()->gapless)->toBeFalse();
+});
+
+it('keeps the space before the note of the VAT registration of a UID number', function () {
+    $invoice = Swiss::invoice()->seller(fn ($s) => $s->vatId('CHE-123.456.788 MWST'))->buyer(fn ($b) => $b->vatId('che 109.322.551tva'))->build();
+
+    expect([$invoice->seller->vatId, $invoice->buyer->vatId])->toBe(['CHE-123.456.788 MWST', 'CHE109.322.551 TVA']);
+});
+
+it('leads the invoices of sellers in Liechtenstein', function () {
+    $invoice = Swiss::invoice()->seller(fn ($s) => $s->address('Städtle 1', '9490', 'Vaduz', 'LI'))->build();
+
+    expect((new DefaultCountryResolver(new CountryRegistry([new CountryCH])))->resolve($invoice)->leading)->toBeInstanceOf(CountryCH::class);
 });
 
 it('labels VAT as MWST in Swiss German', function () {
