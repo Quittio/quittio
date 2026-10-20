@@ -29,7 +29,7 @@ CHF, locale `de_CH` (Swiss formats such as 1'590.00, German texts), time zone `E
 | `NotTaxableInSwitzerland` | `ch.not_taxable` | `O` | – | place of supply abroad (Art. 7, 8 MWSTG) |
 | `NotRegistered` | `ch.not_registered` | `O` | – | seller not registered for VAT, e.g. below CHF 100,000 turnover (Art. 10 (2) MWSTG) |
 
-The increase of the standard rate to 8.5 % from 2028, on which the vote of 29 November 2026 decides, is not included.
+Not included: the increase of the standard rate to 8.5 % and of the accommodation rate to 4.0 % (the reduced rate stays at 2.6 %), on which the vote of 29 November 2026 decides; the Federal Council sets the date, at the earliest 2028. The law limits the accommodation rate to the end of 2027; an extension until 2031 is not yet in force.
 
 ## Rules (Art. 26 MWSTG)
 
@@ -50,7 +50,7 @@ The increase of the standard rate to 8.5 % from 2028, on which the vote of 29 No
 - Creditor: account holder or seller with the seller's address; debtor: the buyer, or an empty field when its address is incomplete. Addresses are structured (type "S"); a building number at the end of the street becomes the building number.
 - Amount: the amount due; no code for amounts of zero or less.
 
-Billing information (Swico), alternative procedures and the "do not use for payment" bill are not supported yet.
+Billing information (syntax S1 of Swico, maintained by SIX since version 2.4 of the guidelines), alternative procedures and the "do not use for payment" bill are not supported yet.
 
 ## Rounding to 5 Rappen
 
@@ -68,5 +68,6 @@ Art. 104 OR: 5 % default interest for businesses and consumers, without referenc
 
 ## Not yet included
 
-- Labels and code names in Italian (the core has German, English and French; Italian invoices show English labels).
-- Swiss letter layouts with the window left or right (SN 010130), eBill, a Laravel service provider with settings.
+- Labels and code names in Italian (the core has German, English, French and Dutch; Italian invoices show English labels).
+- Swiss letter layouts with the window left or right (SN 10130:2026 "Geschäftsbrief", which replaced SN 010130; Swiss Post specifications for the address window), eBill (through a network partner of SIX), a Laravel service provider with settings.
+- Headings in Romansh, which version 2.4 of the guidelines adds (valid from 14 November 2026).

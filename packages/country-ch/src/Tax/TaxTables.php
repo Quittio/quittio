@@ -11,8 +11,11 @@ use Quittio\Core\Support\DatedValues;
 /**
  * Swiss VAT rates (Art. 25 MWSTG), each valid from its date on.
  *
- * The increase of the standard rate to 8.5 % from 2028, on which the vote of 29 November 2026
- * decides, is not included. Not reviewed by a tax adviser yet (see the README of the pack).
+ * Not included: the increase of the standard rate to 8.5 % and of the accommodation rate to
+ * 4.0 %, on which the vote of 29 November 2026 decides (Art. 130 (3quinquies) BV, at the
+ * earliest from 2028, date set by the Federal Council), and the end of the accommodation rate,
+ * which the law limits to the end of 2027 unless it is extended. Not reviewed by a tax adviser
+ * yet (see the README of the pack).
  */
 final class TaxTables
 {
