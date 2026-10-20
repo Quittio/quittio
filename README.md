@@ -135,7 +135,7 @@ The documentation is published at **[docs.quittio.dev](https://docs.quittio.dev)
 - [Reading incoming invoices](docs/reading.md)
 - [Laravel integration](docs/laravel.md)
 - [Configuration](docs/configuration.md)
-- [Country packs](docs/country-packs.md)
+- [Country packs](docs/country-packs.md): Germany, [Austria](docs/country-at.md), [Belgium](docs/country-be.md), [Switzerland](docs/country-ch.md), [France](docs/country-fr.md)
 - [Testing](docs/testing.md)
 - [Artisan commands](docs/commands.md)
 - [Managed layer](docs/managed.md) (preview)
@@ -177,11 +177,14 @@ php tools/docs/generate.php        # JSON schema and field reference after model
 ## Keeping data current
 
 - Base rate (Basiszinssatz, section 247 BGB): the values up to 1 July 2026 are included. Later values come from `php artisan quittio:base-rate:update` (Deutsche Bundesbank) or from `quittio.countries.de.base_rates` (`config/quittio/countries/de.php`), without a new release ([Base rate table](docs/country-packs.md#base-rate-table)).
+- Country packs Austria, Belgium and France: the reference rates of the late payment laws are included up to the second half of 2026 (`BaseRateTable`, `ReferenceRateTable`, `EcbRateTable`); add later half-years with `withRate()` until a release brings them. The legal interest rate of France for consumers (`b2cFixedRate`, 2.75 % in the second half of 2026) and the Belgian legal interest rate (4.5 % in 2026) are fixed values of the release.
 - Code lists follow the EN 16931 Schematron 1.3.16 of the XRechnung configuration 2026-08-31 (`quittio:codelists:update`).
 
 ## Legal review
 
 The legal wording, legal references, rules and defaults of the country pack Germany were reviewed in October 2026 against the UStG, the UStDV, the UStAE (as of 2 June 2026), the BMF letters of 15 October 2025 and 15 October 2026 on e-invoicing, the mapping table of KoSIT and FeRD and the case law, with test invoices validated by KoSIT and veraPDF. The changes that followed are listed in the [changelog](CHANGELOG.md) under 0.6.0. A tax adviser (Steuerberater) went through the review and its implementation and confirmed the results in October 2026.
+
+The country packs Austria, Belgium, Switzerland and France were checked against the law and the official sources of October 2026, but have not been reviewed by a tax adviser of their country yet.
 
 The review reflects the law and administrative practice of October 2026. Not covered by it or still open:
 

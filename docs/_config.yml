@@ -100,6 +100,16 @@ defaults:
     values: { title: Testing, nav_order: 14, render_with_liquid: false }
   - scope: { path: "country-packs.md" }
     values: { title: Country packs, nav_order: 15, render_with_liquid: false }
+  # The country packs other than Germany, below "Country packs" in the navigation (15.x keeps
+  # them after it in llms.txt and the MCP index).
+  - scope: { path: "country-at.md" }
+    values: { title: Austria, nav_order: 15.1, parent: Country packs, render_with_liquid: false }
+  - scope: { path: "country-be.md" }
+    values: { title: Belgium, nav_order: 15.2, parent: Country packs, render_with_liquid: false }
+  - scope: { path: "country-ch.md" }
+    values: { title: Switzerland, nav_order: 15.3, parent: Country packs, render_with_liquid: false }
+  - scope: { path: "country-fr.md" }
+    values: { title: France, nav_order: 15.4, parent: Country packs, render_with_liquid: false }
   - scope: { path: "managed.md" }
     values: { title: Managed layer (preview), nav_order: 16, render_with_liquid: false }
   - scope: { path: "troubleshooting.md" }

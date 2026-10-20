@@ -20,7 +20,7 @@ Germany is the first market; everything country-specific (VAT rates, legal texts
 | `quittio/core` | Country-neutral core: EN 16931 data model, calculation, profiles, CII and UBL writers/readers, ZUGFeRD/Factur-X PDF/A-3, validation. Usable without Laravel. |
 | `quittio/laravel` | Laravel integration: facade, configuration, Blade templates, commands, testing helpers. |
 | `quittio/country-de` | Country pack for Germany: UStG mandatory fields, tax presets, XRechnung profiles and BR-DE rules, DIN 5008 letter layouts. |
-| `quittio/country-at`, `quittio/country-be`, `quittio/country-ch`, `quittio/country-fr` | Country packs for Austria, Belgium, Switzerland and France, not reviewed by a tax adviser yet: see [Other countries](country-packs.md#other-countries). |
+| `quittio/country-at`, `quittio/country-be`, `quittio/country-ch`, `quittio/country-fr` | Country packs for Austria, Belgium, Switzerland and France, not reviewed by a tax adviser yet: see [Austria](country-at.md), [Belgium](country-be.md), [Switzerland](country-ch.md) and [France](country-fr.md). |
 | `quittio/quittio` | Everything in one package: core, Laravel integration and the country pack Germany. |
 | `quittio/managed` | Managed layer (commercial licence, not released yet): issuer profiles, drafts, gapless numbering, archive with hashes, cancellations and corrections, mail delivery, audit log, retention. |
 {: .packages }
@@ -84,6 +84,7 @@ New to Quittio? Follow [Getting started](getting-started.md); new to e-invoicing
 | [Artisan commands](commands.md) | All commands and publish tags |
 | [Testing](testing.md) | Fake, assertions, factories, scenarios |
 | [Country packs](country-packs.md) | The German pack: tax presets, rules, XRechnung, reminders; writing a pack |
+| [Austria](country-at.md), [Belgium](country-be.md), [Switzerland](country-ch.md), [France](country-fr.md) | The other country packs: presets, rules, formats, payment QR codes, default interest |
 | [Managed layer](managed.md) | Preview of the unreleased package: issuer profiles, customers, numbering, archive, cancellations and corrections, delivery, audit log, immutability, retention |
 | [Troubleshooting](troubleshooting.md) | Common errors with cause and fix |
 | [FAQ](faq.md) | Sending, the German e-invoicing obligation, Java, temporary files, queued invoices |

@@ -84,8 +84,8 @@ console.log(`${pages.length} pages, ${pages.reduce((n, p) => n + p.sections.leng
  */
 function navigation() {
     const config = readFileSync(join(docs, '_config.yml'), 'utf8');
-    const entries = [...config.matchAll(/path: "([^"]+\.md)" \}\s*\n\s*values: \{ title: ([^,]+), nav_order: (\d+)/g)]
-        .map(([, file, title, order]) => ({ file, title: title.trim(), order: Number(order) }));
+    const entries = [...config.matchAll(/path: "([^"]+\.md)" \}\s*\n\s*values: \{ title: ([^,]+), nav_order: ([\d.]+)(?:, parent: ([^,}]+))?/g)]
+        .map(([, file, title, order, parent]) => ({ file, title: parent ? `${parent.trim()}: ${title.trim()}` : title.trim(), order: Number(order) }));
     const known = new Set(entries.map((e) => e.file));
     const missing = readdirSync(docs).filter((f) => f.endsWith('.md') && !known.has(f));
     if (missing.length > 0) {

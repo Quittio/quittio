@@ -6,7 +6,7 @@ All notable changes to this project are documented in this file. The format foll
 
 ### Added
 
-- Country packs for Austria (`quittio/country-at`), Belgium (`quittio/country-be`), Switzerland (`quittio/country-ch`) and France (`quittio/country-fr`), published as read-only split repositories next to `quittio/country-de` and not part of `quittio/quittio`. Their legal wording, rules and defaults are not reviewed by a tax adviser yet; see their READMEs.
+- Country packs for Austria (`quittio/country-at`), Belgium (`quittio/country-be`), Switzerland (`quittio/country-ch`) and France (`quittio/country-fr`), published as read-only split repositories next to `quittio/country-de` and not part of `quittio/quittio`. Their legal wording, rules and defaults are not reviewed by a tax adviser yet. The documentation has a page for each of them.
 - `DunningLaw::$b2cFixedRate` and `$b2bFixedRate`: fixed default interest rates for consumers and businesses instead of the reference rate plus points (e.g. 4 % for consumers in Austria, section 1000 (1) ABGB; 5 % in Switzerland, Art. 104 OR). `DefaultInterest` charges them for the whole time; `DefaultInterest::forCountry()` accepts a pack without reference rates when both rates are fixed (`DunningLaw::hasFixedRates()`).
 - Payment slips: a payment QR code generator that implements `Pdf\Qr\ProvidesPaymentSlip` returns a `PaymentSlip`, which the default templates (plain PHP and Blade, partial `payment-slip`) print after the payment part of the Swiss QR bill: receipt and payment part at the bottom of a page of its own, the code at 46 × 46 mm without quiet zone. The view model has it as `payment.qrCode.slip`.
 - Liberation Sans (SIL Open Font License) is bundled as font family `liberationsans`, for the payment slip.
