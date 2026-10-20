@@ -4,6 +4,8 @@ All notable changes to this project are documented in this file. The format foll
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-10-20
+
 ### Fixed
 
 - `validateFile()` and `validatePath()` no longer report `XSD-UNKNOWN-ROOT` for files that a reader of a country pack reads, e.g. ebInterface: the XSD level checks CII and UBL only.
@@ -344,7 +346,8 @@ First release.
 - `pdf.paper` and the VIES verification (`validation.drivers.vies.enabled`) take effect; file names of XML-only formats no longer contain a raw translation key.
 - Watermarks (draft and preview PDFs) were never printed: mPDF needs `showWatermarkText`, and PDF/A forbids their transparency. Watermarked PDFs without embedded XML are now rendered without PDF/A.
 
-[Unreleased]: https://github.com/Quittio/quittio/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/Quittio/quittio/compare/v0.7.1...HEAD
+[0.7.1]: https://github.com/Quittio/quittio/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/Quittio/quittio/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/Quittio/quittio/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/Quittio/quittio/compare/v0.4.0...v0.5.0

@@ -23,7 +23,7 @@ Germany is the first market; everything country-specific lives in country packs,
 
 **Website: [quittio.dev](https://quittio.dev) · Documentation: [docs.quittio.dev](https://docs.quittio.dev)**
 
-> **Status:** version 0.7.0. Implemented: data model, calculation, validation L1–L7, CII/UBL writers and readers, ZUGFeRD/Factur-X PDF/A-3, XRechnung, Peppol BIS, the Laravel integration, the country pack Germany and the country packs Austria, Belgium, Switzerland and France (not reviewed by a tax adviser yet). The Managed layer (issuer profiles, drafts, gapless numbering, archive, cancellations, corrections, mail delivery, audit log) will follow as the separate commercial package `quittio/managed` for Laravel; it is not released yet. APIs may still change until version 1.0.0. The legal wording of the country pack Germany was reviewed by a tax adviser in October 2026 (see [Legal review](#legal-review) and [Disclaimer](#disclaimer)).
+> **Status:** version 0.7.1. Implemented: data model, calculation, validation L1–L7, CII/UBL writers and readers, ZUGFeRD/Factur-X PDF/A-3, XRechnung, Peppol BIS, the Laravel integration, the country pack Germany and the country packs Austria, Belgium, Switzerland and France (not reviewed by a tax adviser yet). The Managed layer (issuer profiles, drafts, gapless numbering, archive, cancellations, corrections, mail delivery, audit log) will follow as the separate commercial package `quittio/managed` for Laravel; it is not released yet. APIs may still change until version 1.0.0. The legal wording of the country pack Germany was reviewed by a tax adviser in October 2026 (see [Legal review](#legal-review) and [Disclaimer](#disclaimer)).
 
 ## Packages
 
