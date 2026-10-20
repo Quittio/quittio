@@ -23,7 +23,7 @@ use Quittio\Country\BE\Tax\VatPreset;
 
 /**
  * Mentions of a Belgian invoice: Art. 53 § 2 of the VAT Code and Art. 5 of Royal Decree No. 1,
- * and the use of languages in the Dutch and French language regions.
+ * and the use of languages in the Dutch, French and German language regions.
  *
  * These rules apply to every invoice of a Belgian seller, independent of the format. Not
  * reviewed by a tax adviser yet (see the README of the pack).
