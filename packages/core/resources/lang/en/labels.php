@@ -87,6 +87,7 @@ return [
     'remittance' => 'Payment reference',
     'remittance_short' => 'Ref.',
     'girocode' => 'Scan to pay',
+    'payment_qr' => 'Scan to pay',
     'girocode_discounted' => 'QR code with the amount after cash discount (:amount), valid until :date.',
     'card' => 'Card payment',
     'direct_debit' => 'The amount will be collected by direct debit.',

@@ -87,6 +87,7 @@ return [
     'remittance' => 'Mededeling',
     'remittance_short' => 'Mededeling',
     'girocode' => 'Scan om te betalen',
+    'payment_qr' => 'Scan om te betalen',
     'girocode_discounted' => 'QR-code met het bedrag na korting (:amount), geldig tot :date.',
     'card' => 'Kaartbetaling',
     'direct_debit' => 'Het bedrag wordt via domiciliëring geïnd.',

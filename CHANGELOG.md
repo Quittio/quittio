@@ -7,6 +7,7 @@ All notable changes to this project are documented in this file. The format foll
 ### Fixed
 
 - `validateFile()` and `validatePath()` no longer report `XSD-UNKNOWN-ROOT` for files that a reader of a country pack reads, e.g. ebInterface: the XSD level checks CII and UBL only.
+- Payment reminders of a Swiss seller get the payment part and receipt of the QR bill with the reminder total; `SwissQrBillGenerator::slip()` reads the values from the code. A payment QR code other than a GiroCode is captioned with the new label `payment_qr` ("QR-Code zum Bezahlen", "Scan to pay") instead of "GiroCode".
 
 ## [0.7.0] - 2026-10-20
 

@@ -87,6 +87,7 @@ return [
     'remittance' => 'Référence de paiement',
     'remittance_short' => 'Réf.',
     'girocode' => 'Scanner pour payer',
+    'payment_qr' => 'Scanner pour payer',
     'girocode_discounted' => 'QR code avec le montant après escompte (:amount), valable jusqu\'au :date.',
     'card' => 'Paiement par carte',
     'direct_debit' => 'Le montant sera prélevé.',

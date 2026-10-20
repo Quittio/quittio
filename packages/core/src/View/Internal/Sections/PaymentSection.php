@@ -92,8 +92,8 @@ final readonly class PaymentSection
             }
         }
 
-        // The slip of the code itself, not of the codes of discounted amounts.
-        $slip = $value === null && $generator instanceof ProvidesPaymentSlip ? $generator->slip($invoice, $payload, $scope->locale) : null;
+        // The slip of the code, also of the amount of a payment reminder.
+        $slip = $generator instanceof ProvidesPaymentSlip ? $generator->slip($invoice, $payload, $scope->locale) : null;
 
         return [
             'type' => $generator->key(),

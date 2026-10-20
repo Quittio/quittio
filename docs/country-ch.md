@@ -253,7 +253,7 @@ The payment QR mode `auto` (the default, `pdf.payment_qr.type` in Laravel, `Pres
 
 ### Payment reminders
 
-A [payment reminder](documents.md#payment-reminders) of a Swiss seller gets the Swiss QR Code over the total of the reminder, with the open invoice numbers as unstructured message. With a QR-IBAN its reference is the QR reference of the digits of the reminder number (`M-2026-0003` gives `000000000000000000202600037`). The code is printed next to the bank details at the size of the other payment QR codes and under the caption of the label `girocode` ("GiroCode"); reminders have no payment part and no receipt.
+A [payment reminder](documents.md#payment-reminders) of a Swiss seller gets the Swiss QR Code over the total of the reminder, with the open invoice numbers as unstructured message. With a QR-IBAN its reference is the QR reference of the digits of the reminder number (`M-2026-0003` gives `000000000000000000202600037`). The reminder gets the payment part and receipt like an invoice, with the total of the reminder as amount, on a page of its own at the end.
 
 ### The classes `QrReference` and `CreditorReference`
 

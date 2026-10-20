@@ -2,7 +2,10 @@
 
 declare(strict_types=1);
 
+use Quittio\Core\Calculation\En16931Calculator;
 use Quittio\Core\Data\Presentation\Presentation;
+use Quittio\Core\Documents\DocumentBuilder;
+use Quittio\Core\Documents\DocumentCalculator;
 use Quittio\Core\Enums\PaymentMeansCode;
 use Quittio\Core\Quittio;
 use Quittio\Core\Validation\ValidationLevel;
@@ -111,6 +114,25 @@ it('prints the QR bill of the pack for the type swiss-qr-bill', function () {
     $model = (new ViewModelFactory)->build(Swiss::calculated(Swiss::invoice()), $context);
 
     expect($model->payment?->qrCode?->type)->toBe('swiss-qr-bill');
+});
+
+it('prints the payment part with the total of a payment reminder', function () {
+    $invoice = Swiss::calculated(Swiss::invoice(Swiss::IBAN));
+    $reminder = DocumentBuilder::paymentReminder(1)
+        ->number('MA-2026-0007')
+        ->issueDate('2026-11-20')
+        ->currency('CHF')
+        ->seller($invoice->seller)
+        ->buyer($invoice->buyer)
+        ->creditTransfer(Swiss::IBAN, null, 'Bergsoft AG')
+        ->openItem('RE-2026-0042', '2026-10-05', '1960.95', '2026-11-04')
+        ->fee('Mahngebühr', '20.00')
+        ->build();
+    $document = (new DocumentCalculator(new En16931Calculator))->calculate($reminder);
+    $view = (new ViewModelFactory)->buildDocument($document, new ViewContext(locale: 'de_CH', country: new CountryCH));
+
+    expect($view->payment?->qrCode?->slip?->amount)->toBe('1 980.95')
+        ->and($view->payment?->qrCode?->slip?->title)->toBe('Zahlteil');
 });
 
 it('renders the payment part on a page of its own', function () {

@@ -54,7 +54,7 @@
             {{-- The note on a discounted amount is printed with the payment terms. --}}
             <td class="qr">
                 <img src="{{ $qr->dataUri }}" style="width: 17mm; height: 17mm;">
-                <div class="qr-caption">{{ $labels->girocode }}</div>
+                <div class="qr-caption">{{ $qr->type === 'girocode' ? $labels->girocode : $labels->payment_qr }}</div>
             </td>
         @endif
     </tr></table>

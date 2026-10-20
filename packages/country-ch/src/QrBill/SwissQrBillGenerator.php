@@ -60,10 +60,14 @@ final class SwissQrBillGenerator implements ProvidesPaymentSlip
         return $data === null ? null : implode("\n", $data['lines']);
     }
 
+    /**
+     * The payment part and receipt of the code $payload, read from the code itself, so that they
+     * show its amount and reference also for a payment reminder.
+     */
     public function slip(InvoiceData $invoice, string $payload, string $locale): ?PaymentSlip
     {
-        $data = $this->data($invoice, []);
-        if ($data === null || implode("\n", $data['lines']) !== $payload) {
+        $data = self::fields($payload);
+        if ($data === null) {
             return null;
         }
 
@@ -86,12 +90,44 @@ final class SwissQrBillGenerator implements ProvidesPaymentSlip
             receiptSections: [$account, ...$reference, $debtor],
             currencyHeading: $label('currency'),
             amountHeading: $label('amount'),
-            currency: $invoice->currency,
+            currency: $data['currency'],
             amount: $data['amount'] === null ? null : self::formatAmount($data['amount']),
             acceptancePoint: $label('acceptance_point'),
             separationNote: $label('separate'),
             mark: SwissCross::dataUri(),
         );
+    }
+
+    /**
+     * The values of a Swiss QR Code printed on the slip; null for another payload.
+     *
+     * @return array{iban: string, creditor: array{name: string, street: string, number: string, postcode: string, city: string, country: string}, debtor: array{name: string, street: string, number: string, postcode: string, city: string, country: string}|null, amount: ?BigDecimal, currency: string, referenceType: string, reference: ?string, message: string}|null
+     */
+    private static function fields(string $payload): ?array
+    {
+        $lines = explode("\n", $payload);
+        if (count($lines) < 31 || $lines[0] !== 'SPC') {
+            return null;
+        }
+        $party = static fn (int $at): ?array => $lines[$at] !== 'S' ? null : [
+            'name' => $lines[$at + 1], 'street' => $lines[$at + 2], 'number' => $lines[$at + 3],
+            'postcode' => $lines[$at + 4], 'city' => $lines[$at + 5], 'country' => $lines[$at + 6],
+        ];
+        $creditor = $party(4);
+        if ($creditor === null) {
+            return null;
+        }
+
+        return [
+            'iban' => $lines[3],
+            'creditor' => $creditor,
+            'debtor' => $party(20),
+            'amount' => $lines[18] === '' ? null : BigDecimal::of($lines[18]),
+            'currency' => $lines[19],
+            'referenceType' => $lines[27],
+            'reference' => $lines[28] === '' ? null : $lines[28],
+            'message' => $lines[29],
+        ];
     }
 
     /**

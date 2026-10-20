@@ -87,6 +87,7 @@ return [
     'remittance' => 'Verwendungszweck',
     'remittance_short' => 'Zweck',
     'girocode' => 'GiroCode',
+    'payment_qr' => 'QR-Code zum Bezahlen',
     'girocode_discounted' => 'QR-Code mit Betrag nach Skonto (:amount), gültig bis :date.',
     'card' => 'Kartenzahlung',
     'direct_debit' => 'Der Betrag wird per Lastschrift eingezogen.',
