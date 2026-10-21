@@ -1,0 +1,79 @@
+name: API reference
+
+# The API reference of the public classes as JSON (tools/docs/api.php), one file per version on
+# the branch docs-api: next.json from master, vX.Y.Z.json for every release. The website
+# (quittio.dev/docs/…/api) reads the files from there. A push to master rebuilds next.json, a
+# published release adds its tag; run the workflow by hand to rebuild every release.
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'packages/*/src/**'
+      - 'tools/docs/api.php'
+      - '.github/workflows/api-reference.yml'
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  # One after the other, so that no push to docs-api is rejected.
+  group: api-reference
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The tags of the releases; on a release, next.json is still built from master.
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'release' && github.event.repository.default_branch || '' }}
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: '8.4'
+          extensions: dom, libxml, mbstring, xmlwriter, zlib, intl, gd, bcmath
+          coverage: none
+      # The parser (nikic/php-parser) comes from the dependencies of this checkout.
+      - uses: ramsey/composer-install@65e4f84970763564f46a70b8a54b90d033b3bdda # 4.0.0
+      - name: Build the JSON files
+        run: |
+          mkdir -p build/api
+          php tools/docs/api.php --version next --output build/api/next.json
+          case "${EVENT}" in
+            release) tags="${TAG}" ;;
+            workflow_dispatch) tags="$(git tag --list 'v*' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' || true)" ;;
+            *) tags="" ;;
+          esac
+          for tag in ${tags}; do
+            source="$(mktemp -d)"
+            git archive "${tag}:packages" | tar -xf - -C "${source}"
+            php tools/docs/api.php --packages "${source}" --version "${tag}" --output "build/api/${tag}.json"
+          done
+        env:
+          EVENT: ${{ github.event_name }}
+          TAG: ${{ github.event.release.tag_name }}
+      - name: Publish to docs-api
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          if git fetch --depth=1 origin docs-api; then
+            git worktree add build/docs-api FETCH_HEAD
+            git -C build/docs-api switch -c docs-api
+          else
+            git worktree add --detach build/docs-api
+            git -C build/docs-api switch --orphan docs-api
+          fi
+          cp build/api/*.json build/docs-api/
+          git -C build/docs-api add --all -- '*.json'
+          if git -C build/docs-api diff --cached --quiet; then
+            echo 'Nothing changed.'
+            exit 0
+          fi
+          git -C build/docs-api commit --quiet -m "API reference of ${GITHUB_SHA::7}"
+          git -C build/docs-api push origin docs-api

@@ -19,6 +19,7 @@ parameters:
         - packages/laravel/src
         - tools/validate-fixtures.php
         - tools/docs/generate.php
+        - tools/docs/api.php
         - tools/codelists/update.php
     tmpDir: .phpstan.cache
     treatPhpDocTypesAsCertain: false
