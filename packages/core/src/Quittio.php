@@ -7,6 +7,7 @@ namespace Quittio\Core;
 use Brick\Math\BigDecimal;
 use Closure;
 use Psr\Log\LoggerInterface;
+use Quittio\Core\Builder\BoundInvoiceBuilder;
 use Quittio\Core\Builder\InvoiceBuilder;
 use Quittio\Core\Calculation\CalculationException;
 use Quittio\Core\Calculation\En16931Calculator;
@@ -24,7 +25,11 @@ use Quittio\Core\Countries\CountryResolver;
 use Quittio\Core\Countries\DefaultCountryResolver;
 use Quittio\Core\Countries\MandatoryField;
 use Quittio\Core\Data\InvoiceData;
+use Quittio\Core\Data\Meta;
+use Quittio\Core\Documents\BoundDocumentBuilder;
+use Quittio\Core\Documents\DocumentBuilder;
 use Quittio\Core\Documents\DocumentData;
+use Quittio\Core\Documents\DocumentType;
 use Quittio\Core\Exceptions\ConfigurationException;
 use Quittio\Core\Exceptions\InvalidInvoiceData;
 use Quittio\Core\Formats\DefaultFormatResolver;
@@ -79,6 +84,12 @@ use Quittio\Core\Xml\XmlSerializer;
  *
  *     $quittio = Quittio::create(Config::fromArray([...]), [new CountryDE]);
  *     $result = $quittio->make($invoice)->format('zugferd')->render();
+ *
+ * With a configured seller (Config: seller, bank_account, small_business), invoice() and the
+ * document methods start with it and render at the end of the chain:
+ *
+ *     $result = $quittio->invoice()->number('RE-1')->buyer(...)->line(...)->render();
+ *     $quote = $quittio->quote()->number('AN-1')->buyer(...)->line(...)->render();
  *
  * Every run calculates the data, chooses format and profile, validates, writes the XML,
  * renders the template and produces the PDF/A with the embedded XML.
@@ -248,6 +259,111 @@ final class Quittio
     }
 
     /**
+     * A new invoice with the configured seller and its defaults (Config: seller, bank_account as
+     * credit transfer, small_business as Meta::FLAG_SMALL_BUSINESS); without a configured seller
+     * an empty builder. It renders at the end of the chain: ->render(), ->render('xrechnung-cii'),
+     * ->render(['zugferd', 'xrechnung-cii']) or ->check().
+     *
+     * The defaults are applied with InvoiceBuilder::applyDefaults(): seller() with another seller
+     * removes them again, payment() with an IBAN replaces the account.
+     */
+    public function invoice(): BoundInvoiceBuilder
+    {
+        $builder = BoundInvoiceBuilder::boundTo($this);
+
+        return $this->config->seller === null ? $builder : $builder->applyDefaults($this->applySellerDefaults(...));
+    }
+
+    /**
+     * A new quote with the configured seller and its defaults; it renders with ->render().
+     */
+    public function quote(): BoundDocumentBuilder
+    {
+        return $this->withDefaults(BoundDocumentBuilder::boundTo($this, DocumentType::Quote));
+    }
+
+    /**
+     * A new order confirmation with the configured seller and its defaults.
+     */
+    public function orderConfirmation(): BoundDocumentBuilder
+    {
+        return $this->withDefaults(BoundDocumentBuilder::boundTo($this, DocumentType::OrderConfirmation));
+    }
+
+    /**
+     * A new delivery note with the configured seller and its defaults.
+     */
+    public function deliveryNote(): BoundDocumentBuilder
+    {
+        return $this->withDefaults(BoundDocumentBuilder::boundTo($this, DocumentType::DeliveryNote));
+    }
+
+    /**
+     * A new proforma invoice with the configured seller and its defaults.
+     */
+    public function proforma(): BoundDocumentBuilder
+    {
+        return $this->withDefaults(BoundDocumentBuilder::boundTo($this, DocumentType::Proforma));
+    }
+
+    /**
+     * A new payment reminder with the configured seller and its defaults.
+     *
+     * @param  int  $level  0 = payment reminder, 1 = first reminder, 2 = second reminder …
+     */
+    public function paymentReminder(int $level = 0): BoundDocumentBuilder
+    {
+        return $this->withDefaults(BoundDocumentBuilder::boundTo($this, DocumentType::PaymentReminder, $level));
+    }
+
+    /**
+     * A new bonus statement (Bonusabrechnung, section 17 (4) UStG) with the configured seller and its defaults.
+     */
+    public function bonusStatement(): BoundDocumentBuilder
+    {
+        return $this->withDefaults(BoundDocumentBuilder::boundTo($this, DocumentType::BonusStatement));
+    }
+
+    /**
+     * A new account statement with the configured seller and its defaults.
+     */
+    public function accountStatement(): BoundDocumentBuilder
+    {
+        return $this->withDefaults(BoundDocumentBuilder::boundTo($this, DocumentType::AccountStatement));
+    }
+
+    /**
+     * Applies the defaults of the configured seller to the invoice builder of a document, so
+     * that seller() with another seller removes them again, as for invoice().
+     */
+    private function withDefaults(BoundDocumentBuilder $builder): BoundDocumentBuilder
+    {
+        if ($this->config->seller !== null) {
+            $builder->tap(fn (InvoiceBuilder $invoice) => $invoice->applyDefaults($this->applySellerDefaults(...)));
+        }
+
+        return $builder;
+    }
+
+    /**
+     * Sets the configured seller, its small business flag and its bank account on a builder.
+     */
+    private function applySellerDefaults(InvoiceBuilder $builder): void
+    {
+        if ($this->config->seller === null) {
+            return;
+        }
+        $builder->seller($this->config->seller);
+        if ($this->config->smallBusiness) {
+            $builder->flag(Meta::FLAG_SMALL_BUSINESS);
+        }
+        $account = $this->config->bankAccount;
+        if ($account !== null) {
+            $builder->creditTransfer($account['iban'], $account['bic'] ?? null, $account['name'] ?? null);
+        }
+    }
+
+    /**
      * Builder for the cancellation of an issued invoice. The sign
      * strategy comes from the argument, the configuration or the country pack (in this order).
      *
@@ -343,11 +459,13 @@ final class Quittio
 
     /**
      * Starts the render call of a quote, order confirmation, delivery note, proforma invoice,
-     * payment reminder or account statement.
+     * payment reminder or account statement; a builder is built at once.
+     *
+     * @throws InvalidInvoiceData when a builder misses the seller, the buyer or a line's essentials
      */
-    public function document(DocumentData $document): PendingDocument
+    public function document(DocumentData|DocumentBuilder $document): PendingDocument
     {
-        return new PendingDocument($this, $document);
+        return new PendingDocument($this, $document instanceof DocumentBuilder ? $document->build() : $document);
     }
 
     /**

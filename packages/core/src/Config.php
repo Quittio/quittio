@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace Quittio\Core;
 
+use Quittio\Core\Builder\PartyBuilder;
 use Quittio\Core\Calculation\CalculationPolicy;
 use Quittio\Core\Corrections\Cancellation;
+use Quittio\Core\Data\Party\SellerParty;
 use Quittio\Core\Data\Presentation\Presentation;
 use Quittio\Core\Exceptions\ConfigurationException;
+use Quittio\Core\Exceptions\InvalidInvoiceData;
 use Quittio\Core\Validation\RuleOverrides;
 use Quittio\Core\Validation\ValidationLevel;
 use Quittio\Core\View\MandatoryFieldGuard;
@@ -27,6 +30,9 @@ final readonly class Config
 
     public const string VALIDATION_OFF = 'off';
 
+    /** The seller of Quittio::invoice() and the document methods (quote() …); null = none. */
+    public ?SellerParty $seller;
+
     /**
      * @param  string|null  $format  default output format, null = automatic choice
      * @param  list<string>  $templatePaths  directories for plain PHP templates
@@ -45,6 +51,15 @@ final readonly class Config
      * @param  CalculationPolicy  $calculation  what the calculator does with declared amounts
      * @param  array<string, array<string, mixed>>  $countrySettings  settings of the country packs by lower-case
      *         code, e.g. ['de' => ['consumer_default_notice' => false]] (Laravel: quittio.countries.de)
+     * @param  SellerParty|PartyBuilder|null  $seller  the seller that Quittio::invoice() and the document methods
+     *         start with; a PartyBuilder (Party::make()) is built here once
+     * @param  array{iban: string, bic?: string|null, name?: string|null}|null  $bankAccount  the seller's account
+     *         that Quittio::invoice() and the document methods add as credit transfer (BG-17); needs $seller
+     * @param  bool  $smallBusiness  the seller is a small business: Quittio::invoice() and the document methods
+     *         set Meta::FLAG_SMALL_BUSINESS, so country packs reject VAT on them; needs $seller
+     *
+     * @throws ConfigurationException for invalid values, a seller that cannot be built (name, postal address)
+     *         or a bank account or small business flag without seller
      */
     public function __construct(
         public ?string $format = null,
@@ -76,12 +91,26 @@ final readonly class Config
         public RuleOverrides $rules = new RuleOverrides,
         public CalculationPolicy $calculation = new CalculationPolicy,
         public array $countrySettings = [],
+        SellerParty|PartyBuilder|null $seller = null,
+        public ?array $bankAccount = null,
+        public bool $smallBusiness = false,
     ) {
         if ($cancellationStrategy !== null && ! in_array($cancellationStrategy, Cancellation::STRATEGIES, true)) {
             throw new ConfigurationException(sprintf('Unknown cancellation strategy "%s".', $cancellationStrategy));
         }
         if (! in_array($validation, [self::VALIDATION_ERROR, self::VALIDATION_WARN, self::VALIDATION_OFF], true)) {
             throw new ConfigurationException(sprintf('Unknown validation mode "%s".', $validation));
+        }
+        try {
+            $this->seller = $seller instanceof PartyBuilder ? $seller->buildSeller() : $seller;
+        } catch (InvalidInvoiceData $e) {
+            throw new ConfigurationException(sprintf('The configured seller cannot be used: %s', $e->getMessage()), previous: $e);
+        }
+        if ($bankAccount !== null && trim($bankAccount['iban']) === '') {
+            throw new ConfigurationException('The configured bank account needs an IBAN.');
+        }
+        if ($this->seller === null && ($bankAccount !== null || $smallBusiness)) {
+            throw new ConfigurationException('A bank account or the small business flag is configured without a seller: they are defaults of the seller.');
         }
     }
 
@@ -90,6 +119,9 @@ final readonly class Config
      * of the Laravel config/quittio.php). Keys, all optional:
      *
      * - format ("auto" or null = automatic choice), profile, locale, country, due_days
+     * - seller (a PartyBuilder from Party::make() or a SellerParty), bank_account (['iban' => …, 'bic' => …,
+     *   'name' => …], bic and name optional), small_business (bool): the seller and its defaults that
+     *   Quittio::invoice() and the document methods (quote() …) start with
      * - template, template_paths (directories with {name}.php), filename
      * - pdf.pdfa, pdf.b2c_embed_xml, pdf.girocode_amount (due, discounted)
      * - auto_upgrade_profile
@@ -154,6 +186,9 @@ final readonly class Config
             rules: RuleOverrides::fromArray(self::arr($validation, 'rules')),
             calculation: CalculationPolicy::fromArray(self::arr($config, 'calculation')),
             countrySettings: self::countrySettings(self::arr($config, 'countries')),
+            seller: self::seller($config),
+            bankAccount: self::bankAccount($config),
+            smallBusiness: self::bool($config, 'small_business') ?? $defaults->smallBusiness,
         );
     }
 
@@ -235,6 +270,37 @@ final readonly class Config
         }
 
         return $options;
+    }
+
+    /**
+     * @param  array<array-key, mixed>  $config
+     */
+    private static function seller(array $config): SellerParty|PartyBuilder|null
+    {
+        $value = $config['seller'] ?? null;
+        if ($value !== null && ! $value instanceof SellerParty && ! $value instanceof PartyBuilder) {
+            throw new ConfigurationException(sprintf('The configuration value "seller" must be a PartyBuilder (Party::make()) or a SellerParty, %s given.', get_debug_type($value)));
+        }
+
+        return $value;
+    }
+
+    /**
+     * @param  array<array-key, mixed>  $config
+     * @return array{iban: string, bic: string|null, name: string|null}|null
+     */
+    private static function bankAccount(array $config): ?array
+    {
+        if (($config['bank_account'] ?? null) === null) {
+            return null;
+        }
+        $account = self::arr($config, 'bank_account');
+        $iban = $account['iban'] ?? null;
+        if (! is_string($iban) || trim($iban) === '') {
+            throw new ConfigurationException('The configuration value "bank_account.iban" must be a non-empty string.');
+        }
+
+        return ['iban' => $iban, 'bic' => self::str($account, 'bic'), 'name' => self::str($account, 'name')];
     }
 
     /**

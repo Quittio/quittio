@@ -31,11 +31,11 @@ trait BuildsParties
      *
      * A SellerParty, a PartyBuilder (Party::make()) or an application model (ProvidesParty)
      * replaces the seller set before. If the builder was started with the defaults of a seller
-     * (applyDefaults(), e.g. Quittio::invoice() with the seller of config/quittio.php or the
-     * current Managed issuer), another seller gets nothing of them: everything they set is
-     * removed again, i.e. the bank account and the small business flag, for a Managed issuer
-     * also payment terms, presentation, locale, time zone and currency. Values the caller set
-     * on the builder stay, also when they were set before seller().
+     * (applyDefaults(), e.g. Quittio::invoice() with the configured seller of the core Config or
+     * of config/quittio.php, or the current Managed issuer), another seller gets nothing of them:
+     * everything they set is removed again, i.e. the bank account and the small business flag,
+     * for a Managed issuer also payment terms, presentation, locale, time zone and currency.
+     * Values the caller set on the builder stay, also when they were set before seller().
      *
      * A callable receives the builder of the seller set before and changes it, e.g.
      * ->seller(fn ($s) => $s->contact('Max Muster')); the seller stays the same, and so do its

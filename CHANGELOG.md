@@ -4,6 +4,12 @@ All notable changes to this project are documented in this file. The format foll
 
 ## [Unreleased]
 
+### Added
+
+- `Quittio::invoice()` in the core: without Laravel, an invoice starts with the configured seller and renders at the end of the chain, as `Quittio::invoice()` does in Laravel: `$quittio->invoice()->number(…)->buyer(…)->line(…)->render()`, also `->render('xrechnung-cii')`, `->render(['zugferd', 'xrechnung-cii'])` and `->check()`. It returns the new `Builder\BoundInvoiceBuilder`, an `InvoiceBuilder` bound to the instance.
+- `Quittio::quote()`, `orderConfirmation()`, `deliveryNote()`, `proforma()`, `paymentReminder()`, `bonusStatement()` and `accountStatement()` in the core, with the configured seller and `->render()` (`Documents\BoundDocumentBuilder`). `Quittio::document()` also accepts a `DocumentBuilder`.
+- Core configuration keys `seller` (a `PartyBuilder` from `Party::make()` or a `SellerParty`), `bank_account` (`iban`, `bic`, `name`) and `small_business` (`Config::$seller`, `$bankAccount`, `$smallBusiness`): `invoice()` and the document methods start with this seller, its account as credit transfer and, for a small business, `Meta::FLAG_SMALL_BUSINESS`. As in Laravel, another seller set with `seller()` removes these defaults again, and `payment()` with an IBAN replaces the account. A seller without name or postal address, a bank account without IBAN and a bank account or small business flag without seller are rejected with a `ConfigurationException`.
+
 ## [0.7.1] - 2026-10-20
 
 ### Fixed

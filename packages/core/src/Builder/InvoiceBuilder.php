@@ -330,8 +330,9 @@ class InvoiceBuilder
     private bool $linesChanged = false;
 
     /**
-     * Applies the defaults of a seller, e.g. the seller of config/quittio.php with its bank
-     * account and small business flag (Quittio::invoice()) or a Managed issuer. The builder
+     * Applies the defaults of a seller, e.g. the configured seller (core Config or
+     * config/quittio.php) with its bank account and small business flag (Quittio::invoice())
+     * or a Managed issuer. The builder
      * remembers what they set: seller() with another seller removes it again.
      *
      * @param  callable(static): mixed  $apply
