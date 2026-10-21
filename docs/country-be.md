@@ -126,7 +126,7 @@ How presets behave:
 A small business under the exemption scheme (Art. 56bis VAT Code) charges no VAT. Mark its invoices in one of two ways:
 
 - Use `VatPreset::SmallBusiness` on every line. Its text "Bijzondere vrijstellingsregeling kleine ondernemingen" / "Régime particulier de franchise des petites entreprises" appears in the VAT breakdown and the PDF.
-- Or flag the invoice with `->flag(Meta::FLAG_SMALL_BUSINESS)` (in Laravel `quittio.seller.small_business = true`). The flag does not set texts; lines without `vat:` then get `VatPreset::SmallBusiness` through the default VAT.
+- Or flag the invoice with `->flag(Meta::FLAG_SMALL_BUSINESS)` (in Laravel `quittio.seller.small_business = true`, without Laravel `'small_business' => true` in `Quittio::create()`; applied by `Quittio::invoice()` and `$quittio->invoice()`). The flag does not set texts; lines without `vat:` then get `VatPreset::SmallBusiness` through the default VAT.
 
 Either way, `BE-VAT-06` reports every VAT row with a VAT amount as an error. A small business invoice to a Belgian business is still sent through Peppol ([Format choice](#format-choice)).
 
@@ -299,15 +299,20 @@ The pack has one setting, under `quittio.countries.be` ([Settings of a pack](con
 |---|---|---|---|
 | `countries.be.peppol_endpoints` | bool | `true` | Seller and buyer without electronic address get the enterprise number of their Belgian VAT number as Peppol endpoint (scheme `0208`, [Peppol endpoints](#peppol-endpoints)). `false` = set the electronic addresses yourself. |
 
-The pack has no configuration file to publish. In Laravel, set the key in `config/quittio.php`:
+The pack has no configuration file to publish. In Laravel, set the key in `config/quittio.php`; without Laravel, pass the same array to `Quittio::create()`:
 
-```php
+```php laravel
 'countries' => [
     'be' => ['peppol_endpoints' => false],
 ],
 ```
 
-Without Laravel, pass the same array to `Quittio::create()`: `Quittio::create(['country' => 'BE', 'countries' => ['be' => ['peppol_endpoints' => false]]], [new CountryBE])`.
+```php plain
+use Quittio\Core\Quittio;
+use Quittio\Country\BE\CountryBE;
+
+$quittio = Quittio::create(['country' => 'BE', 'countries' => ['be' => ['peppol_endpoints' => false]]], [new CountryBE]);
+```
 
 The pack defines no meta flags of its own. It reads the core flag `Meta::FLAG_SMALL_BUSINESS` ([Small businesses](#small-businesses)).
 

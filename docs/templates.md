@@ -51,9 +51,9 @@ Own templates can use the same mechanism ([Carry-over in own templates](#carry-o
 
 ## Logo, colours and texts (level 1)
 
-Most designs need only configuration. Set the defaults for all invoices in `config/quittio.php` ([Configuration](configuration.md)):
+Most designs need only configuration. Set the defaults for all invoices in `config/quittio.php` ([Configuration](configuration.md)); without Laravel, pass them as `presentation` to `Quittio::create()` ([Without Laravel](getting-started.md#without-laravel)):
 
-```php
+```php laravel
 // config/quittio.php
 'pdf' => [
     'logo' => storage_path('app/logo.png'),                 // PNG, JPEG or SVG
@@ -65,9 +65,26 @@ Most designs need only configuration. Set the defaults for all invoices in `conf
 ],
 ```
 
+```php plain
+use Quittio\Core\Data\Presentation\Colors;
+use Quittio\Core\Data\Presentation\Presentation;
+use Quittio\Core\Quittio;
+use Quittio\Country\DE\CountryDE;
+
+$quittio = Quittio::create([
+    'presentation' => new Presentation(
+        logo: __DIR__.'/logo.png',                           // PNG, JPEG or SVG
+        colors: new Colors(primary: '#0f766e', text: '#15171c', muted: '#5f6470'),
+        font: 'geist',                                       // or 'inter', or a registered font
+        introText: 'Thank you for your order.',
+        closingText: 'Kind regards',
+    ),
+], [new CountryDE]);
+```
+
 To change the design of one invoice, call `->presentation()` on the builder. The design is stored with the invoice data, so the invoice looks the same when it is rendered again. To change it for one render call only, e.g. for a second brand, call `->presentation()` on `Quittio::make()`:
 
-```php
+```php laravel
 use Quittio\Core\Data\Presentation\Colors;
 use Quittio\Core\Data\Presentation\Presentation;
 use Quittio\Laravel\Facades\Quittio;
@@ -82,7 +99,21 @@ $result = Quittio::make($invoice)
     ->render();
 ```
 
-The invoice's own presentation wins over the presentation of the call, which wins over the configuration. The rules are in [Presentation](#presentation).
+```php plain
+use Quittio\Core\Data\Presentation\Colors;
+use Quittio\Core\Data\Presentation\Presentation;
+
+$invoice = $quittio->invoice()
+    // ...
+    ->presentation(['introText' => 'Thank you for your order.', 'letterLayout' => 'din5008a'])   // this invoice
+    ->build();
+
+$result = $quittio->make($invoice)
+    ->presentation(new Presentation(logo: __DIR__.'/brand-b.png', colors: new Colors(primary: '#7c3aed')))  // this call
+    ->render();
+```
+
+The invoice's own presentation wins over the presentation of the call, which wins over the configuration. The rules are in [Presentation](#presentation). In the plain PHP examples, `$quittio` is created as in [Without Laravel](getting-started.md#without-laravel), with your company as `seller`.
 
 | You want to change | Setting | Details |
 |---|---|---|
@@ -131,7 +162,7 @@ Hints for single lines are `LinePresentation` objects (`groupId`, `highlight`, `
 - `highlight()` shades the line.
 - `showGrossPrice(?bool $show = true)` prints the price including VAT of this line, or with `false` not, whatever `showGrossPrices` says. `null` follows the presentation.
 
-```php
+```php laravel
 use Quittio\Core\Builder\Line;
 use Quittio\Core\Data\Presentation\Colors;
 use Quittio\Core\Data\Presentation\Presentation;
@@ -145,6 +176,23 @@ $invoice = Quittio::invoice()
     ->build();
 
 Quittio::make($invoice)
+    ->presentation(new Presentation(colors: new Colors(primary: '#0f766e'), labels: ['amount_due' => 'Total to pay']))
+    ->render();
+```
+
+```php plain
+use Quittio\Core\Builder\Line;
+use Quittio\Core\Data\Presentation\Colors;
+use Quittio\Core\Data\Presentation\Presentation;
+
+$invoice = $quittio->invoice()
+    // ...
+    ->presentation(['logo' => __DIR__.'/logo.png', 'introText' => 'Thank you for your order.'])
+    ->group('hardware', 'Hardware')                                     // line group with subtotal
+    ->line(Line::make('Router', netPrice: '89.00', quantity: 2)->group('hardware'))   // group(): Line::make()
+    ->build();
+
+$quittio->make($invoice)
     ->presentation(new Presentation(colors: new Colors(primary: '#0f766e'), labels: ['amount_due' => 'Total to pay']))
     ->render();
 ```
@@ -192,12 +240,25 @@ Three fonts are bundled (SIL Open Font License):
 
 Set `pdf.font = 'inter'` for Greek names or texts: mPDF prints no characters the font does not have. The font name is used as CSS `font-family` in the templates and as default font of mPDF.
 
-Register more fonts in the `pdf` section of `config/quittio.php`:
+Register more fonts in the `pdf` section of `config/quittio.php`, without Laravel on the renderer:
 
-```php
+```php laravel
 'font' => 'corporate',
 'fonts' => ['corporate' => ['R' => 'Corporate-Regular.ttf', 'B' => 'Corporate-Bold.ttf', 'I' => 'Corporate-Italic.ttf', 'BI' => 'Corporate-BoldItalic.ttf']],
 'font_directories' => [resource_path('fonts')],
+```
+
+```php plain
+use Quittio\Core\Data\Presentation\Presentation;
+use Quittio\Core\Pdf\Renderers\MpdfRenderer;
+use Quittio\Core\Quittio;
+use Quittio\Country\DE\CountryDE;
+
+$quittio = Quittio::create(['presentation' => new Presentation(font: 'corporate')], [new CountryDE], renderer: new MpdfRenderer(
+    fonts: ['corporate' => ['R' => 'Corporate-Regular.ttf', 'B' => 'Corporate-Bold.ttf', 'I' => 'Corporate-Italic.ttf', 'BI' => 'Corporate-BoldItalic.ttf']],
+    fontDirectories: [__DIR__.'/fonts'],
+    defaultFont: 'corporate',
+));
 ```
 
 - Use lower case family names, as mPDF looks fonts up in lower case.
@@ -458,7 +519,7 @@ A renderer turns the HTML of the template into the PDF (design level 4).
 | `CallbackRenderer(Closure $callback)` | Own rendering (Browsershot, Gotenberg …): `fn (string $html, RenderRequest $request): string` returns the PDF; PDF/A, metadata and the XML are added by `MpdfPostProcessor` |
 | `PassthroughRenderer(string $pdf)` | A finished PDF of the application; only PDF/A and the XML are added |
 
-```php
+```php laravel
 use Quittio\Core\Pdf\Renderers\CallbackRenderer;
 use Quittio\Core\Pdf\RenderRequest;
 use Quittio\Laravel\Facades\Quittio;
@@ -468,6 +529,16 @@ Quittio::extend('renderer', 'browsershot', fn ($app, array $config) => new Callb
     fn (string $html, RenderRequest $request) => Browsershot::html($html)->format($request->paper)->pdf(),
 ));
 // config/quittio.php: 'pdf' => ['renderer' => 'browsershot', 'renderers' => ['browsershot' => [...]]]
+```
+
+```php plain
+use Quittio\Core\Pdf\Renderers\CallbackRenderer;
+use Quittio\Core\Pdf\RenderRequest;
+use Spatie\Browsershot\Browsershot;
+
+$quittio->setRenderer(new CallbackRenderer(
+    fn (string $html, RenderRequest $request) => Browsershot::html($html)->format($request->paper)->pdf(),
+));
 ```
 
 The factory receives the container and `pdf.renderers.{name}`. Without Laravel, pass the renderer to `Quittio::create(renderer: …)` or `$quittio->setRenderer(…)`.

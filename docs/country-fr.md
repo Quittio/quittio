@@ -185,7 +185,7 @@ How presets behave:
 
 A small business under the franchise en base (art. 293 B CGI) charges no VAT. Mark the invoice as a small business invoice and use `VatPreset::SmallBusiness` on every line:
 
-- **Flag.** `quittio.seller.small_business = true` in Laravel ([Configuration: small businesses](configuration.md#small-businesses)), or `->flag(Meta::FLAG_SMALL_BUSINESS)` on the builder. With the flag, lines without `vat:` get `VatPreset::SmallBusiness` from the default VAT.
+- **Flag.** `quittio.seller.small_business = true` in Laravel ([Configuration: small businesses](configuration.md#small-businesses)), `'small_business' => true` in `Quittio::create()` without Laravel (applied by `Quittio::invoice()` and `$quittio->invoice()`), or `->flag(Meta::FLAG_SMALL_BUSINESS)` on the builder. With the flag, lines without `vat:` get `VatPreset::SmallBusiness` from the default VAT.
 - **Rules.** A small business invoice is one with the flag or with a line that uses `VatPreset::SmallBusiness` (`FrenchRules::isSmallBusinessInvoice()`). It needs no VAT number of the seller (`FR-CGI-02`), and any VAT amount in its breakdown is an error (`FR-CGI-06`).
 - **EN 16931.** The rule BR-E-02 of EN 16931 requires the seller's VAT identifier (BT-31), tax registration identifier (BT-32, `->taxNumber()`) or the VAT identifier of a tax representative (BT-63) on every invoice with category `E`. The pack fills in none of them, so a small business invoice without any of them fails with `BR-E-02`, also as plain PDF.
 - **From 2027** the text cites art. L. 233-3 CIBS ([From the CGI to the CIBS](#from-the-cgi-to-the-cibs)).
@@ -375,17 +375,15 @@ Settings of the pack live under `quittio.countries.fr` ([Settings of a pack](con
 |---|---|---|---|
 | `countries.fr.payment_mentions` | bool | `true` | `false` = no late payment mention on invoices between businesses |
 
-The pack ships no configuration file, so `php artisan quittio:install` publishes none. Set the key in `config/quittio.php`:
+The pack ships no configuration file, so `php artisan quittio:install` publishes none. Set the key in `config/quittio.php`; without Laravel, pass the same array to `Quittio::create()`:
 
-```php
+```php laravel
 'countries' => [
     'fr' => ['payment_mentions' => false],
 ],
 ```
 
-Without Laravel, pass the same array to `Quittio::create()`:
-
-```php
+```php plain
 use Quittio\Core\Quittio;
 use Quittio\Country\FR\CountryFR;
 

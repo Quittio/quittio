@@ -48,7 +48,7 @@ The categories are the codes of EN 16931: `S` standard rate, `Z` zero rated, `E`
 
 `Quittio\Country\DE\Tax\VatPreset` is a string-backed enum that implements `TaxPreset`. Apply it per line:
 
-```php
+```php laravel
 use Quittio\Core\Enums\UnitCode;
 use Quittio\Country\DE\Tax\VatPreset;
 use Quittio\Laravel\Facades\Quittio;
@@ -59,6 +59,19 @@ $builder = Quittio::invoice()
     // the invoice prints "Steuerfrei nach § 4 Nr. 14 UStG" (exempt under section 4 no. 14 UStG)
     ->line('Medical treatment', netPrice: '90.00', unit: UnitCode::Piece, vat: VatPreset::exempt('§ 4 Nr. 14 UStG', 'VATEX-EU-132-1C'));
 ```
+
+```php plain
+use Quittio\Core\Enums\UnitCode;
+use Quittio\Country\DE\Tax\VatPreset;
+
+$builder = $quittio->invoice()
+    ->line('Web development', netPrice: '95.00', quantity: 24, unit: UnitCode::Hour, vat: VatPreset::Standard)
+    // an exemption without its own case: legal reference and VATEX code;
+    // the invoice prints "Steuerfrei nach § 4 Nr. 14 UStG" (exempt under section 4 no. 14 UStG)
+    ->line('Medical treatment', netPrice: '90.00', unit: UnitCode::Piece, vat: VatPreset::exempt('§ 4 Nr. 14 UStG', 'VATEX-EU-132-1C'));
+```
+
+In the plain PHP examples on this page, `$quittio` is the instance created in [Without Laravel](getting-started.md#without-laravel), with your company under `seller` in `Quittio::create()`: `$quittio->invoice()` adds it and its bank account, as `Quittio::invoice()` does from `config/quittio.php`.
 
 | Case | Key | Category | Rate | Code (BT-121) | Use |
 |---|---|---|---|---|---|
@@ -132,15 +145,22 @@ How presets behave:
 
 A small business (Kleinunternehmer, section 19 UStG) charges no VAT. Its invoices state the exemption instead. Three steps make an invoice a correct small business invoice:
 
-1. **Mark the seller as a small business.** Set `quittio.seller.small_business = true` (applied by `Quittio::invoice()`), the Managed issuer setting `tax_settings.small_business`, or `->flag(Meta::FLAG_SMALL_BUSINESS)`. `Flags::SMALL_BUSINESS` is the same flag (`small_business`). With the flag, a standard rated line, allowance or charge is an error (`DE-USTG-09`). The flag does not set presets or texts.
+1. **Mark the seller as a small business.** Set `quittio.seller.small_business = true` (applied by `Quittio::invoice()`), without Laravel `'small_business' => true` in `Quittio::create()` (applied by `$quittio->invoice()`), the Managed issuer setting `tax_settings.small_business`, or `->flag(Meta::FLAG_SMALL_BUSINESS)`. `Flags::SMALL_BUSINESS` is the same flag (`small_business`). With the flag, a standard rated line, allowance or charge is an error (`DE-USTG-09`). The flag does not set presets or texts.
 2. **Use `VatPreset::SmallBusiness` on every line.** Lines without `->vat()` get it automatically when the invoice has the small business flag and the default VAT comes from the country pack (`CountryDefaultVat`; in Laravel always, see [Default VAT](building-invoices.md#default-vat)). The preset's text (BT-120) appears in the PDF.
-3. **Give a seller identifier if you have no VAT identifier.** Without a VAT identifier, EN 16931 needs a seller identifier (BT-29) or a legal registration (BT-30) (rule BR-CO-26). In Laravel set `quittio.seller.identifiers` or `legal_registration` (see [Configuration](configuration.md)).
+3. **Give a seller identifier if you have no VAT identifier.** Without a VAT identifier, EN 16931 needs a seller identifier (BT-29) or a legal registration (BT-30) (rule BR-CO-26). In Laravel set `quittio.seller.identifiers` or `legal_registration` (see [Configuration](configuration.md)), without Laravel `->identifier()` or `->legalRegistration()` on the seller's `Party::make()` in `Quittio::create()`.
 
-```php
+```php laravel
 use Quittio\Core\Enums\UnitCode;
 use Quittio\Laravel\Facades\Quittio;
 
 $builder = Quittio::invoice()                      // quittio.seller.small_business = true
+    ->line('Consulting', netPrice: '80.00', unit: UnitCode::Hour);   // VatPreset::SmallBusiness by default
+```
+
+```php plain
+use Quittio\Core\Enums\UnitCode;
+
+$builder = $quittio->invoice()                     // 'small_business' => true in Quittio::create()
     ->line('Consulting', netPrice: '80.00', unit: UnitCode::Hour);   // VatPreset::SmallBusiness by default
 ```
 
@@ -178,11 +198,20 @@ Without `->format()`, Quittio chooses the format for each invoice ([Automatic ch
 
 A Leitweg-ID is the routing ID of a German public buyer, such as an authority or a municipality. The buyer names it in the order, and it goes into the buyer reference (BT-10). Its last two digits are check digits.
 
-```php
+```php laravel
 use Quittio\Core\Builder\Party;
 use Quittio\Laravel\Facades\Quittio;
 
 $builder = Quittio::invoice()
+    ->buyerReference('04011000-12345-03')                // a Leitweg-ID: XRechnung
+    ->buyer(Party::make('Stadt Beispielstadt')
+        ->electronicAddress('04011000-12345-03', '0204'));  // or the same ID as electronic address (scheme 0204)
+```
+
+```php plain
+use Quittio\Core\Builder\Party;
+
+$builder = $quittio->invoice()
     ->buyerReference('04011000-12345-03')                // a Leitweg-ID: XRechnung
     ->buyer(Party::make('Stadt Beispielstadt')
         ->electronicAddress('04011000-12345-03', '0204'));  // or the same ID as electronic address (scheme 0204)
@@ -244,7 +273,7 @@ XRechnung is the German e-invoice standard for public buyers: EN 16931 with addi
 
 The profiles exist only when the pack is registered. Without it, the formats `xrechnung-cii` and `xrechnung-ubl` cannot be rendered, and incoming XRechnung files are reported as an unknown profile (`QUITTIO-READER-UNKNOWN-PROFILE`).
 
-```php
+```php laravel
 use Quittio\Laravel\Facades\Quittio;
 
 Quittio::make($invoice)->format('xrechnung-ubl')->render();                                   // XRechnung 3.0, UBL
@@ -253,13 +282,20 @@ Quittio::make($invoice)->format('xrechnung-cii')->profile('xrechnung-cvd')->rend
 Quittio::make($invoice)->format('zugferd')->profile('xrechnung')->render();                   // PDF/A-3 with xrechnung.xml
 ```
 
+```php plain
+$quittio->make($invoice)->format('xrechnung-ubl')->render();                                   // XRechnung 3.0, UBL
+$quittio->make($invoice)->format('xrechnung-ubl')->profile('xrechnung-extension')->render();   // extension
+$quittio->make($invoice)->format('xrechnung-cii')->profile('xrechnung-cvd')->render();         // Clean Vehicles Directive
+$quittio->make($invoice)->format('zugferd')->profile('xrechnung')->render();                   // PDF/A-3 with xrechnung.xml
+```
+
 The automatic choice always uses `xrechnung`, also when the invoice carries extension data: the specification identifier never switches by itself. Choose `xrechnung-extension` explicitly for extension data. With `xrechnung`, third party payments fail with `QUITTIO-PROFILE-XRECHNUNG-EXTENSION-ONLY`. The same holds for `xrechnung-cvd`: request it when the buyer asks for an XRechnung CVD.
 
 #### XRechnung CVD
 
 A public buyer that procures road vehicles reports them under the Clean Vehicles Directive. The invoice then names the contract and the tender or lot, and every vehicle line carries the vehicle category as item classification with the scheme `CVD` (BT-158, `M1`, `M2`, `M3`, `N1`, `N2` or `N3`) and the vehicle type as item attribute `cva` (BT-160, BT-161: `clean`, `zero-emission` or `other`):
 
-```php
+```php laravel
 use Quittio\Core\Enums\UnitCode;
 use Quittio\Country\DE\Tax\VatPreset;
 use Quittio\Laravel\Facades\Quittio;
@@ -275,6 +311,23 @@ $invoice = Quittio::invoice()
     // … seller, buyer, payment as for every XRechnung
 
 Quittio::make($invoice)->format('xrechnung-cii')->profile('xrechnung-cvd')->render();
+```
+
+```php plain
+use Quittio\Core\Enums\UnitCode;
+use Quittio\Country\DE\Tax\VatPreset;
+
+$invoice = $quittio->invoice()
+    ->buyerReference('04011000-12345-03')
+    ->contractReference('V-2026-0017')                       // BT-12
+    ->tenderReference('LOS-3')                               // BT-17
+    ->line(fn ($line) => $line->name('Elektro-Kleinbus')->quantity(1)->netPrice('68000.00')->vat(VatPreset::Standard)
+        ->classification('M2', 'CVD')                        // vehicle category (BT-158)
+        ->attribute('cva', 'zero-emission'))                 // vehicle type (BT-160, BT-161)
+    ->line(fn ($line) => $line->name('Einweisung')->quantity(2, UnitCode::Hour)->netPrice('95.00')->vat(VatPreset::Standard));
+    // … seller, buyer, payment as for every XRechnung
+
+$quittio->make($invoice)->format('xrechnung-cii')->profile('xrechnung-cvd')->render();
 ```
 
 The constants of `XRechnung30Cvd` hold the values (`CLASSIFICATION_SCHEME`, `VEHICLE_CATEGORIES`, `ATTRIBUTE`, `ATTRIBUTE_VALUES`). Lines without a vehicle, such as services, need neither. Credit notes are possible in both syntaxes.
@@ -381,7 +434,7 @@ parameters:
 
 A prepayment invoice (Anzahlungsrechnung, type code 386) must show that it invoices an advance payment, e.g. by the expected date or month of the service (section 14.8 (1) and (4) UStAE). `->de()->advance()` sets the type code and the note:
 
-```php
+```php laravel
 use Quittio\Core\Enums\UnitCode;
 use Quittio\Laravel\Facades\Quittio;
 
@@ -395,6 +448,19 @@ $paid = Quittio::invoice()
     ->prepaid('1190.00');
 ```
 
+```php plain
+use Quittio\Core\Enums\UnitCode;
+
+$advance = $quittio->invoice()
+    ->de()->advance('2027-03')                     // "Anzahlungsrechnung. Die Leistung wird voraussichtlich im März 2027 erbracht."
+    ->line('Website relaunch, advance payment', netPrice: '1000.00', unit: UnitCode::LumpSum);
+
+$paid = $quittio->invoice()
+    ->de()->advance('2027-03-15', receivedOn: '2026-10-01')   // "… am 15.03.2027 erbracht. Die Anzahlung wurde am 01.10.2026 vereinnahmt."
+    ->line('Website relaunch, advance payment', netPrice: '1000.00', unit: UnitCode::LumpSum)
+    ->prepaid('1190.00');
+```
+
 - `$expectedService` is a date or a month (`"2027-03"`). `null` states that the date is not agreed yet (`serviceDateOpen()`, section 14.8 (4) sentence 5 UStAE). Either way `DE-USTG-03` does not warn.
 - `$receivedOn` is the date a payment was already received. It is stated as VAT point date (BT-7), to which the mapping table of KoSIT and FeRD assigns the date of receipt, and in a note (section 14 (4) sentence 1 no. 6 UStG). A prepayment invoice with a prepaid amount but no BT-7 gets `DE-USTG-17`.
 - XRechnung warns about type code 386 (`BR-DE-17`): its list names 326 and 380 but not 386. The mapping table of KoSIT and FeRD prescribes 386 for prepayment invoices all the same, so the warning is to be accepted.
@@ -403,7 +469,7 @@ $paid = Quittio::invoice()
 
 A final invoice (Schlussrechnung, section 14 (5) sentence 2 UStG) states the full service with its full VAT and deducts the advance payments received. `->de()->deductAdvance(InvoiceData $advance, string $locale = 'de', $received = null, string $style = GermanInvoice::PREPAID)` does this for one advance invoice:
 
-```php
+```php laravel
 use Quittio\Core\Enums\UnitCode;
 use Quittio\Country\DE\Builder\GermanInvoice;
 use Quittio\Country\DE\Tax\VatPreset;
@@ -412,6 +478,19 @@ use Quittio\Laravel\Facades\Quittio;
 $advance = $advanceResult->data();                 // the rendered advance invoice, already calculated
 
 $final = Quittio::invoice()
+    // number, dates, buyer, payment …
+    ->line('Website', netPrice: '3000.00', unit: UnitCode::Piece, vat: VatPreset::Standard)
+    ->de()->deductAdvance($advance, received: GermanInvoice::RECEIVED_IN_FULL);
+```
+
+```php plain
+use Quittio\Core\Enums\UnitCode;
+use Quittio\Country\DE\Builder\GermanInvoice;
+use Quittio\Country\DE\Tax\VatPreset;
+
+$advance = $advanceResult->data();                 // the rendered advance invoice, already calculated
+
+$final = $quittio->invoice()
     // number, dates, buyer, payment …
     ->line('Website', netPrice: '3000.00', unit: UnitCode::Piece, vat: VatPreset::Standard)
     ->de()->deductAdvance($advance, received: GermanInvoice::RECEIVED_IN_FULL);
@@ -516,7 +595,7 @@ When a customer pays late, German law (section 288 BGB) gives the seller default
 | `calculate(Money $amount, Date $from, Date $until, bool $consumer = false, string $locale = 'de'): list<InterestCharge>` | One charge per base rate period, from `$from` (first day with interest) to `$until` (exclusive). Rate = base rate + 9 points, or + 5 points with `$consumer`. Empty for a non-positive amount or when `$until` is not after `$from`. `InvalidArgumentException` for days the [base rate table](#base-rate-table) does not cover. |
 | `flatRate(string $currency = 'EUR'): ?Money` | The flat rate of 40.00 for business debtors (section 288 (5) BGB), once per claim |
 
-```php
+```php laravel
 use Brick\Money\Money;
 use Quittio\Core\Support\Amount;
 use Quittio\Core\Support\Date;
@@ -525,6 +604,25 @@ use Quittio\Laravel\Facades\Quittio;
 
 $interest = new DefaultInterest;
 $reminder = Quittio::paymentReminder(1)                          // first reminder ("1. Mahnung"); seller and bank account from the config
+    ->number('M-2026-0003')
+    ->buyer($buyer)
+    ->openItem('RE-2026-0042', '2026-06-01', '1190.00', dueDate: '2026-06-15');
+
+// first day with interest: the day after the due date; 2026-10-04 is the first day without interest
+foreach ($interest->calculate(Money::of('1190.00', 'EUR'), Date::parse('2026-06-16'), Date::parse('2026-10-04')) as $charge) {
+    $reminder->interest(Amount::format($charge->base), $charge->ratePercent, $charge->from, $charge->until, $charge->description, dayCount: $charge->dayCount);
+}
+$reminder->flatRate('RE-2026-0042');   // 40.00 EUR for this claim, "Pauschale für Beitreibungskosten (§ 288 Abs. 5 BGB), Forderung RE-2026-0042"
+```
+
+```php plain
+use Brick\Money\Money;
+use Quittio\Core\Support\Amount;
+use Quittio\Core\Support\Date;
+use Quittio\Country\DE\Dunning\DefaultInterest;
+
+$interest = new DefaultInterest;
+$reminder = $quittio->paymentReminder(1)                         // first reminder ("1. Mahnung"); seller and bank account from Quittio::create()
     ->number('M-2026-0003')
     ->buyer($buyer)
     ->openItem('RE-2026-0042', '2026-06-01', '1190.00', dueDate: '2026-06-15');
@@ -936,10 +1034,14 @@ This and the following sections are for authors of country packs, and for reader
 
 2. **Buyer pack.** If the buyer's country code (BT-55) is set and differs from the leading pack's code, the installed pack of the buyer's country (or of the country whose VAT territory it belongs to) is added, unless it is the leading pack. No generic pack is created for the buyer.
 
-```php
+```php laravel
 use Quittio\Laravel\Facades\Quittio;
 
 Quittio::make($invoice)->country('DE')->render();   // force the leading pack
+```
+
+```php plain
+$quittio->make($invoice)->country('DE')->render();   // force the leading pack
 ```
 
 What each side contributes:

@@ -14,7 +14,7 @@ The page has three parts:
 
 In Laravel, start with `Quittio::invoice()`. It returns the same builder, already filled with the seller, the first bank account and the small business setting of `config/quittio.php`, and the builder can render itself with `->render()` ([Starting invoices](laravel.md#starting-invoices)):
 
-```php
+```php laravel
 use Quittio\Core\Builder\Party;
 use Quittio\Core\Enums\PaymentMeansCode;
 use Quittio\Core\Enums\UnitCode;
@@ -37,11 +37,33 @@ $invoice = Quittio::invoice()                                // seller and bank 
     ->build();                                               // or ->render() for PDF and XML
 ```
 
-Without Laravel, start with `InvoiceBuilder::make()` and set the seller yourself ([Seller and buyer](#seller-and-buyer)).
+```php plain
+use Quittio\Core\Builder\Party;
+use Quittio\Core\Enums\PaymentMeansCode;
+use Quittio\Core\Enums\UnitCode;
+use Quittio\Country\DE\Tax\VatPreset;
+
+$invoice = $quittio->invoice()                               // seller and bank account from Quittio::create()
+    ->number('RE-2026-0042')
+    ->issueDate('2026-10-03')
+    ->deliveryDate('2026-09-30')                             // date of supply, mandatory in Germany
+    ->buyerReference('PO-4711')
+    ->buyer(Party::make('Kunde AG')
+        ->vatId('DE987654321')
+        ->address('Bahnhofstraße 5', '54321', 'Beispielstadt', 'DE')
+        ->electronicAddress('ap@kunde.de', 'EM'))
+    ->line('Web development', netPrice: '95.00', quantity: 24, unit: UnitCode::Hour)   // default VAT: 19 %
+    ->line('Handbook of VAT law', netPrice: '39.00', vat: VatPreset::Reduced)
+    ->payment(PaymentMeansCode::SepaCreditTransfer, remittanceInformation: 'RE-2026-0042')   // keeps the configured account
+    ->dueInDays(14)->cashDiscount(days: 7, percent: '2.00')
+    ->build();                                               // or ->render() for PDF and XML
+```
+
+Without Laravel, start with `$quittio->invoice()`. With your company as `seller` in `Quittio::create()`, it returns the same builder with the seller, the configured `bank_account` and `small_business`, and it renders itself with `->render()` ([Rendering in the core](formats.md#invoices-and-documents-with-the-configured-seller)). `InvoiceBuilder::make()` starts an empty builder for special cases, e.g. another seller per invoice; set the seller yourself ([Seller and buyer](#seller-and-buyer)) and render it with `$quittio->make($builder)`. The plain PHP examples on this page use `$quittio` as created in [Without Laravel](getting-started.md#without-laravel), with your company as `seller`.
 
 Three things to know before you continue:
 
-- `build()` returns the data. In Laravel, `render()` renders it right away instead.
+- `build()` returns the data. At the end of `Quittio::invoice()` or `$quittio->invoice()`, `render()` renders it right away instead.
 - You never pass totals, VAT amounts or the VAT breakdown. Quittio calculates them when the invoice is rendered ([Calculation](#calculation)).
 - The builder only checks that the essential parts are there ([Creating and building](#creating-and-building)). Everything else, such as a missing invoice number, is reported by the [validation](validation.md) when the invoice is rendered.
 
@@ -94,6 +116,7 @@ The tables of this page group the builder methods by topic and name their busine
 | Method | Description |
 |---|---|
 | `InvoiceBuilder::make()` | New, empty builder. Defaults: type code 380 (commercial invoice), currency `EUR`, EN 16931:2017. |
+| `$quittio->invoice()`, Laravel `Quittio::invoice()` | Builder with the configured seller, bank account and small business flag. It ends with `render()` or `check()` ([Invoices and documents with the configured seller](formats.md#invoices-and-documents-with-the-configured-seller), [Starting invoices](laravel.md#starting-invoices)). |
 | `InvoiceBuilder::from(InvoiceData $data)` | Builder with all values of existing data, e.g. to change a draft, a stored invoice or a read invoice ([Changing existing data](#changing-existing-data)). |
 | `Quittio::edit(InvoiceData $data)` | Like `from()`, but declared amounts are compared with the configured calculator and its policy ([Declared amounts](#declared-amounts)). `InvoiceBuilder::fromUsing($data, $calculator)` does the same with a calculator of your own. |
 | `InvoiceBuilder::fromDocument(DocumentData $document)` | Invoice from a quote, order confirmation, delivery note or proforma invoice. Parties, billable lines, document allowances and charges and payment data are taken over; number, issue date and notes are not. The number of an order confirmation becomes the sales order reference (BT-14), that of a delivery note the despatch advice reference (BT-16). See [From document to invoice](documents.md#from-document-to-invoice). |
@@ -131,7 +154,7 @@ The specification identifier (BT-24) itself is not part of the data. It comes fr
 
 Set another type code when the document is not a normal invoice:
 
-```php
+```php laravel
 use Quittio\Core\Enums\InvoiceTypeCode;
 use Quittio\Laravel\Facades\Quittio;
 
@@ -144,6 +167,20 @@ Quittio::correction($original, 'RE-2026-0050')
 
 // Self-billing: the buyer issues the invoice, the supplier stays the seller (BG-4)
 Quittio::invoice()->type(InvoiceTypeCode::SelfBilledInvoice);
+```
+
+```php plain
+use Quittio\Core\Enums\InvoiceTypeCode;
+
+// Credit note: positive amounts, type code 381, reference to the invoice
+$quittio->invoice()->type(InvoiceTypeCode::CreditNote)->precedingInvoice('RE-2026-0042', '2026-10-03');
+
+// Corrected invoice (384) based on the original, with the note "Diese Rechnung berichtigt und ersetzt …"
+$quittio->correction($original, 'RE-2026-0050')
+    ->updateLine('2', netPrice: '80.00');
+
+// Self-billing: the buyer issues the invoice, the supplier stays the seller (BG-4)
+$quittio->invoice()->type(InvoiceTypeCode::SelfBilledInvoice);
 ```
 
 To cancel an issued invoice, build a cancellation with `Quittio::cancellation()` instead ([Cancellations and corrections](#cancellations-and-corrections)); `Quittio::correction()` is described in [Corrected invoices](#corrected-invoices).
@@ -166,7 +203,7 @@ The German pack adds `selfBilled()` for self-billing. It sets type code 389 and 
 | `PrepaymentInvoice` | 386 | Advance payment invoice. |
 | `PartialConstructionInvoice`, `PartialFinalConstructionInvoice`, `FinalConstructionInvoice` | 875, 876, 877 | Construction invoices. |
 | `DebitNote` | 383 | Debit note. |
-| `ProformaInvoice` | 325 | Rejected in the invoice pipeline (`QUITTIO-PROFORMA`); use `Quittio::proforma()` in Laravel or `DocumentBuilder::proforma()` ([Proforma invoices](documents.md#proforma-invoices)). |
+| `ProformaInvoice` | 325 | Rejected in the invoice pipeline (`QUITTIO-PROFORMA`); use `Quittio::proforma()` in Laravel, `$quittio->proforma()` or `DocumentBuilder::proforma()` ([Proforma invoices](documents.md#proforma-invoices)). |
 
 Further cases: `RequestForPayment` (71), `DebitNoteGoodsServices` (80), `CreditNoteGoodsServices` (81), `MeteredServicesInvoice` (82), `CreditNoteFinancialAdjustment` (83), `DebitNoteFinancialAdjustment` (84), `TaxNotification` (102), `InvoicingDataSheet` (130), `DirectPaymentValuation` (202), `ProvisionalPaymentValuation` (203), `PaymentValuation` (204), `InterimApplicationForPayment` (211), `FinalPaymentRequest` (218), `PaymentRequestForCompletedUnits` (219), `ConsolidatedCreditNote` (262), `PriceVariationInvoice` (295), `CreditNoteForPriceVariation` (296), `DelcredereCreditNote` (308), `CommercialInvoiceWithPackingList` (331), `CommissionNote` (382), `ConsolidatedInvoice` (385), `HireInvoice` (387), `TaxInvoice` (388), `DelcredereInvoice` (390), `FactoredInvoice` (393), `LeaseInvoice` (394), `ConsignmentInvoice` (395), `FactoredCreditNote` (396), `OcrPaymentCreditNote` (420), `DebitAdvice` (456), `ReversalOfDebit` (457), `ReversalOfCredit` (458), `ForwardersCreditNote` (532), `ForwardersInvoiceDiscrepancyReport` (553), `InsurersInvoice` (575), `ForwardersInvoice` (623), `PortChargesDocument` (633), `InvoiceInformationForAccounting` (751), `FreightInvoice` (780), `ClaimNotification` (817), `ConsularInvoice` (870), `CustomsInvoice` (935).
 
@@ -202,7 +239,7 @@ Every invoice has a seller (your company) and a buyer (your customer). Further p
 
 ### Seller and buyer
 
-In Laravel, the seller comes from `config/quittio.php` and you set only the buyer. Without Laravel, set both:
+With `Quittio::invoice()` in Laravel (seller from `config/quittio.php`) and `$quittio->invoice()` (seller from `Quittio::create()`), you set only the buyer. With `InvoiceBuilder::make()`, set both:
 
 ```php
 use Quittio\Core\Builder\InvoiceBuilder;
@@ -227,9 +264,9 @@ $builder = InvoiceBuilder::make()
 | `Party::make('Kunde AG')->vatId(…)->address(…)` | A `PartyBuilder` (`Quittio\Core\Builder\Party` starts one). It replaces the party set before. The builder is copied, so it can serve as a template. |
 | An application model implementing `ProvidesParty`, e.g. `->buyer($customer)` | The model fills a new `PartyBuilder` ([Application models](#application-models)). It replaces the party set before. |
 | `SellerParty`, `BuyerParty` | A finished party, e.g. `Seller::fromConfig()` in Laravel. It replaces the party set before. |
-| A callable that receives a `PartyBuilder` | Continues the party set before, also a `SellerParty` or `BuyerParty` (e.g. from `Quittio::invoice()` in Laravel or from `InvoiceBuilder::from()`), so you can change single values. |
+| A callable that receives a `PartyBuilder` | Continues the party set before, also a `SellerParty` or `BuyerParty` (e.g. from `Quittio::invoice()`, `$quittio->invoice()` or `InvoiceBuilder::from()`), so you can change single values. |
 
-A callable is the way to change the configured seller in Laravel, e.g. to add a contact person:
+A callable is the way to change the configured seller, e.g. to add a contact person:
 
 ```php
 use Quittio\Core\Builder\PartyBuilder;
@@ -240,7 +277,7 @@ Quittio::invoice()                                                 // seller fro
     ->buyer($customer);                                            // ProvidesParty
 ```
 
-**Replacing the configured seller.** `Quittio::invoice()` starts the builder with the defaults of a seller: the seller of the configuration or the current issuer of the Managed layer. It does this with `applyDefaults(callable $apply)`, and the builder remembers what these defaults set. If you then replace the seller with another one, those values are removed again: the bank account, the small business flag and the other defaults of that seller. Values that you set on the builder yourself stay. A callable keeps the seller and its defaults ([Starting invoices](laravel.md#starting-invoices)).
+**Replacing the configured seller.** `Quittio::invoice()` and, without Laravel, `$quittio->invoice()` start the builder with the defaults of a seller: the seller of the configuration or the current issuer of the Managed layer. It does this with `applyDefaults(callable $apply)`, and the builder remembers what these defaults set. If you then replace the seller with another one, those values are removed again: the bank account, the small business flag and the other defaults of that seller. Values that you set on the builder yourself stay. A callable keeps the seller and its defaults ([Starting invoices](laravel.md#starting-invoices)).
 
 `PartyBuilder` (`Quittio\Core\Builder\PartyBuilder`) has these methods:
 
@@ -468,7 +505,7 @@ use Quittio\Country\DE\Tax\VatPreset;
 // Without Laravel, once at start-up
 InvoiceBuilder::useDefaultVat(new CountryDefaultVat($quittio->countries()));   // or a preset: VatPreset::Standard
 
-$invoice = InvoiceBuilder::make()
+$invoice = $quittio->invoice()
     // ...
     ->line('Web development', netPrice: '95.00', quantity: 24, unit: UnitCode::Hour)   // 19 %
     ->line('Book', netPrice: '39.00', vat: VatPreset::Reduced)                         // 7 %
@@ -532,7 +569,7 @@ $exempt = CustomTaxPreset::make('acme.exempt_132', VatCategory::Exempt, '0', 'VA
 
 ## Payment
 
-Payment data tells the buyer how and when to pay. It has three parts: the payment instructions (payment means and bank account), the payment terms (due date and cash discount) and amounts already paid. In Laravel, `Quittio::invoice()` already adds a SEPA credit transfer to the first bank account with an IBAN in `config/quittio.php`, so most invoices only add payment terms.
+Payment data tells the buyer how and when to pay. It has three parts: the payment instructions (payment means and bank account), the payment terms (due date and cash discount) and amounts already paid. In Laravel, `Quittio::invoice()` already adds a SEPA credit transfer to the first bank account with an IBAN in `config/quittio.php`, without Laravel `$quittio->invoice()` to the configured `bank_account`, so most invoices only add payment terms.
 
 ### Payment instructions
 
@@ -855,11 +892,22 @@ use Quittio\Country\DE\Tax\VatPreset;
 
 Shops and B2C invoices often work with prices including VAT. Give every line a `priceInclVat` instead of a `netPrice`. The calculator then derives the net prices so that the customer pays exactly the gross amount ([Gross price conversion](#gross-price-conversion)):
 
-```php
+```php laravel
 use Quittio\Country\DE\Tax\VatPreset;
 use Quittio\Laravel\Facades\Quittio;
 
 Quittio::invoice()
+    // ...
+    ->line('T-shirt', priceInclVat: '19.99', quantity: 3, vat: VatPreset::Standard)
+    ->line('Shipping', priceInclVat: '4.90', vat: VatPreset::Standard)
+    ->line('Voucher', priceInclVat: '5.00', quantity: -1, vat: VatPreset::Standard)
+    ->build();
+```
+
+```php plain
+use Quittio\Country\DE\Tax\VatPreset;
+
+$quittio->invoice()
     // ...
     ->line('T-shirt', priceInclVat: '19.99', quantity: 3, vat: VatPreset::Standard)
     ->line('Shipping', priceInclVat: '4.90', vat: VatPreset::Standard)

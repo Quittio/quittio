@@ -2,6 +2,8 @@
 
 This page describes `config/quittio.php`, the configuration file of the Laravel integration. When you install Quittio, read [The keys you set first](#the-keys-you-set-first): your company, your bank account and the defaults most applications change. The rest of the page is the reference of every key, in the order of the file.
 
+Without Laravel there is no configuration file: the core takes its settings, including your company (`seller`), its bank account (`bank_account`) and the small business setting (`small_business`), as an array for `Quittio::create()`. See [Without Laravel](#without-laravel) at the end of this page.
+
 The terms used here (format, profile, BT numbers, rule codes) are explained in [E-invoicing basics](concepts.md).
 
 ## The keys you set first
@@ -60,15 +62,15 @@ The rules of the formats require some of these values:
 - Without a VAT identification number, EN 16931 (the European standard for e-invoices) needs another identifier of the seller: `identifiers` (BT-29) or `legal_registration` (BT-30). Otherwise rendering fails with the rule BR-CO-26. This concerns, for example, a small business with a tax number only.
 - XRechnung (the format for German public authorities) also needs the contact with name, phone and e-mail, and the electronic address. Peppol (an international network for delivering e-invoices) needs the electronic address as well.
 
-BT numbers are explained in [EN 16931 and business terms](concepts.md#en-16931-and-business-terms), rule codes such as BR-CO-26 in [Rules and validation](concepts.md#rules-and-validation). Every key of the section is listed in [Seller](#seller).
+BT numbers are explained in [EN 16931 and business terms](concepts.md#en-16931-and-business-terms), rule codes such as BR-CO-26 in [Rules and validation](concepts.md#rules-and-validation). Every key of the section is listed in [Seller](#seller). Without Laravel, the seller is a `Party::make()` under the key `seller` of `Quittio::create()`, and `$quittio->invoice()` takes it from there ([Without Laravel](#without-laravel)).
 
 ### Your bank account
 
-`Quittio::invoice()` puts the first entry of `seller.bank_accounts` that has an IBAN on every invoice, as payment by SEPA credit transfer. The PDF shows the IBAN and a payment QR code that banking apps can read (GiroCode in Germany). `bic` and `name` are optional. Further entries are ignored.
+`Quittio::invoice()` puts the first entry of `seller.bank_accounts` that has an IBAN on every invoice, as payment by SEPA credit transfer. The PDF shows the IBAN and a payment QR code that banking apps can read (GiroCode in Germany). `bic` and `name` are optional. Further entries are ignored. Without Laravel, `bank_account` of `Quittio::create()` holds the one account: `['iban' => …, 'bic' => …, 'name' => …]`.
 
 ### Small businesses
 
-Set `seller.small_business` to `true` if you are a small business that charges no VAT (Kleinunternehmer, section 19 of the German VAT Act UStG). Invoices then carry no VAT. Lines without `->vat()` get the small business exemption with its legal note, and VAT on a line is rejected. See [Small businesses](country-packs.md#small-businesses).
+Set `seller.small_business` to `true` if you are a small business that charges no VAT (Kleinunternehmer, section 19 of the German VAT Act UStG). Invoices then carry no VAT. Lines without `->vat()` get the small business exemption with its legal note, and VAT on a line is rejected. See [Small businesses](country-packs.md#small-businesses). Without Laravel, set `'small_business' => true` in `Quittio::create()`.
 
 ### Defaults you may change
 
@@ -170,12 +172,24 @@ Values used when an invoice or a render call does not set them itself.
 
 A country pack brings the tax presets, legal rules and texts of one country ([How Quittio works](concepts.md#how-quittio-works)). `quittio/quittio` includes the pack for Germany.
 
-```php
+```php laravel
 'countries' => [
     // 'AT' => \App\Quittio\CountryAT::class,
     // 'de' => ['base_rates' => ['2027-01-01' => '1.77']],
 ],
 ```
+
+```php plain
+use Quittio\Core\Quittio;
+use Quittio\Country\DE\CountryDE;
+use Quittio\Country\DE\Dunning\BaseRates;
+
+$quittio = Quittio::create([], [new CountryDE]);
+// $quittio->registerCountry(new \App\Quittio\CountryAT);
+// BaseRates::register(['2027-01-01' => '1.77']);
+```
+
+Without Laravel, the packs are passed to `Quittio::create()` or registered later with `$quittio->registerCountry()` ([Registering packs](country-packs.md#without-laravel)). The rest of this section describes the Laravel configuration.
 
 `countries` holds two kinds of entries: pack classes (strings) and the settings of a pack (arrays under the lower-case country code, see [Settings of a pack](#settings-of-a-pack-quittiocountriescode)).
 
@@ -208,6 +222,8 @@ A pack with settings of its own keeps them under `quittio.countries.{code}`, wit
 
 - **The file of the pack**, `config/quittio/countries/{code}.php`. `php artisan quittio:install` publishes it for every installed pack, `php artisan vendor:publish --tag=quittio-{code}-config` (e.g. `quittio-de-config`) publishes it alone. Laravel loads files in subdirectories of `config/` under the dotted path, so `config/quittio/countries/de.php` becomes `quittio.countries.de`.
 - **A section in `config/quittio.php`**: `'countries' => ['de' => ['base_rates' => […]]]`. When the file of the pack exists as well, the file wins as a whole.
+
+Without Laravel, pass the settings to `Quittio::create()` under the same key, e.g. `Quittio::create(['countries' => ['de' => ['consumer_default_notice' => false]]], [new CountryDE])`. The German base rates are the exception: register them with `BaseRates::register()` ([Base rate table](country-packs.md#base-rate-table)).
 
 Keys you leave out keep the defaults of the pack. A pack class must not be listed under a lower-case code that holds settings (`'de' => CountryDE::class`): use the upper-case code or no key. A class listed under `'de'` by an older configuration is moved to a numeric key when the German pack registers.
 
@@ -246,7 +262,7 @@ php artisan vendor:publish --tag=quittio-de-config   # config/quittio/countries/
 
 ## Seller
 
-Your company as it appears on every invoice. The section is used by `Quittio::invoice()`, the document methods (`Quittio::quote()` …), `Seller::fromConfig()` and `Seller::apply()` (see [Laravel integration](laravel.md#seller-from-the-configuration)). With `quittio/managed`, issuer profiles replace it.
+Your company as it appears on every invoice. The section is used by `Quittio::invoice()`, the document methods (`Quittio::quote()` …), `Seller::fromConfig()` and `Seller::apply()` (see [Laravel integration](laravel.md#seller-from-the-configuration)). With `quittio/managed`, issuer profiles replace it. Without Laravel, the core keys `seller`, `bank_account` and `small_business` of `Quittio::create()` take its place ([Without Laravel](#without-laravel)).
 
 | Key | Type | Default | Effect |
 |---|---|---|---|
@@ -430,3 +446,28 @@ See [Saving, downloading and mailing](laravel.md#saving-downloading-and-mailing)
 ## Without Laravel
 
 The core takes the same settings as a `Quittio\Core\Config` object or as an array for `Quittio::create()` (`Config::fromArray()`). Some keys are shaped differently there, e.g. `validation.levels` as `L1` … `L7`, `pdf.b2c_embed_xml`, and `format` instead of `defaults.format`. See [Getting started](getting-started.md#without-laravel), which maps every core key to its Laravel key.
+
+The `seller` section becomes three keys. `$quittio->invoice()` and the document methods (`$quittio->quote()` …) start with them, as `Quittio::invoice()` does with the section:
+
+```php
+use Quittio\Core\Builder\Party;
+use Quittio\Core\Quittio;
+use Quittio\Country\DE\CountryDE;
+
+$quittio = Quittio::create([
+    'seller' => Party::make('Muster GmbH')                      // seller.name … electronic_address
+        ->vatId('DE123456789')
+        ->taxNumber('21/815/08150')
+        ->legalRegistration('HRB 12345')
+        ->address('Hauptstraße 1', '12345', 'Musterstadt', 'DE')
+        ->contact('Max Muster', '+49 30 1234567', 'billing@muster.de')
+        ->electronicAddress('billing@muster.de', 'EM'),
+    'bank_account' => ['iban' => 'DE89370400440532013000', 'bic' => 'COBADEFFXXX', 'name' => 'Muster GmbH'],   // the first entry of seller.bank_accounts
+    'small_business' => false,                                  // seller.small_business
+], [new CountryDE]);
+```
+
+- `seller` takes a `Party::make()` builder or a `SellerParty`. A seller without name or postal address fails with a `ConfigurationException` when the instance is created.
+- `bank_account` holds one account; `iban` is required, `bic` and `name` are optional. It is added as SEPA credit transfer.
+- `bank_account` and `small_business` without `seller` fail with a `ConfigurationException`.
+- On an invoice, `->seller()` with another `Party` drops the configured account and the small business flag, `->seller(fn ($s) => …)` changes the configured seller and keeps them, `->payment(…)` replaces the account and `->creditTransfer(…)` adds a second one.

@@ -20,7 +20,7 @@ The printed title depends on the locale. In English it is the name in the first 
 
 In Laravel, start with the facade: `Quittio::quote()`, `Quittio::orderConfirmation()`, `Quittio::deliveryNote()`, `Quittio::proforma()`, `Quittio::paymentReminder(int $level = 0)`, `Quittio::accountStatement()` or `Quittio::bonusStatement()`. Like `Quittio::invoice()`, these methods start the builder with the seller, the first bank account and the small business setting of `config/quittio.php` ([Starting invoices](laravel.md#starting-invoices)). `->render()` at the end of the chain renders the PDF.
 
-```php
+```php laravel
 use Quittio\Core\Builder\Party;
 use Quittio\Core\Enums\UnitCode;
 use Quittio\Laravel\Facades\Quittio;
@@ -38,9 +38,27 @@ $quote = Quittio::quote()
 Quittio::document($quote)->locale('de')->render()->download();
 ```
 
-This downloads a German quote as `Angebot_AN-2026-0007.pdf` ([File names](#file-names)). Use `->build()` to get the document data, e.g. to store it, and `Quittio::document()` to render it with more options ([Rendering](#rendering)).
+```php plain
+use Quittio\Core\Builder\Party;
+use Quittio\Core\Enums\UnitCode;
 
-Without Laravel, start with the static methods of `DocumentBuilder` (`DocumentBuilder::quote()` …) and set the seller yourself with `->seller()`.
+$quote = $quittio->quote()
+    ->number('AN-2026-0007')
+    ->issueDate('2026-10-06')
+    ->buyer(Party::make('Kunde AG')->address('Weg 1', '54321', 'Beispielstadt', 'DE'))
+    ->validUntil('2026-10-31')
+    ->line('Consulting', netPrice: '120.00', quantity: 10, unit: UnitCode::Hour)
+    ->optionalLine('Training', netPrice: '800.00', unit: UnitCode::Day)            // shown, not in the totals
+    ->alternativeLine('1', 'Senior consulting', netPrice: '150.00', quantity: 10, unit: UnitCode::Hour)   // alternative to line 1
+    ->build();
+
+$result = $quittio->document($quote)->locale('de')->render();
+file_put_contents($result->filename(), $result->pdf());
+```
+
+This downloads (without Laravel: saves) a German quote as `Angebot_AN-2026-0007.pdf` ([File names](#file-names)). Use `->build()` to get the document data, e.g. to store it, and `Quittio::document()` to render it with more options ([Rendering](#rendering)).
+
+Without Laravel, the same methods exist on `$quittio`: `$quittio->quote()`, `orderConfirmation()`, `deliveryNote()`, `proforma()`, `paymentReminder(int $level = 0)`, `accountStatement()` and `bonusStatement()`. They start the builder with the `seller`, `bank_account` and `small_business` of `Quittio::create()`, and `->render()` renders the PDF ([Invoices and documents with the configured seller](formats.md#invoices-and-documents-with-the-configured-seller)). The static methods of `DocumentBuilder` (`DocumentBuilder::quote()` …) start an empty builder for special cases, e.g. another seller; set the seller with `->seller()` and render with `$quittio->document($builder)`. The plain PHP examples on this page use `$quittio` as created in [Without Laravel](getting-started.md#without-laravel), with your company as `seller`.
 
 `DocumentBuilder::make(DocumentType $type)` creates a builder for any type; reminders created this way have level 0. `DocumentType` has three methods:
 
@@ -66,7 +84,7 @@ A delivery note accompanies a shipment. It prints quantities without prices or t
 
 Lines get the net price 0 and the VAT category O (not subject to VAT) unless they set a price or VAT themselves, so they need only name, quantity and unit. This applies to lines given by name, as builder, array, model (`ProvidesInvoiceLine`) or callable. Finished `InvoiceLine` objects are taken as they are.
 
-```php
+```php laravel
 use Brick\Math\BigDecimal;
 use Quittio\Core\Documents\Package;
 use Quittio\Core\Enums\UnitCode;
@@ -83,13 +101,29 @@ $note = Quittio::deliveryNote()
     ->build();
 ```
 
+```php plain
+use Brick\Math\BigDecimal;
+use Quittio\Core\Documents\Package;
+use Quittio\Core\Enums\UnitCode;
+
+$note = $quittio->deliveryNote()
+    ->number('LS-2026-0012')
+    ->buyer($buyer)
+    ->reference('AB-2026-0003')                  // the order confirmation
+    ->deliveryDate('2026-10-02')
+    ->serialisedLine('Router', ['SN-1001', 'SN-1002'], quantity: 2, unit: UnitCode::Unit)
+    ->line('Cable', quantity: 5, unit: UnitCode::Metre)
+    ->package(new Package('P1', type: 'Box', weightKg: BigDecimal::of('2.5'), dimensions: '30 × 20 × 10 cm', trackingNumber: '00340434161094042557'))
+    ->build();
+```
+
 `Package` has `id`, `type`, `weightKg` (`BigDecimal`), `dimensions` and `trackingNumber`. The template lists the packages, and the serial numbers below each line.
 
 ## Proforma invoices
 
 A proforma invoice announces the amount of a future invoice, e.g. for advance payment or customs. It is not an invoice for tax purposes.
 
-Build it with `Quittio::proforma()` (Laravel) or `DocumentBuilder::proforma()`. It is rendered like an invoice, with prices, totals, payment terms, bank details and QR code. Its title is "Proforma invoice", and the legal notes contain "This proforma invoice is not an invoice for tax purposes." It never carries e-invoice XML.
+Build it with `Quittio::proforma()` (Laravel), `$quittio->proforma()` or `DocumentBuilder::proforma()`. It is rendered like an invoice, with prices, totals, payment terms, bank details and QR code. Its title is "Proforma invoice", and the legal notes contain "This proforma invoice is not an invoice for tax purposes." It never carries e-invoice XML.
 
 Do not render a proforma as an invoice. An invoice with the type code (BT-3) 325 (`InvoiceTypeCode::ProformaInvoice`) fails validation with the rule `QUITTIO-PROFORMA` ([Rules and validation](concepts.md#rules-and-validation)), because e-invoice XML with VAT amounts would be booked as an invoice.
 
@@ -102,10 +136,24 @@ A payment reminder asks the buyer to pay invoices that are overdue. The level co
 
 A negative level throws an `InvalidArgumentException`.
 
-```php
+```php laravel
 use Quittio\Laravel\Facades\Quittio;
 
 $reminder = Quittio::paymentReminder(1)                  // level 1: first reminder
+    ->number('M-2026-0003')
+    ->buyer($buyer)
+    ->openItem('RE-2026-0042', '2026-08-01', '1190.00', dueDate: '2026-08-15', paid: '190.00')
+    ->fee('Reminder costs', '2.50')
+    ->interest('1000.00', '10.27', from: '2026-08-16', until: '2026-10-04')   // until is exclusive: the last day with interest is 3 October
+    ->deadline('2026-10-18')
+    ->build();
+
+$reminder->dunning->total('EUR');            // open items + fees + interest, no VAT
+$reminder->dunning->remittanceText();        // "RE-2026-0042" – open invoice numbers for the transfer
+```
+
+```php plain
+$reminder = $quittio->paymentReminder(1)                 // level 1: first reminder
     ->number('M-2026-0003')
     ->buyer($buyer)
     ->openItem('RE-2026-0042', '2026-08-01', '1190.00', dueDate: '2026-08-15', paid: '190.00')
@@ -140,13 +188,27 @@ Classes of a reminder:
 
 In Germany, a debtor in default owes interest at the statutory rate of section 288 BGB: the base rate of the Bundesbank plus 9 percentage points (businesses) or 5 points (consumers). The German country pack calculates it, with periods split at every change of the base rate. Add its charges to the reminder:
 
-```php
+```php laravel
 use Brick\Money\Money;
 use Quittio\Core\Support\Date;
 use Quittio\Country\DE\Dunning\DefaultInterest;
 use Quittio\Laravel\Facades\Quittio;
 
 $reminder = Quittio::paymentReminder(1)
+    ->number('M-2026-0003')
+    ->buyer($buyer)
+    ->openItem('RE-2026-0042', '2026-06-01', '1000.00', dueDate: '2026-06-15');
+
+// one charge per period with the same base rate; the end date is exclusive
+$reminder->interestCharge(...(new DefaultInterest)->calculate(Money::of('1000.00', 'EUR'), Date::parse('2026-06-16'), Date::parse('2026-10-05'), consumer: false));
+```
+
+```php plain
+use Brick\Money\Money;
+use Quittio\Core\Support\Date;
+use Quittio\Country\DE\Dunning\DefaultInterest;
+
+$reminder = $quittio->paymentReminder(1)
     ->number('M-2026-0003')
     ->buyer($buyer)
     ->openItem('RE-2026-0042', '2026-06-01', '1000.00', dueDate: '2026-06-15');
@@ -163,10 +225,23 @@ The base rate table, the flat rate and the conditions of default are described i
 
 An account statement lists the invoices of a customer and the resulting balance.
 
-```php
+```php laravel
 use Quittio\Laravel\Facades\Quittio;
 
 $statement = Quittio::accountStatement()
+    ->number('KA-2026-09')
+    ->buyer($buyer)
+    ->statementPeriod('2026-09-01', '2026-09-30')
+    ->openingBalance('100.00')
+    ->openItem('RE-2026-0050', '2026-09-10', '595.00', dueDate: '2026-09-24', paid: '595.00')
+    ->openItem('RE-2026-0061', '2026-09-28', '238.00', dueDate: '2026-10-12')
+    ->build();
+
+$statement->statement->balance('EUR');       // 338.00
+```
+
+```php plain
+$statement = $quittio->accountStatement()
     ->number('KA-2026-09')
     ->buyer($buyer)
     ->statementPeriod('2026-09-01', '2026-09-30')
@@ -193,11 +268,25 @@ Violations throw an `InvalidArgumentException`, as does a period that ends befor
 
 A bonus agreed for a period, e.g. 3 % on the annual revenue, reduces the consideration of all invoices of that period afterwards. Instead of one document per invoice, a bonus statement documents the reduction once, per VAT rate. In Germany section 17 (4) UStG requires such a document when the reduction concerns supplies taxed at different rates; it need not be an e-invoice (section 17.1 (3a) UStAE).
 
-```php
+```php laravel
 use Quittio\Core\Enums\VatCategory;
 use Quittio\Laravel\Facades\Quittio;
 
 $statement = Quittio::bonusStatement()
+    ->number('BO-2027-0001')
+    ->buyer($buyer)
+    ->bonusPeriod('2026-01-01', '2026-12-31')
+    ->bonusAgreement('der Bonusvereinbarung vom 15.01.2026')
+    ->bonusOnRevenue('100000.00', '3', VatCategory::StandardRate, '19')   // 3,000.00 plus VAT 570.00
+    ->bonusOnRevenue('20000.00', '3', VatCategory::StandardRate, '7')     // 600.00 plus VAT 42.00
+    ->bonusInvoices('RE-2026-0001', 'RE-2026-0002')                       // optional
+    ->render();
+```
+
+```php plain
+use Quittio\Core\Enums\VatCategory;
+
+$statement = $quittio->bonusStatement()
     ->number('BO-2027-0001')
     ->buyer($buyer)
     ->bonusPeriod('2026-01-01', '2026-12-31')
@@ -244,11 +333,11 @@ The result is a normal `InvoiceBuilder`; validation and e-invoice formats apply 
 
 `Quittio::document()` renders a document with more options than `->render()` at the end of the builder chain:
 
-```php
+```php laravel
 use Quittio\Core\Data\Presentation\Presentation;
 use Quittio\Laravel\Facades\Quittio;
 
-$result = Quittio::document($quote)          // DocumentData; in Laravel also a DocumentBuilder
+$result = Quittio::document($quote)          // DocumentData or DocumentBuilder
     ->locale('en')
     ->country('DE')
     ->template('invoices.my-design.layout')
@@ -256,6 +345,19 @@ $result = Quittio::document($quote)          // DocumentData; in Laravel also a 
     ->render();
 
 $html = Quittio::document($quote)->htmlOnly()->render()->html();
+```
+
+```php plain
+use Quittio\Core\Data\Presentation\Presentation;
+
+$result = $quittio->document($quote)         // DocumentData or DocumentBuilder
+    ->locale('en')
+    ->country('DE')
+    ->template('my-design')                   // my-design.php in template_paths
+    ->presentation(new Presentation(title: 'Offer'))
+    ->render();
+
+$html = $quittio->document($quote)->htmlOnly()->render()->html();
 ```
 
 | `PendingDocument` method | Effect |
@@ -332,7 +434,7 @@ Dates accept `Date`, `DateTimeInterface` or a string; amounts are strings.
 | `discountPercent(BigDecimal\|int\|string $percent, ?string $reason = null, $reasonCode = AllowanceReasonCode::Discount)`, `discountAmount(BigDecimal\|int\|string $amount, ?string $reason = null, $reasonCode = AllowanceReasonCode::Discount)` | Document discount, on the lines that count towards the totals |
 | `dueInDays(int $days)`, `cashDiscount(int $days, string $percent, ?string $baseAmount = null)` | Payment target and cash discount ([Payment terms](building-invoices.md#payment-terms)) |
 | `paymentTerms(PaymentTerms\|string\|callable $terms)` | Payment terms as text or object |
-| `creditTransfer(string $iban, ?string $bic = null, ?string $accountName = null)` | Bank account |
+| `creditTransfer(string $iban, ?string $bic = null, ?string $accountName = null)` | Adds a bank account; a configured account stays ([Payment instructions](building-invoices.md#payment-instructions)) |
 | `buyerReference(?string $reference)`, `purchaseOrderReference(?string $reference)` | Buyer's references |
 | `reference(string $number, $date = null)` | Preceding document, e.g. the quote of an order confirmation or the order of a delivery note |
 | `validUntil($date)` | Validity of a quote |
@@ -353,6 +455,7 @@ Dates accept `Date`, `DateTimeInterface` or a string; amounts are strings.
 | `custom(string $key, mixed $value)` | Custom value (`meta.custom` in the view model) |
 | `tap(callable $callback)` | Access to the underlying `InvoiceBuilder` |
 | `build(): DocumentData` | Builds the immutable document |
+| `render()` | Builds and renders the PDF; only on builders started with `Quittio::quote()` … or `$quittio->quote()` … ([Rendering](#rendering)) |
 
 `DocumentBuilder` is `Macroable`: add own methods with `DocumentBuilder::macro('name', fn () => …)`.
 

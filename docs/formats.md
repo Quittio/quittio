@@ -21,7 +21,7 @@ Without `format()`, Quittio chooses format and profile for each invoice. It uses
 
 [Which format do I need?](concepts.md#which-format-do-i-need) shows all cases in a table, [Automatic choice](#automatic-choice) the exact rules. The result tells you what Quittio chose:
 
-```php
+```php laravel
 use Quittio\Laravel\Facades\Quittio;
 
 $result = Quittio::make($invoice)->render();       // no format: automatic choice
@@ -33,16 +33,28 @@ $prepared->format();                               // e.g. "zugferd"
 $prepared->profile()?->key();                      // e.g. "en16931"
 ```
 
+```php plain
+$result = $quittio->make($invoice)->render();       // no format: automatic choice
+$result->format();                                  // e.g. "zugferd"
+$result->profile()?->key();                         // e.g. "en16931"
+
+$prepared = $quittio->make($invoice)->prepare();    // the same decision, without rendering
+$prepared->format();                                // e.g. "zugferd"
+$prepared->profile()?->key();                       // e.g. "en16931"
+```
+
 ## Requesting a format
 
 When a customer requires a specific format, name it. Every format has a default profile, so you rarely need `profile()` as well.
 
-```php
+```php laravel
 use Quittio\Laravel\Facades\Quittio;
 
 // At the end of the builder chain
 $result = Quittio::invoice()
-    ->buyer($customer)
+    ->number('RE-2026-0043')
+    ->deliveryDate('2026-09-30')
+    ->buyer($customer)                                     // with an electronic address, required by XRechnung
     ->buyerReference('04011000-12345-03')                  // Leitweg-ID, required by XRechnung
     ->line('Consulting', netPrice: '120.00')
     ->render('xrechnung-cii');
@@ -56,10 +68,29 @@ $result = Quittio::make($invoice)->formats(['zugferd', 'xrechnung-cii'])->render
 $result->as('xrechnung-cii')->xml();
 ```
 
+```php plain
+// At the end of the builder chain
+$result = $quittio->invoice()
+    ->number('RE-2026-0043')
+    ->deliveryDate('2026-09-30')
+    ->buyer($customer)                                     // with an electronic address, required by XRechnung
+    ->buyerReference('04011000-12345-03')                  // Leitweg-ID, required by XRechnung
+    ->line('Consulting', netPrice: '120.00')
+    ->render('xrechnung-cii');
+
+// For invoice data you built before
+$result = $quittio->make($invoice)->format('xrechnung-cii')->render();
+$result = $quittio->make($invoice)->format('zugferd')->profile('extended')->render();
+
+// Several formats from one calculation; the first one is the main result
+$result = $quittio->make($invoice)->formats(['zugferd', 'xrechnung-cii'])->render();
+$result->as('xrechnung-cii')->xml();
+```
+
 - The format keys are listed in [Output formats](#output-formats).
 - Use `profile()` when a recipient asks for a Factur-X level such as `basic`, or for the XRechnung extension. Which profile applies without it is described in [Which profile is used](#which-profile-is-used).
 - To use one format for every invoice, set `defaults.format` in `config/quittio.php` (without Laravel: `format`). The default `null` means automatic choice ([Output configuration](#output-configuration)).
-- Without Laravel, the same methods exist on `$quittio->make($invoice)` ([Rendering in the core](#rendering-in-the-core)).
+- Without Laravel, the same methods exist on `$quittio->invoice()` and `$quittio->make($invoice)` ([Rendering in the core](#rendering-in-the-core)). The plain PHP example uses `$quittio` as created in [Without Laravel](getting-started.md#without-laravel), with your company as `seller`.
 
 ## Output formats
 
@@ -252,8 +283,12 @@ Drafts and previews carry a watermark (`Presentation::$watermark`, or the option
 
 Watermarked PDFs are plain PDF without embedded XML. They are not PDF/A, because PDF/A forbids the transparency of the watermark ([Watermark](templates.md#watermark)).
 
-```php
+```php laravel
 Quittio::make($draft)->format('pdf')->option('watermark', 'ENTWURF')->render();    // "Entwurf" = draft
+```
+
+```php plain
+$quittio->make($draft)->format('pdf')->option('watermark', 'ENTWURF')->render();    // "Entwurf" = draft
 ```
 
 ### PDF/A and logos
@@ -361,7 +396,7 @@ These formats are not e-invoices. The validation skips the profile field matrix 
 
 ## Rendering in the core
 
-This section is the reference of a render call. The examples use the core class `Quittio\Core\Quittio` without Laravel. In Laravel, `Quittio::make()` returns the Laravel variant with the same methods plus `queue()`; its result can also be saved to a disk, downloaded and mailed ([Rendering invoices](laravel.md#rendering-invoices)).
+This section is the reference of a render call. The examples use the core class `Quittio\Core\Quittio` without Laravel. In Laravel, `Quittio::make()` returns the Laravel variant with the same methods plus `queue()`; its result can also be saved to a disk, downloaded and mailed ([Rendering invoices](laravel.md#rendering-invoices)). With your company as `seller` in the configuration, `$quittio->invoice()` and `$quittio->quote()` … start invoices and documents that render themselves ([Invoices and documents with the configured seller](#invoices-and-documents-with-the-configured-seller)).
 
 ```php
 use Quittio\Core\Quittio;
@@ -394,6 +429,51 @@ $result->as('xrechnung-cii')->xml();
 | `check(): ValidationResult` | Validates like a render run, without template and PDF, whatever the validation mode. This includes the XML levels, also for the XML that `pdf` embeds with `pdf.b2c_embed_xml`. Returns the result and does not throw for invalid data. |
 | `prepare(): PreparedInvoice` | Calculates and validates like `check()` without rendering. Returns the calculated data, the chosen formats with their profiles (`formats`, `format()`, `profile()`; `null` for formats that write or embed no XML), the leading and buyer country packs, the locale and the validation result. |
 | `data(): InvoiceData`, `options(): RenderOptions` | The data and the collected options. |
+
+### Invoices and documents with the configured seller
+
+With your company as `seller` in the configuration, `$quittio->invoice()` starts an invoice like `Quittio::invoice()` in Laravel and renders it at the end of the chain:
+
+```php
+use Quittio\Core\Builder\InvoiceBuilder;
+use Quittio\Core\Builder\Party;
+use Quittio\Core\Quittio;
+use Quittio\Core\Tax\CountryDefaultVat;
+use Quittio\Country\DE\CountryDE;
+
+$quittio = Quittio::create([
+    'seller' => Party::make('Muster GmbH')->vatId('DE123456789')->address('Hauptstraße 1', '12345', 'Musterstadt', 'DE'),
+    'bank_account' => ['iban' => 'DE02120300000000202051', 'bic' => 'BYLADEM1001', 'name' => 'Muster GmbH'],
+    'due_days' => 14,
+], [new CountryDE]);
+InvoiceBuilder::useDefaultVat(new CountryDefaultVat($quittio->countries()));   // VAT of lines without vat
+
+$invoice = $quittio->invoice()                          // seller and bank account from the configuration
+    ->number('RE-2026-0044')
+    ->deliveryDate('2026-10-14')
+    ->buyer($customer)
+    ->line('Consulting', netPrice: '120.00');
+
+$result = $invoice->render();                           // automatic choice
+$result = $invoice->render(['zugferd', 'json']);        // several formats; the first is the main result
+$report = $invoice->check('zugferd');                   // ValidationResult, nothing rendered
+
+$quote = $quittio->quote()->number('AN-2026-0008')->buyer($customer)->line('Consulting', netPrice: '120.00')->render();
+```
+
+| Key of `Quittio::create()` | Value |
+|---|---|
+| `seller` | Your company: a `PartyBuilder` (`Party::make()`) or a `SellerParty`. It needs a name and a postal address, otherwise `create()` throws a `ConfigurationException`. |
+| `bank_account` | `['iban' => …, 'bic' => …, 'name' => …]`, BIC and name optional. Added as SEPA credit transfer (BG-17). |
+| `small_business` | `true` flags the invoices as small business invoices (`Meta::FLAG_SMALL_BUSINESS`, [Default VAT](building-invoices.md#default-vat)). Default `false`. |
+
+`bank_account` or `small_business` without `seller` throws a `ConfigurationException`.
+
+- `$quittio->invoice()` returns a `BoundInvoiceBuilder`, an `InvoiceBuilder` that ends with `render()`, `render('xrechnung-cii')`, `render(['zugferd', 'xrechnung-cii'])` (the first format is the main result) or `check()` with the same arguments.
+- `$quittio->quote()`, `orderConfirmation()`, `deliveryNote()`, `proforma()`, `paymentReminder(int $level = 0)`, `bonusStatement()` and `accountStatement()` return a `BoundDocumentBuilder` that ends with `render()` ([Documents](documents.md)).
+- The defaults behave as in Laravel: `->seller($otherParty)` replaces the seller and removes the bank account and the small business flag; `->seller(fn (PartyBuilder $s) => …)` changes the configured seller and keeps them ([Seller and buyer](building-invoices.md#seller-and-buyer)). `->payment(PaymentMeansCode::SepaCreditTransfer, iban: …)` replaces the account, `->creditTransfer(…)` adds a further one.
+- Without `seller`, these methods start empty builders.
+- For further options, pass the builder to `$quittio->make($builder)` (invoices) or `$quittio->document($builder)` (documents: locale, template, HTML only). `InvoiceBuilder::make()` and `DocumentBuilder::quote()` … with `$quittio->make()` and `$quittio->document()` remain for special cases, e.g. another seller per invoice.
 
 ### Result
 

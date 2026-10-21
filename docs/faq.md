@@ -37,7 +37,7 @@ The KoSIT validator can run as a daemon in another container or on another host,
 
 Reading throws only when the file cannot be read as an invoice at all: `UnsafeXmlException` (too large, not well-formed, DOCTYPE, limits), `PdfException` (encrypted, malformed or too large PDF) and `UnreadableInvoiceException` (unknown format, ZUGFeRD 1.0, a PDF without embedded invoice, a missing file). All three implement `Quittio\Core\Exceptions\QuittioException`. Everything else, for example totals that differ from a recalculation, becomes a finding of the result ([Reading: Errors](reading.md#errors)).
 
-```php
+```php laravel
 use Quittio\Core\Exceptions\QuittioException;
 use Quittio\Laravel\Facades\Quittio;
 
@@ -47,6 +47,18 @@ try {
     // not an invoice Quittio can read: reject the upload
 }
 ```
+
+```php plain
+use Quittio\Core\Exceptions\QuittioException;
+
+try {
+    $read = $quittio->readFile($path);
+} catch (QuittioException $e) {
+    // not an invoice Quittio can read: reject the upload
+}
+```
+
+Without Laravel, `$quittio` is the instance created in [Without Laravel](getting-started.md#without-laravel).
 
 ## Where does mPDF write temporary files?
 

@@ -30,7 +30,7 @@ One missing value can be reported by more than one rule. In the example, the fie
 
 ### Handling the exception
 
-```php
+```php laravel
 use Quittio\Core\Validation\ValidationException;
 use Quittio\Laravel\Facades\Quittio;
 
@@ -43,7 +43,19 @@ try {
 }
 ```
 
-`$e->result` is a [`ValidationResult`](#the-result) with all findings.
+```php plain
+use Quittio\Core\Validation\ValidationException;
+
+try {
+    $rendered = $quittio->make($invoice)->format('xrechnung-cii')->render();
+} catch (ValidationException $e) {
+    foreach ($e->result->errors() as $message) {
+        error_log($message->code.' '.$message->message);
+    }
+}
+```
+
+`$e->result` is a [`ValidationResult`](#the-result) with all findings. The plain PHP examples on this page use `$quittio` as created in [Without Laravel](getting-started.md#without-laravel), with your company as `seller`.
 
 The Laravel integration dispatches two events ([Events](laravel.md#events)):
 
@@ -65,11 +77,19 @@ Every finding has a severity: error, warning or info. Only errors stop the rende
 
 While you build an invoice, `check()` instead of `render()` shows all findings at once. It validates like `render()`, renders no PDF, returns the `ValidationResult` and never throws for invalid data:
 
-```php
+```php laravel
 use Quittio\Laravel\Facades\Quittio;
 
 $report = Quittio::invoice()->buyer($customer)->line('Consulting', netPrice: '120.00')->check('xrechnung-cii');
 $report = Quittio::make($invoice)->format('xrechnung-cii')->check();
+
+$report->isValid();
+$report->errors();
+```
+
+```php plain
+$report = $quittio->invoice()->buyer($customer)->line('Consulting', netPrice: '120.00')->check('xrechnung-cii');
+$report = $quittio->make($invoice)->format('xrechnung-cii')->check();
 
 $report->isValid();
 $report->errors();
@@ -91,11 +111,18 @@ Set it for the application with `validation.mode` (environment variable `QUITTIO
 
 ### Per call
 
-```php
+```php laravel
 Quittio::make($invoice)->validate()->render();               // mode error
 Quittio::make($invoice)->validate(false)->render();          // mode warn: errors are attached, nothing is thrown
 Quittio::make($invoice)->withoutValidation()->render();      // mode off: empty result (check() and prepare() still validate)
 Quittio::make($invoice)->option('max_decimals', 6)->render(); // option for the rules
+```
+
+```php plain
+$quittio->make($invoice)->validate()->render();               // mode error
+$quittio->make($invoice)->validate(false)->render();          // mode warn: errors are attached, nothing is thrown
+$quittio->make($invoice)->withoutValidation()->render();      // mode off: empty result (check() and prepare() still validate)
+$quittio->make($invoice)->option('max_decimals', 6)->render(); // option for the rules
 ```
 
 ### Settings
@@ -196,9 +223,14 @@ Formats without XML (`pdf`, `html`, `json`) are no e-invoices: L2 (profile field
 
 `check()` and `prepare()` validate like a render run without template and PDF:
 
-```php
+```php laravel
 $result = Quittio::make($invoice)->format('xrechnung-cii')->check();      // ValidationResult
 $prepared = Quittio::make($invoice)->formats(['zugferd'])->prepare();     // PreparedInvoice: data, formats, country, buyerCountry, locale, validation
+```
+
+```php plain
+$result = $quittio->make($invoice)->format('xrechnung-cii')->check();      // ValidationResult
+$prepared = $quittio->make($invoice)->formats(['zugferd'])->prepare();     // PreparedInvoice: data, formats, country, buyerCountry, locale, validation
 ```
 
 They are explicit validation requests:
@@ -447,7 +479,7 @@ A profile can replace rules with its own (`Profiles\Capabilities\ReplacesRules`)
 | `QUITTIO-GENERIC-COUNTRY` | warning | No country pack for the seller's country: only EN 16931 is checked |
 | `QUITTIO-PROFILE-NOT-EINVOICE` | warning | Profile that is no EN 16931 e-invoice (MINIMUM, BASIC WL) |
 | `QUITTIO-STANDARD-VERSION` | error | The profile does not support the EN 16931 version of the invoice |
-| `QUITTIO-PROFORMA` | error | Type code 325 in the invoice pipeline; use `Quittio::proforma()` or `DocumentBuilder::proforma()` ([documents](documents.md#proforma-invoices)) |
+| `QUITTIO-PROFORMA` | error | Type code 325 in the invoice pipeline; use `Quittio::proforma()`, `$quittio->proforma()` or `DocumentBuilder::proforma()` ([documents](documents.md#proforma-invoices)) |
 
 ### Peppol rules
 
@@ -553,9 +585,13 @@ final class AcmeRules implements ValidationDriver
 
 Register it in Laravel and add its name to the levels. The factory receives the container and `validation.drivers.acme`:
 
-```php
+```php laravel
 Quittio::extend('validator', 'acme', fn ($app, array $config) => new AcmeRules);
 // config/quittio.php: 'levels' => ['php', 'xsd', 'acme']
+```
+
+```php plain
+$quittio->addValidator(new AcmeRules);
 ```
 
 Without Laravel: `$quittio->addValidator(new AcmeRules)`.
@@ -574,7 +610,7 @@ Other ways to add rules:
 
 Every PHP rule is addressed by the code of its messages, e.g. `DE-USTG-15` or `QUITTIO-PRECISION`. `validation.rules` switches rules off, changes the severity of their findings or, with an own implementation, replaces them. A trailing `*` matches by prefix:
 
-```php
+```php laravel
 // config/quittio.php
 'validation' => [
     'rules' => [
@@ -585,6 +621,21 @@ Every PHP rule is addressed by the code of its messages, e.g. `DE-USTG-15` or `Q
 ],
 ```
 
+```php plain
+use Quittio\Core\Quittio;
+use Quittio\Country\DE\CountryDE;
+
+$quittio = Quittio::create([
+    'validation' => [
+        'rules' => [
+            'disabled' => ['QUITTIO-GENERIC-COUNTRY', 'DE-USTG-1*'],
+            'severity' => ['DE-USTG-08' => 'warning', 'QUITTIO-*' => 'info'],
+            'allow_official' => false,
+        ],
+    ],
+], [new CountryDE]);
+```
+
 - `disabled` drops the rules and every finding with a matching code. Rules that report several codes are covered too, e.g. `QUITTIO-PROFILE-NOT-ALLOWED` of the field matrix.
 - `severity` sets `error`, `warning` or `info`. An exact code wins over a prefix, a longer prefix over a shorter one.
 - A code that no rule has throws a `ConfigurationException` when the core is built, so typing errors do not switch nothing off silently. `$quittio->ruleCodes()` lists the known codes.
@@ -593,7 +644,7 @@ Every PHP rule is addressed by the code of its messages, e.g. `DE-USTG-15` or `Q
 
 A rule of your own replaces a rule with the same code:
 
-```php
+```php laravel
 use Quittio\Core\Validation\Rules\CallbackRule;
 use Quittio\Core\Validation\Rules\RuleReporter;
 use Quittio\Laravel\Facades\Quittio;
@@ -601,6 +652,16 @@ use Quittio\Laravel\Facades\Quittio;
 Quittio::extend('rule', 'DE-USTG-15', fn ($app) => CallbackRule::l7('DE-USTG-15', 'Own check of the service date.', function ($invoice, RuleReporter $report): void {
     // …
 }, namespace: 'quittio-de'));
+```
+
+```php plain
+use Quittio\Core\Validation\RuleOverrides;
+use Quittio\Core\Validation\Rules\CallbackRule;
+use Quittio\Core\Validation\Rules\RuleReporter;
+
+$quittio->configureRules(new RuleOverrides(replacements: ['DE-USTG-15' => CallbackRule::l7('DE-USTG-15', 'Own check of the service date.', function ($invoice, RuleReporter $report): void {
+    // …
+}, namespace: 'quittio-de')]));
 ```
 
 Without Laravel, `Quittio::create()` reads the same keys under `validation.rules`, and `configureRules()` sets them on an instance:
@@ -620,9 +681,14 @@ $quittio->configureRules(new RuleOverrides(
 
 To check e-invoices you receive, validate the file itself:
 
-```php
+```php laravel
 $report = Quittio::validateFile($content);   // content (bytes) of an XML or PDF e-invoice, never a path
 $report = Quittio::validatePath($path);      // the same from a local file
+```
+
+```php plain
+$report = $quittio->validateFile($content);   // content (bytes) of an XML or PDF e-invoice, never a path
+$report = $quittio->validatePath($path);      // the same from a local file
 ```
 
 Both read the file ([Reading incoming invoices](reading.md)) and run every configured driver that supports it, independent of the stage and of `validation.mode`.

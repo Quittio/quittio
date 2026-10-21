@@ -6,11 +6,26 @@ If these formats are new to you, see [Formats](concepts.md#formats), [Syntaxes](
 
 ## Reading a file
 
-```php
+```php laravel
 use Quittio\Laravel\Facades\Quittio;
 
 $read = Quittio::read($request->file('invoice')->get());   // content of an uploaded XML or PDF
 $read = Quittio::readFile('/path/to/invoice.pdf');          // or a local file
+
+$invoice = $read->data;          // InvoiceData as stated in the document
+$invoice->number;                // e.g. "RE-2026-0101"
+$invoice->seller->name;          // the supplier
+$invoice->totals?->amountDue;    // amount due as stated in the document
+
+$read->profile;                  // detected profile key, e.g. "en16931" or "xrechnung"
+$read->findings;                 // problems found while reading, e.g. QUITTIO-DECLARED-TOTALS
+$read->declaredTotals;           // totals as stated in the document
+$read->embeddedFilename;         // for PDFs: factur-x.xml, xrechnung.xml, zugferd-invoice.xml …
+```
+
+```php plain
+$read = $quittio->read(file_get_contents($_FILES['invoice']['tmp_name']));   // content of an uploaded XML or PDF
+$read = $quittio->readFile('/path/to/invoice.pdf');                          // or a local file
 
 $invoice = $read->data;          // InvoiceData as stated in the document
 $invoice->number;                // e.g. "RE-2026-0101"
@@ -39,11 +54,20 @@ Without Laravel, both methods exist on `Quittio\Core\Quittio` and use the limits
 
 Reading never validates the whole document. Before you book an invoice, check `$read->findings`, or validate the file:
 
-```php
+```php laravel
 use Quittio\Laravel\Facades\Quittio;
 
 $report = Quittio::validateFile($content);   // content of an XML or PDF
 $report = Quittio::validatePath($path);      // or a local file
+
+if (! $report->isValid()) {
+    // reject the invoice, e.g. show $report->errors()
+}
+```
+
+```php plain
+$report = $quittio->validateFile($content);   // content of an XML or PDF
+$report = $quittio->validatePath($path);      // or a local file
 
 if (! $report->isValid()) {
     // reject the invoice, e.g. show $report->errors()

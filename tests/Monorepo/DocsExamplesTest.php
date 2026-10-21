@@ -11,10 +11,14 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
+use Quittio\Core\Quittio as CoreQuittio;
+use Quittio\Core\Rendering\RenderedInvoice as CoreRenderedInvoice;
 use Quittio\Laravel\Facades\Quittio;
 use Quittio\Laravel\Rendering\RenderedInvoice;
 
-// Runs the code of docs/examples.md, so that the examples keep working. Render runs validate in
+// Runs the code of docs/examples.md, so that the examples keep working: the Laravel code
+// ("```php" and "```php laravel") with the facade, and the plain PHP code ("```php plain") with
+// the core only, starting from the plain setup at the top of the page. Render runs validate in
 // mode "error", so an example that builds an invalid invoice fails here, and every rendered
 // invoice must come without warnings. The code runs in a namespace of its own, in which the test
 // provides what the page takes from elsewhere: the mailable, the tables and an order factory.
@@ -22,32 +26,49 @@ use Quittio\Laravel\Rendering\RenderedInvoice;
 const DOCS_EXAMPLES = 'Quittio\Tests\DocsExamples';
 
 /**
- * The PHP code blocks of docs/examples.md by heading, each with the plain code block that
- * follows it (the printed output), if any. Empty outside the monorepo.
+ * The PHP code blocks of docs/examples.md by heading, each with the untagged code block that
+ * follows it (the printed output), if any: the Laravel code ("```php", "```php laravel"), or
+ * with $plain the plain PHP code ("```php plain"). Output after a plain block belongs to its
+ * Laravel twin as well. Empty outside the monorepo.
  *
  * @return array<string, list<array{code: string, output: ?string}>>
  */
-function docsExamples(): array
+function docsExamples(bool $plain = false): array
 {
     $file = dirname(__DIR__, 2).'/docs/examples.md';
     if (! is_file($file)) {
         return [];
     }
 
-    preg_match_all('/^(#{1,3}) (.+?)$|^```(\w*)\n(.*?)^```$/ms', (string) file_get_contents($file), $matches, PREG_SET_ORDER);
-    $examples = [];
+    preg_match_all('/^(#{1,3}) (.+?)$|^```(\w*)(?: (laravel|plain))?\n(.*?)^```$/ms', (string) file_get_contents($file), $matches, PREG_SET_ORDER);
+    $examples = ['laravel' => [], 'plain' => []];
     $heading = '';
+    $previous = [];                                      // the block(s) an output block belongs to
     foreach ($matches as $match) {
         if ($match[1] !== '') {
-            $heading = $match[2];
+            [$heading, $previous] = [$match[2], []];
         } elseif ($match[3] === 'php') {
-            $examples[$heading][] = ['code' => $match[4], 'output' => null];
-        } elseif ($match[3] === '' && isset($examples[$heading])) {
-            $examples[$heading][array_key_last($examples[$heading])]['output'] ??= $match[4];
+            $variant = $match[4] === 'plain' ? 'plain' : 'laravel';
+            $examples[$variant][$heading][] = ['code' => $match[5], 'output' => null];
+            $block = [$variant, array_key_last($examples[$variant][$heading])];
+            $previous = $variant === 'plain' && count($previous) === 1 && $previous[0][0] === 'laravel' ? [$previous[0], $block] : [$block];
+        } elseif ($match[3] === '') {
+            foreach ($previous as [$variant, $index]) {
+                $examples[$variant][$heading][$index]['output'] ??= $match[5];
+            }
+            $previous = [];
         }
     }
 
-    return $examples;
+    return $examples[$plain ? 'plain' : 'laravel'];
+}
+
+/**
+ * The directory the code of the page runs in (its __DIR__); it is removed after every block.
+ */
+function docsExampleDirectory(): string
+{
+    return sys_get_temp_dir().'/quittio-docs-examples-'.getmypid();
 }
 
 /**
@@ -61,7 +82,7 @@ function runDocsExample(string $code, array $variables = []): array
 {
     // The script of "Without Laravel" starts with "<?php" and loads the autoloader.
     $code = (string) preg_replace(['/\A<\?php\n/', '/^require .*autoload\.php\';\n/m'], '', $code);
-    $directory = sys_get_temp_dir().'/quittio-docs-examples-'.getmypid();
+    $directory = docsExampleDirectory();
     File::ensureDirectoryExists($directory);
     $file = $directory.'/example.php';
     file_put_contents($file, "<?php\n\nnamespace ".DOCS_EXAMPLES.";\n\n".$code);
@@ -100,19 +121,23 @@ function applyDocsConfiguration(string $code): void
 
 /**
  * Runs all code blocks of one heading in order and checks their printed output; configuration
- * blocks are applied.
+ * blocks are applied. With $plain the plain PHP blocks run, which must not use the Laravel
+ * integration.
  *
  * @param  array<string, mixed>  $variables
  * @return array<string, mixed>
  */
-function runDocsExampleSection(string $heading, array $variables = []): array
+function runDocsExampleSection(string $heading, array $variables = [], bool $plain = false): array
 {
-    expect(docsExamples())->toHaveKey($heading);
-    foreach (docsExamples()[$heading] as $block) {
+    expect(docsExamples($plain))->toHaveKey($heading);
+    foreach (docsExamples($plain)[$heading] as $block) {
         if (str_starts_with($block['code'], '// config/quittio.php')) {
             applyDocsConfiguration($block['code']);
 
             continue;
+        }
+        if ($plain) {
+            expect($block['code'])->not->toContain('Quittio\\Laravel', $heading);
         }
         $variables = runDocsExample($block['code'], $variables);
         if ($block['output'] !== null) {
@@ -121,6 +146,17 @@ function runDocsExampleSection(string $heading, array $variables = []): array
     }
 
     return $variables;
+}
+
+/**
+ * Runs the plain PHP setup at the top of the page and returns its variables: the core
+ * instance $quittio with the seller.
+ *
+ * @return array<string, mixed>
+ */
+function docsPlainSetup(): array
+{
+    return runDocsExampleSection('Examples', plain: true);
 }
 
 /**
@@ -254,6 +290,36 @@ it('runs the example', function (string $heading) {
         }
     }
 })->with(fn () => array_values(array_diff(array_keys(docsExamples()), ['Examples', 'Invoices for orders', 'Testing'])) ?: ['']);
+
+it('runs the plain PHP example', function (string $heading) {
+    $variables = match ($heading) {
+        'Cancellation' => runDocsExampleSection('Service invoice', docsPlainSetup(), plain: true),
+        default => docsPlainSetup(),
+    };
+    $upload = tempnam(sys_get_temp_dir(), 'quittio-docs-upload-');
+    if ($heading === 'Incoming e-invoices') {
+        file_put_contents($upload, runDocsExampleSection('Service invoice', $variables, plain: true)['result']->pdf());
+        $_FILES['invoice'] = ['tmp_name' => $upload];
+    }
+    if ($heading === 'Logo, colours and texts') {
+        File::ensureDirectoryExists(docsExampleDirectory());
+        imagepng(imagecreatetruecolor(300, 100), docsExampleDirectory().'/logo.png');   // __DIR__.'/logo.png' of the example
+    }
+
+    try {
+        $variables = runDocsExampleSection($heading, $variables, plain: true);
+    } finally {
+        unset($_FILES['invoice']);
+        File::delete($upload);
+        CoreQuittio::resetState();                       // the default VAT of InvoiceBuilder::useDefaultVat()
+    }
+
+    foreach ($variables as $name => $value) {
+        if ($value instanceof CoreRenderedInvoice) {
+            expect($value->validation()->messages)->toBe([], "{$heading}: \${$name}");
+        }
+    }
+})->with(fn () => array_values(array_diff(array_keys(docsExamples(plain: true)), ['Examples'])) ?: ['']);
 
 it('runs the order example', function () {
     Mail::fake();

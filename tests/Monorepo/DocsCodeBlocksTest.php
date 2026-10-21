@@ -13,6 +13,8 @@ const DOCS_APPLICATION_CLASSES = [
 ];
 
 /**
+ * The PHP code blocks, also those for Laravel and for plain PHP ("```php laravel", "```php plain").
+ *
  * @return list<array{file: string, line: int, code: string}>
  */
 function docsCodeBlocks(): array
@@ -21,7 +23,7 @@ function docsCodeBlocks(): array
     $blocks = [];
     foreach ([...glob($root.'/docs/*.md') ?: [], $root.'/README.md'] as $file) {
         $content = (string) file_get_contents($file);
-        preg_match_all('/^```php\n(.*?)^```$/ms', $content, $matches, PREG_OFFSET_CAPTURE);
+        preg_match_all('/^```php(?: laravel| plain)?\n(.*?)^```$/ms', $content, $matches, PREG_OFFSET_CAPTURE);
         foreach ($matches[1] as [$code, $offset]) {
             $blocks[] = ['file' => basename($file), 'line' => substr_count(substr($content, 0, $offset), "\n") + 1, 'code' => $code];
         }

@@ -20,7 +20,7 @@ The invoice is not valid (2 errors):
 
 Warnings do not stop the rendering; they are in `$result->validation()`. `->check()` instead of `->render()` validates without rendering and returns all findings without throwing, which helps while you build an invoice step by step ([Validation](validation.md)).
 
-The messages are in the language of your Laravel application (`app()->getLocale()`). `quittio.validation.locale` sets another language, `'invoice'` uses the language of the invoice ([Messages and translations](validation.md#messages-and-translations)).
+The messages are in the language of your Laravel application (`app()->getLocale()`). `quittio.validation.locale` sets another language, `'invoice'` uses the language of the invoice ([Messages and translations](validation.md#messages-and-translations)). Without Laravel they are in the language of the invoice unless the core setting `validation.locale` names another one.
 
 ## Errors while building
 
@@ -40,13 +40,13 @@ The line has no VAT rate. In Laravel every line without `vat:` gets the default 
 
 ### "Missing seller postal address (BG-5)" and other "Missing …"
 
-A required part of the invoice is missing entirely; the message names it and its field number. With `Quittio::invoice()` the seller comes from `config/quittio.php`: fill in `seller.address` (street, postcode, city, country) there ([Configuration](configuration.md)). For the buyer, call `->buyer(Party::make('…')->address(…))`.
+A required part of the invoice is missing entirely; the message names it and its field number. With `Quittio::invoice()` the seller comes from `config/quittio.php`: fill in `seller.address` (street, postcode, city, country) there ([Configuration](configuration.md)). Without Laravel, call `->address(…)` on the `Party::make()` under `seller` in `Quittio::create()`; a configured seller without address already fails there with a `ConfigurationException`. For the buyer, call `->buyer(Party::make('…')->address(…))`.
 
 ## Validation errors
 
 ### Seller address incomplete (DE-USTG-01)
 
-The address of the seller or buyer lacks street, postcode, city or country; the message names the party and the missing fields. German invoices need the full address of both parties. For the seller, check `seller.address` in `config/quittio.php`.
+The address of the seller or buyer lacks street, postcode, city or country; the message names the party and the missing fields. German invoices need the full address of both parties. For the seller, check `seller.address` in `config/quittio.php` (without Laravel, `->address(…)` of `seller` in `Quittio::create()`).
 
 ### Seller identifier missing (BR-CO-26, BR-S-02, DE-USTG-02)
 
@@ -58,7 +58,7 @@ German invoices must state when the goods were delivered or the service was perf
 
 ### Payment due date missing (BR-CO-25)
 
-An invoice with an amount to pay needs a due date or payment terms: `->dueInDays(14)` or `->dueDate('2026-10-17')`. In Laravel `quittio.defaults.due_days` (default 14) adds a due date to every invoice without one, so the error appears without Laravel or when that key is `null`.
+An invoice with an amount to pay needs a due date or payment terms: `->dueInDays(14)` or `->dueDate('2026-10-17')`. In Laravel `quittio.defaults.due_days` (default 14) adds a due date to every invoice without one, without Laravel `due_days` of `Quittio::create()` (no default). The error therefore appears when that key is `null` or, without Laravel, not set.
 
 ### XRechnung needs more fields (QUITTIO-PROFILE-REQUIRED, BR-DE-…)
 

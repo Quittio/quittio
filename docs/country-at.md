@@ -199,7 +199,7 @@ The codes in column BT-121 are VATEX codes: the standard codes for the reason of
 
 A small business (Kleinunternehmer) applies the exemption of section 6 (1) no. 27 UStG and must not show VAT on its invoices (section 11 (12) UStG). Three steps make an invoice a small business invoice in Quittio:
 
-1. **Mark the seller as a small business.** Set `quittio.seller.small_business = true` in Laravel ([Small businesses](configuration.md#small-businesses)), or `->flag(Meta::FLAG_SMALL_BUSINESS)` on the builder.
+1. **Mark the seller as a small business.** Set `quittio.seller.small_business = true` in Laravel ([Small businesses](configuration.md#small-businesses)), `'small_business' => true` in `Quittio::create()` without Laravel (applied by `Quittio::invoice()` and `$quittio->invoice()`), or `->flag(Meta::FLAG_SMALL_BUSINESS)` on the builder.
 2. **Use `VatPreset::SmallBusiness` on every line.** Lines without `vat:` get it automatically when the invoice has the flag and the default VAT comes from the country pack (`CountryDefaultVat`; in Laravel always). A line with this preset also marks the invoice as small business invoice, without the flag.
 3. **Identify the seller without a UID.** EN 16931 requires the seller's VAT identifier or tax number (BT-32) for category `E` (BR-E-02), and a VAT identifier, seller identifier (BT-29) or legal registration (BT-30) so that the buyer can identify the seller (BR-CO-26).
 
@@ -610,7 +610,7 @@ The default templates print all of them.
 
 ## Meta flags and settings
 
-The pack defines no meta flags of its own. It reads the small business flag of the core, `Meta::FLAG_SMALL_BUSINESS` (`small_business`), set by `quittio.seller.small_business`, a Managed issuer or `->flag()` ([Small businesses](#small-businesses)).
+The pack defines no meta flags of its own. It reads the small business flag of the core, `Meta::FLAG_SMALL_BUSINESS` (`small_business`), set by `quittio.seller.small_business`, `small_business` of `Quittio::create()`, a Managed issuer or `->flag()` ([Small businesses](#small-businesses)).
 
 The pack has no settings: there is no `quittio.countries.at` section and no configuration file to publish ([Settings of a pack](configuration.md#settings-of-a-pack-quittiocountriescode)). It has no builder macros either.
 

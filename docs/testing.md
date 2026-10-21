@@ -97,7 +97,7 @@ expect($fake->documents())->toHaveCount(1)
 
 A test with the fake does not show whether the invoice is a valid e-invoice. `check()` runs the real validation, including the XML, without rendering a PDF. It is never faked, so it also works while the fake is active:
 
-```php
+```php laravel
 use Quittio\Laravel\Facades\Quittio;
 
 it('builds a valid e-invoice for an order', function () {
@@ -110,7 +110,21 @@ it('builds a valid e-invoice for an order', function () {
 });
 ```
 
-- `Order` is a model of your application that implements `ProvidesInvoiceData` ([Invoices for orders](examples.md#invoices-for-orders)). Any invoice data works the same way: `Quittio::make($invoice)->check()`.
+```php plain
+use Quittio\Core\Quittio;
+use Quittio\Country\DE\CountryDE;
+
+it('builds a valid e-invoice for an order', function () {
+    $order = new Order(/* … */);
+
+    $report = Quittio::create([], [new CountryDE])->make($order)->check();   // the real validation, without rendering
+
+    expect($report->isValid())->toBeTrue()
+        ->and($report->warnings())->toBe([]);
+});
+```
+
+- `Order` is a model or class of your application that implements `ProvidesInvoiceData` ([Invoices for orders](examples.md#invoices-for-orders)). Any invoice data works the same way: `Quittio::make($invoice)->check()`.
 - `check()` returns a `ValidationResult` and never throws a `ValidationException` for invalid data. `isValid()` is `true` without errors; `warnings()` lists the warnings ([The result](validation.md#the-result)).
 - It validates in the same formats and profiles as `render()` would. The PDF/A check (level L6) does not run, because it needs the rendered PDF ([When validation runs](validation.md#when-validation-runs)).
 - To validate a rendered PDF or XML file, use [`assertValidEInvoice()`](#assertions).
@@ -264,13 +278,22 @@ With the German country pack the automatic choice renders these invoices as ZUGF
 
 `Quittio\Core\Testing\Scenarios` holds realistic sample invoices: the ones of the preview, the visual tests and the official validation runs. Use them when a test needs special content, e.g. 60 lines for page breaks or sub lines. They are country neutral: they use VAT categories directly, not the tax presets of a country pack.
 
-```php
+```php laravel
 use Quittio\Core\Testing\Scenarios;
 use Quittio\Laravel\Facades\Quittio;
 
 $invoice = Scenarios::make('sub-lines')->number('T-1')->build();
 $result = Quittio::make($invoice)->profile(Scenarios::profile('sub-lines'))->format('zugferd')->render();
 ```
+
+```php plain
+use Quittio\Core\Testing\Scenarios;
+
+$invoice = Scenarios::make('sub-lines')->number('T-1')->build();
+$result = $quittio->make($invoice)->profile(Scenarios::profile('sub-lines'))->format('zugferd')->render();
+```
+
+Without Laravel, `$quittio` is the instance created in [Without Laravel](getting-started.md#without-laravel).
 
 `php artisan quittio:preview --scenario=simple` renders a scenario with your template ([quittio:preview](commands.md#quittiopreview)).
 

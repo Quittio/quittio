@@ -126,7 +126,7 @@ $seller = Party::make('Atelier Gerber')
     ->address('Rue du Marché 4', '1204', 'Genève', 'CH');
 ```
 
-The pack names `ch.not_registered` as the preset for small businesses (`CountryDefaults::$smallBusinessVatPreset`). An invoice with the flag `Meta::FLAG_SMALL_BUSINESS` (in Laravel `quittio.seller.small_business = true`, see [Seller](configuration.md#seller)) therefore gives lines without `vat()` the preset `NotRegistered`. The flag itself triggers no Swiss rule; `CH-MWSTG-05` looks at the presets of the lines.
+The pack names `ch.not_registered` as the preset for small businesses (`CountryDefaults::$smallBusinessVatPreset`). An invoice with the flag `Meta::FLAG_SMALL_BUSINESS` (in Laravel `quittio.seller.small_business = true`, see [Seller](configuration.md#seller), without Laravel `'small_business' => true` in `Quittio::create()`; applied by `Quittio::invoice()` and `$quittio->invoice()`) therefore gives lines without `vat()` the preset `NotRegistered`. The flag itself triggers no Swiss rule; `CH-MWSTG-05` looks at the presets of the lines.
 
 ### Default VAT and lookup
 
@@ -371,17 +371,15 @@ Settings of the pack live under `quittio.countries.ch` ([Settings of a pack](con
 |---|---|---|---|
 | `cash_rounding` | bool | `false` | `true` rounds every invoice in CHF to 5 Rappen, as the flag does for one invoice |
 
-The pack has no configuration file to publish. In Laravel, add the section to `config/quittio.php`:
+The pack has no configuration file to publish. In Laravel, add the section to `config/quittio.php`; without Laravel, pass it to `Quittio::create()`:
 
-```php
+```php laravel
 'countries' => [
     'ch' => ['cash_rounding' => true],
 ],
 ```
 
-Without Laravel, pass it to `Quittio::create()`:
-
-```php
+```php plain
 use Quittio\Core\Quittio;
 use Quittio\Country\CH\CountryCH;
 
