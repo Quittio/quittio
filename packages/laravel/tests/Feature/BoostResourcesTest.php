@@ -18,7 +18,7 @@ it('ships the Boost guidelines and the quittio-development skill', function () {
 
     expect(boostResources().'/guidelines/core.blade.php')->toBeFile()
         ->and($skill)->toStartWith("---\nname: quittio-development\ndescription: ")
-        ->and($skill)->toContain('https://docs.quittio.dev/mcp');
+        ->and($skill)->toContain('https://quittio.dev/docs/mcp');
 });
 
 it('renders the Boost guidelines with Blade', function () {

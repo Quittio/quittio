@@ -18,15 +18,6 @@
 /build/
 packages/laravel/tests/Visual/__snapshots__/*.actual.png
 
-# Documentation website (Jekyll)
-/docs/_site/
-/docs/.jekyll-cache/
-/docs/.bundle/
-/docs/vendor/
-/docs/_config.ci.yml
-/docs/_worker/docs.generated.json
-/docs/.wrangler/
-
 # Stand-alone runs of a package (as in its split repository)
 /packages/*/vendor/
 /packages/*/composer.lock

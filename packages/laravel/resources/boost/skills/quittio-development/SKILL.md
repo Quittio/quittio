@@ -7,7 +7,7 @@ description: Build, render, validate, cancel, read and test e-invoices with Quit
 
 ## When to use this skill
 
-Use this skill when code creates, renders, sends, validates, cancels or reads invoices with Quittio, or tests such code. The full documentation is at https://docs.quittio.dev; every page is also plain Markdown (add `.md` to its URL), and the MCP server https://docs.quittio.dev/mcp searches it. Prefer the documentation over guessing method names.
+Use this skill when code creates, renders, sends, validates, cancels or reads invoices with Quittio, or tests such code. The full documentation is at https://quittio.dev/docs; every page is also plain Markdown (add `.md` to its URL), and the MCP server https://quittio.dev/docs/mcp searches it. Prefer the documentation over guessing method names.
 
 ## Packages
 

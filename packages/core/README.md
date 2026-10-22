@@ -8,7 +8,7 @@ composer require quittio/core
 
 Most applications install everything at once with `composer require quittio/quittio` (core, Laravel integration and the country pack Germany).
 
-- Documentation: https://docs.quittio.dev
+- Documentation: https://quittio.dev/docs
 - Source, issues and pull requests: https://github.com/Quittio/quittio
 
 > Developed in [`packages/core`](https://github.com/Quittio/quittio/tree/master/packages/core) of the monorepo [Quittio/quittio](https://github.com/Quittio/quittio) and published as the read-only repository [Quittio/core](https://github.com/Quittio/core). Please open issues and pull requests in the monorepo.

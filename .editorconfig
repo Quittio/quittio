@@ -8,12 +8,8 @@ indent_style = space
 insert_final_newline = true
 trim_trailing_whitespace = true
 
-# GitHub workflows, Dependabot, testbench.yaml and the Jekyll configuration.
+# GitHub workflows, Dependabot, testbench.yaml and docs/nav.yml.
 [*.{yml,yaml}]
-indent_size = 2
-
-# The stylesheets and the Gemfile of the documentation website.
-[{*.scss,Gemfile}]
 indent_size = 2
 
 [*.md]

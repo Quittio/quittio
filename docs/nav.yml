@@ -1,0 +1,31 @@
+# The pages of the documentation on quittio.dev/docs, in navigation order: quittio.dev reads
+# their titles and order from here. Every Markdown file in docs/ needs an entry, one per line in
+# this form (tests/Monorepo/DocsNavigationTest.php). parent puts a page below another one,
+# preview: true marks a page of an unreleased package (on the website, but not in llms.txt or the
+# MCP server), optional: true a reference page that AI tools may skip.
+
+- { page: index, title: Home }
+- { page: getting-started, title: Getting started }
+- { page: concepts, title: E-invoicing basics }
+- { page: examples, title: Examples }
+- { page: building-invoices, title: Building invoices }
+- { page: formats, title: Formats and profiles }
+- { page: validation, title: Validation }
+- { page: templates, title: Templates and design }
+- { page: documents, title: Quotes and other documents }
+- { page: reading, title: Reading incoming invoices }
+- { page: laravel, title: Laravel integration }
+- { page: configuration, title: Configuration }
+- { page: commands, title: Artisan commands }
+- { page: testing, title: Testing }
+- { page: country-packs, title: Country packs }
+- { page: country-at, title: Austria, parent: Country packs }
+- { page: country-be, title: Belgium, parent: Country packs }
+- { page: country-ch, title: Switzerland, parent: Country packs }
+- { page: country-fr, title: France, parent: Country packs }
+- { page: managed, title: Managed layer (preview), preview: true }
+- { page: troubleshooting, title: Troubleshooting }
+- { page: faq, title: FAQ }
+- { page: compatibility, title: Versioning and compatibility }
+- { page: field-reference, title: Field reference, optional: true }
+- { page: ai, title: AI assistants }

@@ -103,15 +103,12 @@ German messages address the reader formally (Sie). New rules are listed in `docs
 
 ## Documentation
 
-The documentation in `docs/` is the source of the website [docs.quittio.dev](https://docs.quittio.dev). Preview it locally:
+The documentation in `docs/` is the source of [quittio.dev/docs](https://quittio.dev/docs). The website renders the Markdown files from GitHub: `master` under `/docs/next`, each release from its tag. GitHub's own Markdown view is close enough to check a change before it is merged.
 
-```bash
-cd docs && bundle install && bundle exec jekyll serve
-```
-
-- A new page needs an entry in `defaults` of `docs/_config.yml` (title and navigation order); `docs/_worker/build.mjs` fails without it.
+- A new page needs an entry in `docs/nav.yml` (title and navigation order, one line per page); `tests/Monorepo/DocsNavigationTest.php` fails without it and checks the links between the pages, including their anchors.
+- Code examples that differ between Laravel and plain PHP come as a pair of fences right after each other, ```` ```php laravel ```` and ```` ```php plain ````; the website shows them with a Laravel/PHP switch.
 - PHP code blocks in `docs/*.md` and the README must parse and import every class they use (`tests/Monorepo/DocsCodeBlocksTest.php`; fragments such as builder chains, configuration excerpts and class members are recognised). The code of `docs/examples.md` is executed (`tests/Monorepo/DocsExamplesTest.php`).
-- The website is versioned: `node _versioning/build.mjs` (in `docs/`) builds the latest release at the root, the working tree under `/next/` and older minor versions under `/X.Y/` into `docs/_site` (see `RELEASING.md`). Changes to `docs/` appear under `/next/` until the next release.
+- The website is versioned (see `RELEASING.md`): `/docs` shows the latest release, `/docs/next` the branch `master` and `/docs/X.Y` older minor versions. Changes to `docs/` appear under `/docs/next` until the next release.
 - Contributor documents (this file, `ARCHITECTURE.md`, `RELEASING.md`, `docs/adr`) are not part of the website.
 
 ## Rules

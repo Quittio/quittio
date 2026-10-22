@@ -8,7 +8,7 @@ composer require quittio/country-ch
 
 The pack is not part of `quittio/quittio`; install it next to `quittio/quittio` or `quittio/core`.
 
-- Documentation: https://docs.quittio.dev/country-ch
+- Documentation: https://quittio.dev/docs/country-ch
 - Source, issues and pull requests: https://github.com/Quittio/quittio
 
 > Developed in [`packages/country-ch`](https://github.com/Quittio/quittio/tree/master/packages/country-ch) of the monorepo [Quittio/quittio](https://github.com/Quittio/quittio) and published as the read-only repository [Quittio/country-ch](https://github.com/Quittio/country-ch). Please open issues and pull requests in the monorepo.

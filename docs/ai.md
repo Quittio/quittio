@@ -4,22 +4,22 @@ This page shows how coding assistants such as Claude Code, Cursor or GitHub Copi
 
 ## Markdown and llms.txt
 
-Every page of this documentation is also available as plain Markdown: add `.md` to its address, e.g. [`https://docs.quittio.dev/getting-started.md`](https://docs.quittio.dev/getting-started.md).
+Every page of this documentation is also available as plain Markdown: add `.md` to its address, e.g. [`https://quittio.dev/docs/getting-started.md`](https://quittio.dev/docs/getting-started.md).
 
 Two files list or contain all pages, in the [llms.txt](https://llmstxt.org) format for language models:
 
 | File | Content |
 |---|---|
-| [`/llms.txt`](https://docs.quittio.dev/llms.txt) | Index of all pages with a short description |
-| [`/llms-full.txt`](https://docs.quittio.dev/llms-full.txt) | All pages in one file |
+| [`/docs/llms.txt`](https://quittio.dev/docs/llms.txt) | Index of all pages with a short description |
+| [`/docs/llms-full.txt`](https://quittio.dev/docs/llms-full.txt) | All pages in one file |
 
-The files at the root describe the latest release. The development version and older versions have their own files under their path, e.g. `/next/llms.txt` and `/0.2/llms.txt` ([version switcher](https://docs.quittio.dev/next/)).
+The files under `/docs` describe the latest release. The development version and older versions have their own files under their path, e.g. `/docs/next/llms.txt` and `/docs/0.6/llms.txt` (version switcher in the navigation).
 
 The preview of the unreleased [Managed layer](managed.md) is left out of the Markdown files, both lists and the MCP server below, so that assistants do not write code for a package that cannot be installed yet.
 
 ## MCP server
 
-`https://docs.quittio.dev/mcp` is a read-only [MCP](https://modelcontextprotocol.io) server for this documentation. MCP (Model Context Protocol) is a standard that lets an assistant call the tools of a server. The server uses the Streamable HTTP transport and needs no authentication. It answers with the documentation of the latest release, the version at the root of the website.
+`https://quittio.dev/docs/mcp` is a read-only [MCP](https://modelcontextprotocol.io) server for this documentation. MCP (Model Context Protocol) is a standard that lets an assistant call the tools of a server. The server uses the Streamable HTTP transport and needs no authentication. It answers with the documentation of the latest release, the version under `/docs`.
 
 | Tool | Arguments | Returns |
 |---|---|---|
@@ -32,7 +32,7 @@ The preview of the unreleased [Managed layer](managed.md) is left out of the Mar
 Claude Code:
 
 ```bash
-claude mcp add --transport http quittio-docs https://docs.quittio.dev/mcp
+claude mcp add --transport http quittio-docs https://quittio.dev/docs/mcp
 ```
 
 Cursor (`.cursor/mcp.json`):
@@ -40,7 +40,7 @@ Cursor (`.cursor/mcp.json`):
 ```json
 {
     "mcpServers": {
-        "quittio-docs": { "url": "https://docs.quittio.dev/mcp" }
+        "quittio-docs": { "url": "https://quittio.dev/docs/mcp" }
     }
 }
 ```
@@ -50,12 +50,12 @@ VS Code with GitHub Copilot (`.vscode/mcp.json`):
 ```json
 {
     "servers": {
-        "quittio-docs": { "type": "http", "url": "https://docs.quittio.dev/mcp" }
+        "quittio-docs": { "type": "http", "url": "https://quittio.dev/docs/mcp" }
     }
 }
 ```
 
-Claude Desktop and claude.ai: Settings → Connectors → Add custom connector, URL `https://docs.quittio.dev/mcp`.
+Claude Desktop and claude.ai: Settings → Connectors → Add custom connector, URL `https://quittio.dev/docs/mcp`.
 
 ## Laravel Boost
 

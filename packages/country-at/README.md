@@ -8,7 +8,7 @@ composer require quittio/country-at
 
 The pack is not part of `quittio/quittio`; install it next to `quittio/quittio` or `quittio/core`.
 
-- Documentation: https://docs.quittio.dev/country-at
+- Documentation: https://quittio.dev/docs/country-at
 - Source, issues and pull requests: https://github.com/Quittio/quittio
 
 > Developed in [`packages/country-at`](https://github.com/Quittio/quittio/tree/master/packages/country-at) of the monorepo [Quittio/quittio](https://github.com/Quittio/quittio) and published as the read-only repository [Quittio/country-at](https://github.com/Quittio/country-at). Please open issues and pull requests in the monorepo.

@@ -1,6 +1,6 @@
 # Architecture
 
-This page is for contributors. It shows how an invoice travels through Quittio, where the extension points are and how the packages depend on each other. For using Quittio, read the [documentation](https://docs.quittio.dev); for the reasons behind the larger decisions, read the [decision records](docs/adr/README.md).
+This page is for contributors. It shows how an invoice travels through Quittio, where the extension points are and how the packages depend on each other. For using Quittio, read the [documentation](https://quittio.dev/docs); for the reasons behind the larger decisions, read the [decision records](docs/adr/README.md).
 
 ## Packages
 
@@ -134,4 +134,4 @@ Some state is process-wide. Keep it in mind for tests, queue workers and Octane:
 | `packages/laravel/src/Laravel` | Manager, service provider, commands, events, job, testing helpers |
 | `packages/country-de/src` | `CountryDE`, VAT presets, UStG and XRechnung rules, dunning, DIN 5008 |
 | `tools/` | Validator downloads, fixture validation, code list and docs generators, visual test image |
-| `docs/` | The documentation website (Jekyll), also served as llms.txt and an MCP server |
+| `docs/` | The documentation, rendered at quittio.dev/docs and also served as llms.txt and an MCP server; `docs/nav.yml` sets titles and order of the pages |

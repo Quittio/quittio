@@ -1,6 +1,6 @@
 ## Quittio
 
-Quittio creates, validates, reads and renders electronic invoices according to EN 16931: ZUGFeRD/Factur-X (PDF/A-3 with XML), XRechnung, UBL, CII and Peppol BIS. Germany is supported by the country pack `quittio/country-de`. Documentation: https://docs.quittio.dev (plain Markdown: add `.md` to a page URL; MCP server: https://docs.quittio.dev/mcp). Use the `quittio-development` skill for details.
+Quittio creates, validates, reads and renders electronic invoices according to EN 16931: ZUGFeRD/Factur-X (PDF/A-3 with XML), XRechnung, UBL, CII and Peppol BIS. Germany is supported by the country pack `quittio/country-de`. Documentation: https://quittio.dev/docs (plain Markdown: add `.md` to a page URL; MCP server: https://quittio.dev/docs/mcp). Use the `quittio-development` skill for details.
 
 ### Rules
 

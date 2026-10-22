@@ -7,7 +7,7 @@ declare(strict_types=1);
 | Quittio configuration
 |--------------------------------------------------------------------------
 | Every key is explained below. The full reference with all details is at
-| https://docs.quittio.dev/configuration. After changing values at runtime
+| https://quittio.dev/docs/configuration. After changing values at runtime
 | (e.g. in tests), call Quittio::flush().
 */
 

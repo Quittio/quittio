@@ -10,6 +10,10 @@ All notable changes to this project are documented in this file. The format foll
 - `Quittio::quote()`, `orderConfirmation()`, `deliveryNote()`, `proforma()`, `paymentReminder()`, `bonusStatement()` and `accountStatement()` in the core, with the configured seller and `->render()` (`Documents\BoundDocumentBuilder`). `Quittio::document()` also accepts a `DocumentBuilder`.
 - Core configuration keys `seller` (a `PartyBuilder` from `Party::make()` or a `SellerParty`), `bank_account` (`iban`, `bic`, `name`) and `small_business` (`Config::$seller`, `$bankAccount`, `$smallBusiness`): `invoice()` and the document methods start with this seller, its account as credit transfer and, for a small business, `Meta::FLAG_SMALL_BUSINESS`. As in Laravel, another seller set with `seller()` removes these defaults again, and `payment()` with an IBAN replaces the account. A seller without name or postal address, a bank account without IBAN and a bank account or small business flag without seller are rejected with a `ConfigurationException`.
 
+### Changed
+
+- The documentation moved from docs.quittio.dev to [quittio.dev/docs](https://quittio.dev/docs), the MCP server to `https://quittio.dev/docs/mcp`; the old addresses redirect. Code examples show Laravel and plain PHP side by side, and the API reference is generated from the public classes (`tools/docs/api.php`) instead of phpDocumentor. The package links (`homepage`, `support.docs`) point to the new address.
+
 ## [0.7.1] - 2026-10-20
 
 ### Fixed

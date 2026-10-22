@@ -21,7 +21,7 @@ E-invoicing for PHP and Laravel. Quittio creates, validates, reads and renders e
 
 Germany is the first market; everything country-specific lives in country packs, so the core stays country-neutral.
 
-**Website: [quittio.dev](https://quittio.dev) · Documentation: [docs.quittio.dev](https://docs.quittio.dev)**
+**Website: [quittio.dev](https://quittio.dev) · Documentation: [quittio.dev/docs](https://quittio.dev/docs)**
 
 > **Status:** version 0.7.1. Implemented: data model, calculation, validation L1–L7, CII/UBL writers and readers, ZUGFeRD/Factur-X PDF/A-3, XRechnung, Peppol BIS, the Laravel integration, the country pack Germany and the country packs Austria, Belgium, Switzerland and France (not reviewed by a tax adviser yet). The Managed layer (issuer profiles, drafts, gapless numbering, archive, cancellations, corrections, mail delivery, audit log) will follow as the separate commercial package `quittio/managed` for Laravel; it is not released yet. APIs may still change until version 1.0.0. The legal wording of the country pack Germany was reviewed by a tax adviser in October 2026 (see [Legal review](#legal-review) and [Disclaimer](#disclaimer)).
 
@@ -123,7 +123,7 @@ $result->cancel('ST-2026-0001', reason: 'Charged twice');        // the cancella
 
 ## Documentation
 
-The documentation is published at **[docs.quittio.dev](https://docs.quittio.dev)** (with search). The same pages are in [`docs/`](docs/):
+The documentation is published at **[quittio.dev/docs](https://quittio.dev/docs)** (with search). The same pages are in [`docs/`](docs/):
 
 - [Getting started](docs/getting-started.md)
 - [Examples](docs/examples.md)
@@ -141,7 +141,7 @@ The documentation is published at **[docs.quittio.dev](https://docs.quittio.dev)
 - [Managed layer](docs/managed.md) (preview)
 - [Troubleshooting](docs/troubleshooting.md) and [FAQ](docs/faq.md)
 - [Field reference](docs/field-reference.md) (generated)
-- [AI assistants](docs/ai.md): llms.txt, the MCP server `https://docs.quittio.dev/mcp` and Laravel Boost
+- [AI assistants](docs/ai.md): llms.txt, the MCP server `https://quittio.dev/docs/mcp` and Laravel Boost
 
 The website **[quittio.dev](https://quittio.dev)** explains e-invoicing in Germany and shows Quittio in practice:
 
@@ -149,7 +149,7 @@ The website **[quittio.dev](https://quittio.dev)** explains e-invoicing in Germa
 - the [e-invoicing mandate in Germany](https://quittio.dev/en/e-invoicing-mandate-germany) and the [formats](https://quittio.dev/en/formats);
 - the [Managed layer](https://quittio.dev/en/managed), [pricing](https://quittio.dev/en/pricing) and the [roadmap](https://quittio.dev/en/roadmap).
 
-The website is built from these pages with Jekyll and the theme Just the Docs (`.github/workflows/docs.yml`). Local preview: `cd docs && bundle install && bundle exec jekyll serve`.
+quittio.dev/docs renders these pages from this repository: the latest release, the development version under `/docs/next` and older versions.
 
 ## Development
 
