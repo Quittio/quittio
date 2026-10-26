@@ -26,7 +26,7 @@ Managed layer adds the records and rules around it:
 | Storing invoices | store the data, PDF and XML yourself | keep drafts and issued invoices as rows; drafts can be changed, previewed and deleted ([Drafts](#drafts)) |
 | After issuing | have nothing that stops your code from changing an invoice | cannot change an issued invoice: the model, its query builder and optional database triggers block it ([Immutability](#immutability)) |
 | Archive | save files with `$result->save()`, which overwrites existing files | get a write-once archive with SHA-256 hashes, document versions and an integrity check ([Rendering and archive](#rendering-and-archive)) |
-| Cancellations and corrections | render a cancellation with `$result->cancel('ST-…')`, track what was cancelled and pass the history for partial cancellations | call `$invoice->cancel()`, `cancelPartially()` or `correct()`; numbers, links, VAT and status are kept for you ([Cancellations and corrections](#cancellations-and-corrections)) |
+| Cancellations and corrections | render a cancellation with `$result->cancel('ST-…')`, track what was cancelled and pass the history for partial cancellations | call `$invoice->cancel()`, `cancelPartially()`, `correct()` or `reducePrice()`; numbers, links, VAT and status are kept for you ([Cancellations and corrections](#cancellations-and-corrections), [Price reductions](#price-reductions)) |
 | Sending | write your own Mailable | call `$invoice->send()`, with a log of every delivery attempt ([Delivery](#delivery)) |
 | Audit and retention | keep your own records | get an append-only audit log, a retention period per invoice, a legal hold and a command that deletes expired invoices ([Audit log](#audit-log), [Retention and deletion](#retention-and-deletion)) |
 
@@ -51,9 +51,10 @@ It therefore needs an issuer profile and throws `IssuerNotFound` without one (se
 
 Not part of version 1.0: recording payments (the payment columns exist, see
 [Payment status](#payment-status)), bank reconciliation, dunning runs (automatic payment
-reminders), subscriptions and recurring invoices, advance and final invoices, self-billing,
-inbound invoices, transmission over the [Peppol network](concepts.md#formats) and exports for
-DATEV (German accounting software). See [Known limitations](#known-limitations).
+reminders), subscriptions and recurring invoices, advance and final invoices,
+[self-billing](#self-billing), inbound invoices, transmission over the
+[Peppol network](concepts.md#formats) and exports for DATEV (German accounting software). See
+[Known limitations](#known-limitations).
 
 ## Overview
 
@@ -64,8 +65,8 @@ The Managed layer works with these records:
 | Issuer profile | `Issuer` | Your company as seller: master data, bank accounts, defaults, texts, branding, numbering |
 | Draft | `Invoice` (status `draft`) | Freely changeable, no number, can be deleted |
 | Issued invoice | `Invoice` (status `issued` …) | Number, data snapshot, dates and totals frozen; archived as XML and/or PDF |
-| Cancellation, correction | `Invoice` (kind `cancellation`, `correction`) | Invoices of their own, with their own numbers, that refer to the original |
-| Relation | `InvoiceRelation` | Link from a cancellation or correction to the original, with the cancelled lines and VAT |
+| Cancellation, correction, price reduction | `Invoice` (kind `cancellation`, `correction`, `price_reduction`) | Invoices of their own, with their own numbers, that refer to the original |
+| Relation | `InvoiceRelation` | Link from a cancellation, correction or price reduction to the original, with the cancelled lines and VAT |
 | Sequence | `Sequence` | Counter of a number sequence (`{issuer}:{sequence}:{period}`) |
 | Delivery | `Delivery` | One delivery attempt by mail |
 | Audit entry | `AuditLog` | Append-only record of every business relevant action |
@@ -78,6 +79,9 @@ draft ──issue()──▶ issued ──cancelPartially()──▶ partially_c
                      └──────── cancel() or an issued correction ─────────────▶ cancelled
 ```
 
+A price reduction does not change the status of the invoice it reduces (see
+[Price reductions](#price-reductions)).
+
 ## Installation
 
 These steps apply once `quittio/managed` is released.
@@ -89,8 +93,8 @@ php artisan vendor:publish --tag=quittio-managed-triggers   # recommended for pr
 php artisan migrate
 ```
 
-Requirements: PHP 8.3 or later, Laravel 13, and `quittio/core` and `quittio/laravel` in the
-same version.
+Requirements: PHP 8.3 or later, Laravel 13, and `quittio/core` and `quittio/laravel` 0.7.1 or
+later (`^0.7.1`). Composer installs both from Packagist.
 
 `quittio:install --managed` runs these steps (see also [Artisan commands](commands.md)):
 
@@ -545,7 +549,7 @@ The trait adds three methods:
 
 | Method | Returns |
 |---|---|
-| `invoices()` | `MorphMany` relation of all invoices, cancellations and corrections of the model (drafts included) |
+| `invoices()` | `MorphMany` relation of all invoices, cancellations, corrections and price reductions of the model (drafts included) |
 | `invoiceBuilder(?Issuer $issuer = null)` | `$issuer->builder()` (default: the current issuer) with the model as buyer when it implements `ProvidesParty` |
 | `draftInvoice($data, ?Issuer $issuer = null, ?Model $invoiceable = null)` | A new draft with the model as billable |
 
@@ -611,8 +615,8 @@ Rules worth knowing:
   [GoBD](concepts.md#german-terms)).
 - A draft keeps its buyer until you set it again:
   `$draft->updateData(fn (InvoiceBuilder $b) => $b->buyer($user))`.
-- Cancellations, partial cancellations and corrections take `billable` and `invoiceable`
-  over from the original invoice.
+- Cancellations, partial cancellations, corrections and price reductions take `billable` and
+  `invoiceable` over from the original invoice.
 - There is no foreign key to your models. Deleting a user leaves the invoices in place,
   because they must be kept for eight years (section 14b UStG and section 147 AO, the German
   Fiscal Code). `billable` then returns `null`. The buyer data in the archived files is
@@ -648,8 +652,9 @@ Creating a draft:
 1. takes the given issuer or the current one,
 2. builds the data without calculating or validating it (`InvoiceBuilder::buildDraft()`;
    lines are not yet required),
-3. rejects a seller with another VAT id or tax number than the issuer
-   (`InvalidInvoiceState`),
+3. rejects a seller with another VAT id or tax number than the issuer and a self-billed
+   document (type code 389, 261 or 527, see [Self-billing](#self-billing)) with
+   `InvalidInvoiceState`,
 4. sets the small business flag of the issuer, the format and profile of
    `defaults.format` (`auto` = `null`) and `defaults.profile`, kind `invoice`, status `draft`
    and `created_by` (the authenticated user, if any),
@@ -677,7 +682,7 @@ $draft->billable()->associate($user)->save();
 
 `updateData()` starts an `InvoiceBuilder` from the current data (`InvoiceBuilder::from()`),
 passes it to the callable and stores the result. It throws `InvoiceNotDraft` for issued
-invoices.
+invoices, and `InvalidInvoiceState` when the change makes the draft a self-billed document.
 
 The other columns of a draft can be changed through the model. They are guarded, so use
 `forceFill()`. Exceptions: `kind` and `preceding_invoice_id` are fixed when the draft is
@@ -715,6 +720,9 @@ profile and locale of the draft. On an issued invoice it validates the frozen da
 format, profile, locale and country pack it was issued with. See [Validation](validation.md)
 for the result.
 
+The draft of a correction with the strategy `corrected_invoice` is previewed and validated as
+the corrected invoice it will be issued as (see [Corrections](#corrections)).
+
 ### Deleting drafts
 
 ```php
@@ -728,9 +736,9 @@ Deleting a draft leaves no gap in the numbers, since drafts hold none. A bulk de
 - throws `InvoiceImmutable` if the query would reach an issued invoice,
 - writes no audit entries (it runs without model events).
 
-Drafts of cancellations and corrections that can no longer be issued are removed by
-`quittio:drafts:prune` (see [Left-behind drafts](#left-behind-drafts)). Ordinary drafts are
-never deleted automatically.
+Drafts of cancellations, corrections and price reductions that can no longer be issued are
+removed by `quittio:drafts:prune` (see [Left-behind drafts](#left-behind-drafts)). Ordinary
+drafts are never deleted automatically.
 
 ## Issuing
 
@@ -747,15 +755,17 @@ The steps in detail:
 
 1. The invoice must be a draft (`InvoiceNotDraft`). Drafts of cancellations are issued by
    `cancel()` and `cancelPartially()` only (`InvalidInvoiceState`). Drafts of corrections
-   follow the correction strategy (see [Corrections](#corrections)).
-2. The issue date is the given date or today in the issuer's time zone. Cancellations and
-   corrections cannot be dated before the invoice they refer to. The issuer must still be
-   the company that issued the original (same VAT id or tax number). Otherwise
-   `InvalidInvoiceState` is thrown.
-3. The seller is taken from the issuer profile as it is now, and the issue date is set. The
-   number generator prepares the sequence (outside the transaction). The data is calculated
-   and fully validated with the probable number, with the format, profile and locale of the
-   draft.
+   follow the correction strategy (see [Corrections](#corrections)). Drafts of price
+   reductions record their relation to the original (see [Price reductions](#price-reductions)).
+2. The issue date is the given date or today in the issuer's time zone. Cancellations,
+   corrections and price reductions cannot be dated before the invoice they refer to. The
+   issuer must still be the company that issued the original (same VAT id or tax number).
+   Otherwise `InvalidInvoiceState` is thrown.
+3. The seller is taken from the issuer profile as it is now, and the issue date is set. A
+   self-billed document is refused with `InvalidInvoiceState` (see
+   [Self-billing](#self-billing)). The number generator prepares the sequence (outside the
+   transaction). The data is calculated and fully validated with the probable number, with
+   the format, profile and locale of the draft.
    - A format that produces neither a PDF nor an XML invoice (`html`, `json`) is refused with
      `InvalidInvoiceState`, because the archive must hold the invoice itself.
    - Validation errors throw `Quittio\Core\Validation\ValidationException` (`$e->result`
@@ -791,19 +801,21 @@ before the invoice is actually issued: a backdated invoice keeps the full period
 |---|---|
 | `ValidationException` (core) | The calculated invoice is invalid (or has warnings with `block_on_warnings`) |
 | `InvoiceNotDraft` | Not a draft, or issued or deleted by another process meanwhile |
-| `InvalidInvoiceState` | Cancellation draft, date before the original, another company, issuer deleted, format without PDF or XML (`html`, `json`) |
+| `InvalidInvoiceState` | Cancellation draft, date before the original, another company, issuer deleted, self-billed document, format without PDF or XML (`html`, `json`) |
 | `NumberingException` | Invalid pattern, number already taken (also by another issuer of the number space) |
 | `ConfigurationException` (core) | Reset not allowed by the country pack, `retention.years` too short, invalid generator |
 | `InvoiceImmutable` | The draft row was changed by another process since it was loaded |
 
 ### Issuing inside your own transaction
 
-`issue()` (and `cancel()`, `cancelPartially()` and issuing a correction) can run inside a
-database transaction of your application on the Managed connection. Then:
+`issue()` (and `cancel()`, `cancelPartially()` and issuing a correction or a price
+reduction) can run inside a database transaction of your application on the Managed
+connection. Then:
 
 - there are no retries: your transaction decides,
-- the render job and the events `InvoiceIssued`, `InvoiceCancelled` … run only when your
-  transaction commits, and an exception of a listener reaches the code that commits,
+- the render job and the events `InvoiceIssued`, `InvoiceCancelled`, `PriceReduced` … run
+  only when your transaction commits, and an exception of a listener reaches the code that
+  commits,
 - a rollback leaves the draft a draft and uses up no number. The model in memory still shows
   the issued state then, so load it again.
 
@@ -818,14 +830,16 @@ listed in [Enums](#enums).
 changes only through `issue()`, `cancel()`, `cancelPartially()` and the issue of a
 correction, never through `save()` or bulk updates (see [Immutability](#immutability)).
 
-- `issued`: issued and not cancelled. Cancellations and corrections are themselves `issued`.
+- `issued`: issued and not cancelled. Cancellations, corrections and price reductions are
+  themselves `issued`.
 - `partially_cancelled`: at least one partial cancellation refers to the invoice.
 - `cancelled`: cancelled completely, by `cancel()`, by partial cancellations that together
   cover everything, or by an issued correction. `cancelled_at` and `cancellation_reason`
   are set then, once.
 
 `cancellations` counts the documents that cancel (part of) the invoice (relations `cancels`,
-`partially_cancels`, `replaces`).
+`partially_cancels`, `replaces`). A price reduction (relation `reduces`) changes neither the
+status nor this counter.
 
 ### Payment status
 
@@ -866,14 +880,15 @@ otherwise).
 use Carbon\CarbonImmutable;
 use Quittio\Managed\Models\Invoice;
 
-Invoice::query()->open()->get();        // issued or partially cancelled, no cancellation, unpaid or partially paid
+Invoice::query()->open()->get();        // issued or partially cancelled, no cancellation or price reduction, unpaid or partially paid
 Invoice::query()->overdue()->get();     // open and due_date before today
 Invoice::query()->overdue(CarbonImmutable::parse('2026-12-31'))->get();
 ```
 
 `overdue()` compares with today in the application's time zone, or with the given date.
-`open()` includes corrections and credit notes of kind `invoice`; filter by `type_code` if
-you need to tell them apart.
+`open()` leaves out cancellations and price reductions, which the buyer does not pay. It
+includes corrections and credit notes of kind `invoice`; filter by `type_code` if you need to
+tell them apart.
 
 ### Delivery status
 
@@ -900,8 +915,8 @@ archived rendering, whose report is stored with the documents.
 
 An invoice gets its number when it is issued, from a pattern and a counter (sequence). With
 the German defaults, the invoices of 2026 are numbered `RE-2026-0001`, `RE-2026-0002` …, and
-the counter starts again in 2027. Cancellations and corrections take the next number of the
-same sequence, unless you give them their own pattern.
+the counter starts again in 2027. Cancellations, corrections and price reductions take the
+next number of the same sequence, unless you give them their own pattern.
 
 Change the scheme in `config/quittio-managed.php`. This example keeps the German pattern and
 gives cancellations their own sequence (`ST-2026-0001` …):
@@ -915,6 +930,7 @@ gives cancellations their own sequence (`ST-2026-0001` …):
     'per_kind' => [
         'cancellation' => 'ST-{Y}-{seq:4}', // own sequence, null = shared
         'correction' => null,
+        'price_reduction' => null,          // e.g. 'GS-{Y}-{seq:4}'
     ],
     'generator' => null,                    // class implementing NumberGenerator
 ],
@@ -965,8 +981,8 @@ Every number comes from a sequence with the key `{issuer}:{sequence}:{period}`, 
 `default:invoice:2026`:
 
 - `{issuer}` is the issuer key,
-- `{sequence}` is `invoice` (shared by all kinds), or `cancellation` or `correction` when
-  `per_kind` gives that kind a pattern of its own,
+- `{sequence}` is `invoice` (shared by all kinds), or `cancellation`, `correction` or
+  `price_reduction` when `per_kind` gives that kind a pattern of its own,
 - `{period}` follows from the reset and the issue date: `2026` (yearly), `2026-10` (monthly)
   or `all` (never).
 
@@ -1180,19 +1196,52 @@ invoice).
 | Format | Archived files |
 |---|---|
 | `zugferd` (`factur-x`) | PDF/A-3 and the embedded XML as its own file (byte-identical) |
-| `xrechnung-cii`, `xrechnung-ubl`, `cii`, `ubl`, `peppol` | XML |
+| `xrechnung-cii`, `xrechnung-ubl`, `cii`, `ubl`, `peppol` | XML and its readable PDF (see [Readable PDF of XML-only e-invoices](#readable-pdf-of-xml-only-e-invoices)) |
 | `pdf` | PDF |
 
 See [Formats](concepts.md#formats) for what these formats are. Every version also holds
 `validation-report.json`, the validation result of the rendering.
 
-The invoice keeps `disk`, `xml_path`, `pdf_path`, the SHA-256 hashes `xml_hash` and
-`pdf_hash`, `validation_report_path` and `document_version`. Archiving writes the audit
-entry `rendered` (version, disk, files, report, hashes) and dispatches
-`InvoiceDocumentsStored`.
+The invoice keeps `disk`, `xml_path`, `pdf_path`, `visualization_path`, the SHA-256 hashes
+`xml_hash`, `pdf_hash` and `visualization_hash`, `validation_report_path` and
+`document_version`. Archiving writes the audit entry `rendered` (version, disk, files,
+report, hashes) and dispatches `InvoiceDocumentsStored`.
 
 For production, use an object store with object lock (WORM: write once, read many) and
 versioning, so that nobody can delete or replace the files.
+
+### Readable PDF of XML-only e-invoices
+
+An XML-only e-invoice (`xrechnung-cii`, `xrechnung-ubl`, `cii`, `ubl` or `peppol`) cannot be
+read without a viewer. The archive therefore also keeps a readable PDF of it, when its profile
+complies with EN 16931 (not MINIMUM or BASIC WL). The PDF is rendered in the same run as the
+XML, from the same data, and stored in the same version directory. Its path and SHA-256 hash
+are kept in `visualization_path` and `visualization_hash`.
+
+Only the XML is the invoice. The PDF says so in its legal notes: "Lesbare Darstellung der
+E-Rechnung (XRechnung 3.0) Nr. RE-2026-0042 – inhaltsgleiches Mehrstück. Maßgeblich ist
+ausschließlich die XML-Datei." (readable copy of the e-invoice, a copy with the same content;
+only the XML file is authoritative; label `einvoice_visualization`, see
+[Examples: Public sector](examples.md#public-sector)). The Managed layer keeps the PDF together
+with the XML, as an additional copy of the invoice.
+
+The readable PDF is treated like the other archived files:
+
+- Archiving, `send()` and `quittio:verify` check its hash. A missing copy leads to a new
+  document version. A changed copy dispatches `ArchiveIntegrityViolation` and throws an
+  `ArchiveException`, as a changed XML does.
+- `quittio:retention:check --delete` deletes it with the other files.
+- It is PDF/A-3b when `pdf.pdfa` in `config/quittio.php` is `true` (the default).
+
+No readable PDF is archived:
+
+- for ZUGFeRD and `pdf`, whose PDF is the invoice itself,
+- with `visualization` set to `false` in `config/quittio-managed.php`,
+- with `format_resolver.b2c_embed_xml` set to `true` in `config/quittio.php`, because the PDF
+  would embed a second XML.
+
+`send()` attaches the readable PDF with `delivery.mail.xrechnung_visualization` (see
+[Delivery](#delivery)).
 
 ### Versions and re-rendering
 
@@ -1289,10 +1338,13 @@ refers to it:
 
 - `cancel()` reverses the whole invoice (or what is left of it), e.g. when it was charged
   twice. The result is a cancellation invoice, in Germany titled "Stornorechnung".
-- `cancelPartially()` reverses some lines, quantities or amounts, e.g. a returned item or a
-  price reduction.
+- `cancelPartially()` reverses some lines, quantities or amounts, e.g. a returned item.
 - `correct()` starts a draft with the data of the original. You change it and issue it as the
   corrected invoice.
+
+When the invoice was correct and only the consideration changed later (a cash discount taken,
+a reduction after a complaint about defects, a bonus), issue a price reduction instead (see
+[Price reductions](#price-reductions)).
 
 ```php
 use Quittio\Core\Builder\InvoiceBuilder;
@@ -1329,7 +1381,13 @@ to the original (preceding invoice reference, BG-3, and `preceding_invoice_id`).
 | `cancelled` | no (`NothingToCancel`) | no (`NothingToCancel`) | no |
 | draft | no | no | no |
 | kind `cancellation` | no | no | no |
-| document level allowances or charges | yes | no | yes |
+| kind `price_reduction` | yes | yes | no (cancel it and reduce again) |
+| invoice with price reductions | no (cancel the price reductions first) | yes, within what the price reductions leave | no (cancel the price reductions first) |
+| self-billed document (389, 261, 527) | no | no | no |
+| document level allowances or charges | yes | no (`InvalidArgumentException`) | yes |
+
+The "no" cases throw `InvalidInvoiceState` unless another exception is named. See
+[Price reductions](#price-reductions) and [Self-billing](#self-billing).
 
 ### Full cancellation
 
@@ -1342,7 +1400,8 @@ to the original (preceding invoice reference, BG-3, and `preceding_invoice_id`).
    cancelled before, only what is left,
 3. creates a draft of kind `cancellation` and issues it with its own number (the steps of
    [Issuing](#issuing)). Inside the issuing transaction:
-   - the original is locked and read again, and the remainder is checked again,
+   - the original is locked and read again, and the remainder (and the limit of its price
+     reductions) is checked again,
    - the relation `cancels` is recorded,
    - the original becomes `cancelled` (with `cancelled_at`, `cancellation_reason` and a
      raised `cancellations` counter),
@@ -1408,6 +1467,7 @@ partially cancelled invoice cancels the remainder.
 | Document level allowances or charges | `InvalidArgumentException` |
 | Quantity or amount given as float (`2.5` instead of `'2.5'`) | `InvalidArgumentException` |
 | Another partial cancellation was issued meanwhile | `InvalidInvoiceState` ("… partially cancelled in the meantime; try again"), no number used up |
+| Together with the price reductions, more than the net amount of a VAT group would be credited | `InvalidInvoiceState` (see [Price reductions](#price-reductions)) |
 
 ### VAT of partial cancellations
 
@@ -1461,8 +1521,9 @@ How it is recorded:
   next part. That part is then rejected ("partially cancelled in the meantime; try again")
   without using up a number.
 - A single full cancellation reverses the original exactly.
-- Drafts keep a declared VAT breakdown only for such aligned cancellations. Every other
-  invoice is recalculated with Quittio's rounding when it is issued, also a draft started with
+- Drafts keep a declared VAT breakdown only for such aligned cancellations and price
+  reductions (see [VAT of price reductions](#vat-of-price-reductions)). Every other invoice is
+  recalculated with Quittio's rounding when it is issued, also a draft started with
   `InvoiceBuilder::from()` on data another system rounded.
 
 The one-cent alignment was confirmed by a tax adviser in October 2026 (see the legal review in
@@ -1485,24 +1546,27 @@ cancelled with an invoice (380) with the same positive amounts in both strategie
 
 Credit notes can be issued as ordinary managed invoices: set the type code in the builder
 (`->type(InvoiceTypeCode::CreditNote)`). They are cancelled with a 380 invoice and corrected
-with a credit note, with the strategy `cancel_and_reissue` only.
+with a credit note, with the strategy `cancel_and_reissue` only. Their consideration cannot be
+reduced with `reducePrice()`.
 
 ### Cancellation ledger
 
 Relations (`quittio_invoice_relations`) point from the new document (`invoice_id`) to the
 original (`related_invoice_id`). The cancelling ones (`cancels`, `partially_cancels`,
-`replaces`) make up the cancellation ledger of the original:
+`replaces`) make up the cancellation ledger of the original. Price reductions (`reduces`)
+cancel nothing and are no part of it, but they count towards the limit per VAT group (see
+[Price reductions](#price-reductions)):
 
 | Column | Content |
 |---|---|
-| `type` | `cancels`, `partially_cancels`, `corrects`, `replaces` |
-| `amount` | Cancellations: the cancelled net amount, always positive |
+| `type` | `cancels`, `partially_cancels`, `corrects`, `replaces`, `reduces` |
+| `amount` | Cancellations and price reductions: the cancelled or reduced net amount, always positive |
 | `lines` | Cancellations: per original line `line`, `quantity` (`null` for amount cancellations), `net` and, for gross price lines, `gross` |
-| `vat` | Cancellations: per VAT group `key` (e.g. `S\|19.00`), `category`, `rate`, `taxable`, `tax`, `tax_in_tax_currency`, `gross`, signed like the original |
+| `vat` | Cancellations and price reductions: per VAT group `key` (e.g. `S\|19.00`), `category`, `rate`, `taxable`, `tax`, `tax_in_tax_currency`, `gross`, signed like the original |
 | `created_at` | Time of the relation |
 
 ```php
-$invoice->inverseRelations;                 // cancellations and corrections of this invoice
+$invoice->inverseRelations;                 // cancellations, corrections and price reductions of this invoice
 $cancellation->relations;                   // what this document cancels or corrects
 $cancellation->precedingInvoice;            // the original
 $relation->cancelledLines();                // decoded lines
@@ -1530,6 +1594,7 @@ $ledger->count($invoice);                   // number of cancelling documents
 | `remainder(Invoice $original)` | Selections for the rest (`NothingToCancel` if nothing is left), `null` if untouched |
 | `isFullyCancelled(Invoice $original)` | Whether no line is open |
 | `count(Invoice $original)` | Number of cancelling relations |
+| `reduced(Invoice $original)` | Net amount per VAT group (key as in `vat`) by which the price reductions still reduce the original, less what cancellations of the price reductions reversed |
 | `normalize(Invoice $original, array $requested)` | The selections checked against the remainder (whole lines become quantities or amounts) |
 | `history(Invoice $original, array $recorded)` | `CancellationHistory` of the core: VAT cancelled so far per group |
 | `record(InvoiceData $cancellation, ?array $requested)` | The `lines` entry of a relation |
@@ -1555,23 +1620,42 @@ country pack's default, DE: `cancel_and_reissue`):
 | Strategy | Issuing the correction |
 |---|---|
 | `cancel_and_reissue` | Cancels the original completely, then issues the correction as a new invoice with the relation `corrects`. The reason of the cancellation comes from the translation `quittio-managed::invoice.correction_reason` ("Rechnungskorrektur.", invoice correction). Events `InvoiceCancelled` and `InvoiceCorrected`; two numbers are used. |
-| `corrected_invoice` | Issues the correction with type code 384 (corrected invoice) and the title of the country pack (DE: "Rechnungskorrektur"), relation `replaces`. The original becomes `cancelled` with the reason `quittio-managed::invoice.replaced_by` ("Ersetzt durch Rechnung RE-2026-0043.", replaced by invoice RE-2026-0043). Event `InvoiceCorrected` (no `InvoiceCancelled`). |
+| `corrected_invoice` | Issues the correction as a corrected invoice (type code 384) that replaces the original, relation `replaces`. The original becomes `cancelled` with the reason `quittio-managed::invoice.replaced_by` ("Ersetzt durch Rechnung RE-2026-0043.", replaced by invoice RE-2026-0043). Event `InvoiceCorrected` (no `InvoiceCancelled`). |
+
+With `corrected_invoice`, issuing turns the draft into the corrected invoice with
+`Correction::of()` of the core, as `Quittio::correction()` does (see
+[Corrected invoices](building-invoices.md#corrected-invoices)):
+
+- type code 384 and the reference to the original (BG-3),
+- the title of the country pack (DE: "Rechnungskorrektur"),
+- as first note, in the locale of the invoice: "Diese Rechnung berichtigt und ersetzt die
+  Rechnung RE-2026-0042 vom 05.10.2026." (This invoice corrects and replaces invoice
+  RE-2026-0042 of 05.10.2026, section 31 (5) UStDV). Correcting a corrected invoice replaces
+  its earlier note.
+
+Your changes to the draft (lines, notes, buyer data) are kept. `preview()` and `validate()`
+show the draft as it will be issued. The stored draft keeps your data until it is issued.
 
 Both steps run in one transaction: either both documents exist or none (an invalid correction
 also rolls back the cancellation). The audit entry `corrected` (correction number and
 relation type) is written on the original.
 
-- Only `issued` invoices can be corrected, not cancellations and not partially cancelled ones
-  (`InvalidInvoiceState`). For a partially cancelled invoice, cancel the remainder with
-  `cancel()` and issue a new invoice.
+- Only `issued` invoices can be corrected, not cancellations, price reductions or partially
+  cancelled invoices (`InvalidInvoiceState`). For a partially cancelled invoice, cancel the
+  remainder with `cancel()` and issue a new invoice. A price reduction is cancelled and issued
+  again instead.
+- An invoice with price reductions cannot be corrected (`InvalidInvoiceState`): cancel the
+  price reductions first (see [Price reductions](#price-reductions)).
 - A credit note is corrected with a credit note and only with `cancel_and_reissue`.
   `corrected_invoice` throws `InvalidInvoiceState` for credit notes, because 384 is a
   corrected invoice.
+- Self-billed documents cannot be corrected (`InvalidInvoiceState`, see
+  [Self-billing](#self-billing)).
 - An unknown strategy throws `ConfigurationException`. The strategy is checked when the draft
   is created and again when it is issued.
 - The correction cannot be dated before the original, and the issuer must still be the company
   that issued it.
-- Corrections can themselves be cancelled, partially cancelled and corrected.
+- Corrections can themselves be cancelled, partially cancelled, corrected and reduced.
 - A correction draft whose original was cancelled, partially cancelled or replaced meanwhile
   can no longer be issued; `quittio:drafts:prune` deletes it.
 
@@ -1581,8 +1665,9 @@ legal review in the README).
 ### Left-behind drafts
 
 A draft of a cancellation exists only while `cancel()` or `cancelPartially()` issues it. A
-correction draft can only be issued while its original can be corrected. Drafts that are left
-behind are removed by a command:
+correction draft can only be issued while its original can be corrected, a price reduction
+draft while its original can be reduced. Drafts that are left behind are removed by a
+command:
 
 ```bash
 php artisan quittio:drafts:prune                     # asks
@@ -1594,7 +1679,9 @@ php artisan quittio:drafts:prune --older-than=120 --force
 - cancellation drafts older than `--older-than` minutes (default 60), left behind e.g. by a
   crash,
 - correction drafts whose original can no longer be corrected (cancelled, partially cancelled
-  or replaced meanwhile, or deleted).
+  or replaced meanwhile, or deleted),
+- price reduction drafts whose original can no longer be reduced (cancelled or replaced
+  meanwhile, or deleted; a partially cancelled original can still be reduced).
 
 A draft that has been issued meanwhile is never deleted. Every deletion writes
 `deleted_draft` to the audit log.
@@ -1603,8 +1690,174 @@ A draft that has been issued meanwhile is never deleted. Every deletion writes
 
 Self-billing means that the buyer issues the invoice for the seller's supply (in Germany a
 "Gutschrift" in the sense of the UStG; see [German terms](concepts.md#german-terms)). It is not
-part of version 1.0: the seller of every managed invoice is its issuer. The core keeps
-self-billed documents self-billed when it cancels them (type codes 389 and 261).
+part of version 1.0: the seller of every managed invoice is its issuer.
+
+The Managed layer refuses self-billed documents with `InvalidInvoiceState`:
+
+- Drafts with the type code 389, 261 or 527 (also set by `->de()->selfBilled()`) cannot be
+  created, changed or issued.
+- A self-billed invoice cannot be cancelled, corrected or reduced.
+
+Credit notes the issuer grants as seller (381) are not affected. To create a self-billed
+document, use the core without the Managed layer (`Quittio::invoice()->de()->selfBilled()`, see
+[Self-billing](country-packs.md#self-billing-gutschrift)). Full support, with the issuer as
+buyer, the supplier's agreement and its right to object, is planned for a later version.
+
+## Price reductions
+
+A price reduction (German "Entgeltminderung") documents that the consideration of an issued
+invoice was reduced afterwards: a cash discount (Skonto) the buyer took, a reduction after a
+complaint about defects, or a bonus (section 17 UStG). The invoice was correct and stays
+correct. It is neither cancelled nor corrected and keeps its status.
+
+```php
+use Quittio\Core\Corrections\PriceReductionReason;
+
+$draft = $invoice->reducePrice(PriceReductionReason::CashDiscount, percent: '2');   // 2 % of every VAT group
+$draft->preview();
+$reduction = $draft->issue();
+
+$draft = $invoice->reducePrice(PriceReductionReason::Defect, amount: '100.00');      // net, invoice with one VAT group
+$draft = $invoice->reducePrice(PriceReductionReason::Bonus, amounts: ['S:19' => '50.00', 'S:7' => '5.00']);
+```
+
+| Method | Signature | Returns |
+|---|---|---|
+| `reducePrice()` | `PriceReductionReason $reason, BigDecimal\|int\|string\|null $percent = null, BigDecimal\|int\|string\|null $amount = null, ?array $amounts = null, ?string $title = null` | A draft of kind `price_reduction`; issue it with `issue()` |
+
+- Give exactly one of `percent`, `amount` (only for an invoice with one VAT group) and
+  `amounts` (net amounts per VAT group, keyed `category:rate`, e.g. `S:19`).
+- The reasons (`Quittio\Core\Corrections\PriceReductionReason`) are `CashDiscount`, `Defect`,
+  `Bonus` and `Other`.
+- `title` replaces the title of the document; by default it is the title of the country pack
+  (DE: "Entgeltminderung").
+
+The draft is built with `Quittio::priceReduction()` of the core (see
+[Price reductions](building-invoices.md#price-reductions)):
+
+- a credit note (type code 381, positive amounts) with one line "Minderung des Entgelts" per
+  reduced VAT group,
+- the reference to the original (BG-3) and the meta flag `price_reduction`,
+- a note that names the reason, the net amount and the VAT per rate, e.g. "Minderung des
+  Entgelts zur Rechnung RE-2026-0042 vom 05.10.2026 wegen in Anspruch genommenen Skontos
+  (2 %). Minderung Entgelt 50,00 €, Umsatzsteuer 19 %: 9,50 €." (reduction of the
+  consideration for invoice RE-2026-0042 because of a cash discount taken),
+- the regulatory and tax notes of the original, and no due date,
+- the format, profile and locale of the original, and its `billable` and `invoiceable`.
+
+Change, preview, validate and delete the draft like any draft. `issue()`:
+
+1. checks the original again (see the rules below) and the draft: it must still be a credit
+   note with type code 381 (`InvalidInvoiceState`),
+2. gives the price reduction its own number, from the shared sequence or, with
+   `numbering.per_kind.price_reduction` (e.g. `GS-{Y}-{seq:4}`), from a sequence of its own
+   (see [Numbering](#numbering)),
+3. issues it with the steps of [Issuing](#issuing). It cannot be dated before the original.
+   Inside the issuing transaction:
+   - the original is locked and read again, and the reduction is checked again against what
+     is left of each VAT group,
+   - its VAT is checked against the cancellations and price reductions issued since the draft
+     was created (see [VAT of price reductions](#vat-of-price-reductions)),
+   - the relation `reduces` is recorded with the net amount and the VAT per group,
+   - the audit entry `price_reduced` is written on the original,
+4. dispatches `PriceReduced` after the commit.
+
+The original keeps its status and its `cancellations` counter. If the price reduction cannot
+be issued, it stays a draft.
+
+Rules:
+
+- Only `issued` and `partially_cancelled` invoices can be reduced, and only by the company
+  that issued them. Cancellations, price reductions, credit notes and self-billed documents
+  cannot be reduced (`InvalidInvoiceState`).
+- A reduction must be greater than zero and at most the net amount of its VAT group. Several
+  values, an unknown VAT group or `amount` on an invoice with several VAT groups throw an
+  `InvalidArgumentException` of the core.
+- Per VAT group, the cancellations and the price reductions together cannot exceed the net
+  amount of the original. A price reduction above what is left throws an
+  `UnexpectedValueException` ("VAT group S:19 of invoice RE-2026-0042: only … can still be
+  reduced …"), when the draft is created and again when it is issued. A cancellation above it
+  throws `InvalidInvoiceState`.
+- To cancel or correct a reduced invoice completely, first cancel its price reductions with
+  `$reduction->cancel()`. A cancelled price reduction no longer counts.
+- A price reduction is cancelled (fully or partially) like any invoice, with a 380 invoice. A
+  wrong price reduction is cancelled and issued again, not corrected: `correct()` throws
+  `InvalidInvoiceState`.
+
+Price reductions are kept and deleted together with their invoice (see
+[Retention and deletion](#retention-and-deletion)). `Invoice::query()->open()` does not list
+them, and the mail has its own subject and text, without a due date (see
+[Mail content](#mail-content)).
+
+In Germany a document on a price reduction is only required in the cases of section 17 (4)
+UStG, and it need not be an e-invoice. A cash discount taken can also just be booked when the
+payment arrives.
+
+### VAT of price reductions
+
+A price reduction rounds its VAT like a partial cancellation (see
+[VAT of partial cancellations](#vat-of-partial-cancellations)): cumulatively, per VAT group,
+together with everything that credits the same invoice, its partial cancellations and its
+earlier price reductions.
+
+- Per VAT group, the target is round2(net amount credited so far × rate), where the net amount
+  credited so far is that of the cancellations and price reductions including this one. Once
+  they credit the whole net amount of the group, the target is the invoice's VAT amount
+  (BT-117).
+- The price reduction carries the target minus the VAT already credited. A cancellation does
+  the same with the price reductions counted in.
+- A cancelled price reduction no longer counts, as far as it is cancelled.
+
+Example: an invoice of 1.50 net at 19 % carries 0.29 VAT. Three price reductions of 0.50 each,
+rounded on their own, would credit 3 × 0.10 = 0.30. Rounded cumulatively they carry 0.10, 0.09
+and 0.10, together exactly 0.29. The same holds if one of them is a partial cancellation of
+0.50, in whatever order.
+
+So, per VAT group, the cancellations and price reductions of an invoice never credit more VAT
+than the invoice has, and exactly its VAT once they credit its whole net amount. Every single
+document differs by at most one cent from round2(its own net amount × rate), which BR-CO-17
+accepts:
+
+- A price reduction whose VAT differs from its own rounding declares it (meta flag
+  `cancellation_vat_aligned`, validation information `QUITTIO-CANCELLATION-VAT-ALIGNED`). Its
+  note names that VAT ("Minderung Entgelt 0,50 €, Umsatzsteuer 19 %: 0,09 €.") and adds
+  "Rundungsausgleich: Die Umsatzsteuer dieser Entgeltminderung ist so bemessen, dass alle
+  Entgeltminderungen und Stornos zur Rechnung RE-… zusammen die Umsatzsteuer des geminderten
+  und stornierten Entgelts exakt berichtigen." (Rounding adjustment: all price reductions and
+  cancellations of the invoice together correct exactly the VAT of the reduced and cancelled
+  consideration.)
+- `$reduction->cancel()` reverses exactly that declared VAT.
+- The VAT is set when the draft is created. If a cancellation or price reduction of the same
+  invoice is issued before the draft (or the draft's amounts change), `issue()` throws
+  `InvalidInvoiceState` ("… was cancelled or reduced since this price reduction was drafted
+  …") without using up a number. Delete the draft and create it again.
+- After price reductions were cancelled, the VAT already credited can be one cent off the
+  cumulative rounding. A price reduction that would then have to differ by more than one cent
+  from its own rounding is rejected (`InvalidInvoiceState`); reduce by another amount, or cancel
+  the remaining price reductions and reduce again.
+
+### Payments after a price reduction
+
+A price reduction changes neither the invoice's `amount_due` (BT-115, fixed when it was issued)
+nor its `payment_status`, `paid_total` or `paid_at`. The package does not record payments in
+version 1.0 (see [Payment status](#payment-status)): your application sets these columns. After
+a cash discount, for example, the invoice stays open for its full amount, and
+`Invoice::query()->open()` lists it, until you mark it as paid:
+
+```php
+use Quittio\Core\Corrections\PriceReductionReason;
+use Quittio\Managed\Enums\PaymentStatus;
+
+// 1,000.00 + 190.00 VAT were invoiced, the buyer paid 1,166.20 after 2 % cash discount.
+$invoice->reducePrice(PriceReductionReason::CashDiscount, percent: '2')->issue();
+$invoice->forceFill([
+    'payment_status' => PaymentStatus::Paid,
+    'paid_total' => '1166.20',
+    'paid_at' => now(),
+])->save();
+```
+
+The price reduction itself is not a document the buyer pays: `open()` leaves it out.
 
 ## Delivery
 
@@ -1617,8 +1870,8 @@ $delivery = $invoice->send('accounting@kunde.de', ['cfo@kunde.de']);
 
 `send(?string $to = null, array $cc = [])` returns the `Delivery` row. It:
 
-1. refuses drafts (`InvalidInvoiceState`); cancelled invoices, cancellations and corrections
-   can be sent,
+1. refuses drafts (`InvalidInvoiceState`); cancelled invoices, cancellations, corrections and
+   price reductions can be sent,
 2. renders and archives the documents first if the render status is not `done` (in the
    request, so it can throw),
 3. checks the hashes of the archived files: missing or damaged files dispatch
@@ -1626,8 +1879,11 @@ $delivery = $invoice->send('accounting@kunde.de', ['cfo@kunde.de']);
    delivery is logged,
 4. takes the recipient from `$to` or the recipient resolver (`NoRecipient` if there is none),
 5. attaches the archived PDF (ZUGFeRD, PDF), otherwise the archived XML (XRechnung, CII, UBL,
-   Peppol). With `delivery.mail.xrechnung_visualization`, a PDF visualisation of an XML-only
-   invoice is rendered from the snapshot and attached as well (it is not archived),
+   Peppol). With `delivery.mail.xrechnung_visualization`, the readable PDF archived with an
+   XML-only invoice is attached as well, after the same hash check (see
+   [Readable PDF of XML-only e-invoices](#readable-pdf-of-xml-only-e-invoices)). An invoice
+   archived without it (`visualization` off) gets it rendered from the snapshot for the mail,
+   with the notice; that copy is not archived,
 6. logs the attempt in `quittio_deliveries` (status `queued`) and sends the mail at once with
    the default mailer (`sendNow()`, also for an own Mailable that implements `ShouldQueue`):
    to `$to`, with `$cc` and a blind copy to `delivery.mail.bcc_archive`,
@@ -1673,8 +1929,9 @@ final class AccountingRecipient implements RecipientResolver
 The default Mailable `Quittio\Managed\Delivery\InvoiceMail`:
 
 - uses the locale of the invoice, else of the issuer, else `en`,
-- has a subject and text by kind (invoice, correction, cancellation),
-- has a due date line, except for cancellations and invoices without due date,
+- has a subject and text by kind (invoice, correction, cancellation, price reduction),
+- has a due date line, except for cancellations, price reductions and invoices without due
+  date,
 - has the seller's name below the closing.
 
 The texts are translations of the namespace `quittio-managed`. Publish them with
@@ -1685,10 +1942,12 @@ The texts are translations of the namespace `quittio-managed`. Publish them with
 | `mail.subject.invoice` | `Rechnung :number von :seller` | `Invoice :number from :seller` |
 | `mail.subject.correction` | `Rechnungskorrektur :number von :seller` | `Corrected invoice :number from :seller` |
 | `mail.subject.cancellation` | `Stornorechnung :number von :seller` | `Cancellation :number from :seller` |
+| `mail.subject.price_reduction` | `Entgeltminderung :number von :seller` | `Price reduction :number from :seller` |
 | `mail.greeting` | `Guten Tag,` | `Hello,` |
 | `mail.body.invoice` | `anbei erhalten Sie die Rechnung :number über :amount.` | `please find attached invoice :number for :amount.` |
 | `mail.body.correction` | `anbei erhalten Sie die Rechnung :number über :amount. Sie korrigiert eine frühere Rechnung.` | `please find attached invoice :number for :amount, which corrects an earlier invoice.` |
 | `mail.body.cancellation` | `anbei erhalten Sie die Stornorechnung :number.` | `please find attached the cancellation :number.` |
+| `mail.body.price_reduction` | `anbei erhalten Sie den Beleg :number über die Minderung des Entgelts einer früheren Rechnung.` | `please find attached the document :number on a reduction of the price of an earlier invoice.` |
 | `mail.due` | `Bitte überweisen Sie den Betrag bis zum :due_date.` | `Please pay the amount by :due_date.` |
 | `mail.closing` | `Mit freundlichen Grüßen` | `Kind regards` |
 | `invoice.draft_watermark` | `ENTWURF` | `DRAFT` (preview watermark) |
@@ -1743,6 +2002,7 @@ is append-only: entries are never changed or deleted. Every entry has:
 | `cancelled` | original | `cancellation` (number), `reason`, `net`, `lines` |
 | `partially_cancelled` | original | `cancellation` (number), `reason`, `net`, `lines` |
 | `corrected` | original | `correction` (number), `type` (`corrects` or `replaces`) |
+| `price_reduced` | original | `reduction` (number), `net`, `vat` (per VAT group `key`, `taxable`, `tax`) |
 | `deleted_draft` | invoice | `number`, `retention_until` |
 | `deleted` | invoice | `number`, `retention_until` |
 | `sequence_changed` | sequence | `key`, `from`, `to` |
@@ -1794,7 +2054,8 @@ allowed.
 | `deleteDraft` | the invoice is a draft | `quittio.deleteDraft` |
 | `issue` | a draft that is not a cancellation draft | `quittio.issue` |
 | `cancel` (also for partial cancellations) | issued or partially cancelled, no cancellation | `quittio.cancel` |
-| `correct` | issued (not partially cancelled), no cancellation | `quittio.correct` |
+| `correct` | issued (not partially cancelled), no cancellation or price reduction | `quittio.correct` |
+| `reducePrice` | issued or partially cancelled; no cancellation, price reduction, credit note or self-billed document | `quittio.reducePrice` |
 | `send` | issued (any status but draft) | `quittio.send` |
 | `viewAuditLog` | always | `quittio.viewAuditLog` |
 | `viewAny`, `view` (issuer) | always | `quittio.manageIssuers` |
@@ -1842,7 +2103,7 @@ After issuing, the model only lets these columns change. Everything else throws
 | `status` | Forward only, and only through `issue()`, `cancel()`, `cancelPartially()` and the issue of a correction |
 | `cancelled_at`, `cancellation_reason` | Written once, together with the status `cancelled` |
 | `cancellations` | Rises with every cancelling document, up to the number of their relations; the status becomes (partially) cancelled only together with such a rise |
-| `document_version`, `disk`, `xml_path`, `pdf_path`, `xml_hash`, `pdf_hash`, `validation_status`, `validation_report_path` | Archiver only, together with a higher document version |
+| `document_version`, `disk`, `xml_path`, `pdf_path`, `visualization_path`, `xml_hash`, `pdf_hash`, `visualization_hash`, `validation_status`, `validation_report_path` | Archiver only, together with a higher document version |
 | `updated_at` | Free |
 
 Further rules:
@@ -2009,7 +2270,7 @@ on legal hold. It dispatches `RetentionExpired` for each of them, before anythin
 With `--delete`, it deletes invoices by group:
 
 - A group is an invoice together with all invoices connected to it through cancellations,
-  partial cancellations, corrections and replacements (transitively).
+  partial cancellations, corrections, replacements and price reductions (transitively).
 - A group is deleted only when every one of its invoices is past its retention period and
   none is on legal hold. Otherwise the whole group is kept, and the command says which
   invoice keeps it.
@@ -2109,6 +2370,14 @@ QUITTIO_DB=pgsql QUITTIO_DB_TRIGGERS=1 vendor/bin/pest --testsuite=managed
 - Payments, bank reconciliation, dunning runs, subscriptions, advance and final invoices,
   self-billing, inbound invoices, Peppol transmission and DATEV exports are not part of 1.0.
   The payment columns are maintained by your application.
+- Self-billed documents (type codes 389, 261, 527) are refused when drafting, changing,
+  issuing, cancelling, correcting and reducing; see [Self-billing](#self-billing).
+- The Managed layer issues no payment reminders. `Quittio::paymentReminder()` starts with the
+  data of the current issuer, but the reminder is neither numbered nor stored by the Managed
+  layer. The flat rate for recovery costs (section 288 (5) BGB, 40 EUR, owed once per claim)
+  is checked by `DocumentBuilder::flatRate()` only within one document. Across several
+  reminders for the same invoice, your application has to make sure it is claimed only once
+  (see [Payment reminders](documents.md#payment-reminders)).
 - Delivery is by mail only (`channel` `mail`). `lifecycle_status`, `registrations` and
   `network_ids` are stored but not evaluated.
 - Partial cancellations of invoices with document level allowances or charges are not
@@ -2121,8 +2390,9 @@ QUITTIO_DB=pgsql QUITTIO_DB_TRIGGERS=1 vendor/bin/pest --testsuite=managed
 - Different notations of one tax number are not unified for the number spaces.
 - Issued invoices can be deleted only after their retention period; there is no early
   anonymisation.
-- The PDF visualisation sent with an XRechnung (`delivery.mail.xrechnung_visualization`) is
-  not archived. Keep it with the XML if you send it.
+- Invoices archived without the readable PDF (`visualization` off) get it rendered on the fly
+  when they are mailed with `delivery.mail.xrechnung_visualization`; that copy is not
+  archived.
 - A future DATEV export has to show cash discounts taken per VAT rate with the reduction of
   net amount and VAT, the invoice number as document field and the payment date, as the
   reduction is corrected in the period of the payment (section 17 UStG).
@@ -2162,8 +2432,13 @@ integer"). An empty string counts as `null` for string values.
 
 | Key | Type | Default | Env | Effect |
 |---|---|---|---|---|
-| `disk` | string | `'local'` | `QUITTIO_DISK` | Filesystem disk of the archive; for production an object store with object lock (WORM) and versioning |
+| `disk` | string | `'local'` | `QUITTIO_STORAGE_DISK` | Filesystem disk of the archive; for production an object store with object lock (WORM) and versioning |
 | `path` | string | `'{issuer}/{Y}/{m}/{number}/v{version}'` | – | Directory of a document version; placeholders `{issuer}` `{Y}` `{m}` `{number}` `{uuid}` `{version}` (see [Archive layout](#archive-layout)) |
+| `visualization` | bool | `true` | – | Archive a readable PDF, with the notice that only the XML is authoritative, next to XML-only e-invoices (see [Readable PDF of XML-only e-invoices](#readable-pdf-of-xml-only-e-invoices)) |
+
+`QUITTIO_STORAGE_DISK` also sets `storage.disk` of `config/quittio.php` (see
+[Configuration](configuration.md)). Set `disk` in `config/quittio-managed.php` to give the
+archive a disk of its own.
 
 ### Queue settings
 
@@ -2183,6 +2458,7 @@ integer"). An empty string counts as `null` for string values.
 | `numbering.start` | int | `1` | First value of every new sequence, also of every new period after a reset; to continue the numbers of an old system, raise its sequence with `quittio:sequence:set` |
 | `numbering.per_kind.cancellation` | string\|null | `null` | Own sequence and pattern for cancellations; `null` = shared invoice sequence |
 | `numbering.per_kind.correction` | string\|null | `null` | Own sequence and pattern for corrections; `null` = shared invoice sequence |
+| `numbering.per_kind.price_reduction` | string\|null | `null` | Own sequence and pattern for price reductions (e.g. `GS-{Y}-{seq:4}`); `null` = shared invoice sequence |
 | `numbering.generator` | class-string\|null | `null` | Class implementing `NumberGenerator`; `null` = `SequenceNumberGenerator` |
 
 Issuer profiles can override `pattern`, `reset`, `start` and `per_kind` (see
@@ -2203,7 +2479,7 @@ The sign strategy of cancellations is configured in `config/quittio.php`, see
 |---|---|---|---|---|
 | `delivery.mail.mailable` | class-string\|null | `null` | – | Own Mailable (receives `invoice` and `files` in the constructor); `null` = `InvoiceMail` |
 | `delivery.mail.bcc_archive` | string\|null | `null` | `QUITTIO_BCC_ARCHIVE` | Address that receives a blind copy of every invoice mail |
-| `delivery.mail.xrechnung_visualization` | bool | `false` | – | Attach a PDF visualisation to mails of XML-only formats |
+| `delivery.mail.xrechnung_visualization` | bool | `false` | – | Attach the archived readable PDF to mails of XML-only formats (rendered on the fly if the invoice has none) |
 | `delivery.recipient_resolver` | class-string\|null | `null` | – | Class implementing `RecipientResolver`; `null` = `DefaultRecipientResolver` |
 
 ### Audit, retention and policy settings
@@ -2223,6 +2499,8 @@ The sign strategy of cancellations is configured in `config/quittio.php`, see
 | `validation.*` | Validation levels applied when issuing and archiving (see [Validation](validation.md)) |
 | `pdf.template`, `pdf.templates` | Templates an issuer may choose in `branding.template` |
 | `pdf.filename` | File names in the archive (default `{title}_{number}.{ext}`) |
+| `pdf.pdfa` | The readable PDF of XML-only e-invoices is PDF/A-3b when `true` (default) |
+| `format_resolver.b2c_embed_xml` | `true` = no readable PDF is archived next to XML-only e-invoices |
 | `countries` | Country packs (numbering, retention, correction policy, titles) |
 
 See [Configuration](configuration.md) for these keys. The `seller` section is not used for
@@ -2296,7 +2574,7 @@ contract (`ConfigurationException` otherwise). Only `issuer_resolver` accepts a 
 | `quittio:sequence:show {--issuer=}` | List the number sequences | [Managing sequences](#managing-sequences) |
 | `quittio:sequence:set {key} {value} {--force}` | Raise or create a number sequence | [Managing sequences](#managing-sequences) |
 | `quittio:retention:check {--delete} {--force}` | List and delete invoices past their retention period | [Retention and deletion](#retention-and-deletion) |
-| `quittio:drafts:prune {--older-than=60} {--force}` | Delete left-behind cancellation and correction drafts | [Left-behind drafts](#left-behind-drafts) |
+| `quittio:drafts:prune {--older-than=60} {--force}` | Delete left-behind cancellation, correction and price reduction drafts | [Left-behind drafts](#left-behind-drafts) |
 
 The commands ignore the tenancy scope. See [Artisan commands](commands.md) for all
 signatures. For example, scheduled in production:
@@ -2328,7 +2606,7 @@ All events are in the namespace `Quittio\Managed\Events` and have public readonl
 
 | Event | Dispatched | Properties |
 |---|---|---|
-| `InvoiceDrafted` | A draft was created (also drafts of cancellations and corrections); after the commit when it was created inside a transaction, so the cancellation draft of a correction that rolls back is not announced | `invoice` |
+| `InvoiceDrafted` | A draft was created (also drafts of cancellations, corrections and price reductions); after the commit when it was created inside a transaction, so the cancellation draft of a correction that rolls back is not announced | `invoice` |
 | `InvoiceIssuing` | A draft is about to be issued: validated, no number yet; a listener that throws stops the issue. Not followed by `InvoiceIssued` when the issue fails afterwards | `invoice` |
 | `InvoiceIssued` | After the issuing transaction was committed and the render job was queued (or the documents rendered) | `invoice` |
 | `InvoiceDocumentsStored` | A new document version was rendered and archived | `invoice` |
@@ -2336,13 +2614,14 @@ All events are in the namespace `Quittio\Managed\Events` and have public readonl
 | `InvoiceCancelled` | After the commit: the original was cancelled completely (`cancel()`, the last partial cancellation, `cancel_and_reissue`) | `invoice` (original), `cancellation` |
 | `InvoicePartiallyCancelled` | After the commit: parts of the original were cancelled | `invoice` (original), `cancellation` |
 | `InvoiceCorrected` | After the commit: a correction of the original was issued | `invoice` (original), `correction` |
+| `PriceReduced` | After the commit: a price reduction of the original was issued; the original keeps its status | `invoice` (original), `reduction` |
 | `InvoiceSent` | The mail was sent | `invoice`, `delivery` |
 | `InvoiceDeliveryFailed` | Sending failed (before the exception is rethrown) | `invoice`, `delivery`, `exception` |
 | `ArchiveIntegrityViolation` | An archived file is missing or changed (archiving, `send()`, `quittio:verify`) | `invoice`, `path`, `problem` |
 | `RetentionExpired` | `quittio:retention:check` found the invoice past its retention period and not on legal hold, before anything is deleted | `invoice` |
 
-After a cancellation is committed, the order is: render job of the cancellation,
-`InvoiceIssued` (of the cancellation), then `InvoiceCancelled` or `InvoicePartiallyCancelled`.
+After a cancellation or a price reduction is committed, the order is: its render job, its
+`InvoiceIssued`, then `InvoiceCancelled`, `InvoicePartiallyCancelled` or `PriceReduced`.
 A listener of an after-commit event that throws does not undo anything: the exception reaches
 the caller after all after-commit work has run.
 
@@ -2358,7 +2637,7 @@ which extends `Quittio\Core\Exceptions\QuittioException`.
 
 | Exception | Base class | Thrown when |
 |---|---|---|
-| `InvalidInvoiceState` | `LogicException` | The action is not possible in the current state: issuing a cancellation draft directly, cancelling or correcting what cannot be (see the table in [Cancellations and corrections](#cancellations-and-corrections)), a date before the original, another company, a seller with another VAT id or tax number, sending a draft, an empty partial cancellation, a cancellation that raced with another one |
+| `InvalidInvoiceState` | `LogicException` | The action is not possible in the current state: issuing a cancellation draft directly, cancelling, correcting or reducing what cannot be (see the table in [Cancellations and corrections](#cancellations-and-corrections) and [Price reductions](#price-reductions)), a cancellation that together with the price reductions would exceed the net amount, a price reduction draft that is no longer a credit note, a self-billed document, a date before the original, another company, a seller with another VAT id or tax number, sending a draft, an empty partial cancellation, a cancellation that raced with another one |
 | `InvoiceNotDraft` | `LogicException` | `updateData()`, `preview()` or `issue()` on an issued invoice, or a draft issued or deleted by another process meanwhile |
 | `InvoiceImmutable` | `LogicException` | A frozen column, status, retention, archive or cancellation column would change, an issued invoice would be deleted, a bulk operation would reach one, a stale model is saved, or the audit log or relations would change |
 | `NothingToCancel` | `LogicException` | `cancel()` or `cancelPartially()` of an invoice that is cancelled completely |
@@ -2372,10 +2651,10 @@ Other exceptions you may meet:
 
 | Exception | When |
 |---|---|
-| `Quittio\Core\Validation\ValidationException` | `issue()` (also of cancellations and corrections) of an invalid invoice; `$e->result` |
+| `Quittio\Core\Validation\ValidationException` | `issue()` (also of cancellations, corrections and price reductions) of an invalid invoice; `$e->result` |
 | `Quittio\Core\Exceptions\ConfigurationException` | Invalid configuration: model classes, resolver, generator and recipient classes, Mailable, archive path, reset, start, `retention.years`, correction strategy, value types |
-| `UnexpectedValueException` | Invalid partial cancellation selections, malformed relation JSON, an invoice not found or ambiguous in `quittio:render` |
-| `InvalidArgumentException` | Partial cancellation of an invoice with document level allowances or charges, an unknown cancellation strategy (core); an amount with more than two decimals |
+| `UnexpectedValueException` | Invalid partial cancellation selections, a price reduction above what is left of a VAT group, malformed relation JSON, an invoice not found or ambiguous in `quittio:render` |
+| `InvalidArgumentException` | Partial cancellation of an invoice with document level allowances or charges, an unknown cancellation strategy, invalid price reduction values (core); an amount with more than two decimals |
 | `Illuminate\Database\QueryException` | Foreign keys (e.g. deleting an issuer with invoices) and the triggers |
 
 ```php
@@ -2404,8 +2683,8 @@ the configuration.
 |---|---|---|
 | `quittio_issuers` | `Issuer` | Issuer profiles |
 | `quittio_sequences` | `Sequence` | Number sequences |
-| `quittio_invoices` | `Invoice` | Drafts and issued invoices, cancellations and corrections |
-| `quittio_invoice_relations` | `InvoiceRelation` | `cancels`, `partially_cancels`, `corrects`, `replaces` |
+| `quittio_invoices` | `Invoice` | Drafts and issued invoices, cancellations, corrections and price reductions |
+| `quittio_invoice_relations` | `InvoiceRelation` | `cancels`, `partially_cancels`, `corrects`, `replaces`, `reduces` |
 | `quittio_deliveries` | `Delivery` | Delivery attempts |
 | `quittio_audit_logs` | `AuditLog` | Audit log |
 | `quittio_archive_files` | – | Manifest of every archived file (no model, see [Archive manifest](#archive-manifest)) |
@@ -2420,7 +2699,7 @@ The names use the default prefix `quittio_` (`table_prefix`, see
 | `id`, `uuid` | Key and UUID (generated) |
 | `issuer_id` | Issuer |
 | `billable_type`, `billable_id`, `invoiceable_type`, `invoiceable_id` | References to your models |
-| `kind` | `Kind`: `invoice`, `cancellation`, `correction` |
+| `kind` | `Kind`: `invoice`, `cancellation`, `correction`, `price_reduction` |
 | `type_code` | Document type code (BT-3, UNTDID 1001), e.g. `380` invoice, `381` credit note, `384` corrected invoice |
 | `status`, `payment_status`, `delivery_status` | See [Statuses](#statuses) |
 | `format`, `profile` | Draft: chosen (or `null` for the automatic choice); issued: used |
@@ -2434,10 +2713,11 @@ The names use the default prefix `quittio_` (`table_prefix`, see
 | `net_total`, `tax_total`, `gross_total`, `prepaid_total`, `amount_due` | Totals, set when issued (strings with two decimals, e.g. `"2747.71"`) |
 | `paid_total`, `paid_at` | Payments (default `"0.00"`) |
 | `data`, `data_version` | Data snapshot and its version |
-| `preceding_invoice_id` | Original of a cancellation or correction |
+| `preceding_invoice_id` | Original of a cancellation, correction or price reduction |
 | `cancelled_at`, `cancellation_reason`, `cancellations` | See [Status](#status) |
 | `render_status`, `render_attempts`, `document_version` | Rendering |
 | `disk`, `xml_path`, `pdf_path`, `xml_hash`, `pdf_hash`, `validation_status`, `validation_report_path` | Archive |
+| `visualization_path`, `visualization_hash` | Readable PDF of an XML-only e-invoice and its SHA-256 hash (see [Readable PDF of XML-only e-invoices](#readable-pdf-of-xml-only-e-invoices)) |
 | `retention_until`, `legal_hold` | Retention |
 | `issued_at`, `sent_at` | Times of issue and last delivery |
 | `issued_by_type`, `issued_by_id` | Authenticated user who issued the invoice |
@@ -2454,7 +2734,7 @@ Columns are guarded: write them with `forceFill()`.
 | `precedingInvoice()` | `BelongsTo` the original |
 | `createdBy()`, `issuedBy()` | `MorphTo` the users who created the draft and issued the invoice |
 | `relations()` | `HasMany` relations of this invoice to earlier ones |
-| `inverseRelations()` | `HasMany` relations of later invoices to this one (its cancellations and corrections) |
+| `inverseRelations()` | `HasMany` relations of later invoices to this one (its cancellations, corrections and price reductions) |
 | `deliveries()` | `MorphMany` delivery attempts |
 | `auditLogs()` | `MorphMany` audit entries |
 | `isDraft()`, `isIssued()` | Status checks (`isIssued()` is true for every status but draft) |
@@ -2467,6 +2747,7 @@ Columns are guarded: write them with `forceFill()`.
 | `cancel($reason = null, $issueDate = null)` | Full cancellation |
 | `cancelPartially(array $lines, $reason = null, $issueDate = null)` | Partial cancellation |
 | `correct()` | Correction draft |
+| `reducePrice(PriceReductionReason $reason, $percent = null, $amount = null, ?array $amounts = null, ?string $title = null)` | Price reduction draft (see [Price reductions](#price-reductions)) |
 | `send(?string $to = null, array $cc = [])` | Mail delivery |
 | `toInvoiceData()` | The data (draft or frozen snapshot), upcast to the current snapshot version; the stored snapshot is never rewritten |
 
@@ -2474,7 +2755,7 @@ Columns are guarded: write them with `forceFill()`.
 |---|---|
 | `drafts()` | Drafts |
 | `issued()` | Issued invoices, including (partially) cancelled ones |
-| `open()` | Issued or partially cancelled, not a cancellation, unpaid or partially paid |
+| `open()` | Issued or partially cancelled, not a cancellation or price reduction, unpaid or partially paid |
 | `overdue(?CarbonImmutable $today = null)` | Open and due before today |
 | `forBillable(Model $billable)` | Invoices of a billable |
 | `ofKind(Kind $kind)` | One kind |
@@ -2497,10 +2778,10 @@ Namespace `Quittio\Managed\Enums`:
 | Enum | Cases (value) | Methods |
 |---|---|---|
 | `Status` | `Draft` (`draft`), `Issued` (`issued`), `PartiallyCancelled` (`partially_cancelled`), `Cancelled` (`cancelled`) | `rank()`, `canMoveTo(Status $next)`, `isIssued()` |
-| `Kind` | `Invoice` (`invoice`), `Cancellation` (`cancellation`), `Correction` (`correction`) | – |
+| `Kind` | `Invoice` (`invoice`), `Cancellation` (`cancellation`), `Correction` (`correction`), `PriceReduction` (`price_reduction`) | – |
 | `PaymentStatus` | `Unpaid` (`unpaid`), `PartiallyPaid` (`partially_paid`), `Paid` (`paid`), `Overpaid` (`overpaid`), `WrittenOff` (`written_off`) | – |
 | `DeliveryStatus` | `NotSent` (`not_sent`), `Sent` (`sent`), `Failed` (`failed`) | – |
 | `DeliveryState` | `Queued` (`queued`), `Sent` (`sent`), `Failed` (`failed`) | – |
 | `RenderStatus` | `Pending` (`pending`), `Rendering` (`rendering`), `Done` (`done`), `Failed` (`failed`) | – |
 | `ValidationStatus` | `Valid` (`valid`), `Warnings` (`warnings`), `Invalid` (`invalid`), `NotChecked` (`not_checked`) | `ValidationStatus::of(ValidationResult $result)` |
-| `RelationType` | `Cancels` (`cancels`), `PartiallyCancels` (`partially_cancels`), `Corrects` (`corrects`), `Replaces` (`replaces`) | `RelationType::cancelling()`: the values of the cancelling relations |
+| `RelationType` | `Cancels` (`cancels`), `PartiallyCancels` (`partially_cancels`), `Corrects` (`corrects`), `Replaces` (`replaces`), `Reduces` (`reduces`) | `RelationType::cancelling()`: the values of the cancelling relations (`cancels`, `partially_cancels`, `replaces`) |
