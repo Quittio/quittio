@@ -4,6 +4,8 @@ All notable changes to this project are documented in this file. The format foll
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-10-26
+
 ### Added
 
 - `Quittio::invoice()` in the core: without Laravel, an invoice starts with the configured seller and renders at the end of the chain, as `Quittio::invoice()` does in Laravel: `$quittio->invoice()->number(…)->buyer(…)->line(…)->render()`, also `->render('xrechnung-cii')`, `->render(['zugferd', 'xrechnung-cii'])` and `->check()`. It returns the new `Builder\BoundInvoiceBuilder`, an `InvoiceBuilder` bound to the instance.
@@ -366,7 +368,8 @@ First release.
 - `pdf.paper` and the VIES verification (`validation.drivers.vies.enabled`) take effect; file names of XML-only formats no longer contain a raw translation key.
 - Watermarks (draft and preview PDFs) were never printed: mPDF needs `showWatermarkText`, and PDF/A forbids their transparency. Watermarked PDFs without embedded XML are now rendered without PDF/A.
 
-[Unreleased]: https://github.com/Quittio/quittio/compare/v0.7.1...HEAD
+[Unreleased]: https://github.com/Quittio/quittio/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/Quittio/quittio/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/Quittio/quittio/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/Quittio/quittio/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/Quittio/quittio/compare/v0.5.0...v0.6.0

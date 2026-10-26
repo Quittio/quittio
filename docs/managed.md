@@ -94,8 +94,8 @@ php artisan vendor:publish --tag=quittio-managed-triggers   # recommended for pr
 php artisan migrate
 ```
 
-Requirements: PHP 8.3 or later, Laravel 13, and `quittio/core` and `quittio/laravel` 0.7.1 or
-later (`^0.7.1`). Composer installs both from Packagist.
+Requirements: PHP 8.3 or later, Laravel 13, and `quittio/core` and `quittio/laravel` 0.8.0 or
+later (`^0.8.0`). Composer installs both from Packagist.
 
 `quittio:install --managed` runs these steps (see also [Artisan commands](commands.md)):
 
