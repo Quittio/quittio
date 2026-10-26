@@ -616,10 +616,12 @@
             "public gross(string $key): ?Brick\\Math\\BigDecimal",
             "public matches(Quittio\\Core\\Data\\InvoiceData $original, Quittio\\Core\\Data\\InvoiceData $cancellation): bool",
             "public static entries(Quittio\\Core\\Data\\InvoiceData $original, Quittio\\Core\\Data\\InvoiceData $cancellation): array",
+            "public static fromDocuments(Quittio\\Core\\Data\\InvoiceData $original, iterable $documents, array $closes = []): Quittio\\Core\\Corrections\\CancellationHistory",
             "public tax(string $key): Brick\\Math\\BigDecimal",
             "public taxInTaxCurrency(): ?Brick\\Math\\BigDecimal",
             "public taxable(string $key): Brick\\Math\\BigDecimal",
-            "public withCancellation(Quittio\\Core\\Data\\InvoiceData $original, Quittio\\Core\\Data\\InvoiceData $cancellation, array $closes = []): Quittio\\Core\\Corrections\\CancellationHistory"
+            "public withCancellation(Quittio\\Core\\Data\\InvoiceData $original, Quittio\\Core\\Data\\InvoiceData $cancellation, array $closes = []): Quittio\\Core\\Corrections\\CancellationHistory",
+            "public withPriceReduction(Quittio\\Core\\Data\\InvoiceData $original, Quittio\\Core\\Data\\InvoiceData $reduction): Quittio\\Core\\Corrections\\CancellationHistory"
         ]
     },
     "Quittio\\Core\\Corrections\\Correction": {
@@ -632,7 +634,7 @@
     "Quittio\\Core\\Corrections\\PriceReduction": {
         "kind": "final class",
         "methods": [
-            "public static of(Quittio\\Core\\Data\\InvoiceData $original, string $number, Quittio\\Core\\Corrections\\PriceReductionReason $reason, Brick\\Math\\BigDecimal|string|int|null $percent = null, Brick\\Math\\BigDecimal|string|int|null $amount = null, ?array $amounts = null, ?Quittio\\Core\\Support\\Date $issueDate = null, ?string $locale = null, ?string $title = null, ?Quittio\\Core\\Countries\\CorrectionPolicy $policy = null, Quittio\\Core\\Calculation\\TotalsCalculator $calculator = new Quittio\\Core\\Calculation\\En16931Calculator): Quittio\\Core\\Builder\\InvoiceBuilder"
+            "public static of(Quittio\\Core\\Data\\InvoiceData $original, string $number, Quittio\\Core\\Corrections\\PriceReductionReason $reason, Brick\\Math\\BigDecimal|string|int|null $percent = null, Brick\\Math\\BigDecimal|string|int|null $amount = null, ?array $amounts = null, ?Quittio\\Core\\Support\\Date $issueDate = null, ?string $locale = null, ?string $title = null, ?Quittio\\Core\\Countries\\CorrectionPolicy $policy = null, Quittio\\Core\\Calculation\\TotalsCalculator $calculator = new Quittio\\Core\\Calculation\\En16931Calculator, ?Quittio\\Core\\Corrections\\CancellationHistory $history = null): Quittio\\Core\\Builder\\InvoiceBuilder"
         ]
     },
     "Quittio\\Core\\Corrections\\PriceReductionReason": {
@@ -3517,7 +3519,7 @@
             "public orderConfirmation(): Quittio\\Core\\Documents\\BoundDocumentBuilder",
             "public paymentReminder(int $level = 0): Quittio\\Core\\Documents\\BoundDocumentBuilder",
             "public prepare(Quittio\\Core\\Data\\InvoiceData $data, Quittio\\Core\\Rendering\\RenderOptions $options = new Quittio\\Core\\Rendering\\RenderOptions): Quittio\\Core\\Rendering\\PreparedInvoice",
-            "public priceReduction(Quittio\\Core\\Data\\InvoiceData $original, string $number, Quittio\\Core\\Corrections\\PriceReductionReason $reason, Brick\\Math\\BigDecimal|string|int|null $percent = null, Brick\\Math\\BigDecimal|string|int|null $amount = null, ?array $amounts = null, ?Quittio\\Core\\Support\\Date $issueDate = null, ?string $title = null): Quittio\\Core\\Builder\\InvoiceBuilder",
+            "public priceReduction(Quittio\\Core\\Data\\InvoiceData $original, string $number, Quittio\\Core\\Corrections\\PriceReductionReason $reason, Brick\\Math\\BigDecimal|string|int|null $percent = null, Brick\\Math\\BigDecimal|string|int|null $amount = null, ?array $amounts = null, ?Quittio\\Core\\Support\\Date $issueDate = null, ?string $title = null, ?Quittio\\Core\\Corrections\\CancellationHistory $history = null): Quittio\\Core\\Builder\\InvoiceBuilder",
             "public profiles(): Quittio\\Core\\Profiles\\ProfileRegistry",
             "public proforma(): Quittio\\Core\\Documents\\BoundDocumentBuilder",
             "public quote(): Quittio\\Core\\Documents\\BoundDocumentBuilder",
@@ -6831,7 +6833,7 @@
             "public orderConfirmation(): Quittio\\Laravel\\Builder\\RenderableDocumentBuilder",
             "public paymentReminder(int $level = 0): Quittio\\Laravel\\Builder\\RenderableDocumentBuilder",
             "public prepare(Quittio\\Core\\Data\\InvoiceData $invoice, Quittio\\Core\\Rendering\\RenderOptions $options): Quittio\\Core\\Rendering\\PreparedInvoice",
-            "public priceReduction(Quittio\\Core\\Data\\InvoiceData $original, string $number, Quittio\\Core\\Corrections\\PriceReductionReason $reason, Brick\\Math\\BigDecimal|string|int|null $percent = null, Brick\\Math\\BigDecimal|string|int|null $amount = null, ?array $amounts = null, ?Quittio\\Core\\Support\\Date $issueDate = null, ?string $title = null): Quittio\\Core\\Builder\\InvoiceBuilder",
+            "public priceReduction(Quittio\\Core\\Data\\InvoiceData $original, string $number, Quittio\\Core\\Corrections\\PriceReductionReason $reason, Brick\\Math\\BigDecimal|string|int|null $percent = null, Brick\\Math\\BigDecimal|string|int|null $amount = null, ?array $amounts = null, ?Quittio\\Core\\Support\\Date $issueDate = null, ?string $title = null, ?Quittio\\Core\\Corrections\\CancellationHistory $history = null): Quittio\\Core\\Builder\\InvoiceBuilder",
             "public profiles(): Quittio\\Core\\Profiles\\ProfileRegistry",
             "public proforma(): Quittio\\Laravel\\Builder\\RenderableDocumentBuilder",
             "public queueDocument(Quittio\\Laravel\\Jobs\\RenderDocument $job): Quittio\\Laravel\\Jobs\\RenderDocument",
@@ -7092,7 +7094,7 @@
             "public orderConfirmation(): Quittio\\Laravel\\Builder\\RenderableDocumentBuilder",
             "public paymentReminder(int $level = 0): Quittio\\Laravel\\Builder\\RenderableDocumentBuilder",
             "public prepare(Quittio\\Core\\Data\\InvoiceData $invoice, Quittio\\Core\\Rendering\\RenderOptions $options): Quittio\\Core\\Rendering\\PreparedInvoice",
-            "public priceReduction(Quittio\\Core\\Data\\InvoiceData $original, string $number, Quittio\\Core\\Corrections\\PriceReductionReason $reason, Brick\\Math\\BigDecimal|string|int|null $percent = null, Brick\\Math\\BigDecimal|string|int|null $amount = null, ?array $amounts = null, ?Quittio\\Core\\Support\\Date $issueDate = null, ?string $title = null): Quittio\\Core\\Builder\\InvoiceBuilder",
+            "public priceReduction(Quittio\\Core\\Data\\InvoiceData $original, string $number, Quittio\\Core\\Corrections\\PriceReductionReason $reason, Brick\\Math\\BigDecimal|string|int|null $percent = null, Brick\\Math\\BigDecimal|string|int|null $amount = null, ?array $amounts = null, ?Quittio\\Core\\Support\\Date $issueDate = null, ?string $title = null, ?Quittio\\Core\\Corrections\\CancellationHistory $history = null): Quittio\\Core\\Builder\\InvoiceBuilder",
             "public profiles(): Quittio\\Core\\Profiles\\ProfileRegistry",
             "public proforma(): Quittio\\Laravel\\Builder\\RenderableDocumentBuilder",
             "public queueDocument(Quittio\\Laravel\\Jobs\\RenderDocument $job): Quittio\\Laravel\\Jobs\\RenderDocument",

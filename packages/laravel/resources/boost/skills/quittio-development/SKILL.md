@@ -43,6 +43,7 @@ Use this skill when code creates, renders, sends, validates, cancels or reads in
 
 - Issued invoices are never changed. Cancel: `$result->cancel('ST-2026-0001', reason: 'Charged twice')` renders the cancellation (type 381 with positive amounts by default in Germany) in the formats of the invoice. For stored data, `Quittio::cancellation($data, 'ST-2026-0001', reason: '…')` returns an `InvoiceBuilder`; render it like an invoice.
 - Partial: `lines: [['line' => '1', 'quantity' => '1'], ['line' => '2', 'amount' => '50.00']]`, with `history:` (a `CancellationHistory`) for later parts.
+- Price reduction (cash discount, defect, bonus): `Quittio::priceReduction($data, 'EM-2026-0001', PriceReductionReason::CashDiscount, percent: '2')`. Pass `history:` (the same `CancellationHistory` as for partial cancellations, `withPriceReduction()` after each one) so that its VAT is rounded cumulatively with the earlier partial cancellations and price reductions.
 - With `quittio/managed`, use its issuer, numbering and cancellation features instead of numbering invoices yourself.
 
 ## Reading incoming invoices

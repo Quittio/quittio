@@ -12,6 +12,7 @@ use Quittio\Core\Builder\InvoiceBuilder;
 use Quittio\Core\Builder\LineBuilder;
 use Quittio\Core\Builder\PartyBuilder;
 use Quittio\Core\Calculation\En16931Calculator;
+use Quittio\Core\Corrections\CancellationHistory;
 use Quittio\Core\Corrections\PriceReductionReason;
 use Quittio\Core\Enums\UnitCode;
 use Quittio\Core\Profiles\ProfileRegistry;
@@ -75,6 +76,10 @@ $advance = $calculator->calculate($de(Scenarios::base()->number('AB-2026-0001')-
 $original = $calculator->calculate(Scenarios::make('mixed-vat')->build());
 $selfBilled = $calculator->calculate($de(Scenarios::make('simple'))->selfBilled()->build());
 $final = static fn (): InvoiceBuilder => Scenarios::base()->line($line('Website', '3000.00'))->line($line('Buch', '300.00', VatPreset::Reduced));
+// 3 × 0.50 at 19 % (VAT 0.29), one unit cancelled (VAT 0.10): a price reduction of 0.50 carries the
+// VAT aligned with the cancellation, 0.09 instead of 0.10 (flag cancellation_vat_aligned, declared VAT).
+$small = $calculator->calculate(Scenarios::base()->line(static fn (LineBuilder $l): LineBuilder => $l->name('Teil')->quantity(3, UnitCode::Piece)->netPrice('0.50')->vat(VatPreset::Standard))->build());
+$smallHistory = (new CancellationHistory)->withCancellation($small, $calculator->calculate($quittio->cancellation($small, 'ST-1', lines: [['line' => '1', 'quantity' => '1']])->build()));
 /** @var array<string, Closure(): InvoiceBuilder> $german */
 $german = [
     'de-small-business-ex' => fn (): InvoiceBuilder => $de(Scenarios::base()->seller(fn (PartyBuilder $s): PartyBuilder => $s->vatId(null)))->smallBusinessId('DE123456789EX')
@@ -88,6 +93,7 @@ $german = [
     'de-self-billed-cancellation-389' => fn (): InvoiceBuilder => $quittio->cancellation($selfBilled, 'ST-1', strategy: 'negative_invoice'),
     'de-correction' => fn (): InvoiceBuilder => $quittio->correction($original, 'RE-2026-0050', reason: 'Falscher Preis'),
     'de-price-reduction' => fn (): InvoiceBuilder => $quittio->priceReduction($original, 'EM-2026-0001', PriceReductionReason::CashDiscount, percent: '2'),
+    'de-price-reduction-aligned' => fn (): InvoiceBuilder => $quittio->priceReduction($small, 'EM-2026-0002', PriceReductionReason::Defect, amount: '0.50', history: $smallHistory),
     'de-business-transfer' => fn (): InvoiceBuilder => Scenarios::base()->seller(fn (PartyBuilder $s): PartyBuilder => $s->vatId(null))->buyer(fn (PartyBuilder $b): PartyBuilder => $b->vatId(null))
         ->line($line('Betrieb mit Inventar', '250000.00', VatPreset::BusinessTransfer)),
     'de-photovoltaic' => fn (): InvoiceBuilder => Scenarios::base()->line($line('Photovoltaikanlage', '12000.00', VatPreset::ZeroRatedPv)),

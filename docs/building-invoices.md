@@ -984,7 +984,7 @@ In Laravel, a rendered invoice can also be cancelled with `$result->cancel(…)`
 | `$strategy` | `credit_note` or `negative_invoice` (`CorrectionPolicy::CANCELLATION_CREDIT_NOTE`, `CANCELLATION_NEGATIVE_INVOICE`, see [Sign strategies](#sign-strategies)). Default: the configured `corrections.cancellation_strategy`, then the country pack (Germany: `credit_note`). Another value throws an `InvalidArgumentException`. |
 | `$issueDate` | A `Date` (`Date::parse('2026-10-20')`), default today in the time zone of the original. |
 | `$lines` | Partial cancellation ([below](#partial-cancellations)); `null` cancels the whole invoice. |
-| `$history` | Earlier partial cancellations of the original, for the cumulative VAT rounding ([below](#cumulative-vat-rounding)). |
+| `$history` | Earlier partial cancellations and price reductions of the original, for the cumulative VAT rounding ([below](#cumulative-vat-rounding)). |
 | `$title` | Document title in PDF, HTML and file name (`Presentation::$title`), e.g. "Stornorechnung". Default: the title `cancellation` of the country pack's correction policy (`cancellation_self_billed` for self-billed originals); without one, the label of the type code. |
 
 The leading country pack of the original ([Country packs](country-packs.md)) provides the correction policy and the locale of the texts: the locale of the original, then the configured locale, then the pack default.
@@ -1050,7 +1050,7 @@ $builder = $quittio->cancellation($original, 'ST-2026-0002', reason: 'Partial re
 
 VAT is rounded per document and VAT group. If each partial cancellation is rounded on its own, the parts together can differ from the original by a cent per part. Example: three parts of 9.67, 9.67 and 9.66 net at 19 % carry 3 × 1.84 = 5.52 VAT, the original 5.51.
 
-With a `CancellationHistory` of the earlier partial cancellations, the VAT is rounded cumulatively per VAT group:
+With a `CancellationHistory` of the earlier partial cancellations, the VAT is rounded cumulatively per VAT group (price reductions share the history, see [VAT of price reductions](#vat-of-price-reductions)):
 
 - S = taxable amount of the earlier cancellations + taxable amount of this one,
 - target = round2(S × rate / 100), or the original's VAT BT-117 when this cancellation closes the group (all its lines are cancelled completely afterwards),
@@ -1089,10 +1089,12 @@ $third = $quittio->make($quittio->cancellation($original, 'ST-3', lines: [['line
 | `CancellationHistory` | Description |
 |---|---|
 | `new CancellationHistory(array $groups = [], array $closes = [])` | `$groups`: per VAT group key (`DeclaredAmounts::breakdownKey()`, e.g. `S\|19.00`, `S\|7.00`, `E\|0.00`, `O\|`) the sums of the earlier cancellations as `BigDecimal`: `taxable` (BT-116), `tax` (BT-117), `taxInTaxCurrency` (share of BT-111, null if unknown) and in gross price mode `gross` (null or missing if unknown), in the original's direction. `$closes`: keys of the VAT groups whose lines are all cancelled completely once this cancellation is issued, including groups closed earlier. |
-| `withCancellation(InvoiceData $original, InvoiceData $cancellation, array $closes = []): self` | The history after an issued (calculated) cancellation; `$closes` for the next one. |
+| `withCancellation(InvoiceData $original, InvoiceData $cancellation, array $closes = []): self` | The history after an issued (calculated) cancellation; `$closes` for the next one. The cancellation of a price reduction counts negatively. |
+| `withPriceReduction(InvoiceData $original, InvoiceData $reduction): self` | The history after an issued (calculated) price reduction; the closed groups stay. |
+| `CancellationHistory::fromDocuments(InvoiceData $original, iterable $documents, array $closes = []): self` | The history of all issued (calculated) documents that credited the original: partial cancellations, price reductions and the cancellations of those. |
 | `CancellationHistory::entries(InvoiceData $original, InvoiceData $cancellation)` | The VAT groups of an issued cancellation in the original's direction. |
 | `taxable(string $key)`, `tax(string $key)`, `gross(string $key)`, `closes(string $key)`, `taxInTaxCurrency()` | Values of the history. |
-| `align(InvoiceData $original, InvoiceData $cancellation)` | The aligned VAT breakdown and BT-111 of a calculated partial cancellation (used by `cancellation()`). |
+| `align(InvoiceData $original, InvoiceData $cancellation)` | The aligned VAT breakdown and BT-111 of a calculated partial cancellation or price reduction (used by `cancellation()` and `priceReduction()`). |
 | `assertFits(InvoiceData $original, InvoiceData $cancellation, array $aligned)` | Throws an `InvalidArgumentException` for a history that does not fit the original: unknown VAT groups, more taxable amount than the original's lines, or a VAT more than 0.01 off or of the wrong sign. A history built with `withCancellation()` from the issued cancellations always fits. |
 | `matches(InvoiceData $original, InvoiceData $cancellation): bool` | Whether an issued cancellation carries the VAT this history gives it; false e.g. after another partial cancellation was issued meanwhile. |
 
@@ -1131,7 +1133,7 @@ Cancelling the original and issuing a new invoice stays the safer default: a rec
 
 A price reduction (German "Entgeltminderung") reduces the consideration of a correct invoice afterwards: a cash discount (Skonto) taken, a reduction after a complaint about defects, a bonus (section 17 UStG). The invoice is not corrected; in Germany such a document is not even required, except for section 17 (4) UStG, and it need not be an e-invoice (section 14.11 (4), 17.1 (3a) UStAE). A cash discount taken may simply be booked with the payment.
 
-`priceReduction(InvoiceData $original, string $number, PriceReductionReason $reason, $percent = null, $amount = null, ?array $amounts = null, ?Date $issueDate = null, ?string $title = null): InvoiceBuilder` builds such a document:
+`priceReduction(InvoiceData $original, string $number, PriceReductionReason $reason, $percent = null, $amount = null, ?array $amounts = null, ?Date $issueDate = null, ?string $title = null, ?CancellationHistory $history = null): InvoiceBuilder` builds such a document:
 
 ```php
 use Quittio\Core\Corrections\PriceReductionReason;
@@ -1152,7 +1154,63 @@ $builder = $quittio->priceReduction($original, 'EM-2026-0003', PriceReductionRea
 - Payment terms: for a cash discount "Die Minderung wurde bei der Zahlung bereits einbehalten.", otherwise the text of a cancellation.
 - The title comes from the policy (`price_reduction`, Germany: "Entgeltminderung"); without one, the label `price_reduction_title`. It is deliberately neither "Rechnungskorrektur" nor "Gutschrift".
 - Credit notes, self-billed documents and uncalculated invoices cannot be reduced (`InvalidArgumentException`).
-- `PriceReduction::of(…)` (`Quittio\Core\Corrections\PriceReduction`) does the same without a `Quittio` instance.
+- `PriceReduction::of(InvoiceData $original, string $number, PriceReductionReason $reason, $percent = null, $amount = null, ?array $amounts = null, ?Date $issueDate = null, ?string $locale = null, ?string $title = null, ?CorrectionPolicy $policy = null, TotalsCalculator $calculator = new En16931Calculator, ?CancellationHistory $history = null)` (`Quittio\Core\Corrections\PriceReduction`) does the same without a `Quittio` instance.
+
+#### VAT of price reductions
+
+Without a history, the VAT of a price reduction is round2(its net amount × rate) per VAT group. Several reductions (and partial cancellations) of one invoice can then credit a cent more VAT than the invoice has: an invoice of 1.50 net at 19 % carries 0.29 VAT, three price reductions of 0.50 each 3 × 0.10 = 0.30.
+
+Pass `history:` with what the earlier partial cancellations and price reductions of the original credited, as for [partial cancellations](#cumulative-vat-rounding). One history per invoice holds both kinds, so a price reduction after a partial cancellation is aligned with it, and a partial cancellation after a price reduction with that:
+
+- Per VAT group, the VAT credited so far is round2(net amount credited so far × rate); the reduction carries that minus the VAT already credited. The three reductions above carry 0.10, 0.09 and 0.10.
+- Once the reductions and cancellations credit the whole net amount of a group, the reduction that gets there carries the rest of the invoice's VAT (BT-117): it closes the group by itself.
+- A VAT amount that differs from the reduction's own rounding is declared (meta flag `cancellation_vat_aligned`, the validation information `QUITTIO-CANCELLATION-VAT-ALIGNED`, at most 0.01 and with the sign of the net amount, within BR-CO-17). The note names that VAT ("Minderung Entgelt 0,50 €, Umsatzsteuer 19 %: 0,09 €.") and adds "Rundungsausgleich: Die Umsatzsteuer dieser Entgeltminderung ist so bemessen, dass alle Entgeltminderungen und Stornos zur Rechnung RE-… zusammen die Umsatzsteuer des geminderten und stornierten Entgelts exakt berichtigen." ("Rounding adjustment: the VAT of this price reduction is set so that all price reductions and cancellations of invoice RE-… together correct exactly the VAT of the reduced and cancelled consideration.", label `price_reduction_vat_aligned`).
+- BT-111 in accounting currency is aligned the same way.
+- With a history, the reductions and cancellations together cannot credit more than the taxable amount of a group, and a history that does not fit the original throws an `InvalidArgumentException` (`CancellationHistory::assertFits()`). After price reductions were cancelled, the VAT credited so far can be a cent off; a reduction that would then have to differ by more than a cent from its own rounding is rejected.
+- Without a history, nothing changes: the VAT is rounded per document.
+
+The Managed layer keeps the history itself ([Managed layer](managed.md#price-reductions)). Without it, add every issued document to the history:
+
+```php laravel
+use Quittio\Core\Corrections\CancellationHistory;
+use Quittio\Core\Corrections\PriceReductionReason;
+use Quittio\Laravel\Facades\Quittio;
+
+// $original: 3 × 0.50 at 19 %, 1.50 net, 0.29 VAT
+$history = new CancellationHistory;
+
+$first = Quittio::make(Quittio::priceReduction($original, 'EM-1', PriceReductionReason::Defect, amount: '0.50', history: $history))->render();
+$history = $history->withPriceReduction($original, $first->data());          // VAT 0.10
+
+$cancellation = Quittio::make(Quittio::cancellation($original, 'ST-1', lines: [['line' => '1', 'quantity' => '1']], history: $history))->render();
+$history = $history->withCancellation($original, $cancellation->data());     // VAT 0.09
+
+$second = Quittio::make(Quittio::priceReduction($original, 'EM-2', PriceReductionReason::Defect, amount: '0.50', history: $history))->render();
+// VAT 0.10: together exactly 0.29
+
+// Or from all documents issued so far, cancelled price reductions included:
+$history = CancellationHistory::fromDocuments($original, [$first->data(), $cancellation->data(), $second->data()]);
+```
+
+```php plain
+use Quittio\Core\Corrections\CancellationHistory;
+use Quittio\Core\Corrections\PriceReductionReason;
+
+// $original: 3 × 0.50 at 19 %, 1.50 net, 0.29 VAT
+$history = new CancellationHistory;
+
+$first = $quittio->make($quittio->priceReduction($original, 'EM-1', PriceReductionReason::Defect, amount: '0.50', history: $history))->render();
+$history = $history->withPriceReduction($original, $first->data());          // VAT 0.10
+
+$cancellation = $quittio->make($quittio->cancellation($original, 'ST-1', lines: [['line' => '1', 'quantity' => '1']], history: $history))->render();
+$history = $history->withCancellation($original, $cancellation->data());     // VAT 0.09
+
+$second = $quittio->make($quittio->priceReduction($original, 'EM-2', PriceReductionReason::Defect, amount: '0.50', history: $history))->render();
+// VAT 0.10: together exactly 0.29
+
+// Or from all documents issued so far, cancelled price reductions included:
+$history = CancellationHistory::fromDocuments($original, [$first->data(), $cancellation->data(), $second->data()]);
+```
 
 An annual bonus over several invoices (section 17 (4) UStG) is documented by a bonus statement ([Documents: Bonus statements](documents.md#bonus-statements)).
 

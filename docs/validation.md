@@ -471,7 +471,7 @@ A profile can replace rules with its own (`Profiles\Capabilities\ReplacesRules`)
 | `QUITTIO-THIRD-PARTY-PAYMENTS` | error | Third party payments (BG-DEX-09) outside an XRechnung UBL invoice of the extension |
 | `QUITTIO-CREDIT-NOTE-DUE-DATE` | warning | UBL credit note with a due date (BT-9) but without payment instructions (BG-16): the UBL binding has no place for the date there, it is left out |
 | `QUITTIO-VAT-ROUNDING` | warning | VAT amount differs from taxable amount × rate within the tolerance of BR-CO-17 |
-| `QUITTIO-CANCELLATION-VAT-ALIGNED` | info | VAT of a partial cancellation aligned with the earlier ones (cumulative rounding) |
+| `QUITTIO-CANCELLATION-VAT-ALIGNED` | info | VAT of a partial cancellation or price reduction aligned with the earlier partial cancellations and price reductions of the original (cumulative rounding) |
 | `QUITTIO-LINE-ROUNDING` | warning | Declared line net amount differs from quantity × price ± allowances and charges |
 | `QUITTIO-ATTACHMENT-FILENAME` | error | File name of an attached document used twice |
 | `QUITTIO-ATTACHMENT-SIZE` | error | Attachments larger than `attachment_max_bytes` or `attachments_max_total_bytes` |

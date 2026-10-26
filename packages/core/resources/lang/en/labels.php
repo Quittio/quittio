@@ -176,4 +176,5 @@ return [
     'price_reduction_reason_bonus' => 'a bonus',
     'price_reduction_reason_other' => 'a reduction',
     'price_reduction_terms_settled' => 'The reduction was already deducted from the payment.',
+    'price_reduction_vat_aligned' => 'Rounding adjustment: the VAT of this price reduction is set so that all price reductions and cancellations of invoice :number together correct exactly the VAT of the reduced and cancelled consideration.',
 ];

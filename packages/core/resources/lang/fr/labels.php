@@ -176,4 +176,5 @@ return [
     'price_reduction_reason_bonus' => 'd’un bonus',
     'price_reduction_reason_other' => 'd’une remise',
     'price_reduction_terms_settled' => 'La réduction a déjà été déduite du paiement.',
+    'price_reduction_vat_aligned' => 'Ajustement d’arrondi : la TVA de cette réduction de prix est fixée de sorte que toutes les réductions de prix et annulations de la facture :number corrigent ensemble exactement la TVA du prix réduit et annulé.',
 ];

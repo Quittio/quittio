@@ -453,7 +453,7 @@ return [
         'message' => 'Der Steuerbetrag der Kategorie :category (:rate %) weicht um :value von Bemessungsgrundlage × Steuersatz ab. Die offiziellen Regeln tolerieren das, kaufmännisch gerundet ist der Betrag aber nicht.',
     ],
     'QUITTIO-CANCELLATION-VAT-ALIGNED' => [
-        'message' => 'Der Steuerbetrag der Kategorie :category (:rate %) weicht um :value von Bemessungsgrundlage × Steuersatz ab: Er ist auf die früheren Teilstornierungen des Originals abgestimmt, damit alle Stornierungen zusammen genau dessen Umsatzsteuer umkehren (kumulative Rundung, höchstens 0,01, innerhalb der Toleranz von BR-CO-17).',
+        'message' => 'Der Steuerbetrag der Kategorie :category (:rate %) weicht um :value von Bemessungsgrundlage × Steuersatz ab: Er ist auf die früheren Teilstornierungen und Entgeltminderungen des Originals abgestimmt, damit alle zusammen genau dessen Umsatzsteuer berichtigen (kumulative Rundung, höchstens 0,01, innerhalb der Toleranz von BR-CO-17).',
     ],
     'QUITTIO-LINE-ROUNDING' => [
         'message' => 'Der Nettobetrag der Position :line weicht um :value von Menge × Preis ± Nachlässe und Zuschläge ab, z. B. von einem anderen System gerundet und aus dem Originalbeleg übernommen. EN 16931 prüft das nicht (Peppol toleriert 0,02), kaufmännisch gerundet ist der Betrag aber nicht.',

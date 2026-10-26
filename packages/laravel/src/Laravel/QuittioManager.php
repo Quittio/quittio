@@ -106,7 +106,7 @@ class QuittioManager
      * Quittio::make(Quittio::cancellation($original, 'ST-2026-0001', 'Doppelt berechnet'))->render().
      *
      * @param  list<array{line: string, quantity?: BigDecimal|int|string, amount?: string}>|null  $lines  partial cancellation; null = full
-     * @param  CancellationHistory|null  $history  earlier partial cancellations, for the cumulative rounding of the VAT
+     * @param  CancellationHistory|null  $history  earlier partial cancellations and price reductions, for the cumulative rounding of the VAT
      * @param  string|null  $title  document title in the PDF, e.g. "Stornorechnung"; null = the title of the country
      *                               pack's correction policy
      */
@@ -129,10 +129,11 @@ class QuittioManager
      * cash discount taken), see \Quittio\Core\Quittio::priceReduction(); render it like any invoice.
      *
      * @param  array<string, BigDecimal|int|string>|null  $amounts  net amount per VAT group ("S:19" => '50.00')
+     * @param  CancellationHistory|null  $history  earlier partial cancellations and price reductions, for the cumulative rounding of the VAT
      */
-    public function priceReduction(InvoiceData $original, string $number, PriceReductionReason $reason, BigDecimal|int|string|null $percent = null, BigDecimal|int|string|null $amount = null, ?array $amounts = null, ?Date $issueDate = null, ?string $title = null): InvoiceBuilder
+    public function priceReduction(InvoiceData $original, string $number, PriceReductionReason $reason, BigDecimal|int|string|null $percent = null, BigDecimal|int|string|null $amount = null, ?array $amounts = null, ?Date $issueDate = null, ?string $title = null, ?CancellationHistory $history = null): InvoiceBuilder
     {
-        return $this->core()->priceReduction($original, $number, $reason, $percent, $amount, $amounts, $issueDate, $title);
+        return $this->core()->priceReduction($original, $number, $reason, $percent, $amount, $amounts, $issueDate, $title, $history);
     }
 
     /**

@@ -22,6 +22,14 @@ use Quittio\Core\Support\Decimal;
  * What the earlier partial cancellations of an invoice cancelled per VAT group (category and
  * rate), so that the VAT of the next partial cancellation is rounded cumulatively.
  *
+ * Price reductions (PriceReduction) credit part of the invoice as well and share the history with
+ * its partial cancellations: one history per original holds what its partial cancellations and
+ * price reductions credited, less what the cancellations of those reversed (withCancellation(),
+ * withPriceReduction(), fromDocuments()). Cancellation::of() and PriceReduction::of() take it, so
+ * that a price reduction after a partial cancellation is aligned with it, and vice versa. A price
+ * reduction has no gross amount: a group with price reductions keeps the taxable amounts of its
+ * gross price cancellations (their VAT is still aligned).
+ *
  * VAT is rounded per document and VAT group (BR-CO-17). Rounded per partial cancellation on its
  * own, the cancellations together can differ from the original by a cent per earlier part (e.g.
  * 9.67 + 9.67 + 9.66 net at 19 %: 3 × 1.84 = 5.52 against 5.51). With a history, per group:
@@ -70,8 +78,27 @@ final readonly class CancellationHistory
     ) {}
 
     /**
+     * The history of the issued (calculated) documents that credited $original, in the order they
+     * were issued: its partial cancellations, its price reductions and the cancellations of those
+     * (which count negatively); $closes as in the constructor, for the next document.
+     *
+     * @param  iterable<InvoiceData>  $documents
+     * @param  list<string>  $closes
+     */
+    public static function fromDocuments(InvoiceData $original, iterable $documents, array $closes = []): self
+    {
+        $history = new self;
+        foreach ($documents as $document) {
+            $history = $history->withCancellation($original, $document);
+        }
+
+        return new self($history->groups, $closes);
+    }
+
+    /**
      * The history after an issued (calculated) cancellation of $original, e.g. to keep it without the
-     * Managed layer; $closes as in the constructor, for the next cancellation.
+     * Managed layer; $closes as in the constructor, for the next cancellation. The cancellation of a
+     * price reduction of $original (an invoice that reverses its credit note) counts negatively.
      *
      * @param  list<string>  $closes
      */
@@ -90,6 +117,16 @@ final readonly class CancellationHistory
         }
 
         return new self($groups, $closes);
+    }
+
+    /**
+     * The history after an issued (calculated) price reduction of $original (PriceReduction), for
+     * the next partial cancellation or price reduction; the closed groups stay. PriceReduction::of()
+     * closes a group itself once the net amount credited so far reaches the original's taxable amount.
+     */
+    public function withPriceReduction(InvoiceData $original, InvoiceData $reduction): self
+    {
+        return $this->withCancellation($original, $reduction, $this->closes);
     }
 
     /**
@@ -234,7 +271,8 @@ final readonly class CancellationHistory
      *   keep the sign of its taxable amount (0.00 on a taxable amount of 0.00).
      *
      * A history built from the earlier cancellations as issued (withCancellation(), the Managed
-     * ledger) always fits.
+     * ledger) always fits; after cancelled price reductions the VAT credited so far can be a cent
+     * off the cumulative rounding, so that a price reduction may not fit.
      *
      * @param  list<VatBreakdown>  $aligned
      *
@@ -269,7 +307,7 @@ final readonly class CancellationHistory
             $own = self::vat($taxable, self::factor($entry->rate, $group));
             $wrongSign = $taxable->isZero() ? ! $tax->isZero() : (! $tax->isZero() && $tax->getSign() !== $taxable->getSign());
             if ($wrongSign || $tax->minus($own)->abs()->isGreaterThan('0.01')) {
-                throw new InvalidArgumentException(sprintf('The cancellation history does not fit invoice %s: VAT group "%s" would carry a VAT of %s on a taxable amount of %s (rounded on its own %s). Build the history from the earlier cancellations as issued (CancellationHistory::withCancellation()); if the invoice\'s VAT was rounded by another system and its group has positive and negative lines, cancel without history.', $original->number, $key, $tax->toString(), $taxable->toString(), $own->toString()));
+                throw new InvalidArgumentException(sprintf('The cancellation history does not fit invoice %s: VAT group "%s" would carry a VAT of %s on a taxable amount of %s (rounded on its own %s). Build the history from the earlier cancellations and price reductions as issued (CancellationHistory::withCancellation(), withPriceReduction()); if the invoice\'s VAT was rounded by another system and its group has positive and negative lines, cancel without history. After price reductions were cancelled, the VAT credited so far can be a cent off: reduce by another amount, or cancel the remaining price reductions first.', $original->number, $key, $tax->toString(), $taxable->toString(), $own->toString()));
             }
         }
     }

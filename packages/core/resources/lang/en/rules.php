@@ -453,7 +453,7 @@ return [
         'message' => 'The VAT amount of category :category (:rate %) differs from taxable amount × rate by :value. The official rules tolerate this, but the amount is not rounded commercially.',
     ],
     'QUITTIO-CANCELLATION-VAT-ALIGNED' => [
-        'message' => 'The VAT amount of category :category (:rate %) differs from taxable amount × rate by :value: it is aligned with the earlier partial cancellations of the original, so that all cancellations together reverse exactly its VAT (cumulative rounding, at most 0.01, within the tolerance of BR-CO-17).',
+        'message' => 'The VAT amount of category :category (:rate %) differs from taxable amount × rate by :value: it is aligned with the earlier partial cancellations and price reductions of the original, so that all of them together correct exactly its VAT (cumulative rounding, at most 0.01, within the tolerance of BR-CO-17).',
     ],
     'QUITTIO-LINE-ROUNDING' => [
         'message' => 'The net amount of line :line differs from quantity × price ± allowances and charges by :value, e.g. rounded by another system and kept from the original document. EN 16931 does not check this (Peppol tolerates 0.02), but the amount is not rounded commercially.',

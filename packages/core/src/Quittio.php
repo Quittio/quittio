@@ -368,8 +368,8 @@ final class Quittio
      * strategy comes from the argument, the configuration or the country pack (in this order).
      *
      * @param  list<array{line: string, quantity?: BigDecimal|int|string, amount?: string}>|null  $lines  partial cancellation; null = full
-     * @param  CancellationHistory|null  $history  earlier partial cancellations of the original, so that the VAT of a
-     *         partial cancellation is rounded cumulatively with theirs (see CancellationHistory)
+     * @param  CancellationHistory|null  $history  earlier partial cancellations and price reductions of the original, so that
+     *         the VAT of a partial cancellation is rounded cumulatively with theirs (see CancellationHistory)
      * @param  string|null  $title  document title in the PDF, e.g. "Stornorechnung"; null = the title of the country
      *         pack's correction policy ("cancellation", or "cancellation_self_billed" for self-billed originals)
      */
@@ -427,8 +427,10 @@ final class Quittio
      *
      * @param  array<string, BigDecimal|int|string>|null  $amounts
      * @param  string|null  $title  document title in the PDF; null = the title "price_reduction" of the country pack
+     * @param  CancellationHistory|null  $history  earlier partial cancellations and price reductions of the original, so
+     *         that the VAT of the reduction is rounded cumulatively with theirs (see PriceReduction and CancellationHistory)
      */
-    public function priceReduction(InvoiceData $original, string $number, PriceReductionReason $reason, BigDecimal|int|string|null $percent = null, BigDecimal|int|string|null $amount = null, ?array $amounts = null, ?Date $issueDate = null, ?string $title = null): InvoiceBuilder
+    public function priceReduction(InvoiceData $original, string $number, PriceReductionReason $reason, BigDecimal|int|string|null $percent = null, BigDecimal|int|string|null $amount = null, ?array $amounts = null, ?Date $issueDate = null, ?string $title = null, ?CancellationHistory $history = null): InvoiceBuilder
     {
         $pack = $this->countryResolver->resolve($original)->leading;
 
@@ -444,6 +446,7 @@ final class Quittio
             locale: $original->meta->locale ?? $this->config->locale ?? $pack->defaults()->locale,
             title: $title,
             policy: $pack->correctionPolicy(),
+            history: $history,
         );
     }
 

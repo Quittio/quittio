@@ -176,4 +176,5 @@ return [
     'price_reduction_reason_bonus' => 'een bonus',
     'price_reduction_reason_other' => 'een korting',
     'price_reduction_terms_settled' => 'De vermindering werd al bij de betaling ingehouden.',
+    'price_reduction_vat_aligned' => 'Afrondingsverschil: de btw van deze prijsvermindering is zo bepaald dat alle prijsverminderingen en annuleringen van factuur :number samen de btw van de verminderde en geannuleerde prijs exact corrigeren.',
 ];

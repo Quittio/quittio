@@ -860,7 +860,8 @@
             "price_reduction_reason_defect": "einer Mängelrüge",
             "price_reduction_reason_bonus": "eines Bonus",
             "price_reduction_reason_other": "eines Nachlasses",
-            "price_reduction_terms_settled": "Die Minderung wurde bei der Zahlung bereits einbehalten."
+            "price_reduction_terms_settled": "Die Minderung wurde bei der Zahlung bereits einbehalten.",
+            "price_reduction_vat_aligned": "Rundungsausgleich: Die Umsatzsteuer dieser Entgeltminderung ist so bemessen, dass alle Entgeltminderungen und Stornos zur Rechnung :number zusammen die Umsatzsteuer des geminderten und stornierten Entgelts exakt berichtigen."
         },
         "design": {
             "primaryColor": "#2741d9",

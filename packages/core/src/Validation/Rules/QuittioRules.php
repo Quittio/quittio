@@ -162,10 +162,10 @@ final class QuittioRules
             $r('QUITTIO-VAT-ROUNDING', 'The VAT amount of category :category (:rate %) differs from taxable amount × rate by :value. The official rules tolerate this, but the amount is not rounded commercially.', function (InvoiceData $i, RuleReporter $report): void {
                 self::vatRounding($i, $report->warning(...), self::vatAligned($i) ? false : null);
             }),
-            // A partial cancellation whose VAT is rounded cumulatively with the earlier ones of the
-            // original (Corrections\CancellationHistory): intended within 0.01 and with the sign of
-            // the taxable amount, so only an information.
-            $r('QUITTIO-CANCELLATION-VAT-ALIGNED', 'The VAT amount of category :category (:rate %) differs from taxable amount × rate by :value: it is aligned with the earlier partial cancellations of the original, so that all cancellations together reverse exactly its VAT (cumulative rounding, at most 0.01, within the tolerance of BR-CO-17).', function (InvoiceData $i, RuleReporter $report): void {
+            // A partial cancellation or price reduction whose VAT is rounded cumulatively with the
+            // earlier documents that credited the original (Corrections\CancellationHistory): intended
+            // within 0.01 and with the sign of the taxable amount, so only an information.
+            $r('QUITTIO-CANCELLATION-VAT-ALIGNED', 'The VAT amount of category :category (:rate %) differs from taxable amount × rate by :value: it is aligned with the earlier partial cancellations and price reductions of the original, so that all of them together correct exactly its VAT (cumulative rounding, at most 0.01, within the tolerance of BR-CO-17).', function (InvoiceData $i, RuleReporter $report): void {
                 if (self::vatAligned($i)) {
                     self::vatRounding($i, $report->info(...), true);
                 }
@@ -282,7 +282,8 @@ final class QuittioRules
     }
 
     /**
-     * The VAT breakdown of a partial cancellation aligned with the earlier ones and kept as declared.
+     * The VAT breakdown of a partial cancellation or price reduction aligned with the earlier
+     * documents that credited the original, kept as declared.
      */
     private static function vatAligned(InvoiceData $invoice): bool
     {

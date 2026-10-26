@@ -88,8 +88,8 @@ final class Cancellation
      *         amount of a line (e.g. a price reduction); null cancels the whole invoice.
      *         Quantities and amounts are magnitudes, negative lines keep their sign. For lines
      *         with a price including VAT (gross price mode) the amount includes VAT
-     * @param  CancellationHistory|null  $history  partial cancellations: what the earlier partial cancellations of
-     *         the original cancelled per VAT group, and which groups this one closes, for the cumulative rounding
+     * @param  CancellationHistory|null  $history  partial cancellations: what the earlier partial cancellations and price
+     *         reductions of the original credited per VAT group, and which groups this one closes, for the cumulative rounding
      *         of the VAT (see CancellationHistory); without it the VAT is rounded per document
      * @param  TotalsCalculator  $calculator  calculator of the VAT alignment with $history, e.g. the one of the Quittio instance
      *

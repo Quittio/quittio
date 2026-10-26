@@ -5,6 +5,9 @@ declare(strict_types=1);
 use Quittio\Core\Builder\InvoiceBuilder;
 use Quittio\Core\Builder\Line;
 use Quittio\Core\Builder\Party;
+use Quittio\Core\Calculation\En16931Calculator;
+use Quittio\Core\Corrections\CancellationHistory;
+use Quittio\Core\Corrections\PriceReductionReason;
 use Quittio\Core\Data\Meta;
 use Quittio\Laravel\Builder\RenderableInvoiceBuilder;
 use Quittio\Laravel\Contracts\InvoiceDefaults;
@@ -101,4 +104,22 @@ it('gives another seller nothing of the seller of the configuration', function (
         ->and($invoice->meta->hasFlag(Meta::FLAG_SMALL_BUSINESS))->toBeFalse()
         ->and($invoice->lines[0]->vat->presetKey)->toBe('de.standard')
         ->and($quote->paymentInstructions)->toBeNull();
+});
+
+it('rounds the VAT of a price reduction cumulatively with the history given to the facade', function () {
+    // 3 × 0.50 at 19 %: net 1.50, VAT 0.29.
+    $original = (new En16931Calculator)->calculate(Quittio::invoice()
+        ->number('RE-2026-0042')
+        ->buyer(Party::make('Kunde AG')->address('Weg 1', '54321', 'Beispielstadt', 'DE'))
+        ->line(Line::make('Teil')->quantity(3)->netPrice('0.50'))
+        ->build());
+    $first = (new En16931Calculator)->calculate(Quittio::priceReduction($original, 'EM-1', PriceReductionReason::Defect, amount: '0.50')->build());
+    $history = (new CancellationHistory)->withPriceReduction($original, $first);
+    $second = (new En16931Calculator)->calculate(Quittio::priceReduction($original, 'EM-2', PriceReductionReason::Defect, amount: '0.50', history: $history)->build());
+
+    expect($original->totals?->vatTotal?->getAmount()->toString())->toBe('0.29')
+        ->and($first->totals?->vatTotal?->getAmount()->toString())->toBe('0.10')
+        ->and($second->totals?->vatTotal?->getAmount()->toString())->toBe('0.09')
+        ->and($second->meta->hasFlag(Meta::FLAG_CANCELLATION_VAT_ALIGNED))->toBeTrue()
+        ->and($second->notes[0]->content)->toContain('Rundungsausgleich: Die Umsatzsteuer dieser Entgeltminderung');
 });

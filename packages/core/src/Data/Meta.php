@@ -41,12 +41,13 @@ final readonly class Meta
     public const string FLAG_DECLARED_AMOUNTS_RECALCULATED = 'declared_amounts_recalculated';
 
     /**
-     * A partial cancellation whose VAT (BT-117, BT-111) is aligned with the earlier partial
-     * cancellations of the original (Corrections\CancellationHistory), in gross price mode also its
-     * taxable amounts (BT-116): a VAT amount may differ from round2(taxable amount × rate) by a cent,
-     * reported as QUITTIO-CANCELLATION-VAT-ALIGNED instead of QUITTIO-VAT-ROUNDING (which still
-     * reports larger differences and a sign other than that of the taxable amount). Dropped once
-     * amounts change.
+     * A partial cancellation or price reduction whose VAT (BT-117, BT-111) is aligned with the
+     * earlier partial cancellations and price reductions of the original (Corrections\CancellationHistory),
+     * in gross price mode also the taxable amounts (BT-116) of a partial cancellation: a VAT amount
+     * may differ from round2(taxable amount × rate) by a cent, reported as
+     * QUITTIO-CANCELLATION-VAT-ALIGNED instead of QUITTIO-VAT-ROUNDING (which still reports larger
+     * differences and a sign other than that of the taxable amount). Dropped once amounts change.
+     * The name stays for stored data; it covers price reductions as well.
      */
     public const string FLAG_CANCELLATION_VAT_ALIGNED = 'cancellation_vat_aligned';
 
