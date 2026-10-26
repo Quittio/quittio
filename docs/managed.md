@@ -1869,7 +1869,9 @@ Rules:
 
 - Only `issued` and `partially_cancelled` invoices can be reduced, and only by the company
   that issued them. Cancellations, price reductions, credit notes and self-billed documents
-  cannot be reduced (`InvalidInvoiceState`).
+  cannot be reduced (`InvalidInvoiceState`). Neither can prepayment invoices (386): VAT on an
+  advance is owed on the amount received, so a lower price is settled in the final invoice,
+  and a refunded advance is cancelled with `cancel()` or `cancelPartially()`.
 - A reduction must be greater than zero and at most the net amount of its VAT group. Several
   values, an unknown VAT group or `amount` on an invoice with several VAT groups throw an
   `InvalidArgumentException` of the core.
