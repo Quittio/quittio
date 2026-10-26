@@ -43,7 +43,8 @@ use Quittio\Core\View\IntlFormatter;
  * of the VAT per rate (BT-22), titled "Entgeltminderung" in Germany.
  *
  * It is no cancellation and no correction of the invoice: the invoice stays correct, only the
- * consideration changed (section 14.11 (4) UStAE). In Germany a document is only required for
+ * consideration changed (section 14.11 (4) UStAE). A prepayment invoice (386) cannot be reduced:
+ * its advance payment is settled in the final invoice, an advance refunded is cancelled. In Germany a document is only required for
  * section 17 (4) UStG, and it need not be an e-invoice (section 17.1 (3a) UStAE); a cash
  * discount may as well be booked on receipt of the payment.
  *
@@ -76,9 +77,10 @@ final class PriceReduction
      *         (less what their cancellations reversed) credited per VAT group, for the cumulative rounding of the VAT
      *         (see the class description and CancellationHistory); without it the VAT is rounded per document
      *
-     * @throws InvalidArgumentException for a credit note, a self-billed document or an invoice
-     *         without calculated VAT breakdown, for amounts that do not fit the original, or for a
-     *         history that does not fit it
+     * @throws InvalidArgumentException for a credit note, a self-billed document, a prepayment invoice
+     *         (386, also a document with Meta::FLAG_PREPAYMENT_CORRECTION) or an invoice without
+     *         calculated VAT breakdown, for amounts that do not fit the original, or for a history
+     *         that does not fit it
      */
     public static function of(
         InvoiceData $original,
@@ -96,6 +98,13 @@ final class PriceReduction
     ): InvoiceBuilder {
         if ($original->isCreditNote() || ($original->typeCode instanceof InvoiceTypeCode && $original->typeCode->isSelfBilled())) {
             throw new InvalidArgumentException(sprintf('The consideration of the document %s (type code %s) cannot be reduced by a price reduction document.', $original->number, $original->typeCodeValue()));
+        }
+        // A prepayment invoice invoices an advance payment, not a supply: the VAT is owed on the
+        // amount received (section 13 (1) no. 1 lit. a sentence 4 UStG), and the final invoice
+        // deducts only that amount (section 14 (5) sentence 2 UStG). A reduction of the price is
+        // settled there; an advance refunded is a (partial) cancellation (section 17 (2) no. 2 UStG).
+        if ($original->typeCode === InvoiceTypeCode::PrepaymentInvoice || $original->meta->hasFlag(Meta::FLAG_PREPAYMENT_CORRECTION)) {
+            throw new InvalidArgumentException(sprintf('The consideration of the prepayment invoice %s cannot be reduced by a price reduction document: reduce the price in the final invoice, which deducts the advance payment received, or cancel the prepayment invoice fully or partly for an advance payment refunded.', $original->number));
         }
         if ($original->vatBreakdown === []) {
             throw new InvalidArgumentException(sprintf('The invoice %s must be calculated before its consideration is reduced.', $original->number));

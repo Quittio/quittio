@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use Quittio\Core\Builder\InvoiceBuilder;
 use Quittio\Core\Calculation\En16931Calculator;
+use Quittio\Core\Corrections\Cancellation;
+use Quittio\Core\Corrections\Correction;
 use Quittio\Core\Data\Meta;
 use Quittio\Core\Enums\InvoiceTypeCode;
 use Quittio\Core\Enums\UnitCode;
@@ -74,6 +76,18 @@ it('requires the date of the supply, with a warning for prepayment invoices', fu
         ->and($prepayment->warnings()[0]->code ?? null)->toBe('AT-USTG-04')
         ->and(Austrian::codes(Austrian::validate(Austrian::base(null)->line(fn ($l) => $l->name('A')->quantity(1, UnitCode::Piece)->netPrice('10.00')->vat(VatPreset::Standard)))))->toBe(['AT-USTG-04']);
 });
+
+it('needs no date of the supply in the cancellation of a prepayment invoice', function (string $strategy) {
+    $advance = (new En16931Calculator)->calculate(Austrian::invoice(null)->type(InvoiceTypeCode::PrepaymentInvoice)->build());
+    $codes = static fn (InvoiceBuilder $builder): array => Austrian::codes(Austrian::validate($builder));
+
+    expect($codes(Cancellation::of($advance, 'ST-1', $strategy)))->toBe([])
+        ->and($codes(Cancellation::of($advance, 'ST-2', $strategy, lines: [['line' => '1', 'quantity' => '2']])))->toBe([])
+        // The corrected invoice is a prepayment invoice itself: a warning, as for the original.
+        ->and($codes(Correction::of($advance, 'RE-2026-0002')))->toBe(['AT-USTG-04'])
+        ->and(array_map(static fn ($m): string => $m->code, Austrian::validate(Correction::of($advance, 'RE-2026-0002'))->errors()))->not->toContain('AT-USTG-04')
+        ->and($codes(Cancellation::of((new En16931Calculator)->calculate(Austrian::invoice(null)->build()), 'ST-3', $strategy)))->toBe(['AT-USTG-04']);
+})->with(['credit_note', 'negative_invoice']);
 
 it('requires the buyer UID above 10,000 EUR gross for a business', function (string $net, bool $consumer, string $currency, array $codes) {
     $builder = Austrian::base()->currency($currency)

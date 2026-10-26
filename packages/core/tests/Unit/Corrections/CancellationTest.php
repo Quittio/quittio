@@ -8,6 +8,7 @@ use Quittio\Core\Corrections\Cancellation;
 use Quittio\Core\Data\Extensions\ThirdPartyPayment;
 use Quittio\Core\Data\Extensions\XRechnungExtensionData;
 use Quittio\Core\Data\InvoiceData;
+use Quittio\Core\Data\Meta;
 use Quittio\Core\Enums\InvoiceTypeCode;
 use Quittio\Core\Enums\NoteSubjectCode;
 use Quittio\Core\Enums\VatCategory;
@@ -245,3 +246,18 @@ it('takes the title of the cancellation from Quittio::cancellation() like from C
         ->and(Cancellation::of(original('simple'), 'ST-7', title: 'Stornorechnung')->build()->presentation?->title)->toBe('Stornorechnung')
         ->and($quittio->cancellation(original('simple'), 'ST-8')->build()->presentation?->title)->toBeNull();
 });
+
+it('marks full and partial cancellations of a prepayment invoice, also when cancelled again', function (string $strategy) {
+    $advance = original('simple')->with(['typeCode' => InvoiceTypeCode::PrepaymentInvoice]);
+    $full = (new En16931Calculator)->calculate(Cancellation::of($advance, 'ST-1', $strategy)->build());
+    $partial = Cancellation::of($advance, 'ST-2', $strategy, lines: [['line' => $advance->lines[0]->id]])->build();
+    $reinstated = Cancellation::of($full, 'ST-3', $strategy)->build();
+
+    expect($full->meta->hasFlag(Meta::FLAG_PREPAYMENT_CORRECTION))->toBeTrue()
+        ->and($full->precedingInvoices[0]->number)->toBe($advance->number)
+        ->and($partial->meta->hasFlag(Meta::FLAG_PREPAYMENT_CORRECTION))->toBeTrue()
+        // The cancellation of the cancellation invoices the advance payment again.
+        ->and($reinstated->typeCodeValue())->toBe('380')
+        ->and($reinstated->meta->hasFlag(Meta::FLAG_PREPAYMENT_CORRECTION))->toBeTrue()
+        ->and(Cancellation::of(original('simple'), 'ST-4', $strategy)->build()->meta->hasFlag(Meta::FLAG_PREPAYMENT_CORRECTION))->toBeFalse();
+})->with(['credit_note', 'negative_invoice']);

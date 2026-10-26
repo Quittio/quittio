@@ -57,6 +57,16 @@ final readonly class Meta
      */
     public const string FLAG_PRICE_REDUCTION = 'price_reduction';
 
+    /**
+     * A full or partial cancellation or a corrected invoice (Corrections\Cancellation,
+     * Corrections\Correction) of a prepayment invoice (type code 386): it reverses or replaces an
+     * invoice for an advance payment, for a supply not made yet. Set by Quittio and kept by the
+     * documents built from it, e.g. the cancellation of such a cancellation; country packs treat
+     * these documents like the prepayment invoice (DE-USTG-03: no date of the supply), and a
+     * price reduction (Corrections\PriceReduction) refuses them.
+     */
+    public const string FLAG_PREPAYMENT_CORRECTION = 'prepayment_correction';
+
     /** Prefix of the flag that carries the fingerprint of the amount inputs. */
     private const string FINGERPRINT_PREFIX = 'amounts_fingerprint:';
 

@@ -72,10 +72,18 @@ final class UstgRules
                 if (self::hasServiceDate($i)) {
                     return;
                 }
-                // A prepayment invoice names the date of a supply that is still to come, if it is known (section 11 (1) no. 4 UStG).
-                if ($i->typeCode === InvoiceTypeCode::PrepaymentInvoice) {
+                // A prepayment invoice, also a corrected one (384 with Meta::FLAG_PREPAYMENT_CORRECTION),
+                // names the date of a supply that is still to come, if it is known (section 11 (1) no. 4 UStG).
+                $prepayment = $i->meta->hasFlag(Meta::FLAG_PREPAYMENT_CORRECTION);
+                if ($i->typeCode === InvoiceTypeCode::PrepaymentInvoice || ($prepayment && $i->typeCode === InvoiceTypeCode::CorrectedInvoice)) {
                     $report->warning('BT-72', 'delivery.actualDeliveryDate');
 
+                    return;
+                }
+                // The cancellation of a prepayment invoice, full or partial, reverses an advance
+                // payment for a supply not made (section 16 (3) no. 2 UStG): there is no date of the
+                // supply, it refers to the prepayment invoice (BG-3) instead.
+                if ($prepayment && $i->precedingInvoices !== []) {
                     return;
                 }
                 $report->error('BT-72', 'delivery.actualDeliveryDate');

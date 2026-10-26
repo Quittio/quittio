@@ -66,4 +66,7 @@ it('rejects reductions that do not fit the original', function (Closure $reduce,
     'percent above 100' => [fn () => PriceReduction::of(reductionOriginal('simple'), 'EM', PriceReductionReason::Other, percent: '101'), 'at most 100'],
     'credit note' => [fn () => PriceReduction::of((new En16931Calculator)->calculate(Scenarios::make('simple')->type('381')->build()), 'EM', PriceReductionReason::Other, percent: '2'), 'cannot be reduced'],
     'not calculated' => [fn () => PriceReduction::of(Scenarios::make('simple')->build(), 'EM', PriceReductionReason::Other, percent: '2'), 'must be calculated'],
+    // The advance payment is settled in the final invoice, an advance refunded is cancelled.
+    'prepayment invoice' => [fn () => PriceReduction::of(reductionOriginal('simple')->with(['typeCode' => InvoiceTypeCode::PrepaymentInvoice]), 'EM', PriceReductionReason::CashDiscount, percent: '2'), 'cannot be reduced by a price reduction document: reduce the price in the final invoice'],
+    'corrected prepayment invoice' => [fn () => PriceReduction::of(reductionOriginal('simple')->with(['typeCode' => InvoiceTypeCode::CorrectedInvoice, 'meta' => (new Meta)->withFlag(Meta::FLAG_PREPAYMENT_CORRECTION)]), 'EM', PriceReductionReason::Other, percent: '2'), 'prepayment invoice RE-2026-0042'],
 ]);

@@ -57,6 +57,10 @@ use Quittio\Core\View\IntlFormatter;
  * Both are permitted in Germany; apart from self-billing the document must not be called
  * "Gutschrift". The original data is never changed.
  *
+ * A prepayment invoice (386) is cancelled like an invoice, fully or partly; the cancellation
+ * carries Meta::FLAG_PREPAYMENT_CORRECTION, so that country packs do not ask it for a date of
+ * the supply that has not been made (DE-USTG-03, AT-USTG-04).
+ *
  * Declared amounts (Meta::FLAG_DECLARED_AMOUNTS): a full cancellation reverses the declared
  * line net amounts (BT-131) and the declared VAT breakdown (BT-116, BT-117) of the original,
  * also if another system rounded differently (BT-131 within 0.02, PEPPOL-EN16931-R120; BT-117
@@ -177,7 +181,7 @@ final class Cancellation
             // InvoiceBuilder::from() keeps the declared amounts only if the recalculation does not
             // reproduce them. Amounts of an original changed after they were declared (fingerprint
             // mismatch) are stale: the flag without fingerprint lets from() recalculate everything.
-            'meta' => DeclaredAmountsState::none()->withDeclared(DeclaredAmounts::isStale($original))->applyTo($original->meta),
+            'meta' => self::prepaymentFlag($original, DeclaredAmountsState::none()->withDeclared(DeclaredAmounts::isStale($original))->applyTo($original->meta)),
         ]);
 
         // Amounts of a stale original are recalculated completely: nothing to align them with.
@@ -186,6 +190,18 @@ final class Cancellation
         }
 
         return InvoiceBuilder::fromUsing($cancellation, $calculator);
+    }
+
+    /**
+     * The cancellation of a prepayment invoice (386) is marked with Meta::FLAG_PREPAYMENT_CORRECTION:
+     * it reverses an advance payment for a supply not made yet, e.g. one refunded (section 17 (2)
+     * no. 2 UStG), so it has no date of the supply and refers to the prepayment invoice (BG-3)
+     * instead (section 14 (5) UStG, section 31 (5) UStDV). The cancellation of a document that
+     * carries the flag keeps it with the meta of the original.
+     */
+    private static function prepaymentFlag(InvoiceData $original, Meta $meta): Meta
+    {
+        return $original->typeCode === InvoiceTypeCode::PrepaymentInvoice ? $meta->withFlag(Meta::FLAG_PREPAYMENT_CORRECTION) : $meta;
     }
 
     /**

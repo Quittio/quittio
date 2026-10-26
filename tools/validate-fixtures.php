@@ -73,6 +73,11 @@ $de = static fn (InvoiceBuilder $builder): GermanInvoice => new GermanInvoice($b
 $advance = $calculator->calculate($de(Scenarios::base()->number('AB-2026-0001')->issueDate('2026-09-01')
     ->line($line('Anzahlung Website', '1000.00'))->line($line('Anzahlung Buch', '100.00', VatPreset::Reduced)))
     ->advance('2026-10', receivedOn: '2026-08-28')->prepaid('1177.00')->build());
+// A prepayment invoice without a date of the supply (no BT-72, BG-14 or BG-26), as DE-USTG-03
+// allows it, and its cancellations (flag prepayment_correction), which need none either.
+$openAdvance = $calculator->calculate($de(Scenarios::base()->number('AB-2026-0002')->issueDate('2026-09-01')
+    ->line($line('Anzahlung Website', '1000.00'))->line($line('Anzahlung Buch', '100.00', VatPreset::Reduced)))
+    ->advance('2027-03')->build())->with(['delivery' => null]);
 $original = $calculator->calculate(Scenarios::make('mixed-vat')->build());
 $selfBilled = $calculator->calculate($de(Scenarios::make('simple'))->selfBilled()->build());
 $final = static fn (): InvoiceBuilder => Scenarios::base()->line($line('Website', '3000.00'))->line($line('Buch', '300.00', VatPreset::Reduced));
@@ -85,6 +90,9 @@ $german = [
     'de-small-business-ex' => fn (): InvoiceBuilder => $de(Scenarios::base()->seller(fn (PartyBuilder $s): PartyBuilder => $s->vatId(null)))->smallBusinessId('DE123456789EX')
         ->line($line('Beratung', '500.00', VatPreset::SmallBusiness)),
     'de-advance' => fn (): InvoiceBuilder => InvoiceBuilder::from($advance),
+    'de-advance-cancellation-381' => fn (): InvoiceBuilder => $quittio->cancellation($openAdvance, 'ST-2026-0001', strategy: 'credit_note'),
+    'de-advance-cancellation-380' => fn (): InvoiceBuilder => $quittio->cancellation($openAdvance, 'ST-2026-0002', strategy: 'negative_invoice'),
+    'de-advance-partial-cancellation' => fn (): InvoiceBuilder => $quittio->cancellation($openAdvance, 'ST-2026-0003', lines: [['line' => '1', 'amount' => '400.00']]),
     'de-final-prepaid' => fn (): InvoiceBuilder => $de($final())->deductAdvance($advance, received: GermanInvoice::RECEIVED_IN_FULL),
     'de-final-partial' => fn (): InvoiceBuilder => $de($final())->deductAdvance($advance, received: '600.00'),
     'de-final-remainder' => fn (): InvoiceBuilder => $de($final())->deductAdvance($advance, received: GermanInvoice::RECEIVED_IN_FULL, style: GermanInvoice::REMAINDER),

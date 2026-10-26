@@ -7,6 +7,7 @@ use Quittio\Core\Calculation\En16931Calculator;
 use Quittio\Core\Corrections\Correction;
 use Quittio\Core\Countries\CorrectionPolicy;
 use Quittio\Core\Data\InvoiceData;
+use Quittio\Core\Data\Meta;
 use Quittio\Core\Enums\InvoiceTypeCode;
 use Quittio\Core\Enums\NoteSubjectCode;
 use Quittio\Core\Enums\UnitCode;
@@ -60,4 +61,13 @@ it('corrects neither credit notes nor self-billed invoices', function (string $t
 
 it('keeps the builder of the correction usable like from()', function () {
     expect(Correction::of(correctionOriginal(), 'RE-2'))->toBeInstanceOf(InvoiceBuilder::class);
+});
+
+it('marks the corrected invoice of a prepayment invoice', function () {
+    $advance = correctionOriginal()->with(['typeCode' => InvoiceTypeCode::PrepaymentInvoice]);
+    $correction = Correction::of($advance, 'RE-2')->build();
+
+    expect($correction->typeCode)->toBe(InvoiceTypeCode::CorrectedInvoice)
+        ->and($correction->meta->hasFlag(Meta::FLAG_PREPAYMENT_CORRECTION))->toBeTrue()
+        ->and(Correction::of(correctionOriginal(), 'RE-3')->build()->meta->hasFlag(Meta::FLAG_PREPAYMENT_CORRECTION))->toBeFalse();
 });

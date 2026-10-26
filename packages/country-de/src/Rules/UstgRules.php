@@ -8,6 +8,7 @@ use Closure;
 use Quittio\Core\Countries\VatTerritory;
 use Quittio\Core\Data\InvoiceData;
 use Quittio\Core\Data\Lines\InvoiceLine;
+use Quittio\Core\Data\Meta;
 use Quittio\Core\Data\Party\Address;
 use Quittio\Core\Enums\InvoiceTypeCode;
 use Quittio\Core\Enums\VatCategory;
@@ -83,13 +84,20 @@ final class UstgRules
                 if ($small($i) || $smallBusiness($i) || self::hasServiceDate($i)) {
                     return;
                 }
-                // Prepayment invoices name the expected date of the service, or state that it is
-                // not agreed yet (section 14.8 (4) sentences 3 and 5 UStAE).
-                if ($i->typeCode === InvoiceTypeCode::PrepaymentInvoice) {
+                // Prepayment invoices, also corrected ones, name the expected date of the service,
+                // or state that it is not agreed yet (section 14.8 (4) sentences 3 and 5 UStAE).
+                if (self::isPrepaymentInvoice($i)) {
                     if (! $i->meta->hasFlag(Flags::SERVICE_DATE_OPEN) && ! $i->meta->hasFlag(Flags::EXPECTED_SERVICE_DATE)) {
                         $report->warning('BT-72', 'delivery.actualDeliveryDate');
                     }
 
+                    return;
+                }
+                // The cancellation of a prepayment invoice, full or partial, reverses an advance
+                // payment for a supply not made, e.g. refunded (section 17 (2) no. 2 UStG): there is
+                // no date of the supply. It refers to the prepayment invoice (BG-3) instead (section
+                // 14 (5) UStG, section 31 (5) UStDV, section 14.8 UStAE).
+                if ($i->meta->hasFlag(Meta::FLAG_PREPAYMENT_CORRECTION) && $i->precedingInvoices !== []) {
                     return;
                 }
                 $report->error('BT-72', 'delivery.actualDeliveryDate');
@@ -250,7 +258,7 @@ final class UstgRules
             $r('DE-USTG-17', 'A prepayment invoice that states an amount already paid (BT-113) must state the date the payment was received as VAT point date (BT-7) if it differs from the issue date (section 14 (4) sentence 1 no. 6 UStG).', function (InvoiceData $i, RuleReporter $report): void {
                 // Only a warning: a payment received on the issue date needs no date of its own.
                 $paid = $i->totals?->prepaidAmount;
-                if ($i->typeCode === InvoiceTypeCode::PrepaymentInvoice && $paid !== null && $paid->isPositive() && $i->taxPointDate === null) {
+                if (self::isPrepaymentInvoice($i) && $paid !== null && $paid->isPositive() && $i->taxPointDate === null) {
                     $report->warning('BT-7', 'taxPointDate');
                 }
             }),
@@ -540,6 +548,18 @@ final class UstgRules
         }
 
         return $supply;
+    }
+
+    /**
+     * A prepayment invoice (386), or the corrected invoice (384) that replaces one
+     * (Meta::FLAG_PREPAYMENT_CORRECTION, Corrections\Correction): an invoice for an advance payment
+     * (section 14 (5) sentence 1 UStG). Cancellations of a prepayment invoice carry the flag as
+     * well, but are no prepayment invoice.
+     */
+    private static function isPrepaymentInvoice(InvoiceData $invoice): bool
+    {
+        return $invoice->typeCode === InvoiceTypeCode::PrepaymentInvoice
+            || ($invoice->typeCode === InvoiceTypeCode::CorrectedInvoice && $invoice->meta->hasFlag(Meta::FLAG_PREPAYMENT_CORRECTION));
     }
 
     /**

@@ -11,6 +11,7 @@ use Quittio\Core\Calculation\En16931Calculator;
 use Quittio\Core\Calculation\TotalsCalculator;
 use Quittio\Core\Countries\CorrectionPolicy;
 use Quittio\Core\Data\InvoiceData;
+use Quittio\Core\Data\Meta;
 use Quittio\Core\Data\Note;
 use Quittio\Core\Data\Presentation\Presentation;
 use Quittio\Core\Data\References\PrecedingInvoiceReference;
@@ -26,7 +27,8 @@ use Quittio\Core\View\IntlFormatter;
  * its own number, the reference to the original (BG-3) and the note "Diese Rechnung berichtigt
  * und ersetzt die Rechnung … vom …" (BT-22), so that it states by a specific and unambiguous
  * reference that it corrects the original (section 31 (5) UStDV, section 15.2a (7) UStAE).
- * Change what was wrong on the returned builder.
+ * Change what was wrong on the returned builder. The corrected invoice of a prepayment invoice
+ * (386) carries Meta::FLAG_PREPAYMENT_CORRECTION and is checked like a prepayment invoice.
  *
  * Cancelling the original and issuing a new invoice (Cancellation) is the safer default: a
  * receiving system that does not read 384 as replacement books both invoices. Credit notes and
@@ -68,6 +70,10 @@ final class Correction
             }
         }
 
+        // The corrected invoice of a prepayment invoice (386) replaces an invoice for an advance
+        // payment and is one itself (Meta::FLAG_PREPAYMENT_CORRECTION): country packs check it like
+        // the prepayment invoice, without a date of the supply (section 14 (5) UStG, section 14.8 UStAE).
+        $meta = DeclaredAmountsState::none()->withDeclared(DeclaredAmounts::isStale($original))->applyTo($original->meta);
         $correction = $original->with([
             'number' => $number,
             'issueDate' => $issueDate ?? Date::today($original->meta->timezone),
@@ -76,7 +82,7 @@ final class Correction
             'notes' => $notes,
             'presentation' => $title === null ? $original->presentation : ($original->presentation ?? new Presentation)->with(['title' => $title]),
             // Like a full cancellation: declared amounts of the original stay declared unless stale.
-            'meta' => DeclaredAmountsState::none()->withDeclared(DeclaredAmounts::isStale($original))->applyTo($original->meta),
+            'meta' => $original->typeCode === InvoiceTypeCode::PrepaymentInvoice ? $meta->withFlag(Meta::FLAG_PREPAYMENT_CORRECTION) : $meta,
         ]);
 
         return InvoiceBuilder::fromUsing($correction, $calculator);

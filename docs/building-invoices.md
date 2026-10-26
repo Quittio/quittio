@@ -1006,6 +1006,8 @@ The cancellation is a copy of the original with these changes:
 
 Everything else stays as in the original: parties, references, payment instructions, delivery, currency, attachments and presentation. The result is an `InvoiceBuilder`, so you can change it before rendering, e.g. `->note('…')` or `->payment(PaymentMeansCode::SepaCreditTransfer, iban: '…')` for the refund account. Changing lines or allowances recalculates the amounts.
 
+A prepayment invoice (386) is cancelled like any invoice, fully or partly, e.g. when the advance payment is refunded. The cancellation carries the meta flag `prepayment_correction` (`Meta::FLAG_PREPAYMENT_CORRECTION`), and so does a corrected invoice of a prepayment invoice (`correction()`) and the cancellation of such a document. Country packs then need no date of the supply, which has not been made: in Germany the cancellation refers to the prepayment invoice instead (`DE-USTG-03`, [Prepayment invoices](country-packs.md#prepayment-invoices)).
+
 ### Sign strategies
 
 A cancellation reverses the amounts in one of two ways: as a credit note with positive amounts (`credit_note`) or as an invoice with negative amounts (`negative_invoice`).
@@ -1154,6 +1156,7 @@ $builder = $quittio->priceReduction($original, 'EM-2026-0003', PriceReductionRea
 - Payment terms: for a cash discount "Die Minderung wurde bei der Zahlung bereits einbehalten.", otherwise the text of a cancellation.
 - The title comes from the policy (`price_reduction`, Germany: "Entgeltminderung"); without one, the label `price_reduction_title`. It is deliberately neither "Rechnungskorrektur" nor "Gutschrift".
 - Credit notes, self-billed documents and uncalculated invoices cannot be reduced (`InvalidArgumentException`).
+- Prepayment invoices (386, also a document with the flag `prepayment_correction`) cannot be reduced either (`InvalidArgumentException`): an advance payment is no supply. A lower price is settled in the final invoice, which deducts only the advance payment received; an advance payment refunded is a (partial) [cancellation](#cancellations-and-corrections) of the prepayment invoice.
 - `PriceReduction::of(InvoiceData $original, string $number, PriceReductionReason $reason, $percent = null, $amount = null, ?array $amounts = null, ?Date $issueDate = null, ?string $locale = null, ?string $title = null, ?CorrectionPolicy $policy = null, TotalsCalculator $calculator = new En16931Calculator, ?CancellationHistory $history = null)` (`Quittio\Core\Corrections\PriceReduction`) does the same without a `Quittio` instance.
 
 #### VAT of price reductions
