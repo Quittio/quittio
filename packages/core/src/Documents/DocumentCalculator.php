@@ -17,6 +17,11 @@ final class DocumentCalculator
         private readonly TotalsCalculator $calculator = new En16931Calculator,
     ) {}
 
+    /**
+     * Returns $document with the line amounts of all lines, and totals, VAT breakdown, allowances
+     * and charges of the billable lines only (DocumentData::billableLines()). A document without
+     * lines is returned unchanged.
+     */
     public function calculate(DocumentData $document): DocumentData
     {
         if ($document->lines === []) {

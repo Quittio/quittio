@@ -31,6 +31,10 @@ enum PaymentMeansCode: string
     case Clearing = '97';
     case MutuallyDefined = 'ZZZ';
 
+    /**
+     * The labels of these codes are under "payment_means" in resources/lang/{locale}/codes.php (see
+     * label()).
+     */
     public static function labelGroup(): string
     {
         return 'payment_means';

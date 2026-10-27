@@ -73,6 +73,11 @@ final class RenderInvoice implements ShouldQueue
         $this->options = $options instanceof RenderOptions ? self::encode($options) : $options;
     }
 
+    /**
+     * Renders the invoice with the queued options, stores the main output on the disk and path of
+     * the job and dispatches QueuedInvoiceStored. The container passes the configured upcaster
+     * chain for older snapshots.
+     */
     public function handle(QuittioManager $quittio, ?SnapshotUpcasterChain $upcasters = null): void
     {
         $result = $quittio->renderInvoice($this->data($upcasters), $this->renderOptions());
@@ -97,6 +102,11 @@ final class RenderInvoice implements ShouldQueue
         Container::getInstance()->make(Dispatcher::class)->dispatch(new QueuedInvoiceFailed($this, $exception));
     }
 
+    /**
+     * The invoice of the job: a versioned snapshot brought up to date by $upcasters (default: the
+     * shared chain), or a plain InvoiceData::toJson() payload. Throws a JsonException for invalid
+     * JSON.
+     */
     public function data(?SnapshotUpcasterChain $upcasters = null): InvoiceData
     {
         $snapshot = json_decode($this->invoice, true, flags: JSON_THROW_ON_ERROR);
@@ -107,6 +117,10 @@ final class RenderInvoice implements ShouldQueue
             : InvoiceData::fromJson($this->invoice);
     }
 
+    /**
+     * The render options of the job, decoded from their JSON; a RenderOptions object of a job
+     * queued by Quittio 0.1.0 is returned as is.
+     */
     public function renderOptions(): RenderOptions
     {
         if ($this->options instanceof RenderOptions) {

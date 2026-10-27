@@ -18,6 +18,11 @@ use Quittio\Core\Support\Decimal;
  */
 final class IntlFormatter implements Formatter
 {
+    /**
+     * Formats the amount with two decimals, grouped by the locale, and the currency: a symbol for
+     * EUR, USD and GBP (in front for USD and GBP in English locales, otherwise behind), else the
+     * code.
+     */
     public function money(Money $money, string $locale): string
     {
         return $this->withCurrency(
@@ -34,6 +39,10 @@ final class IntlFormatter implements Formatter
         return $this->withCurrency($this->decimal($price, $scale, $scale, $locale), $currency, $locale);
     }
 
+    /**
+     * Formats the quantity with the locale's separators and as many decimals as it has without
+     * trailing zeros, e.g. "1.250,5" for locale de.
+     */
     public function quantity(BigDecimal $quantity, string $locale): string
     {
         $scale = max(0, $quantity->strippedOfTrailingZeros()->getScale());
@@ -41,6 +50,10 @@ final class IntlFormatter implements Formatter
         return $this->decimal($quantity, 0, $scale, $locale);
     }
 
+    /**
+     * Formats the percentage without trailing zeros, e.g. "19%" in English locales and "19 %" (with
+     * a no-break space) in others.
+     */
     public function percent(BigDecimal $percent, string $locale): string
     {
         $scale = max(0, $percent->strippedOfTrailingZeros()->getScale());
@@ -49,6 +62,11 @@ final class IntlFormatter implements Formatter
         return str_starts_with($locale, 'en') ? $number.'%' : $number."\u{00A0}%";
     }
 
+    /**
+     * Formats the date as dd.MM.yyyy for de, dd/MM/yyyy for fr, it, es, pt, nl and en, and MM/dd/yyyy
+     * for en_US; other locales use the ICU medium format. Without ext-intl d.m.Y for de, otherwise
+     * d/m/Y.
+     */
     public function date(Date $date, string $locale): string
     {
         if (class_exists(IntlDateFormatter::class)) {

@@ -21,6 +21,9 @@ final class CiiReader implements FormatReader
     /** Deepest accepted sub line hierarchy (ParentLineID chains). */
     public const int MAX_SUBLINE_DEPTH = 32;
 
+    /**
+     * Whether the root element is a CrossIndustryInvoice in the CII namespace.
+     */
     public function canRead(DOMDocument $document): bool
     {
         $root = $document->documentElement;
@@ -28,6 +31,11 @@ final class CiiReader implements FormatReader
         return $root?->namespaceURI === CiiWriter::NS_RSM && $root->localName === 'CrossIndustryInvoice';
     }
 
+    /**
+     * Reads the CII document into invoice data, with the declared totals and VAT breakdown
+     * unchanged and the findings of reading. $xml is the source text of $document, kept in the
+     * result.
+     */
     public function read(DOMDocument $document, string $xml): ReadResult
     {
         return (new CiiDocumentReader)->read($document, $xml);

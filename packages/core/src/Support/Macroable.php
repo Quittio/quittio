@@ -24,11 +24,17 @@ trait Macroable
         static::$macros[$name] = $macro;
     }
 
+    /**
+     * Whether a macro with this name is registered on the class.
+     */
     public static function hasMacro(string $name): bool
     {
         return isset(static::$macros[$name]);
     }
 
+    /**
+     * Removes every macro registered on the class, e.g. between tests.
+     */
     public static function flushMacros(): void
     {
         static::$macros = [];

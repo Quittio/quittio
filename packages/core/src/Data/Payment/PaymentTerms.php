@@ -37,6 +37,9 @@ final readonly class PaymentTerms
         return (new \Quittio\Core\Serialization\ArrayNormalizer)->normalize($this);
     }
 
+    /**
+     * Whether neither text (BT-20), due days, cash discounts nor late payment terms are set.
+     */
     public function isEmpty(): bool
     {
         return $this->text === null && $this->dueDays === null && $this->discounts === [] && $this->lateFeeTerms === null;

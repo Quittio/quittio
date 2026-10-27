@@ -18,6 +18,9 @@ enum TaxPointDateCode: string
     case DeliveryDate = 'delivery_date';
     case PaymentDate = 'payment_date';
 
+    /**
+     * The code of this date in CII (UNTDID 2475: 5, 29, 72).
+     */
     public function ciiCode(): string
     {
         return match ($this) {
@@ -27,6 +30,9 @@ enum TaxPointDateCode: string
         };
     }
 
+    /**
+     * The code of this date in UBL (UNTDID 2005: 3, 35, 432).
+     */
     public function ublCode(): string
     {
         return match ($this) {
@@ -36,6 +42,9 @@ enum TaxPointDateCode: string
         };
     }
 
+    /**
+     * The case for a CII code (UNTDID 2475); a RawCode for an unknown code.
+     */
     public static function fromCii(string $code): self|RawCode
     {
         return match ($code) {
@@ -46,6 +55,9 @@ enum TaxPointDateCode: string
         };
     }
 
+    /**
+     * The case for a UBL code (UNTDID 2005); a RawCode for an unknown code.
+     */
     public static function fromUbl(string $code): self|RawCode
     {
         return match ($code) {

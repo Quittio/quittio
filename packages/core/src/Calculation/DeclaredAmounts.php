@@ -111,6 +111,10 @@ final class DeclaredAmounts
         return $state->isDeclared() && $state->fingerprint === self::fingerprint($data);
     }
 
+    /**
+     * Hash of the amount inputs of $data as described above (Meta::amountsFingerprint() holds it):
+     * equal for equal inputs, different as soon as an amount input changes.
+     */
     public static function fingerprint(InvoiceData $data): string
     {
         $input = [

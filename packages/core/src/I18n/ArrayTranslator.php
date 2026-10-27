@@ -41,6 +41,9 @@ final class ArrayTranslator implements Translator
         return $this;
     }
 
+    /**
+     * Sets the current locale, used when a call passes no locale. Changes this instance.
+     */
     public function setLocale(string $locale): self
     {
         $this->locale = $locale;
@@ -48,6 +51,9 @@ final class ArrayTranslator implements Translator
         return $this;
     }
 
+    /**
+     * The current locale, used when a call passes no locale.
+     */
     public function locale(): string
     {
         return $this->locale;
@@ -69,6 +75,10 @@ final class ArrayTranslator implements Translator
         return $value;
     }
 
+    /**
+     * Whether $key has a translation in $locale (null: the current locale) itself, without falling
+     * back to its language or the fallback locale.
+     */
     public function has(string $key, ?string $locale = null): bool
     {
         return $this->lookup($key, $locale ?? $this->locale) !== null;

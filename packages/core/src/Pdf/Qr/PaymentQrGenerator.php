@@ -11,8 +11,16 @@ use Quittio\Core\Data\InvoiceData;
  */
 interface PaymentQrGenerator
 {
+    /**
+     * Payment QR code type of the generator, e.g. "girocode" or "swiss-qr-bill". A presentation
+     * that asks for this type uses the generator of the country pack with this key.
+     */
     public function key(): string;
 
+    /**
+     * Whether the invoice qualifies for the code (currency, payment means, amount due …). Without
+     * it no code is printed, unless an explicit amount is given (payment reminders).
+     */
     public function supports(InvoiceData $invoice): bool;
 
     /**

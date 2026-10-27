@@ -43,6 +43,9 @@ final class PhpRulesDriver implements ValidationDriver
         private readonly RuleOverrides $overrides = new RuleOverrides,
     ) {}
 
+    /**
+     * Returns "php", the name of this check in the validation.levels configuration.
+     */
     public function name(): string
     {
         return 'php';
@@ -92,6 +95,11 @@ final class PhpRulesDriver implements ValidationDriver
         return true;
     }
 
+    /**
+     * Runs the rules() of the configured levels against the invoice data, after loading the message
+     * catalogs of the country packs. Applies the overrides to the findings and reports identical
+     * findings once.
+     */
     public function validate(ValidationSubject $subject): ValidationResult
     {
         $context = $subject->context;

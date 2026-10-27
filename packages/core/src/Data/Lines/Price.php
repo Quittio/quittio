@@ -37,6 +37,10 @@ final readonly class Price
         public ?BigDecimal $priceInclVat = null,
     ) {}
 
+    /**
+     * Whether the price is given including VAT (gross price mode), which the calculator converts
+     * into a net price (GrossPriceConverter).
+     */
     public function isGrossMode(): bool
     {
         return $this->priceInclVat !== null;

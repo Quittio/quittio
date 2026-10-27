@@ -34,6 +34,10 @@ use Quittio\Core\Support\Decimal;
  */
 final class GrossPriceConverter
 {
+    /**
+     * Whether at least one line of $invoice has a gross price (Price::isGrossMode()), so that gross
+     * price mode applies.
+     */
     public function appliesTo(InvoiceData $invoice): bool
     {
         foreach ($invoice->lines as $line) {

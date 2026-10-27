@@ -23,6 +23,10 @@ enum MimeType: string
     case Ods = 'application/vnd.oasis.opendocument.spreadsheet';
     case Xml = 'application/xml';
 
+    /**
+     * The labels of these codes are under "mime" in resources/lang/{locale}/codes.php (see
+     * label()).
+     */
     public static function labelGroup(): string
     {
         return 'mime';

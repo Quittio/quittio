@@ -21,6 +21,10 @@ final readonly class ElectronicAddress
         public ElectronicAddressScheme|RawCode $scheme,
     ) {}
 
+    /**
+     * An electronic address with the scheme as enum case; a scheme string without enum case becomes
+     * a RawCode.
+     */
     public static function of(string $value, ElectronicAddressScheme|RawCode|string $scheme): self
     {
         if (is_string($scheme)) {

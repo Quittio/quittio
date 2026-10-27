@@ -12,5 +12,8 @@ use Quittio\Core\Data\InvoiceData;
  */
 interface FormatResolver
 {
+    /**
+     * Format and profile for $invoice, chosen from the invoice data and its country packs.
+     */
     public function resolve(InvoiceData $invoice, ResolvedCountries $countries): FormatChoice;
 }

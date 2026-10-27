@@ -32,6 +32,11 @@ final class XmlSecurity
     /** Maximum number of namespace declarations in scope at any element. */
     public const int MAX_NAMESPACES_IN_SCOPE = 256;
 
+    /**
+     * Parses untrusted XML safely into a DOMDocument, without network access or entity
+     * substitution. Throws UnsafeXmlException for input above $maxBytes, a DOCTYPE, excessive start
+     * tags or namespace declarations, an unsupported encoding or XML that is not well-formed.
+     */
     public static function load(string $xml, int $maxBytes = self::DEFAULT_MAX_BYTES): DOMDocument
     {
         if (strlen($xml) > $maxBytes) {

@@ -38,46 +38,82 @@ final class InvoiceFactory
     /** @var list<callable(InvoiceBuilder): mixed> */
     private array $states = [];
 
+    /**
+     * Starts a factory for an invoice on the Scenarios::base() data: German seller and buyer, EUR,
+     * one line at 19 % standard rate. Same as InvoiceData::factory().
+     */
     public static function new(): self
     {
         return new self;
     }
 
+    /**
+     * Uses $count lines (at least 1): line n is "Item n", n pieces at n × 10.00 net. Returns a
+     * copy.
+     */
     public function withLines(int $count): self
     {
         return $this->set('lines', max(1, $count));
     }
 
+    /**
+     * Makes a reverse charge invoice (category AE, VATEX-EU-AE) to a French company with a VAT ID.
+     * Returns a copy.
+     */
     public function reverseCharge(): self
     {
         return $this->set('vatMode', 'reverse-charge');
     }
 
+    /**
+     * Makes an intra-community supply (category K, VATEX-EU-IC) to an Italian company with a VAT
+     * ID. Returns a copy.
+     */
     public function intraCommunity(): self
     {
         return $this->set('vatMode', 'intra-community');
     }
 
+    /**
+     * Makes an export invoice (category G, VATEX-EU-G) to a US company without a VAT ID. Returns a
+     * copy.
+     */
     public function export(): self
     {
         return $this->set('vatMode', 'export');
     }
 
+    /**
+     * Makes the buyer a German consumer without a buyer reference (BT-10). Takes precedence over
+     * the buyer of reverseCharge(), intraCommunity() and export(). Returns a copy.
+     */
     public function b2c(): self
     {
         return $this->set('consumer', true);
     }
 
+    /**
+     * Sets the invoice currency (BT-5). For any currency other than EUR the invoice also gets EUR
+     * as VAT accounting currency (BT-6) at rate 0.9 and a plain credit transfer as payment means.
+     * Returns a copy.
+     */
     public function currency(string $currency): self
     {
         return $this->set('currency', $currency);
     }
 
+    /**
+     * Sets the invoice number (BT-1) instead of the base number "RE-2026-0042". Returns a copy.
+     */
     public function number(string $number): self
     {
         return $this->set('number', $number);
     }
 
+    /**
+     * Makes a credit note (type 381) that refers to the preceding invoice RE-2026-0001 of
+     * 2026-09-01 (BG-3). Returns a copy.
+     */
     public function creditNote(): self
     {
         return $this->set('creditNote', true);
@@ -96,6 +132,10 @@ final class InvoiceFactory
         return $clone;
     }
 
+    /**
+     * Returns a new InvoiceBuilder with all chosen states applied, the state() callbacks last, for
+     * further changes before build().
+     */
     public function builder(): InvoiceBuilder
     {
         $builder = Scenarios::base()->currency($this->currency);

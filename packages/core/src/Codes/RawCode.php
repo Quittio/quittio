@@ -24,6 +24,9 @@ final readonly class RawCode implements JsonSerializable, Stringable
         return $this->value;
     }
 
+    /**
+     * Serialises the code as its plain value, like an enum case.
+     */
     public function jsonSerialize(): string
     {
         return $this->value;

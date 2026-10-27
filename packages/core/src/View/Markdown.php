@@ -20,6 +20,11 @@ final class Markdown
 
     private static ?CommonMarkConverter $converter = null;
 
+    /**
+     * Converts $text with Markdown to HTML with only paragraphs, line breaks, lists, bold and
+     * italic; HTML in the input is escaped and links keep only their text. Returns "" for null or
+     * blank text.
+     */
     public static function toHtml(?string $text): string
     {
         if ($text === null || trim($text) === '') {

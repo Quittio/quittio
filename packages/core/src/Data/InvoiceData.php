@@ -159,6 +159,10 @@ final readonly class InvoiceData
         return InvoiceFactory::new();
     }
 
+    /**
+     * Whether the data carries totals (BG-22), i.e. went through the calculator or was read with
+     * its amounts.
+     */
     public function isCalculated(): bool
     {
         return $this->totals !== null;
@@ -189,21 +193,34 @@ final readonly class InvoiceData
         return $this->with(['meta' => $this->meta->with(['exchangeRate' => $rate])]);
     }
 
+    /**
+     * The type code (BT-3) as plain string, also for a RawCode, e.g. "380".
+     */
     public function typeCodeValue(): string
     {
         return (string) $this->typeCode->value;
     }
 
+    /**
+     * Whether the type code (BT-3) is one that EN 16931 and Peppol treat as credit note
+     * (InvoiceTypeCode::isCreditNote()); false for a RawCode.
+     */
     public function isCreditNote(): bool
     {
         return $this->typeCode instanceof InvoiceTypeCode && $this->typeCode->isCreditNote();
     }
 
+    /**
+     * Copy with another invoice number (BT-1).
+     */
     public function withNumber(string $number): self
     {
         return $this->with(['number' => $number]);
     }
 
+    /**
+     * Copy with another issue date (BT-2); amounts and the due date stay as they are.
+     */
     public function withIssueDate(Date $issueDate): self
     {
         return $this->with(['issueDate' => $issueDate]);
@@ -252,11 +269,23 @@ final readonly class InvoiceData
         return (new ArrayHydrator)->hydrate(self::class, $data);
     }
 
+    /**
+     * The data as JSON (see toArray()), with unescaped slashes and Unicode; $flags adds
+     * json_encode() flags such as JSON_PRETTY_PRINT.
+     *
+     * @throws JsonException when the data cannot be encoded
+     */
     public function toJson(int $flags = 0): string
     {
         return json_encode($this->toArray(), $flags | JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     }
 
+    /**
+     * Invoice data from JSON as written by toJson(), hydrated like fromArray().
+     *
+     * @throws HydrationException when the JSON is invalid or does not match the data model
+     * @throws InvalidArgumentException when the JSON does not decode to an object
+     */
     public static function fromJson(string $json): self
     {
         try {

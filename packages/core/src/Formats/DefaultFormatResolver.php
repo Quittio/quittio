@@ -37,6 +37,11 @@ final class DefaultFormatResolver implements FormatResolver
         private readonly ?Closure $peppolLookup = null,
     ) {}
 
+    /**
+     * Format and profile for $invoice in the order described above, with the reason of the choice.
+     *
+     * @throws ConfigurationException when EXTENDED features are used but the profile upgrade is off
+     */
     public function resolve(InvoiceData $invoice, ResolvedCountries $countries): FormatChoice
     {
         return $this->upgrade($invoice, $this->choose($invoice, $countries));

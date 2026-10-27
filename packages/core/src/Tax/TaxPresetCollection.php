@@ -31,6 +31,9 @@ final class TaxPresetCollection implements Countable, IteratorAggregate
         }
     }
 
+    /**
+     * Adds $preset under its key(), replacing a preset with the same key. Changes this instance.
+     */
     public function add(TaxPreset $preset): self
     {
         $this->presets[$preset->key()] = $preset;
@@ -49,21 +52,33 @@ final class TaxPresetCollection implements Countable, IteratorAggregate
         return $this;
     }
 
+    /**
+     * Whether a preset or an alias exists under $key, e.g. "de.standard".
+     */
     public function has(string $key): bool
     {
         return isset($this->presets[$key]) || isset($this->aliases[$key]);
     }
 
+    /**
+     * Returns the preset or alias under $key; throws InvalidArgumentException for an unknown key.
+     */
     public function get(string $key): TaxPreset
     {
         return $this->presets[$key] ?? $this->aliases[$key] ?? throw new InvalidArgumentException(sprintf('Unknown tax preset "%s".', $key));
     }
 
+    /**
+     * Number of presets, without aliases.
+     */
     public function count(): int
     {
         return count($this->presets);
     }
 
+    /**
+     * Iterates the presets by key, without aliases.
+     */
     public function getIterator(): Traversable
     {
         return new ArrayIterator($this->presets);

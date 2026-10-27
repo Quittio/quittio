@@ -56,6 +56,9 @@ final class VeraPdfValidator implements ValidationDriver
         $this->runner = $runner ?? Process::run(...);
     }
 
+    /**
+     * Returns "verapdf", the name of this check in the validation.levels configuration.
+     */
     public function name(): string
     {
         return 'verapdf';
@@ -71,6 +74,11 @@ final class VeraPdfValidator implements ValidationDriver
         return $subject->pdf !== null;
     }
 
+    /**
+     * Checks the subject's PDF for PDF/A conformance with veraPDF and returns the findings as level
+     * L6. If veraPDF cannot be run, the result holds a VERAPDF-UNAVAILABLE error, or a warning when
+     * failOnUnavailable is off.
+     */
     public function validate(ValidationSubject $subject): ValidationResult
     {
         return new ValidationResult($this->validatePdf($subject->pdf ?? ''), [ValidationLevel::L6]);

@@ -163,6 +163,10 @@ final readonly class DocumentData
         return new ValidationMessage(Severity::Warning, $code, $message, ValidationLevel::L7, path: $path, hint: $hint);
     }
 
+    /**
+     * The document specific options of the line with identifier $lineId (BT-126); default options
+     * (billable, no serial numbers) when none are set.
+     */
     public function options(string $lineId): DocumentLineOptions
     {
         return $this->lineOptions[$lineId] ?? new DocumentLineOptions;
@@ -178,6 +182,10 @@ final readonly class DocumentData
         return array_values(array_filter($this->lines, fn (InvoiceLine $line): bool => $this->options($line->id)->isBillable()));
     }
 
+    /**
+     * Whether the document has totals or needs none, because it has no billable lines (e.g. a
+     * payment reminder or delivery note without prices).
+     */
     public function isCalculated(): bool
     {
         return $this->totals !== null || $this->billableLines() === [];

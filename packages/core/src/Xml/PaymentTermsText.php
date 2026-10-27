@@ -21,6 +21,12 @@ use Quittio\Core\View\IntlFormatter;
  */
 final class PaymentTermsText
 {
+    /**
+     * Payment terms text (BT-20) for the XML in $locale: the free text, otherwise "due in n days",
+     * then one line per cash discount and the late fee terms. Profiles with
+     * StructuredCashDiscountText (e.g. XRechnung) get the cash discounts last, as #SKONTO# lines
+     * each ended by a line break. Null without payment terms or without any text.
+     */
     public static function render(InvoiceData $invoice, Profile $profile, string $locale): ?string
     {
         $terms = $invoice->paymentTerms;

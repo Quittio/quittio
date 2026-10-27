@@ -15,8 +15,15 @@ use Quittio\Core\I18n\Translations;
  */
 trait HasLabel
 {
+    /**
+     * Group of the labels of this code list in resources/lang/{locale}/codes.php.
+     */
     abstract public static function labelGroup(): string;
 
+    /**
+     * Translated label of the code in $locale (null: the translator's locale), e.g. "Stunde" for
+     * HUR; the code itself when neither $locale nor English has a label.
+     */
     public function label(?string $locale = null): string
     {
         $key = 'quittio::codes.'.static::labelGroup().'.'.$this->value;

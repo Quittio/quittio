@@ -19,6 +19,10 @@ use Quittio\Core\Exceptions\InvalidArgumentException;
  */
 final class DenyingHttpClient implements ClientInterface
 {
+    /**
+     * Sends nothing: always throws an InvalidArgumentException naming the blocked URI, which mPDF
+     * treats as a missing asset.
+     */
     public function sendRequest(RequestInterface $request): never
     {
         throw new InvalidArgumentException(sprintf('Quittio does not load remote resources while rendering (blocked "%s").', $request->getUri()));

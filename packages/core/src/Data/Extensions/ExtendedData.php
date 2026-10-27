@@ -41,6 +41,9 @@ final readonly class ExtendedData
         public array $additionalPaymentInstructions = [],
     ) {}
 
+    /**
+     * Whether no EXTENDED data is set, i.e. all properties have their defaults.
+     */
     public function isEmpty(): bool
     {
         return get_object_vars($this) === get_object_vars(new self);

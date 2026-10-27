@@ -36,36 +36,60 @@ final readonly class RenderedDocument
         return $this->notices;
     }
 
+    /**
+     * The calculated document data the output was rendered from.
+     */
     public function data(): DocumentData
     {
         return $this->data;
     }
 
+    /**
+     * The rendered template HTML, also when a PDF was rendered.
+     */
     public function html(): string
     {
         return $this->html;
     }
 
+    /**
+     * Whether a PDF was rendered; false for an HTML-only run.
+     */
     public function hasPdf(): bool
     {
         return $this->pdf !== null;
     }
 
+    /**
+     * The PDF.
+     *
+     * @throws LogicException when the document was rendered as HTML only (see hasPdf())
+     */
     public function pdf(): string
     {
         return $this->pdf ?? throw new LogicException('The document was rendered as HTML only.');
     }
 
+    /**
+     * The main output: the PDF, otherwise the HTML.
+     */
     public function contents(): string
     {
         return $this->pdf ?? $this->html;
     }
 
+    /**
+     * MIME type of the main output (contents()): application/pdf, or text/html without a PDF.
+     */
     public function mimeType(): string
     {
         return $this->pdf === null ? 'text/html' : 'application/pdf';
     }
 
+    /**
+     * File name of the main output from the configured pattern, with the extension pdf or html;
+     * $extension replaces it.
+     */
     public function filename(?string $extension = null): string
     {
         return str_replace('{ext}', $extension ?? ($this->pdf === null ? 'html' : 'pdf'), $this->filenamePattern);

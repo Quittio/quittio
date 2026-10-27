@@ -11,5 +11,8 @@ use Quittio\Core\Builder\PartyBuilder;
  */
 interface ProvidesParty
 {
+    /**
+     * Fills $party with the data of the model (name, address, VAT identifier …).
+     */
     public function fillParty(PartyBuilder $party): void;
 }

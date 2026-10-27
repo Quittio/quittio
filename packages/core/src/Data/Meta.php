@@ -94,6 +94,9 @@ final readonly class Meta
         public array $flags = [],
     ) {}
 
+    /**
+     * Whether $flag (e.g. FLAG_SMALL_BUSINESS) is set.
+     */
     public function hasFlag(string $flag): bool
     {
         return in_array($flag, $this->flags, true);
@@ -110,6 +113,10 @@ final readonly class Meta
         return $this->prefixed(self::FINGERPRINT_PREFIX);
     }
 
+    /**
+     * Copy with another fingerprint of the amount inputs (see amountsFingerprint()); null removes
+     * it.
+     */
     public function withAmountsFingerprint(?string $fingerprint): self
     {
         return $this->withPrefixed(self::FINGERPRINT_PREFIX, $fingerprint);
@@ -128,11 +135,18 @@ final readonly class Meta
         return $value === null || ! Decimal::isPlain($value) ? null : BigDecimal::of($value);
     }
 
+    /**
+     * Copy with another declared VAT total in accounting currency (BT-111, see
+     * declaredVatInTaxCurrency()); null removes it.
+     */
     public function withDeclaredVatInTaxCurrency(?BigDecimal $amount): self
     {
         return $this->withPrefixed(self::VAT_IN_TAX_CURRENCY_PREFIX, $amount === null ? null : (string) $amount);
     }
 
+    /**
+     * Copy with $flag set, or removed when $enabled is false; a flag is never set twice.
+     */
     public function withFlag(string $flag, bool $enabled = true): self
     {
         $flags = array_values(array_filter($this->flags, static fn (string $f): bool => $f !== $flag));

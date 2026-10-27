@@ -16,6 +16,9 @@ abstract class AbstractProfile implements Profile
         return [Syntax::Cii];
     }
 
+    /**
+     * Only EN 16931:2017 by default; profiles that also support EN 16931:2026 override it.
+     */
     public function supportsStandard(StandardVersion $version): bool
     {
         return $version === StandardVersion::En16931_2017;

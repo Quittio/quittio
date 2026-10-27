@@ -47,6 +47,12 @@ final class ViesVerifier implements VatIdVerifier
         };
     }
 
+    /**
+     * Asks VIES whether $vatId (spaces, dots and hyphens ignored) is valid, with the registered
+     * name and address if VIES returns them. A prefix VIES does not cover is reported as not
+     * supported without a request. Answers VALID and INVALID are cached for the cache TTL; errors
+     * and unreachable services give $valid = null.
+     */
     public function verify(string $vatId): VatIdVerification
     {
         $normalized = strtoupper(preg_replace('/[\s.\-]/', '', $vatId) ?? $vatId);

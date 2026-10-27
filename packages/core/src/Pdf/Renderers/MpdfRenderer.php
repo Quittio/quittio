@@ -42,6 +42,11 @@ final class MpdfRenderer implements PdfRenderer
         return true;
     }
 
+    /**
+     * Renders the HTML with mPDF and returns the PDF; with $request->pdfa as PDF/A-3b, with the
+     * embedded XML and its Factur-X XMP metadata in the same pass. A line table across pages gets
+     * carry-over rows at each page break. Throws a PdfException when mPDF fails.
+     */
     public function render(RenderRequest $request): string
     {
         try {

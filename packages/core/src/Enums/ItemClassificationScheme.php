@@ -22,6 +22,10 @@ enum ItemClassificationScheme: string
     case ProductServiceId = 'MP';
     case MutuallyDefined = 'ZZZ';
 
+    /**
+     * The labels of these codes are under "item_classification" in
+     * resources/lang/{locale}/codes.php (see label()).
+     */
     public static function labelGroup(): string
     {
         return 'item_classification';

@@ -26,6 +26,11 @@ final class MpdfPostProcessor implements PdfPostProcessor
         private readonly ?string $tempDir = null,
     ) {}
 
+    /**
+     * Imports every page of $pdf with its size and orientation, attaches $embedded with its
+     * Factur-X XMP metadata and returns the result as PDF/A-3b with $title and $author in the
+     * metadata. Throws a PdfException when the PDF cannot be imported.
+     */
     public function process(string $pdf, ?EmbeddedXml $embedded, string $title, ?string $author = null): string
     {
         try {

@@ -66,6 +66,13 @@ final class En16931Calculator implements TotalsCalculator
         return $this->policy;
     }
 
+    /**
+     * Returns $invoice with calculated line amounts, allowances and charges, VAT breakdown (BG-23),
+     * totals (BG-22), the due date from the payment terms if none is set, and the fingerprint of
+     * its amount inputs. Declared amounts are kept, recalculated or rejected as described above.
+     *
+     * @throws CalculationException e.g. for a line without price or rejected declared amounts
+     */
     public function calculate(InvoiceData $invoice): InvoiceData
     {
         $currency = $invoice->currency;

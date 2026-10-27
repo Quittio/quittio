@@ -14,6 +14,9 @@ use Quittio\Core\Xml\Ubl\Internal\UblDocumentReader;
  */
 final class UblReader implements FormatReader
 {
+    /**
+     * Whether the root element is a UBL 2.1 Invoice or CreditNote in its namespace.
+     */
     public function canRead(DOMDocument $document): bool
     {
         $root = $document->documentElement;
@@ -22,6 +25,11 @@ final class UblReader implements FormatReader
             || ($root?->namespaceURI === UblWriter::NS_CREDIT_NOTE && $root->localName === 'CreditNote');
     }
 
+    /**
+     * Reads the UBL document into invoice data, with the declared totals and VAT breakdown
+     * unchanged and the findings of reading. $xml is the source text of $document, kept in the
+     * result.
+     */
     public function read(DOMDocument $document, string $xml): ReadResult
     {
         return (new UblDocumentReader)->read($document, $xml);

@@ -36,6 +36,9 @@ final class En16931 extends AbstractProfile
         return [Syntax::Cii, Syntax::Ubl];
     }
 
+    /**
+     * Every EN 16931 version (2017 and 2026) is supported.
+     */
     public function supportsStandard(StandardVersion $version): bool
     {
         return true;

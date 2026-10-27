@@ -57,6 +57,8 @@ final class GermanyServiceProvider extends ServiceProvider
      * @internal
      *
      * @param  array<array-key, mixed>  $defaults
+     *
+     * @throws RuntimeException while the configuration quittio-de of 0.3 is set
      */
     public static function mergeConfiguration(Repository $config, array $defaults): void
     {

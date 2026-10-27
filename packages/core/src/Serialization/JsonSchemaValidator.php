@@ -15,6 +15,10 @@ use Quittio\Core\Exceptions\RuntimeException;
  */
 final class JsonSchemaValidator
 {
+    /**
+     * Whether the optional package opis/json-schema is installed; without it validate() throws a
+     * RuntimeException.
+     */
     public static function available(): bool
     {
         return class_exists(Validator::class);

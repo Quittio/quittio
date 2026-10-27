@@ -30,6 +30,9 @@ final class XsdValidator implements ValidationDriver
         $this->schemaPath = $schemaPath ?? dirname(__DIR__, 3).'/resources/xsd';
     }
 
+    /**
+     * Returns "xsd", the name of this check in the validation.levels configuration.
+     */
     public function name(): string
     {
         return 'xsd';
@@ -55,6 +58,11 @@ final class XsdValidator implements ValidationDriver
         }
     }
 
+    /**
+     * Validates the subject's XML against the schema of its root element and returns the schema
+     * errors as level L4, e.g. XSD-NOT-WELL-FORMED for unreadable or unsafe XML and
+     * XSD-UNKNOWN-ROOT when no schema fits.
+     */
     public function validate(ValidationSubject $subject): ValidationResult
     {
         return new ValidationResult($this->validateXml($subject->xml ?? ''), [ValidationLevel::L4]);
@@ -93,6 +101,10 @@ final class XsdValidator implements ValidationDriver
         );
     }
 
+    /**
+     * Path of the bundled XSD for the document's root element (CII D16B CrossIndustryInvoice, UBL
+     * 2.1 Invoice or CreditNote); null for any other root element.
+     */
     public function schemaFor(DOMDocument $document): ?string
     {
         $root = $document->documentElement;
@@ -105,6 +117,10 @@ final class XsdValidator implements ValidationDriver
         };
     }
 
+    /**
+     * Syntax of the document by its root element name: CII for CrossIndustryInvoice, UBL for
+     * Invoice and CreditNote; null for any other root element. The namespace is not checked.
+     */
     public static function syntaxOf(DOMDocument $document): ?Syntax
     {
         return match ($document->documentElement?->localName) {

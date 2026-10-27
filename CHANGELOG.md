@@ -10,6 +10,7 @@ Quittio 1.0 removes what the 0.x releases deprecated and fixes the public API: f
 
 - `VatPreset::LEGACY_STANDARD_KEY` and `LEGACY_REDUCED_KEY` name the preset keys of 0.2 (`de.standard_19`, `de.reduced_7`) that stored invoices may still carry.
 - Documentation: [Upgrading to 1.0](docs/upgrading.md).
+- Every public method of `quittio/core`, `quittio/laravel` and `quittio/country-de` has a doc comment, so the API reference is complete; a test requires one for every new public method.
 
 ### Changed
 

@@ -27,6 +27,9 @@ enum IdentifierScheme: string
     case LeitwegId = '0204';
     case BelgianEnterpriseNumber = '0208';
 
+    /**
+     * The labels of these codes are under "icd" in resources/lang/{locale}/codes.php (see label()).
+     */
     public static function labelGroup(): string
     {
         return 'icd';

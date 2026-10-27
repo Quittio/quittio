@@ -30,11 +30,17 @@ final readonly class PreparedInvoice
         public ValidationResult $validation,
     ) {}
 
+    /**
+     * Key of the main format, the first of $formats as in a render run.
+     */
     public function format(): string
     {
         return (string) array_key_first($this->formats);
     }
 
+    /**
+     * Profile of the main format; null for formats that write or embed no XML.
+     */
     public function profile(): ?Profile
     {
         return $this->formats[$this->format()] ?? null;

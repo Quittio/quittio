@@ -32,6 +32,10 @@ final class PassthroughRenderer implements PdfRenderer
         return true;
     }
 
+    /**
+     * Returns the supplied PDF, passed through the post processor when the request asks for PDF/A
+     * or an embedded XML. The HTML of the request is not used.
+     */
     public function render(RenderRequest $request): string
     {
         return $request->pdfa || $request->embedded !== null

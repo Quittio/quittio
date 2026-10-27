@@ -12,6 +12,9 @@ use Throwable;
  */
 final class HydrationException extends InvalidArgumentException implements QuittioException
 {
+    /**
+     * Exception for the input at $path (dot notation, empty for the root) with $message.
+     */
     public static function at(string $path, string $message, ?Throwable $previous = null): self
     {
         return new self(sprintf('%s: %s', $path === '' ? '(root)' : $path, $message), 0, $previous);

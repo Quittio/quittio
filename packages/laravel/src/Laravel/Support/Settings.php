@@ -20,6 +20,10 @@ final readonly class Settings
         private string $path = 'quittio',
     ) {}
 
+    /**
+     * The value at $key in dot notation (e.g. "seller.address.city"), or $default when a segment is
+     * missing.
+     */
     public function get(string $key, mixed $default = null): mixed
     {
         $value = $this->values;
@@ -33,11 +37,19 @@ final readonly class Settings
         return $value;
     }
 
+    /**
+     * The string at $key; $default when it is missing, null or empty. Throws a
+     * ConfigurationException for another type.
+     */
     public function string(string $key, string $default): string
     {
         return $this->nullableString($key) ?? $default;
     }
 
+    /**
+     * The string at $key; null when it is missing, null or empty. Throws a ConfigurationException
+     * for another type.
+     */
     public function nullableString(string $key): ?string
     {
         $value = $this->get($key);
@@ -51,6 +63,10 @@ final readonly class Settings
         return $value;
     }
 
+    /**
+     * The boolean at $key; $default when it is missing or null. Throws a ConfigurationException for
+     * another type.
+     */
     public function bool(string $key, bool $default): bool
     {
         $value = $this->get($key);
@@ -64,6 +80,10 @@ final readonly class Settings
         return $value;
     }
 
+    /**
+     * The integer at $key; $default when it is missing or null. Throws a ConfigurationException for
+     * another type.
+     */
     public function int(string $key, int $default): int
     {
         $value = $this->get($key);
@@ -103,6 +123,10 @@ final readonly class Settings
         return array_values(array_filter($this->array($key), is_string(...)));
     }
 
+    /**
+     * The array at $key as settings of their own, whose error messages name the full key; empty
+     * when the key is missing. Throws a ConfigurationException when the value is no array.
+     */
     public function section(string $key): self
     {
         return new self($this->array($key), $this->path.'.'.$key);

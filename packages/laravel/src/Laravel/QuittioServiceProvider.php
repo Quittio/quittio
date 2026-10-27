@@ -82,6 +82,12 @@ final class QuittioServiceProvider extends ServiceProvider
         });
     }
 
+    /**
+     * Loads the views and translations, routes the labels through Laravel's translator, installs
+     * the configured snapshot upcaster chains and the default VAT of lines without ->vat(), and
+     * registers the preview route; in the console also the publishable files, the Artisan commands
+     * and the "about" section.
+     */
     public function boot(): void
     {
         $this->loadViewsFrom(self::packagePath('resources/views'), 'quittio');
@@ -119,11 +125,19 @@ final class QuittioServiceProvider extends ServiceProvider
         }
     }
 
+    /**
+     * Absolute path of $path inside the quittio/laravel package, the package root for an empty
+     * path.
+     */
     public static function packagePath(string $path = ''): string
     {
         return dirname(__DIR__, 2).($path === '' ? '' : '/'.$path);
     }
 
+    /**
+     * Absolute path of $path inside the installed quittio/core package (e.g. resources/lang), the
+     * package root for an empty path.
+     */
     public static function corePath(string $path = ''): string
     {
         $core = dirname((string) (new ReflectionClass(\Quittio\Core\Quittio::class))->getFileName(), 2);

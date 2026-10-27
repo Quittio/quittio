@@ -38,6 +38,10 @@ interface Profile
      */
     public function syntaxes(): array;
 
+    /**
+     * Whether the profile can carry invoices of this EN 16931 version. The rule
+     * QUITTIO-STANDARD-VERSION reports an invoice whose version the profile does not support.
+     */
     public function supportsStandard(StandardVersion $version): bool;
 
     /**

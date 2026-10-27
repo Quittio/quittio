@@ -11,5 +11,9 @@ use Quittio\Core\Data\InvoiceData;
  */
 interface CountryResolver
 {
+    /**
+     * The leading pack (seller side) and, for cross-border invoices, the buyer's pack for $invoice;
+     * $countryOverride replaces the seller's country.
+     */
     public function resolve(InvoiceData $invoice, ?string $countryOverride = null): ResolvedCountries;
 }

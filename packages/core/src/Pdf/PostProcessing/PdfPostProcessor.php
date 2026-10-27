@@ -11,5 +11,9 @@ use Quittio\Core\Pdf\EmbeddedXml;
  */
 interface PdfPostProcessor
 {
+    /**
+     * Returns $pdf as PDF/A-3 with $embedded as associated file (none if null) and $title and
+     * $author in the document metadata.
+     */
     public function process(string $pdf, ?EmbeddedXml $embedded, string $title, ?string $author = null): string;
 }

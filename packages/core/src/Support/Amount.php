@@ -28,6 +28,9 @@ final class Amount
     /** @var array<string, Currency> */
     private static array $currencies = [];
 
+    /**
+     * The shared money context with the fixed scale of two decimals (SCALE) that every amount uses.
+     */
     public static function context(): CustomContext
     {
         return self::$context ??= new CustomContext(self::SCALE);
@@ -83,16 +86,26 @@ final class Amount
         return self::$currencies[$code] = $currency;
     }
 
+    /**
+     * Like of() without rounding, but null and the empty string give null.
+     */
     public static function ofNullable(Money|BigNumber|int|float|string|null $value, string $currency): ?Money
     {
         return $value === null || $value === '' ? null : self::of($value, $currency);
     }
 
+    /**
+     * Zero in $currency.
+     */
     public static function zero(string $currency): Money
     {
         return Money::zero(self::currency($currency), self::context());
     }
 
+    /**
+     * Amount of a decimal rounded half up to two decimals; unlike of(), more decimals are not
+     * rejected.
+     */
     public static function fromDecimal(BigDecimal $value, string $currency): Money
     {
         return Money::of(Decimal::round($value, self::SCALE), self::currency($currency), self::context());

@@ -49,16 +49,26 @@ final readonly class CallbackRule implements Rule
         return $this->code;
     }
 
+    /**
+     * Validation level of the rule, as given to the constructor, l3() or l7().
+     */
     public function level(): ValidationLevel
     {
         return $this->level;
     }
 
+    /**
+     * English message used when the message catalog has no entry for the code.
+     */
     public function fallbackMessage(): string
     {
         return $this->fallback;
     }
 
+    /**
+     * Translation namespace of the message catalog the message is looked up in, e.g. "quittio" for
+     * "quittio::rules.<code>.message".
+     */
     public function namespace(): string
     {
         return $this->namespace;

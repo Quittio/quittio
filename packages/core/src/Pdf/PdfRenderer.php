@@ -9,6 +9,11 @@ namespace Quittio\Core\Pdf;
  */
 interface PdfRenderer
 {
+    /**
+     * Renders the HTML of $request and returns the PDF as binary string. A renderer that
+     * supportsEmbedding() also writes the PDF/A and the embedded XML the request asks for. Throws a
+     * PdfException when rendering fails.
+     */
     public function render(RenderRequest $request): string;
 
     /**

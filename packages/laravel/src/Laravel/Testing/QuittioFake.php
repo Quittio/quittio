@@ -122,11 +122,19 @@ final class QuittioFake extends QuittioManager
         Assert::assertNotEmpty($matching, $callback === null ? 'No invoice was rendered.' : 'No rendered invoice matches the given callback.');
     }
 
+    /**
+     * Asserts that exactly $count invoices were rendered (documents are not counted); fails with
+     * the actual number otherwise.
+     */
     public function assertRenderedCount(int $count): void
     {
         Assert::assertCount($count, $this->rendered, sprintf('Expected %d rendered invoices, got %d.', $count, count($this->rendered)));
     }
 
+    /**
+     * Asserts that no invoice was rendered (documents are not counted); fails with the number of
+     * rendered invoices otherwise.
+     */
     public function assertNothingRendered(): void
     {
         Assert::assertSame([], $this->rendered, sprintf('Expected no rendered invoice, got %d.', count($this->rendered)));

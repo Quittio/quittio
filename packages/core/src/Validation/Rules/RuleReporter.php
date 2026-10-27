@@ -50,6 +50,9 @@ final class RuleReporter
         $this->add(Severity::Info, $bt, $path, $replace);
     }
 
+    /**
+     * Context of the validation run, e.g. for the profile, the country packs and the options.
+     */
     public function context(): ValidationContext
     {
         return $this->context;

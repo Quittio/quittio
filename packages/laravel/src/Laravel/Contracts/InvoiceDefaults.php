@@ -14,5 +14,10 @@ use Quittio\Core\Builder\InvoiceBuilder;
  */
 interface InvoiceDefaults
 {
+    /**
+     * Sets the seller and its defaults on $builder. Called for every invoice builder of
+     * Quittio::invoice() and for the invoice builder of every document; ->seller() with another
+     * seller removes these values again.
+     */
     public function apply(InvoiceBuilder $builder): void;
 }

@@ -42,6 +42,9 @@ final class Inspect
         return $invoice->lines === [] && ! $report->context()->profile->level()->includes(ProfileLevel::Basic);
     }
 
+    /**
+     * Whether a line, a document allowance or a document charge has the VAT category $category.
+     */
     public static function uses(InvoiceData $invoice, VatCategory $category): bool
     {
         return in_array($category, self::categories($invoice), true);
@@ -55,11 +58,17 @@ final class Inspect
         return array_values(array_filter($invoice->lines, static fn (InvoiceLine $l): bool => $l->vat->category === $category));
     }
 
+    /**
+     * Whether $value is not null and not empty after trimming whitespace.
+     */
     public static function filled(?string $value): bool
     {
         return $value !== null && trim($value) !== '';
     }
 
+    /**
+     * Whether $value is null or zero.
+     */
     public static function isZero(?BigDecimal $value): bool
     {
         return $value === null || $value->isZero();

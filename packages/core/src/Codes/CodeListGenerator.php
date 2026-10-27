@@ -41,6 +41,10 @@ final class CodeListGenerator
         CodeList::PEPPOL_CREDIT_NOTE_TYPES => 'PEPPOL-EN16931-P0101',
     ];
 
+    /**
+     * Directory of the code list files shipped with the package (resources/codelists), where
+     * generate() writes when no target is given.
+     */
     public static function defaultTarget(): string
     {
         return dirname(__DIR__, 2).'/resources/codelists';

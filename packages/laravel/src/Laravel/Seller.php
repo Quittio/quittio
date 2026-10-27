@@ -17,6 +17,13 @@ use Quittio\Laravel\Support\Settings;
  */
 final class Seller
 {
+    /**
+     * The seller of quittio.seller in config/quittio.php: name, VAT identifier, tax number,
+     * address, legal registration, identifiers (BT-29), additional legal information, contact and
+     * electronic address. Without address.country it takes quittio.defaults.country or the code of
+     * the only installed country pack. Throws a ConfigurationException for a value of the wrong
+     * type.
+     */
     public static function fromConfig(): SellerParty
     {
         $seller = self::settings();

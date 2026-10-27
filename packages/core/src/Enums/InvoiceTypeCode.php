@@ -70,6 +70,10 @@ enum InvoiceTypeCode: string
     case FinalConstructionInvoice = '877';
     case CustomsInvoice = '935';
 
+    /**
+     * The labels of these codes are under "invoice_type" in resources/lang/{locale}/codes.php (see
+     * label()).
+     */
     public static function labelGroup(): string
     {
         return 'invoice_type';
@@ -103,6 +107,10 @@ enum InvoiceTypeCode: string
         ], true);
     }
 
+    /**
+     * Whether the code is a self-billed document (389, 261, 527), issued by the buyer instead of
+     * the seller.
+     */
     public function isSelfBilled(): bool
     {
         return in_array($this, [self::SelfBilledInvoice, self::SelfBilledCreditNote, self::SelfBilledDebitNote], true);

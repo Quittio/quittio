@@ -35,6 +35,9 @@ final readonly class PaymentInstructions
         public ?DirectDebit $directDebit = null,
     ) {}
 
+    /**
+     * The first credit transfer account (BG-17), e.g. for a payment QR code; null without one.
+     */
     public function primaryCreditTransfer(): ?CreditTransfer
     {
         return $this->creditTransfers[0] ?? null;

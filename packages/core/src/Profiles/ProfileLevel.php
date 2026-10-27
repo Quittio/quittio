@@ -15,6 +15,9 @@ enum ProfileLevel: int
     case En16931 = 40;
     case Extended = 50;
 
+    /**
+     * Display name of the level as Factur-X/ZUGFeRD spells it, e.g. "BASIC WL".
+     */
     public function label(): string
     {
         return match ($this) {
@@ -26,6 +29,9 @@ enum ProfileLevel: int
         };
     }
 
+    /**
+     * Whether this level contains the fields of $other, i.e. is the same or a higher level.
+     */
     public function includes(self $other): bool
     {
         return $this->value >= $other->value;

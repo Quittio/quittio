@@ -57,6 +57,9 @@ final class KositValidator implements ValidationDriver
         $this->http = $http ?? self::defaultHttp(...);
     }
 
+    /**
+     * Returns "kosit", the name of this check in the validation.levels configuration.
+     */
     public function name(): string
     {
         return 'kosit';
@@ -72,6 +75,11 @@ final class KositValidator implements ValidationDriver
         return $subject->xml !== null;
     }
 
+    /**
+     * Validates the subject's XML with the KoSIT validator and returns the findings as level L5. If
+     * the validator cannot be run, the result holds a KOSIT-UNAVAILABLE error, or a warning when
+     * failOnUnavailable is off.
+     */
     public function validate(ValidationSubject $subject): ValidationResult
     {
         return new ValidationResult($this->validateXml($subject->xml ?? ''), [ValidationLevel::L5]);

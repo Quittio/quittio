@@ -25,6 +25,9 @@ abstract readonly class LineAllowanceCharge
         public BackedEnum|RawCode|null $reasonCode = null,
     ) {}
 
+    /**
+     * Whether this is a charge (BG-28) rather than an allowance (BG-27).
+     */
     abstract public function isCharge(): bool;
 
     /**
@@ -43,6 +46,9 @@ abstract readonly class LineAllowanceCharge
         return (new ReflectionClass(static::class))->newInstanceArgs($arguments);
     }
 
+    /**
+     * The reason code (BT-140 or BT-145) as plain string, also for a RawCode; null without code.
+     */
     public function reasonCodeValue(): ?string
     {
         return $this->reasonCode === null ? null : (string) $this->reasonCode->value;

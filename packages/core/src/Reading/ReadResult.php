@@ -32,6 +32,10 @@ final readonly class ReadResult
         public ?string $embeddedFilename = null,
     ) {}
 
+    /**
+     * Whether reading produced findings, e.g. declared totals that differ from the recalculation or
+     * several embedded files in the PDF.
+     */
     public function hasFindings(): bool
     {
         return $this->findings !== [];

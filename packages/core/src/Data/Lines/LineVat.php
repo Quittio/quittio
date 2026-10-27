@@ -43,6 +43,10 @@ final readonly class LineVat
         return self::key($this->category, $this->rate);
     }
 
+    /**
+     * Key of the VAT group of $category and $rate, e.g. "S|19.00"; rates that differ only in
+     * trailing zeros give the same key, a missing rate an empty rate part ("E|").
+     */
     public static function key(VatCategory $category, ?BigDecimal $rate): string
     {
         return $category->value.'|'.($rate === null ? '' : $rate->strippedOfTrailingZeros()->toScale(max(2, $rate->strippedOfTrailingZeros()->getScale()))->toString());

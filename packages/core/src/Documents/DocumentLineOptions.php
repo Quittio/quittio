@@ -26,6 +26,9 @@ final readonly class DocumentLineOptions
         public array $serialNumbers = [],
     ) {}
 
+    /**
+     * Whether the line counts towards the totals, i.e. it is neither optional nor an alternative.
+     */
     public function isBillable(): bool
     {
         return ! $this->optional && $this->alternativeTo === null;

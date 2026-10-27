@@ -34,6 +34,10 @@ enum AllowanceReasonCode: string
     case Standard = '104';
     case YearlyTurnover = '105';
 
+    /**
+     * The labels of these codes are under "allowance_reason" in resources/lang/{locale}/codes.php
+     * (see label()).
+     */
     public static function labelGroup(): string
     {
         return 'allowance_reason';

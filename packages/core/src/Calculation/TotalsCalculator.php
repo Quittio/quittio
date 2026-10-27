@@ -11,5 +11,9 @@ use Quittio\Core\Data\InvoiceData;
  */
 interface TotalsCalculator
 {
+    /**
+     * Returns $invoice with calculated line amounts, allowances and charges, VAT breakdown and
+     * totals; the input stays unchanged.
+     */
     public function calculate(InvoiceData $invoice): InvoiceData;
 }

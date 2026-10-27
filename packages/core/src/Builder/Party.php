@@ -10,6 +10,9 @@ namespace Quittio\Core\Builder;
  */
 final class Party
 {
+    /**
+     * A new PartyBuilder with the name (BT-27 for the seller, BT-44 for the buyer) already set.
+     */
     public static function make(string $name): PartyBuilder
     {
         return (new PartyBuilder)->name($name);

@@ -61,6 +61,10 @@ final class VatTerritory
         return self::VAT_COUNTRY[$country] ?? $country;
     }
 
+    /**
+     * Whether the country code (after vatCountry(), e.g. MC as FR, EL as GR) is one of the 27 EU
+     * member states. Northern Ireland (XI) and excluded territories are not.
+     */
     public static function isEuMemberState(string $country): bool
     {
         return in_array(self::vatCountry($country), self::EU_MEMBER_STATES, true);

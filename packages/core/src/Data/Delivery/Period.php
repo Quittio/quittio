@@ -25,6 +25,11 @@ final readonly class Period
         }
     }
 
+    /**
+     * A period from $start to $end (dates or ISO strings); null leaves that end open.
+     *
+     * @throws InvalidArgumentException when both are null
+     */
     public static function between(Date|string|null $start, Date|string|null $end): self
     {
         return new self(
@@ -33,6 +38,9 @@ final readonly class Period
         );
     }
 
+    /**
+     * Whether the end does not lie before the start; a period with an open end is always valid.
+     */
     public function isValid(): bool
     {
         return $this->start === null || $this->end === null || ! $this->end->isBefore($this->start);

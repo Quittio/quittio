@@ -34,6 +34,9 @@ abstract readonly class DocumentAllowanceCharge
         public VatExemptionReasonCode|RawCode|null $exemptionReasonCode = null,
     ) {}
 
+    /**
+     * Whether this is a charge (BG-21) rather than an allowance (BG-20).
+     */
     abstract public function isCharge(): bool;
 
     /**
@@ -54,6 +57,9 @@ abstract readonly class DocumentAllowanceCharge
         return (new ReflectionClass(static::class))->newInstanceArgs($arguments);
     }
 
+    /**
+     * The reason code (BT-98 or BT-105) as plain string, also for a RawCode; null without code.
+     */
     public function reasonCodeValue(): ?string
     {
         return $this->reasonCode === null ? null : (string) $this->reasonCode->value;

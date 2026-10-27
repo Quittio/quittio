@@ -31,6 +31,9 @@ final readonly class LineAllowance extends LineAllowanceCharge
         parent::__construct($amount, $baseAmount, $percent, $reason, $reasonCode);
     }
 
+    /**
+     * Always false: an invoice line allowance (BG-27).
+     */
     public function isCharge(): bool
     {
         return false;

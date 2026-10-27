@@ -40,6 +40,10 @@ final readonly class Address
         public ?string $subdivision = null,
     ) {}
 
+    /**
+     * Address with the first address line, postcode, city and country code (upper-cased); the other
+     * lines and the subdivision stay empty.
+     */
     public static function make(?string $line1, ?string $postcode, ?string $city, string $countryCode): self
     {
         return new self(countryCode: strtoupper($countryCode), line1: $line1, city: $city, postcode: $postcode);

@@ -41,6 +41,9 @@ final readonly class DocumentAllowance extends DocumentAllowanceCharge
         parent::__construct($amount, $vatCategory, $vatRate, $baseAmount, $percent, $reason, $reasonCode, $exemptionReason, $exemptionReasonCode);
     }
 
+    /**
+     * Always false: a document level allowance (BG-20).
+     */
     public function isCharge(): bool
     {
         return false;

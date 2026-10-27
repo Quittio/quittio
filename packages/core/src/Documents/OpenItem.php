@@ -33,6 +33,9 @@ final readonly class OpenItem
         return $this->paid === null ? $amount : $amount->minus(Amount::of($this->paid, $currency));
     }
 
+    /**
+     * Whether nothing is open any more (open() is zero or negative).
+     */
     public function isSettled(): bool
     {
         return ! $this->open()->isPositive();

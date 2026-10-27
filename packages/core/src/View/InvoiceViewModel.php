@@ -96,6 +96,9 @@ final class InvoiceViewModel extends ViewNode
         return is_string($title) ? $title : '';
     }
 
+    /**
+     * Log of the fields the template read, which the mandatory field guard checks after rendering.
+     */
     public function accessLog(): AccessLog
     {
         return $this->log;

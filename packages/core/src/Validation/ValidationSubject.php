@@ -20,11 +20,18 @@ final readonly class ValidationSubject
         public ?string $pdf = null,
     ) {}
 
+    /**
+     * Returns a copy with the generated XML and its syntax, which the XML drivers (XSD, KoSIT)
+     * check.
+     */
     public function withXml(string $xml, Syntax $syntax): self
     {
         return new self($this->invoice, $this->context, $xml, $syntax, $this->pdf);
     }
 
+    /**
+     * Returns a copy with the generated PDF, which the PDF/A driver (veraPDF) checks.
+     */
     public function withPdf(string $pdf): self
     {
         return new self($this->invoice, $this->context, $this->xml, $this->syntax, $pdf);

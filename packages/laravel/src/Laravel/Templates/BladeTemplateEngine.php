@@ -62,6 +62,11 @@ final class BladeTemplateEngine implements TemplateEngine
         return $this->views->make($view, [...$data, 'invoice' => $invoice])->render();
     }
 
+    /**
+     * Whether $view may be selected: the configured template, a shipped view under
+     * "quittio::templates." or a view of quittio.pdf.templates (an entry ending in "*" allows every
+     * view with that prefix). Partials (".partials.") never are, except as the configured template.
+     */
     public function allows(string $view): bool
     {
         if ($view === $this->defaultView) {

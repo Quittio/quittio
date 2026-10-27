@@ -9,8 +9,7 @@ declare(strict_types=1);
  * addition or deprecation is accepted with --update-snapshots and shows up in the diff.
  *
  * Every public method of that surface has a doc comment, unless it implements or overrides a
- * documented method. The methods listed in undocumented-methods.txt are the remaining exceptions;
- * the list may only shrink.
+ * documented method.
  */
 
 const PUBLIC_API_SOURCES = [
@@ -215,9 +214,5 @@ function publicApiUndocumented(): array
 }
 
 it('documents every public method', function () {
-    $baseline = array_values(array_filter(array_map('trim', file(__DIR__.'/undocumented-methods.txt') ?: [])));
-    $missing = publicApiUndocumented();
-
-    expect(array_values(array_diff($missing, $baseline)))->toBe([], 'Add a doc comment to these new public methods.')
-        ->and(array_values(array_diff($baseline, $missing)))->toBe([], 'Remove these documented or deleted methods from undocumented-methods.txt.');
+    expect(publicApiUndocumented())->toBe([], 'Add a doc comment to these public methods.');
 });

@@ -31,6 +31,9 @@ enum ElectronicAddressScheme: string
     case GermanVatNumber = '9930';
     case FrenchVatNumber = '9957';
 
+    /**
+     * The labels of these codes are under "eas" in resources/lang/{locale}/codes.php (see label()).
+     */
     public static function labelGroup(): string
     {
         return 'eas';

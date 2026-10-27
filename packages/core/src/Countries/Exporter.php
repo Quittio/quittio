@@ -11,5 +11,8 @@ namespace Quittio\Core\Countries;
  */
 interface Exporter
 {
+    /**
+     * Key of the export format, e.g. "datev".
+     */
     public function key(): string;
 }

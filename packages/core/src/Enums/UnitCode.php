@@ -47,6 +47,10 @@ enum UnitCode: string
     case Box = 'XBX';
     case Pallet = 'XPX';
 
+    /**
+     * The labels of these codes are under "unit" in resources/lang/{locale}/codes.php (see
+     * label()).
+     */
     public static function labelGroup(): string
     {
         return 'unit';

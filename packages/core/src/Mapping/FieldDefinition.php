@@ -31,6 +31,10 @@ final readonly class FieldDefinition
         public ?string $ubl,
     ) {}
 
+    /**
+     * Whether the field must be present: cardinality 1 or 1..n. Fields without a cardinality are
+     * optional.
+     */
     public function isMandatory(): bool
     {
         return $this->cardinality === '1' || $this->cardinality === '1..n';

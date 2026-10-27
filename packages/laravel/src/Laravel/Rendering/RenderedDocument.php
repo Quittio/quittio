@@ -20,11 +20,17 @@ final class RenderedDocument implements Attachable, Responsable
         private readonly CoreRenderedDocument $result,
     ) {}
 
+    /**
+     * The result of the core, e.g. for save() to a local path.
+     */
     public function core(): CoreRenderedDocument
     {
         return $this->result;
     }
 
+    /**
+     * The calculated document data the output was rendered from.
+     */
     public function data(): DocumentData
     {
         return $this->result->data();
@@ -49,26 +55,42 @@ final class RenderedDocument implements Attachable, Responsable
         return $this->result->hasPdf();
     }
 
+    /**
+     * The PDF. Throws a LogicException when the document was rendered as HTML only (see hasPdf()).
+     */
     public function pdf(): string
     {
         return $this->result->pdf();
     }
 
+    /**
+     * The rendered template HTML, also when a PDF was rendered.
+     */
     public function html(): string
     {
         return $this->result->html();
     }
 
+    /**
+     * The main output: the PDF, otherwise the HTML.
+     */
     public function contents(): string
     {
         return $this->result->contents();
     }
 
+    /**
+     * MIME type of the main output (contents()): application/pdf, or text/html without a PDF.
+     */
     public function mimeType(): string
     {
         return $this->result->mimeType();
     }
 
+    /**
+     * File name of the main output from the configured pattern, with the extension pdf or html;
+     * $extension replaces it.
+     */
     public function filename(?string $extension = null): string
     {
         return $this->result->filename($extension);

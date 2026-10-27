@@ -14,6 +14,10 @@ final class FacturXXmp
 {
     public const string NAMESPACE = 'urn:factur-x:pdfa:CrossIndustryDocument:invoice:1p0#';
 
+    /**
+     * XMP RDF descriptions for $embedded: fx:DocumentType, DocumentFileName, Version and
+     * ConformanceLevel (left out when null), and the PDF/A extension schema that declares them.
+     */
     public static function forEmbedded(EmbeddedXml $embedded): string
     {
         $e = static fn (string $value): string => htmlspecialchars($value, ENT_QUOTES | ENT_XML1, 'UTF-8');

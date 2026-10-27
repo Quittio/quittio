@@ -63,11 +63,19 @@ final class KositArtifacts
         return dirname(__DIR__, 3).'/resources/kosit/peppol-scenarios.xml';
     }
 
+    /**
+     * Download URL of the Peppol BIS Billing 3.0 Schematron for UBL at release $tag. The default
+     * download accepts only the URLs listed in SHA256.
+     */
     public static function peppolUrl(string $tag = self::PEPPOL_TAG): string
     {
         return sprintf('https://raw.githubusercontent.com/OpenPEPPOL/peppol-bis-invoice-3/%s/rules/sch/PEPPOL-EN16931-UBL.sch', $tag);
     }
 
+    /**
+     * Maven Central URL of the SchXslt JAR in $version that compiles the Peppol Schematron to XSLT.
+     * The default download accepts only the URLs listed in SHA256.
+     */
     public static function schxsltUrl(string $version = self::SCHXSLT_VERSION): string
     {
         return sprintf('https://repo1.maven.org/maven2/name/dmaus/schxslt/schxslt/%1$s/schxslt-%1$s.jar', $version);
@@ -122,11 +130,19 @@ final class KositArtifacts
         return $result;
     }
 
+    /**
+     * Maven Central URL of the standalone KoSIT validator JAR in $version. The default download
+     * accepts only the URLs listed in SHA256.
+     */
     public static function validatorUrl(string $version = self::VALIDATOR_VERSION): string
     {
         return sprintf('https://repo1.maven.org/maven2/org/kosit/validator/%1$s/validator-%1$s-standalone.jar', $version);
     }
 
+    /**
+     * GitHub release URL of the XRechnung validator configuration archive $file at release $tag.
+     * The default download accepts only the URLs listed in SHA256.
+     */
     public static function configurationUrl(string $tag = self::CONFIGURATION_TAG, string $file = self::CONFIGURATION_FILE): string
     {
         return sprintf('https://github.com/itplr-kosit/validator-configuration-xrechnung/releases/download/%s/%s', $tag, $file);

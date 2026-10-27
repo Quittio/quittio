@@ -19,6 +19,12 @@ final readonly class DefaultCountryResolver implements CountryResolver
         private ?string $defaultCountry = null,
     ) {}
 
+    /**
+     * The packs for $invoice as described above. The seller's country is $countryOverride,
+     * otherwise the country of the seller's address (BT-40), otherwise the default country,
+     * otherwise "XX" (generic). The buyer's pack is only set when it is installed and differs from
+     * the leading pack.
+     */
     public function resolve(InvoiceData $invoice, ?string $countryOverride = null): ResolvedCountries
     {
         $sellerCountry = $countryOverride

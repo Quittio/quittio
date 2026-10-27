@@ -41,6 +41,12 @@ final readonly class Dunning
         }
     }
 
+    /**
+     * Sum of the amounts still open of all open items in $currency; overpaid items and credits
+     * reduce it.
+     *
+     * @throws InvalidArgumentException when an open item is in another currency
+     */
     public function openTotal(string $currency): Money
     {
         $sum = Amount::zero($currency);
@@ -51,6 +57,11 @@ final readonly class Dunning
         return $sum;
     }
 
+    /**
+     * Sum of the dunning fees in $currency (no VAT).
+     *
+     * @throws InvalidArgumentException when a fee is in another currency
+     */
     public function feeTotal(string $currency): Money
     {
         $sum = Amount::zero($currency);
@@ -61,6 +72,11 @@ final readonly class Dunning
         return $sum;
     }
 
+    /**
+     * Sum of the default interest charges in $currency (no VAT).
+     *
+     * @throws InvalidArgumentException when an interest charge is in another currency
+     */
     public function interestTotal(string $currency): Money
     {
         $sum = Amount::zero($currency);

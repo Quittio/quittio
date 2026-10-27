@@ -20,11 +20,18 @@ final class InvoiceTitle
     /** Type codes with an own title label ("title_{code}"). */
     public const array CODES = ['380', '381', '384', '389', '325', '326', '386', '875', '876', '877'];
 
+    /**
+     * Label key of the title for the invoice's type code (BT-3), e.g. "title_380"; see keyFor().
+     */
     public static function key(InvoiceData $invoice): string
     {
         return self::keyFor($invoice->typeCodeValue());
     }
 
+    /**
+     * Label key of the title for $typeCode: "title_{code}" for the codes in CODES, "title_389" for
+     * other self-billed and "title_381" for other credit note codes, otherwise "title_default".
+     */
     public static function keyFor(string $typeCode): string
     {
         if (in_array($typeCode, self::CODES, true)) {

@@ -17,6 +17,10 @@ use Quittio\Core\Support\Date;
  */
 final class ExtendedFeatures
 {
+    /**
+     * Whether $invoice uses data that only profile EXTENDED can carry: sub lines or a filled
+     * EXTENDED-only field.
+     */
     public static function used(InvoiceData $invoice): bool
     {
         foreach ($invoice->lines as $line) {

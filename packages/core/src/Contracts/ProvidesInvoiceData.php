@@ -11,5 +11,8 @@ use Quittio\Core\Data\InvoiceData;
  */
 interface ProvidesInvoiceData
 {
+    /**
+     * The complete invoice data of the model, e.g. built with InvoiceBuilder and ->build().
+     */
     public function toInvoiceData(): InvoiceData;
 }

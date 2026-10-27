@@ -32,6 +32,10 @@ final class JsonSchemaGenerator
     /** @var array<string, array<string, mixed>> */
     private array $definitions = [];
 
+    /**
+     * Path of the shipped schema (resources/schema/invoice.schema.json of the core package), which
+     * JsonSchemaValidator validates against.
+     */
     public static function defaultPath(): string
     {
         return dirname(__DIR__, 2).'/resources/schema/invoice.schema.json';
@@ -56,6 +60,10 @@ final class JsonSchemaGenerator
         ];
     }
 
+    /**
+     * The schema of generate() as pretty-printed JSON with a trailing newline, as stored in the
+     * shipped file.
+     */
     public function toJson(): string
     {
         return json_encode($this->generate(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR)."\n";

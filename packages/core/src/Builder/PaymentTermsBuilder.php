@@ -42,6 +42,11 @@ final class PaymentTermsBuilder
         return $builder;
     }
 
+    /**
+     * Free text of the payment terms (BT-20); null removes it. Without text the due days are
+     * written as a translated sentence, and cash discounts and the late fee text are added in any
+     * case.
+     */
     public function text(?string $text): self
     {
         $this->text = $text;
@@ -69,6 +74,10 @@ final class PaymentTermsBuilder
         return $this;
     }
 
+    /**
+     * Late payment terms: $days and $percent are written as structured elements in profile EXTENDED
+     * only, $text appears in the payment terms text (BT-20). Replaces earlier late payment terms.
+     */
     public function lateFee(?int $days = null, ?string $percent = null, ?string $text = null): self
     {
         $this->lateFee = new PenaltyTerms($days, Decimal::ofNullable($percent), $text);
@@ -76,6 +85,10 @@ final class PaymentTermsBuilder
         return $this;
     }
 
+    /**
+     * The PaymentTerms with cash discount base amounts in $currency; percentages are rounded to two
+     * decimals.
+     */
     public function build(string $currency): PaymentTerms
     {
         return new PaymentTerms(

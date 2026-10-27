@@ -39,6 +39,9 @@ enum DocumentType: string
         return in_array($this, [self::Quote, self::OrderConfirmation, self::Proforma, self::BonusStatement], true);
     }
 
+    /**
+     * Key of the document title among the translated labels, e.g. "document_quote".
+     */
     public function labelKey(): string
     {
         return 'document_'.$this->value;

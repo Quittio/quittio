@@ -16,6 +16,9 @@ final readonly class MandatoryFieldList
         public array $fields = [],
     ) {}
 
+    /**
+     * Both lists in one; a field of $other replaces a field of this list with the same access key.
+     */
     public function merge(self $other): self
     {
         $byKey = [];

@@ -20,6 +20,9 @@ final class CountryGeneric extends AbstractCountryPack
         return $this->code;
     }
 
+    /**
+     * Always true: this pack stands in for a country without an installed pack.
+     */
     public function isGeneric(): bool
     {
         return true;

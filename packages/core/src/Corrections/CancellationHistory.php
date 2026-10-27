@@ -162,11 +162,19 @@ final readonly class CancellationHistory
         return $entries;
     }
 
+    /**
+     * Taxable amount (BT-116) of the earlier cancellations of the VAT group $key together; zero for
+     * an unknown group.
+     */
     public function taxable(string $key): BigDecimal
     {
         return $this->groups[$key]['taxable'] ?? BigDecimal::zero();
     }
 
+    /**
+     * VAT (BT-117) of the earlier cancellations of the VAT group $key together; zero for an unknown
+     * group.
+     */
     public function tax(string $key): BigDecimal
     {
         return $this->groups[$key]['tax'] ?? BigDecimal::zero();
@@ -184,6 +192,10 @@ final readonly class CancellationHistory
         return $this->groups[$key]['gross'] ?? null;
     }
 
+    /**
+     * Whether the VAT group $key (DeclaredAmounts::breakdownKey()) is closed by the next
+     * cancellation, so that its VAT becomes the original's.
+     */
     public function closes(string $key): bool
     {
         return in_array($key, $this->closes, true);

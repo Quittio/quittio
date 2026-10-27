@@ -16,6 +16,10 @@ interface Rule
      */
     public function code(): string;
 
+    /**
+     * Validation level the rule belongs to (L1 to L3 or L7); the driver runs it only when that
+     * level is configured.
+     */
     public function level(): ValidationLevel;
 
     /**

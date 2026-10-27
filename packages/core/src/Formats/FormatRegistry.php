@@ -34,6 +34,10 @@ final class FormatRegistry
     /** @var array<string, string> */
     private array $aliases = [];
 
+    /**
+     * A registry with the built-in formats zugferd (alias factur-x, facturx), cii, ubl, peppol,
+     * pdf, html and json.
+     */
     public static function withDefaults(): self
     {
         $registry = new self;
@@ -72,11 +76,19 @@ final class FormatRegistry
         return $this;
     }
 
+    /**
+     * Whether a format is registered under $key or an alias of it (any case).
+     */
     public function has(string $key): bool
     {
         return isset($this->formats[$this->resolveKey($key)]);
     }
 
+    /**
+     * The format registered under $key or an alias of it (any case).
+     *
+     * @throws ConfigurationException when no such format is registered
+     */
     public function get(string $key): OutputFormat
     {
         return $this->formats[$this->resolveKey($key)]

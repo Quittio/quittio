@@ -31,6 +31,10 @@ final readonly class Date implements JsonSerializable, Stringable
         }
     }
 
+    /**
+     * The date of $year, $month and $day. Throws an InvalidArgumentException for a date that does
+     * not exist, e.g. February 30.
+     */
     public static function of(int $year, int $month, int $day): self
     {
         return new self($year, $month, $day);
@@ -112,22 +116,34 @@ final readonly class Date implements JsonSerializable, Stringable
         return new self((int) $m[1], (int) $m[2], (int) $m[3]);
     }
 
+    /**
+     * Today's date in $timezone, by default the default time zone of PHP.
+     */
     public static function today(DateTimeZone|string|null $timezone = null): self
     {
         return self::parse(CarbonImmutable::now($timezone ?? date_default_timezone_get()));
     }
 
+    /**
+     * Midnight of this date in $timezone, by default the default time zone of PHP.
+     */
     public function toCarbon(DateTimeZone|string|null $timezone = null): CarbonImmutable
     {
         return CarbonImmutable::create($this->year, $this->month, $this->day, 0, 0, 0, $timezone)
             ?? throw new InvalidArgumentException('Unable to create date.');
     }
 
+    /**
+     * A new date $days later, or earlier for a negative number.
+     */
     public function addDays(int $days): self
     {
         return self::parse($this->toCarbon('UTC')->addDays($days));
     }
 
+    /**
+     * The date formatted with a format of date(), e.g. "d.m.Y"; time parts are midnight.
+     */
     public function format(string $format): string
     {
         return $this->toCarbon('UTC')->format($format);
@@ -141,31 +157,50 @@ final readonly class Date implements JsonSerializable, Stringable
         return sprintf('%04d%02d%02d', $this->year, $this->month, $this->day);
     }
 
+    /**
+     * ISO 8601 date (YYYY-MM-DD), as used for JSON and storage.
+     */
     public function toIsoString(): string
     {
         return sprintf('%04d-%02d-%02d', $this->year, $this->month, $this->day);
     }
 
+    /**
+     * Negative, zero or positive when this date is before, the same as or after $other, e.g. for
+     * usort().
+     */
     public function compareTo(self $other): int
     {
         return $this->toIsoString() <=> $other->toIsoString();
     }
 
+    /**
+     * Whether both are the same calendar date.
+     */
     public function equals(self $other): bool
     {
         return $this->compareTo($other) === 0;
     }
 
+    /**
+     * Whether this date is earlier than $other.
+     */
     public function isBefore(self $other): bool
     {
         return $this->compareTo($other) < 0;
     }
 
+    /**
+     * Whether this date is later than $other.
+     */
     public function isAfter(self $other): bool
     {
         return $this->compareTo($other) > 0;
     }
 
+    /**
+     * Days from this date to $other: positive when $other is later, negative when it is earlier.
+     */
     public function diffInDays(self $other): int
     {
         return (int) $this->toCarbon('UTC')->diffInDays($other->toCarbon('UTC'), false);
@@ -176,6 +211,9 @@ final readonly class Date implements JsonSerializable, Stringable
         return $this->toIsoString();
     }
 
+    /**
+     * The ISO date (YYYY-MM-DD) for json_encode().
+     */
     public function jsonSerialize(): string
     {
         return $this->toIsoString();

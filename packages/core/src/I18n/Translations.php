@@ -15,11 +15,18 @@ final class Translations
 
     private static int $version = 0;
 
+    /**
+     * The translator in use; a new ArrayTranslator (locale "en") when none is set.
+     */
     public static function translator(): Translator
     {
         return self::$translator ??= new ArrayTranslator;
     }
 
+    /**
+     * Replaces the translator for all code labels and validation messages, e.g. with a bridge to
+     * Laravel's translator.
+     */
     public static function use(Translator $translator): void
     {
         self::$translator = $translator;
@@ -34,6 +41,10 @@ final class Translations
         return self::$version;
     }
 
+    /**
+     * Drops the translator, so that the next translator() call creates a new ArrayTranslator with
+     * the core translations only (Quittio::resetState() calls it).
+     */
     public static function reset(): void
     {
         self::$translator = null;

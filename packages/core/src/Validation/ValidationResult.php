@@ -20,11 +20,17 @@ final readonly class ValidationResult implements JsonSerializable
         public array $levels = [],
     ) {}
 
+    /**
+     * Whether the result holds no errors; warnings and infos do not count.
+     */
     public function isValid(): bool
     {
         return $this->errors() === [];
     }
 
+    /**
+     * Whether the result holds at least one warning.
+     */
     public function hasWarnings(): bool
     {
         return $this->warnings() !== [];
@@ -62,6 +68,9 @@ final readonly class ValidationResult implements JsonSerializable
         return array_values(array_filter($this->messages, static fn (ValidationMessage $m): bool => $m->level === $level));
     }
 
+    /**
+     * Whether a finding with $code was reported, e.g. "BR-CO-10", whatever its severity.
+     */
     public function has(string $code): bool
     {
         foreach ($this->messages as $message) {
@@ -81,6 +90,10 @@ final readonly class ValidationResult implements JsonSerializable
         return array_values(array_filter($this->messages, static fn (ValidationMessage $m): bool => $m->severity === $severity));
     }
 
+    /**
+     * Returns a new result with the messages of both results, these first, and the levels of both
+     * without duplicates.
+     */
     public function merge(self $other): self
     {
         $levels = $this->levels;

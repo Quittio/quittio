@@ -19,6 +19,11 @@ use Quittio\Core\Enums\VatCategory;
  */
 final class DeclaredExemptionReasons
 {
+    /**
+     * Copies the VAT exemption reasons (BT-120, BT-121) of the VAT breakdown to the lines, sub
+     * lines and document allowances and charges of the same category and rate that have none.
+     * Returns the invoice unchanged if the breakdown declares no reason.
+     */
     public static function apply(InvoiceData $invoice): InvoiceData
     {
         /** @var array<string, VatBreakdown> $reasons */

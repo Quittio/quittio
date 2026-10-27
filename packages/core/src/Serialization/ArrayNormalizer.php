@@ -51,6 +51,11 @@ final class ArrayNormalizer
         return $result;
     }
 
+    /**
+     * Normalizes one value: amounts as strings with two decimals, decimals as strings, dates as ISO
+     * strings, enums and codes as their value, arrays element by element and other objects with
+     * normalize(). Null and scalars stay as they are.
+     */
     public function value(mixed $value): mixed
     {
         return match (true) {

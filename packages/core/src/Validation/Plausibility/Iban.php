@@ -9,11 +9,19 @@ namespace Quittio\Core\Validation\Plausibility;
  */
 final class Iban
 {
+    /**
+     * Removes all whitespace and upper-cases the IBAN, e.g. "de02 1203 0000" becomes "DE021203000".
+     */
     public static function normalize(string $iban): string
     {
         return strtoupper(preg_replace('/\s+/', '', $iban) ?? $iban);
     }
 
+    /**
+     * Whether the IBAN, after normalize(), has the IBAN structure (country code, two check digits,
+     * 11 to 30 alphanumeric characters) and correct check digits (mod 97 = 1). The country specific
+     * length is not checked.
+     */
     public static function isValid(string $iban): bool
     {
         $iban = self::normalize($iban);

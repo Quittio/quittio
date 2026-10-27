@@ -23,6 +23,9 @@ final class InvoiceValidator
         }
     }
 
+    /**
+     * Returns a copy that runs $driver after the drivers added before.
+     */
     public function withDriver(ValidationDriver $driver): self
     {
         $clone = clone $this;
@@ -39,6 +42,10 @@ final class InvoiceValidator
         return $this->drivers;
     }
 
+    /**
+     * Runs every driver that supports() the subject, in the order added, and merges their results
+     * into one.
+     */
     public function validate(ValidationSubject $subject): ValidationResult
     {
         $result = new ValidationResult;

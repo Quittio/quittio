@@ -19,6 +19,10 @@ final class FieldReference
     /** @var array<string, true> class@path combinations already documented */
     private array $seen = [];
 
+    /**
+     * The Markdown of docs/field-reference.md: one table row per field path of InvoiceData with
+     * business term, cardinality, lowest profile level, CII and UBL path and notes.
+     */
     public function markdown(): string
     {
         $this->seen = [];

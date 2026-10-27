@@ -35,6 +35,10 @@ final readonly class Attachment
         }
     }
 
+    /**
+     * Size of the embedded content (BT-125) in bytes; 0 for an attachment without content, e.g. one
+     * with an external URI only.
+     */
     public function size(): int
     {
         return $this->content === null ? 0 : strlen($this->content);

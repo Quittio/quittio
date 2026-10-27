@@ -60,6 +60,10 @@ final class SnapshotUpcasterChain
         self::$documentDefault = $chain;
     }
 
+    /**
+     * Adds $upcaster for the version it reads (from()); an upcaster for the same version is
+     * replaced. Changes this instance.
+     */
     public function register(SnapshotUpcaster $upcaster): self
     {
         $this->upcasters[$upcaster->from()] = $upcaster;

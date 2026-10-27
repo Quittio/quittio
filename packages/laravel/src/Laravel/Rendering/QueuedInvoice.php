@@ -24,6 +24,13 @@ final readonly class QueuedInvoice
         private ?string $queue = null,
     ) {}
 
+    /**
+     * Dispatches a RenderInvoice job that renders the invoice and stores the main output on $disk
+     * (default: quittio.storage.disk) at $path (default: the file name; a path ending in "/" gets
+     * the file name appended). Uses the connection and queue given to queue(), else those of
+     * quittio.queue; inside a database transaction the job is dispatched after the commit unless
+     * quittio.queue.after_commit is false. Returns the dispatched job.
+     */
     public function save(?string $disk = null, ?string $path = null): RenderInvoice
     {
         $container = Container::getInstance();

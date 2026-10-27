@@ -24,6 +24,10 @@ enum NoteSubjectCode: string
     case SupplierRemarks = 'SUR';
     case TaxDeclaration = 'TXD';
 
+    /**
+     * The labels of these codes are under "note_subject" in resources/lang/{locale}/codes.php (see
+     * label()).
+     */
     public static function labelGroup(): string
     {
         return 'note_subject';

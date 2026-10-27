@@ -12,6 +12,10 @@ enum StandardVersion: string
     case En16931_2017 = 'en16931-2017';
     case En16931_2026 = 'en16931-2026';
 
+    /**
+     * Specification identifier (BT-24) of the plain EN 16931 invoice in this version, e.g.
+     * "urn:cen.eu:en16931:2017".
+     */
     public function specificationId(): string
     {
         return match ($this) {
@@ -35,6 +39,9 @@ enum StandardVersion: string
         return self::En16931_2017;
     }
 
+    /**
+     * The version used when none is chosen: EN 16931:2017.
+     */
     public static function default(): self
     {
         return self::En16931_2017;

@@ -17,6 +17,10 @@ enum DocumentReferenceTypeCode: string
     case InvoicedObject = '130';
     case AdditionalDocument = '916';
 
+    /**
+     * The labels of these codes are under "document_reference" in resources/lang/{locale}/codes.php
+     * (see label()).
+     */
     public static function labelGroup(): string
     {
         return 'document_reference';

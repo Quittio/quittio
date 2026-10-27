@@ -47,6 +47,10 @@ final class PdfEmbeddedFileExtractor implements DiagnosingXmlExtractor
         private readonly int $maxDecompressedBytes = 50 * 1024 * 1024,
     ) {}
 
+    /**
+     * Largest PDF in bytes the extractor accepts; larger input throws a PdfException.
+     * InvoiceReader::readFile() accepts files up to this size as well.
+     */
     public function maxPdfBytes(): int
     {
         return $this->maxPdfBytes;
@@ -59,6 +63,12 @@ final class PdfEmbeddedFileExtractor implements DiagnosingXmlExtractor
         return $file === null ? null : [$file->filename, $file->xml];
     }
 
+    /**
+     * The embedded invoice XML with its file name, /AFRelationship and findings (several candidates
+     * with different content, a file that is no associated file), or null if the PDF embeds no XML
+     * file. Known file names win over other XML files, associated files (/AF) over name tree
+     * entries. Throws a PdfException when the PDF is too large, malformed or exceeds a limit.
+     */
     public function extractFile(string $pdf): ?ExtractedXml
     {
         [$document, $candidates] = $this->candidates($pdf);

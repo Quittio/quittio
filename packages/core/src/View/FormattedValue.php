@@ -23,6 +23,9 @@ final readonly class FormattedValue implements JsonSerializable, Stringable
         return $this->formatted;
     }
 
+    /**
+     * Encodes the value as its formatted string, like casting it to string.
+     */
     public function jsonSerialize(): string
     {
         return $this->formatted;

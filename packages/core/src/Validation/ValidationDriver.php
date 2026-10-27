@@ -9,6 +9,9 @@ namespace Quittio\Core\Validation;
  */
 interface ValidationDriver
 {
+    /**
+     * Short name of the driver, e.g. "php", "xsd", "kosit" or "verapdf".
+     */
     public function name(): string;
 
     /**
@@ -21,5 +24,9 @@ interface ValidationDriver
      */
     public function supports(ValidationSubject $subject): bool;
 
+    /**
+     * Checks the subject and returns the findings with the levels that were checked. Called only
+     * when supports() returned true for the subject.
+     */
     public function validate(ValidationSubject $subject): ValidationResult;
 }

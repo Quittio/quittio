@@ -22,6 +22,9 @@ final readonly class ValidationMessage implements JsonSerializable
         public ?string $xpath = null,
     ) {}
 
+    /**
+     * Whether the finding has severity error, i.e. makes the invoice invalid.
+     */
     public function isError(): bool
     {
         return $this->severity === Severity::Error;

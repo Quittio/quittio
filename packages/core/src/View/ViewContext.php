@@ -33,6 +33,10 @@ final readonly class ViewContext
         public ?ResolvedLogo $logo = null,
     ) {}
 
+    /**
+     * Translator for the labels: the one given to this context, otherwise the shared one of
+     * Translations::translator().
+     */
     public function translator(): Translator
     {
         return $this->translator ?? Translations::translator();

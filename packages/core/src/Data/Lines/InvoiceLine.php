@@ -111,6 +111,10 @@ final readonly class InvoiceLine
         ]);
     }
 
+    /**
+     * Whether the line has sub lines (profile EXTENDED or XRechnung extension), which the
+     * calculator calculates first and sums up when the line has no price of its own.
+     */
     public function hasSubLines(): bool
     {
         return $this->subLines !== [];

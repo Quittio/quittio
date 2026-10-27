@@ -10,5 +10,9 @@ namespace Quittio\Core\Validation\Plausibility;
  */
 interface VatIdVerifier
 {
+    /**
+     * Checks $vatId with the online service; returns $valid = null instead of throwing when no
+     * statement is possible, and supported = false when the service does not cover the identifier.
+     */
     public function verify(string $vatId): VatIdVerification;
 }

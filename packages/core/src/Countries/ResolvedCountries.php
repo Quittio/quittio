@@ -14,6 +14,9 @@ final readonly class ResolvedCountries
         public ?CountryPack $buyer = null,
     ) {}
 
+    /**
+     * Whether a buyer pack for another country than the leading pack is set.
+     */
     public function isCrossBorder(): bool
     {
         return $this->buyer !== null && $this->buyer->code() !== $this->leading->code();
@@ -27,6 +30,10 @@ final readonly class ResolvedCountries
         return $this->isCrossBorder() && $this->buyer !== null ? [$this->leading, $this->buyer] : [$this->leading];
     }
 
+    /**
+     * Whether the leading pack is the generic pack (CountryGeneric), i.e. no pack is installed for
+     * the seller's country.
+     */
     public function isGeneric(): bool
     {
         return $this->leading instanceof CountryGeneric;

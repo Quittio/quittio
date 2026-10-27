@@ -15,8 +15,15 @@ interface Translator
      */
     public function get(string $key, array $replace = [], ?string $locale = null): string;
 
+    /**
+     * Whether $key has a translation in $locale (null: the current locale); whether a fallback
+     * locale counts depends on the implementation (ArrayTranslator: no).
+     */
     public function has(string $key, ?string $locale = null): bool;
 
+    /**
+     * The current locale, used when a call passes no locale.
+     */
     public function locale(): string;
 
     /**

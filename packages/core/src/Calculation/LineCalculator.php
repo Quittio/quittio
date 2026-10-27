@@ -23,6 +23,13 @@ use Quittio\Core\Support\Decimal;
  */
 final class LineCalculator
 {
+    /**
+     * Returns $line with net price (BT-146), resolved allowances and charges and the line net
+     * amount (BT-131), its sub lines calculated as well. A parent line without own price takes the
+     * sum of its sub lines as price.
+     *
+     * @throws CalculationException when the line has no net price, gross price or sub lines
+     */
     public function calculate(InvoiceLine $line, string $currency): InvoiceLine
     {
         $subLines = array_map(fn (InvoiceLine $sub): InvoiceLine => $this->calculate($sub, $currency), $line->subLines);
@@ -70,6 +77,10 @@ final class LineCalculator
         ]);
     }
 
+    /**
+     * Base amount B = round2(quantity × net price / base quantity); a missing or zero base
+     * quantity counts as 1.
+     */
     public static function baseAmount(BigDecimal $quantity, BigDecimal $netPrice, ?BigDecimal $baseQuantity): BigDecimal
     {
         $value = $quantity->multipliedBy($netPrice);

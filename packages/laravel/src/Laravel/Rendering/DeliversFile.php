@@ -18,17 +18,34 @@ use Symfony\Component\HttpFoundation\Response;
  */
 trait DeliversFile
 {
+    /**
+     * The main output that download(), stream(), the mail attachment and save() deliver.
+     */
     abstract public function contents(): string;
 
+    /**
+     * File name of the main output; $extension replaces its extension.
+     */
     abstract public function filename(?string $extension = null): string;
 
+    /**
+     * MIME type of the main output (contents()).
+     */
     abstract public function mimeType(): string;
 
+    /**
+     * HTTP response that downloads the main output (Content-Disposition attachment) as $filename,
+     * by default filename(). The response is not cached.
+     */
     public function download(?string $filename = null): Response
     {
         return $this->response('attachment', $filename);
     }
 
+    /**
+     * HTTP response that shows the main output in the browser (Content-Disposition inline) as
+     * $filename, by default filename(). The response is not cached.
+     */
     public function stream(?string $filename = null): Response
     {
         return $this->response('inline', $filename);
@@ -42,6 +59,9 @@ trait DeliversFile
         return $this->download();
     }
 
+    /**
+     * The main output as mail attachment, with filename() and mimeType().
+     */
     public function toMailAttachment(): Attachment
     {
         $contents = $this->contents();

@@ -35,6 +35,9 @@ final class FieldMatrixRule implements Rule
         return 'QUITTIO-PROFILE';
     }
 
+    /**
+     * Always L2 (profile).
+     */
     public function level(): ValidationLevel
     {
         return ValidationLevel::L2;

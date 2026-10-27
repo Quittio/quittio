@@ -24,6 +24,10 @@ final class CountryRegistry
         }
     }
 
+    /**
+     * Installs $pack under its country code; it replaces a pack registered earlier for the same
+     * country. Changes this instance.
+     */
     public function register(CountryPack $pack): self
     {
         $this->packs[strtoupper($pack->code())] = $pack;
@@ -31,11 +35,17 @@ final class CountryRegistry
         return $this;
     }
 
+    /**
+     * Whether a pack is installed for the ISO country code $code (any case).
+     */
     public function has(string $code): bool
     {
         return isset($this->packs[strtoupper($code)]);
     }
 
+    /**
+     * The installed pack for the ISO country code $code (any case); null when none is installed.
+     */
     public function get(string $code): ?CountryPack
     {
         return $this->packs[strtoupper($code)] ?? null;

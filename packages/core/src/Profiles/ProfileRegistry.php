@@ -27,6 +27,10 @@ final class ProfileRegistry
         }
     }
 
+    /**
+     * A registry with the built-in profiles (MINIMUM, BASIC WL, BASIC, EN 16931, EXTENDED, Peppol
+     * BIS 3) and the aliases basicwl, en-16931, comfort and peppol-bis-3.
+     */
     public static function withDefaults(): self
     {
         $registry = new self([new Minimum, new BasicWl, new Basic, new En16931, new Extended, new PeppolBis3]);
@@ -60,11 +64,18 @@ final class ProfileRegistry
         return $this;
     }
 
+    /**
+     * Whether a profile is registered under $key or an alias of it, ignoring case.
+     */
     public function has(string $key): bool
     {
         return isset($this->profiles[$this->resolveKey($key)]);
     }
 
+    /**
+     * The profile with this key or alias, ignoring case; a Profile instance is returned as is.
+     * Throws an InvalidArgumentException that lists the known keys for an unknown profile.
+     */
     public function get(Profile|string $profile): Profile
     {
         if ($profile instanceof Profile) {

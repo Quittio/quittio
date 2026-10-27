@@ -29,6 +29,10 @@ enum VatExemptionReasonCode: string
     case Article151 = 'VATEX-EU-151';
     case Article309 = 'VATEX-EU-309';
 
+    /**
+     * The labels of these codes are under "vatex" in resources/lang/{locale}/codes.php (see
+     * label()).
+     */
     public static function labelGroup(): string
     {
         return 'vatex';

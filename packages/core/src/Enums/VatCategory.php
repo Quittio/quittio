@@ -25,6 +25,10 @@ enum VatCategory: string
     case CeutaMelilla = 'M';
     case TransferredVatItaly = 'B';
 
+    /**
+     * The labels of these codes are under "vat_category" in resources/lang/{locale}/codes.php (see
+     * label()).
+     */
     public static function labelGroup(): string
     {
         return 'vat_category';

@@ -29,11 +29,18 @@ final readonly class OutputFormat
         public bool $json = false,
     ) {}
 
+    /**
+     * Whether the format produces XML, i.e. has a syntax (CII or UBL).
+     */
     public function hasXml(): bool
     {
         return $this->syntax !== null;
     }
 
+    /**
+     * Whether the format accepts the profile $key; a format without a profile list accepts every
+     * profile.
+     */
     public function allowsProfile(string $key): bool
     {
         return $this->profiles === [] || in_array($key, $this->profiles, true);

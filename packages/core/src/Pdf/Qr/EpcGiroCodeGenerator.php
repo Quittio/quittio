@@ -31,11 +31,18 @@ final class EpcGiroCodeGenerator implements PaymentQrGenerator
     /** Maximum size of the payload in bytes (EPC069-12, section 5.2). */
     public const int MAX_BYTES = 331;
 
+    /**
+     * The payment QR code type "girocode".
+     */
     public function key(): string
     {
         return 'girocode';
     }
 
+    /**
+     * Whether a GiroCode can be printed: EUR, a (SEPA) credit transfer to a valid IBAN, a positive
+     * amount due (BT-115), and neither a credit note nor a self-billed invoice.
+     */
     public function supports(InvoiceData $invoice): bool
     {
         return $this->transferable($invoice)

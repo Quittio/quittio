@@ -60,6 +60,9 @@ final class Decimal
         return preg_match(self::PLAIN_PATTERN, $value) === 1;
     }
 
+    /**
+     * Like of(), but null and the empty string give null.
+     */
     public static function ofNullable(BigNumber|int|float|string|null $value): ?BigDecimal
     {
         return $value === null || $value === '' ? null : self::of($value);
@@ -109,6 +112,9 @@ final class Decimal
         return $stripped->toString();
     }
 
+    /**
+     * Whether $value is zero, whatever its scale.
+     */
     public static function isZero(BigDecimal $value): bool
     {
         return $value->isZero();

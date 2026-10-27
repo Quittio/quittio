@@ -17,6 +17,9 @@ final readonly class LegalTextCatalog
         public string $fallbackLocale = 'en',
     ) {}
 
+    /**
+     * Whether the catalog has a text for $key in any locale.
+     */
     public function has(string $key): bool
     {
         return isset($this->texts[$key]);

@@ -11,5 +11,8 @@ use Quittio\Core\Builder\LineBuilder;
  */
 interface ProvidesInvoiceLine
 {
+    /**
+     * Fills $line with the data of the model (name, quantity, price, VAT …).
+     */
     public function fillLine(LineBuilder $line): void;
 }

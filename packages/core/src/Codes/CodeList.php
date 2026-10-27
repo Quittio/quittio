@@ -58,6 +58,12 @@ final class CodeList
     /** @var array<string, array<string, true>> */
     private static array $cache = [];
 
+    /**
+     * Whether $code (an enum case, a RawCode or a plain value) is part of the code list $list (one
+     * of the constants of this class).
+     *
+     * @throws InvalidArgumentException when there is no code list $list
+     */
     public static function contains(string $list, BackedEnum|RawCode|string $code): bool
     {
         $value = match (true) {

@@ -33,6 +33,11 @@ final class CallbackRenderer implements PdfRenderer
         return true;
     }
 
+    /**
+     * Calls the callback with the HTML and the request and returns its PDF; the post processor adds
+     * PDF/A and the embedded XML when the request asks for them. Throws a PdfException when the
+     * callback returns no PDF.
+     */
     public function render(RenderRequest $request): string
     {
         $pdf = ($this->callback)($request->html, $request);

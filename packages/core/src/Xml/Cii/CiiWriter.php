@@ -29,11 +29,18 @@ final class CiiWriter implements XmlSerializer
 
     public const string NS_UDT = 'urn:un:unece:uncefact:data:standard:UnqualifiedDataType:100';
 
+    /**
+     * Always Syntax::Cii.
+     */
     public function syntax(): Syntax
     {
         return Syntax::Cii;
     }
 
+    /**
+     * Writes the invoice as a CII D16B document for $profile; fields the profile does not contain
+     * are left out. Throws CalculationException if the invoice is not calculated.
+     */
     public function serialize(InvoiceData $invoice, Profile $profile, SerializationOptions $options = new SerializationOptions): string
     {
         if (! $invoice->isCalculated()) {

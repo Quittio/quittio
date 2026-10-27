@@ -27,11 +27,19 @@ final class UblWriter implements XmlSerializer
 
     public const string NS_CBC = 'urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2';
 
+    /**
+     * Always Syntax::Ubl.
+     */
     public function syntax(): Syntax
     {
         return Syntax::Ubl;
     }
 
+    /**
+     * Writes the invoice as a UBL 2.1 document for $profile: a CreditNote for credit note type
+     * codes, otherwise an Invoice. Throws CalculationException if the invoice is not calculated and
+     * InvalidArgumentException if the profile cannot be written as UBL.
+     */
     public function serialize(InvoiceData $invoice, Profile $profile, SerializationOptions $options = new SerializationOptions): string
     {
         if (! $invoice->isCalculated()) {

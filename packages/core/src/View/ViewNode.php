@@ -50,31 +50,51 @@ class ViewNode implements ArrayAccess, Countable, IteratorAggregate, JsonSeriali
         return isset($this->data[$name]);
     }
 
+    /**
+     * Whether $offset holds a value other than null, e.g. isset($node['vatId']). Not recorded as
+     * read.
+     */
     public function offsetExists(mixed $offset): bool
     {
         return isset($this->data[$offset]);
     }
 
+    /**
+     * Reads $offset like property access, e.g. $node['name']: a nested node for a list or group,
+     * otherwise the value, which is recorded as read unless it is null.
+     */
     public function offsetGet(mixed $offset): mixed
     {
         return $this->read($offset);
     }
 
+    /**
+     * Always throws LogicException: the view model is read-only.
+     */
     public function offsetSet(mixed $offset, mixed $value): void
     {
         throw new LogicException('The view model is read-only.');
     }
 
+    /**
+     * Always throws LogicException: the view model is read-only.
+     */
     public function offsetUnset(mixed $offset): void
     {
         throw new LogicException('The view model is read-only.');
     }
 
+    /**
+     * Number of entries of this node, e.g. lines of a list. Not recorded as read.
+     */
     public function count(): int
     {
         return count($this->data);
     }
 
+    /**
+     * Whether this node has no entries. Not recorded as read.
+     */
     public function isEmpty(): bool
     {
         return $this->count() === 0;
@@ -102,6 +122,9 @@ class ViewNode implements ArrayAccess, Countable, IteratorAggregate, JsonSeriali
         return self::plain($this->data);
     }
 
+    /**
+     * Encodes the plain values like toArray(), which counts as reading every value below this node.
+     */
     public function jsonSerialize(): mixed
     {
         return $this->toArray();

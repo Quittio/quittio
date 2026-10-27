@@ -37,11 +37,19 @@ final class AccessLog
         $this->aliases = $aliases;
     }
 
+    /**
+     * Whether view model data was bound with bind(); without it expand() returns the pattern
+     * unchanged.
+     */
     public function hasData(): bool
     {
         return $this->data !== null;
     }
 
+    /**
+     * Records that the field at $path, e.g. "seller.name" or "lines[0].netAmount", was read, and
+     * also the same field below every alias that $path starts with.
+     */
     public function record(string $path): void
     {
         if (isset($this->paths[$path])) {
@@ -118,6 +126,10 @@ final class AccessLog
         return array_keys($this->paths);
     }
 
+    /**
+     * Forgets every recorded path, e.g. before the same view model is rendered again; the bound
+     * data and aliases stay.
+     */
     public function reset(): void
     {
         $this->paths = [];

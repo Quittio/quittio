@@ -20,6 +20,10 @@ final readonly class Identifier
         public IdentifierScheme|RawCode|null $scheme = null,
     ) {}
 
+    /**
+     * An identifier with the scheme as enum case; a scheme string without enum case becomes a
+     * RawCode.
+     */
     public static function of(string $value, IdentifierScheme|RawCode|string|null $scheme = null): self
     {
         if (is_string($scheme)) {
@@ -29,6 +33,9 @@ final readonly class Identifier
         return new self($value, $scheme);
     }
 
+    /**
+     * The scheme as plain string, also for a RawCode; null without scheme.
+     */
     public function schemeValue(): ?string
     {
         return $this->scheme?->value;

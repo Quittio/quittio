@@ -13,6 +13,10 @@ use Quittio\Laravel\Seller;
  */
 final class ConfigInvoiceDefaults implements InvoiceDefaults
 {
+    /**
+     * Sets the seller of config/quittio.php, its first bank account with an IBAN and the small
+     * business flag on $builder (see Seller::apply()).
+     */
     public function apply(InvoiceBuilder $builder): void
     {
         Seller::apply($builder);
