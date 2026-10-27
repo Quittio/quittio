@@ -4,6 +4,8 @@ All notable changes to this project are documented in this file. The format foll
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-27
+
 Quittio 1.0 removes what the 0.x releases deprecated and fixes the public API: from 1.0 on, only a major release breaks it. The [upgrade guide](docs/upgrading.md) lists every break with what to do.
 
 ### Added
@@ -395,7 +397,8 @@ First release.
 - `pdf.paper` and the VIES verification (`validation.drivers.vies.enabled`) take effect; file names of XML-only formats no longer contain a raw translation key.
 - Watermarks (draft and preview PDFs) were never printed: mPDF needs `showWatermarkText`, and PDF/A forbids their transparency. Watermarked PDFs without embedded XML are now rendered without PDF/A.
 
-[Unreleased]: https://github.com/Quittio/quittio/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/Quittio/quittio/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/Quittio/quittio/compare/v0.8.0...v1.0.0
 [0.8.0]: https://github.com/Quittio/quittio/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/Quittio/quittio/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/Quittio/quittio/compare/v0.6.0...v0.7.0
