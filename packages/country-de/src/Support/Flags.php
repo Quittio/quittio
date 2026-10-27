@@ -55,11 +55,4 @@ final class Flags
 
     /** The seller is a small business (section 19 UStG), e.g. from config quittio.seller.small_business. */
     public const string SMALL_BUSINESS = Meta::FLAG_SMALL_BUSINESS;
-
-    /**
-     * Gross limit of a small amount invoice in EUR.
-     *
-     * @deprecated the limit depends on the supply date, use TaxTables::smallAmountLimitOn()
-     */
-    public const string SMALL_AMOUNT_LIMIT = '250.00';
 }

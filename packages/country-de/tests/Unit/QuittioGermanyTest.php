@@ -89,7 +89,7 @@ it('passes the official KoSIT validation for every German tax preset', function 
     expect($result->validation()->levels)->toContain(ValidationLevel::L5)
         ->and($result->validation()->errors())->toBe([]);
 })->with([
-    'reduced 7' => [fn (InvoiceBuilder $b) => $b->line(fn ($l) => $l->name('Buch')->quantity(2, UnitCode::Piece)->netPrice('19.90')->vat(VatPreset::Reduced7))],
+    'reduced 7' => [fn (InvoiceBuilder $b) => $b->line(fn ($l) => $l->name('Buch')->quantity(2, UnitCode::Piece)->netPrice('19.90')->vat(VatPreset::Reduced))],
     'photovoltaics' => [fn (InvoiceBuilder $b) => $b->line(fn ($l) => $l->name('PV-Anlage')->quantity(1, UnitCode::Piece)->netPrice('14500.00')->vat(VatPreset::ZeroRatedPv))],
     'small business' => [fn (InvoiceBuilder $b) => $b->line(fn ($l) => $l->name('Beratung')->quantity(1, UnitCode::Hour)->netPrice('80.00')->vat(VatPreset::SmallBusiness))],
     'reverse charge domestic' => [fn (InvoiceBuilder $b) => $b->line(fn ($l) => $l->name('Bauleistung')->quantity(1, UnitCode::Piece)->netPrice('5000.00')->vat(VatPreset::ReverseChargeDomestic))],

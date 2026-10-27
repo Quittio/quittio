@@ -785,62 +785,6 @@ final class Quittio
     }
 
     /**
-     * @deprecated use addSerializer(); like it, it changes this instance
-     */
-    public function withSerializer(XmlSerializer $serializer): self
-    {
-        return $this->addSerializer($serializer);
-    }
-
-    /**
-     * @deprecated use addValidator(); like it, it changes this instance
-     */
-    public function withValidator(ValidationDriver $driver): self
-    {
-        return $this->addValidator($driver);
-    }
-
-    /**
-     * @deprecated use clearValidators(); like it, it changes this instance
-     */
-    public function withoutValidators(): self
-    {
-        return $this->clearValidators();
-    }
-
-    /**
-     * @deprecated use setRenderer(); like it, it changes this instance
-     */
-    public function withRenderer(PdfRenderer $renderer): self
-    {
-        return $this->setRenderer($renderer);
-    }
-
-    /**
-     * @deprecated use setTemplateEngine(); like it, it changes this instance
-     */
-    public function withTemplateEngine(TemplateEngine $templates): self
-    {
-        return $this->setTemplateEngine($templates);
-    }
-
-    /**
-     * @deprecated use setPaymentQrGenerator(); like it, it changes this instance
-     */
-    public function withPaymentQrGenerator(?PaymentQrGenerator $generator): self
-    {
-        return $this->setPaymentQrGenerator($generator);
-    }
-
-    /**
-     * @deprecated use setFormatResolver(); like it, it changes this instance
-     */
-    public function withFormatResolver(FormatResolver $resolver): self
-    {
-        return $this->setFormatResolver($resolver);
-    }
-
-    /**
      * The configuration of this instance.
      */
     public function config(): Config

@@ -102,12 +102,10 @@ class CountryDE extends AbstractCountryPack implements CompletesInvoices, Provid
 
     public function taxPresets(): TaxPresetCollection
     {
-        $presets = array_filter(VatPreset::cases(), static fn (VatPreset $preset): bool => $preset->canonical() === $preset);
-
         // Keys of earlier versions, e.g. in stored invoices or quittio.defaults.vat.
-        return (new TaxPresetCollection($presets))
-            ->alias('de.standard_19', VatPreset::Standard)
-            ->alias('de.reduced_7', VatPreset::Reduced);
+        return (new TaxPresetCollection(VatPreset::cases()))
+            ->alias(VatPreset::LEGACY_STANDARD_KEY, VatPreset::Standard)
+            ->alias(VatPreset::LEGACY_REDUCED_KEY, VatPreset::Reduced);
     }
 
     /**

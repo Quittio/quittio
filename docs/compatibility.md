@@ -2,15 +2,15 @@
 
 Quittio follows [Semantic Versioning](https://semver.org). This page says what that promise covers, so you know what can change under you in an update and what cannot.
 
-## Before 1.0
+## Releases
 
-The current releases are 0.x. Until 1.0:
+Since 1.0:
 
-- **Patch releases** (0.1.0 → 0.1.1) fix bugs and security issues. They do not remove or rename anything you use. A fix can still change behaviour that was wrong, e.g. reject data that produced invalid XML before.
-- **Minor releases** (0.1 → 0.2) may break the public API. Every break is listed in the [changelog](https://github.com/Quittio/quittio/blob/master/CHANGELOG.md) under "Changed" or "Removed", with what to do.
-- Where possible, an old name keeps working as a deprecated alias first (see [Deprecations](#deprecations)).
+- **Patch releases** (1.0.0 → 1.0.1) fix bugs and security issues. They do not remove or rename anything you use. A fix can still change behaviour that was wrong, e.g. reject data that produced invalid XML before.
+- **Minor releases** (1.0 → 1.1) add features. They do not break the public API; what they replace keeps working as a deprecated alias (see [Deprecations](#deprecations)).
+- **Major releases** (1.x → 2.0) may break the public API. Every break is listed in the [changelog](https://github.com/Quittio/quittio/blob/master/CHANGELOG.md) under "Changed" or "Removed", with what to do.
 
-From 1.0 on, only major releases break the public API.
+Before 1.0, minor releases could break the public API. The [upgrade guide](upgrading.md) lists what changed from 0.x to 1.0.
 
 ## What the promise covers
 
@@ -43,7 +43,13 @@ A deprecated method, class, configuration key or environment variable
 
 - is marked `@deprecated` with its replacement, so your IDE and static analysis show it,
 - is listed under "Deprecated" in the changelog,
-- keeps working until the next major release; deprecations of 0.x releases are removed in 1.0 at the earliest.
+- keeps working until the next major release. The deprecations of 0.x were removed in 1.0.
+
+## Country packs without tax review
+
+`quittio/country-at`, `quittio/country-ch`, `quittio/country-be` and `quittio/country-fr` are released together with the other packages and carry the same version, but no tax adviser of their country has reviewed them yet. Until that review they are not covered by the promise: a minor release may change their classes, configuration keys, rule codes and output where the review or a correction of the national rules requires it. Every such change is listed in the changelog.
+
+A reviewed pack says so in its README and documentation page, and from that release on it is covered like `quittio/country-de`. The order of the reviews is on the [roadmap](https://quittio.dev/roadmap).
 
 ## Supported versions
 

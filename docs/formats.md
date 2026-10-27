@@ -110,7 +110,7 @@ These are the keys for `render()`, `format()` and `formats()`:
 
 PDF/A-3b is the archiving standard for PDF (PDF/A) in version 3, which allows embedded files, at conformance level b.
 
-Format and profile keys are case-insensitive. The profiles `xrechnung`, `xrechnung-extension` and `xrechnung-cvd` and the formats `xrechnung-cii` and `xrechnung-ubl` come with the German country pack (`Quittio\Country\DE\Formats\XRechnungFormats`); until 1.0 the core registers the two formats as well. Other country packs register their own formats the same way ([Writing your own country pack](country-packs.md#writing-your-own-country-pack)). MINIMUM and BASIC WL carry no invoice lines and do not comply with EN 16931. The validation warns about them with `QUITTIO-PROFILE-NOT-EINVOICE`; use them only when a recipient asks for them.
+Format and profile keys are case-insensitive. The profiles `xrechnung`, `xrechnung-extension` and `xrechnung-cvd` and the formats `xrechnung-cii` and `xrechnung-ubl` come with the German country pack (`Quittio\Country\DE\Formats\XRechnungFormats`); without it they are unknown. Other country packs register their own formats the same way ([Writing your own country pack](country-packs.md#writing-your-own-country-pack)). MINIMUM and BASIC WL carry no invoice lines and do not comply with EN 16931. The validation warns about them with `QUITTIO-PROFILE-NOT-EINVOICE`; use them only when a recipient asks for them.
 
 ## Automatic choice
 

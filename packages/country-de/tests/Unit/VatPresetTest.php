@@ -39,12 +39,12 @@ it('builds and calculates the builder example', function () {
             ->description('Umsetzung Kundenportal, Sprint 3')
             ->quantity(24, UnitCode::Hour)
             ->netPrice('95.00')
-            ->vat(VatPreset::Standard19))
+            ->vat(VatPreset::Standard))
         ->line(fn ($l) => $l
             ->name('Hosting Oktober')
             ->quantity(1, UnitCode::Month)
             ->netPrice('29.00')
-            ->vat(VatPreset::Standard19)
+            ->vat(VatPreset::Standard)
             ->period('2026-10-01', '2026-10-31'))
         ->paymentTerms(fn ($t) => $t->dueInDays(14)->cashDiscount(days: 7, percent: '2.00'))
         ->payment(PaymentMeansCode::SepaCreditTransfer, iban: 'DE02120300000000202051', bic: 'BYLADEM1001')
@@ -57,7 +57,7 @@ it('builds and calculates the builder example', function () {
         ->and(Amount::format($calculated->totals->amountDue))->toBe('2747.71')
         ->and($calculated->dueDate?->toIsoString())->toBe('2026-10-17')
         ->and($calculated->paymentTerms?->discounts[0]->percent->toString())->toBe('2.00')
-        ->and($calculated->lines[0]->vat->presetKey)->toBe('de.standard_19');
+        ->and($calculated->lines[0]->vat->presetKey)->toBe('de.standard');
 });
 
 it('maps presets to category, rate and VATEX code', function (VatPreset $preset, VatCategory $category, ?string $rate, ?VatExemptionReasonCode $code) {
@@ -65,8 +65,8 @@ it('maps presets to category, rate and VATEX code', function (VatPreset $preset,
         ->and($preset->rate()?->toString())->toBe($rate)
         ->and($preset->exemptionReasonCode())->toBe($code);
 })->with([
-    [VatPreset::Standard19, VatCategory::StandardRate, '19', null],
-    [VatPreset::Reduced7, VatCategory::StandardRate, '7', null],
+    [VatPreset::Standard, VatCategory::StandardRate, '19', null],
+    [VatPreset::Reduced, VatCategory::StandardRate, '7', null],
     [VatPreset::SmallBusiness, VatCategory::Exempt, '0', null],
     [VatPreset::ReverseChargeDomestic, VatCategory::ReverseCharge, '0', VatExemptionReasonCode::ReverseCharge],
     [VatPreset::IntraCommunitySupply, VatCategory::IntraCommunitySupply, '0', VatExemptionReasonCode::IntraCommunitySupply],
@@ -138,10 +138,7 @@ it('takes the standard and the reduced rate of the supply date', function (strin
         ->build()->lines[0]->vat->rate;
 
     expect($rate(VatPreset::Standard))->toBe($standard)
-        ->and($rate(VatPreset::Reduced))->toBe($reduced)
-        // The deprecated cases follow the dates as well and keep their keys.
-        ->and($rate(VatPreset::from('de.standard_19')))->toBe($standard)
-        ->and($rate(VatPreset::from('de.reduced_7')))->toBe($reduced);
+        ->and($rate(VatPreset::Reduced))->toBe($reduced);
 })->with([
     ['2020-06-30', '19', '7'],
     ['2020-07-01', '16', '5'],
@@ -150,13 +147,15 @@ it('takes the standard and the reduced rate of the supply date', function (strin
     ['2006-12-31', '16', '7'],
 ]);
 
-it('keeps the keys of the presets and of earlier versions', function () {
+it('keeps the keys of the presets and reads the keys of earlier versions', function () {
     $line = fn (VatPreset $preset) => Scenarios::base()->line(fn ($l) => $l->name('Leistung')->quantity(1, UnitCode::Piece)->netPrice('100.00')->vat($preset))->build()->lines[0]->vat;
     $presets = (new CountryDE)->taxPresets();
 
     expect($line(VatPreset::Standard)->presetKey)->toBe('de.standard')
-        ->and($line(VatPreset::from('de.standard_19'))->presetKey)->toBe('de.standard_19')
-        ->and(VatPreset::fromKey('de.reduced_7')?->canonical())->toBe(VatPreset::Reduced)
+        ->and(VatPreset::fromKey('de.standard_19'))->toBe(VatPreset::Standard)
+        ->and(VatPreset::fromKey('de.reduced_7'))->toBe(VatPreset::Reduced)
+        ->and(VatPreset::fromKey('de.reduced'))->toBe(VatPreset::Reduced)
+        ->and(VatPreset::tryFrom('de.standard_19'))->toBeNull()
         ->and(VatPreset::fromKey('xx.unknown'))->toBeNull()
         ->and($presets->get('de.standard_19'))->toBe(VatPreset::Standard)
         ->and($presets->has('de.reduced'))->toBeTrue()

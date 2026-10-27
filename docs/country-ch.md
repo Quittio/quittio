@@ -1,6 +1,6 @@
 # Switzerland (`quittio/country-ch`)
 
-> **Not reviewed by a tax adviser yet.** The legal wording, rules and defaults of this pack follow the law and the official sources as of October 2026, but have not been reviewed by a Swiss tax adviser. Check the mentions and rates of your invoices before you rely on them. Quittio is no tax or legal advice; the business that issues an invoice remains responsible for it.
+> **Not reviewed by a tax adviser yet.** The legal wording, rules and defaults of this pack follow the law and the official sources as of October 2026, but have not been reviewed by a Swiss tax adviser. Check the mentions and rates of your invoices before you rely on them. Quittio is no tax or legal advice; the business that issues an invoice remains responsible for it. Until the review the pack is not covered by the [compatibility promise](compatibility.md#country-packs-without-tax-review): a minor release may change it.
 
 The Swiss pack implements the invoice requirements of the Swiss VAT act (MWSTG, Mehrwertsteuergesetz) and of its ordinance (MWSTV, Mehrwertsteuerverordnung), the Swiss QR bill and the rule on default interest of the Swiss Code of Obligations (OR, Obligationenrecht). Its class is `Quittio\Country\CH\CountryCH` (code `CH`, translation namespace `quittio-ch`).
 

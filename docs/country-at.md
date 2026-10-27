@@ -1,6 +1,6 @@
 # Austria (`quittio/country-at`)
 
-> **Not reviewed by a tax adviser yet.** The legal wording, rules and defaults of this pack follow the law and the official sources as of October 2026, but have not been reviewed by an Austrian tax adviser. Check the mentions and rates of your invoices before you rely on them. Quittio is no tax or legal advice; the business that issues an invoice remains responsible for it.
+> **Not reviewed by a tax adviser yet.** The legal wording, rules and defaults of this pack follow the law and the official sources as of October 2026, but have not been reviewed by an Austrian tax adviser. Check the mentions and rates of your invoices before you rely on them. Quittio is no tax or legal advice; the business that issues an invoice remains responsible for it. Until the review the pack is not covered by the [compatibility promise](compatibility.md#country-packs-without-tax-review): a minor release may change it.
 
 The Austrian pack implements the mandatory invoice information of the Austrian VAT act (UStG 1994, Umsatzsteuergesetz), the Austrian national CIUS of EN 16931 (CIUS-AT-NAT, and CIUS-AT-GOV for the federal government), the Austrian XML invoice format ebInterface and the Austrian law on late payment. Its class is `Quittio\Country\AT\CountryAT` (code `AT`, translation namespace `quittio-at`).
 

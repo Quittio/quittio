@@ -34,7 +34,7 @@ function publicBuyerPack(string $code): CountryPack
                 public function resolve(InvoiceData $invoice): ?FormatChoice
                 {
                     return $invoice->buyerReference === 'PUBLIC'
-                        ? new FormatChoice(FormatRegistry::XRECHNUNG_CII, 'xrechnung', 'Public buyer.')
+                        ? new FormatChoice('xrechnung-cii', 'xrechnung', 'Public buyer.')
                         : null;
                 }
             }];
@@ -56,12 +56,12 @@ function resolveFormat(string $sellerCountry, string $buyerCountry, ?CountryPack
 it('applies the buyer pack rules for sellers outside the EU', function (string $seller) {
     $choice = resolveFormat($seller, 'DE', buyer: publicBuyerPack('DE'), public: true);
 
-    expect($choice->format)->toBe(FormatRegistry::XRECHNUNG_CII)
+    expect($choice->format)->toBe('xrechnung-cii')
         ->and($choice->profile)->toBe('xrechnung');
 })->with(['CH', 'GB', 'NO', 'XI', 'US']);
 
 it('applies the buyer pack rules within the EU', function () {
-    expect(resolveFormat('AT', 'DE', buyer: publicBuyerPack('DE'), public: true)->format)->toBe(FormatRegistry::XRECHNUNG_CII);
+    expect(resolveFormat('AT', 'DE', buyer: publicBuyerPack('DE'), public: true)->format)->toBe('xrechnung-cii');
 });
 
 it('does not apply buyer pack rules to consumers', function () {
@@ -103,5 +103,5 @@ it('treats Büsingen and Heligoland as outside the EU VAT territory', function (
 it('lets the seller pack decide for its own excluded territories', function () {
     // Public buyers in Büsingen still receive the format the German pack requires.
     expect(resolveFormat('DE', 'DE', leading: publicBuyerPack('DE'), buyerPostcode: '78266', public: true)->format)
-        ->toBe(FormatRegistry::XRECHNUNG_CII);
+        ->toBe('xrechnung-cii');
 });

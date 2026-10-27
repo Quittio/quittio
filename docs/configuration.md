@@ -152,7 +152,7 @@ The Managed layer has its own file, `config/quittio-managed.php`, with the datab
 
 `QUITTIO_PREVIEW_ENABLED` must be `true` or `false`. Other values count as not set.
 
-Quittio 0.1.0 used shorter names for some variables: `QUITTIO_COUNTRY`, `QUITTIO_VALIDATION`, `QUITTIO_GUARD`, `QUITTIO_DISK` and `QUITTIO_PREVIEW`. They are still read when the new name is not set, until 1.0.
+Quittio 0.1.0 used shorter names for some variables: `QUITTIO_COUNTRY`, `QUITTIO_VALIDATION`, `QUITTIO_GUARD`, `QUITTIO_DISK` and `QUITTIO_PREVIEW`. Since 1.0 they are no longer read; rename them in your `.env` ([Upgrade guide](upgrading.md)).
 
 ## Defaults
 
@@ -243,18 +243,9 @@ See [Country packs: base rate table](country-packs.md#base-rate-table) and [quit
 
 #### The old file `config/quittio-de.php`
 
-Up to 0.3 the German settings were a configuration of their own, `quittio-de` (`config/quittio-de.php`). It is deprecated and still read until 1.0:
+Up to 0.3 the German settings were a configuration of their own, `quittio-de` (`config/quittio-de.php`). Since 1.0 it is no longer read. So that settings such as `prior_year_turnover_above_800k` are not lost unnoticed, the application refuses to start while `quittio-de` is still set, with a `RuntimeException` that names the new key.
 
-| Situation | Value used for a key |
-|---|---|
-| only `config/quittio-de.php` | the key of `quittio-de` |
-| only `quittio.countries.de` | the key of `quittio.countries.de` |
-| both set the key | `quittio.countries.de`, unless it still has the default of the pack: then `quittio-de`. A newly published `config/quittio/countries/de.php` therefore does not hide the rates of the old file. |
-| neither | the default of the pack |
-
-The values are merged when the German service provider registers, so `config('quittio.countries.de.…')` returns the result; the old key is no longer filled with defaults. As long as `quittio-de` is set, every start of the application reports a deprecation (`E_USER_DEPRECATED`; Laravel writes it to the `deprecations` log channel when one is configured) that names the keys `quittio.countries.de` overrides.
-
-To migrate, publish the new file, move the values of `config/quittio-de.php` into it and delete the old file:
+To migrate, publish the new file, move the values of `config/quittio-de.php` into it and delete the old file (and `bootstrap/cache/config.php` if the configuration is cached):
 
 ```bash
 php artisan vendor:publish --tag=quittio-de-config   # config/quittio/countries/de.php

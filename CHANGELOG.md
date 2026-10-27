@@ -4,6 +4,28 @@ All notable changes to this project are documented in this file. The format foll
 
 ## [Unreleased]
 
+Quittio 1.0 removes what the 0.x releases deprecated and fixes the public API: from 1.0 on, only a major release breaks it. The [upgrade guide](docs/upgrading.md) lists every break with what to do.
+
+### Added
+
+- `VatPreset::LEGACY_STANDARD_KEY` and `LEGACY_REDUCED_KEY` name the preset keys of 0.2 (`de.standard_19`, `de.reduced_7`) that stored invoices may still carry.
+- Documentation: [Upgrading to 1.0](docs/upgrading.md).
+
+### Changed
+
+- `VatPreset::fromKey()` returns `Standard` and `Reduced` for the keys `de.standard_19` and `de.reduced_7`; `VatPreset::from()` and `tryFrom()` no longer know them.
+- `DocumentBuilder::creditTransfer()` names its first parameter `$accountId`, like `InvoiceBuilder::creditTransfer()`; calls with the named argument `iban:` change.
+- The application refuses to start with a `RuntimeException` while the configuration `quittio-de` (`config/quittio-de.php`) of 0.3 is set, instead of ignoring its settings silently.
+- The country packs for Austria, Switzerland, Belgium and France are not covered by the compatibility promise until a tax adviser of their country has reviewed them ([Country packs without tax review](docs/compatibility.md#country-packs-without-tax-review)).
+
+### Removed
+
+- `Quittio::withSerializer()`, `withValidator()`, `withoutValidators()`, `withRenderer()`, `withTemplateEngine()`, `withPaymentQrGenerator()` and `withFormatResolver()`: use `addSerializer()`, `addValidator()`, `clearValidators()`, `setRenderer()`, `setTemplateEngine()`, `setPaymentQrGenerator()` and `setFormatResolver()`.
+- `FormatRegistry::XRECHNUNG_CII` and `XRECHNUNG_UBL` (use `XRechnungFormats::CII` and `UBL` of the German pack) and `DefaultFormatResolver::EU_COUNTRIES` (use `VatTerritory::EU_MEMBER_STATES`). The core no longer registers the formats `xrechnung-cii` and `xrechnung-ubl` and the alias `xrechnung`; the German pack does.
+- `VatPreset::Standard19`, `VatPreset::Reduced7` and `VatPreset::canonical()`: use `Standard`, `Reduced` and `VatPreset::fromKey()`. `Flags::SMALL_AMOUNT_LIMIT` (use `TaxTables::smallAmountLimitOn()`) and `GermanInvoiceMacros::ADVANCE_TYPES` (use `GermanInvoice::ADVANCE_TYPES`).
+- The builder macros `smallAmount()`, `propertyRelatedService()`, `newVehicle()`, `selfBilled()`, `deductAdvance()` and `consumerDefaultNotice()` directly on the builder: use `->de()->…`.
+- The environment variables of 0.1.0 `QUITTIO_COUNTRY`, `QUITTIO_VALIDATION`, `QUITTIO_GUARD`, `QUITTIO_DISK` and `QUITTIO_PREVIEW`: use `QUITTIO_DEFAULT_COUNTRY`, `QUITTIO_VALIDATION_MODE`, `QUITTIO_MANDATORY_FIELD_GUARD`, `QUITTIO_STORAGE_DISK` and `QUITTIO_PREVIEW_ENABLED`.
+
 ## [0.8.0] - 2026-10-26
 
 ### Added

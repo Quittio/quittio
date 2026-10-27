@@ -28,9 +28,6 @@ use Quittio\Core\Exceptions\ConfigurationException;
  */
 final class DefaultFormatResolver implements FormatResolver
 {
-    /** @deprecated use VatTerritory::EU_MEMBER_STATES */
-    public const array EU_COUNTRIES = VatTerritory::EU_MEMBER_STATES;
-
     /**
      * @param  (Closure(BuyerParty): bool)|null  $peppolLookup  returns true if the buyer is reachable via Peppol
      */

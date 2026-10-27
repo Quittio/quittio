@@ -17,6 +17,8 @@ The pack is not part of `quittio/quittio`; install it next to `quittio/quittio` 
 
 The legal wording, rules and defaults of this pack follow the law and the official sources as of October 2026, but have **not been reviewed by a French tax adviser** yet. Check the mentions and rates of your invoices before you rely on them. Quittio is software, not tax or legal advice: errors cannot be excluded, and the business that issues an invoice remains responsible for it. The package is provided "as is", without warranty, under the MIT licence ([disclaimer](https://github.com/Quittio/quittio#disclaimer)).
 
+Until the review the pack is not covered by the [compatibility promise](https://quittio.dev/docs/compatibility#country-packs-without-tax-review): a minor release may change its classes, configuration, rule codes and output.
+
 ## Licence
 
 MIT, see [LICENSE](LICENSE).

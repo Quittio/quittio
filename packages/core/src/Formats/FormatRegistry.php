@@ -16,16 +16,6 @@ final class FormatRegistry
 
     public const string FACTUR_X = 'factur-x';
 
-    /**
-     * @deprecated the German pack registers XRechnung, use Quittio\Country\DE\Formats\XRechnungFormats::CII
-     */
-    public const string XRECHNUNG_CII = 'xrechnung-cii';
-
-    /**
-     * @deprecated the German pack registers XRechnung, use Quittio\Country\DE\Formats\XRechnungFormats::UBL
-     */
-    public const string XRECHNUNG_UBL = 'xrechnung-ubl';
-
     public const string CII = 'cii';
 
     public const string UBL = 'ubl';
@@ -48,9 +38,6 @@ final class FormatRegistry
     {
         $registry = new self;
         $registry->register(new OutputFormat(self::ZUGFERD, Syntax::Cii, pdf: true, embedsXml: true, defaultProfile: 'en16931'));
-        // Until 1.0 also without the German pack, which registers the same formats (ProvidesFormats).
-        $registry->register(new OutputFormat('xrechnung-cii', Syntax::Cii, defaultProfile: 'xrechnung', profiles: ['xrechnung', 'xrechnung-extension', 'xrechnung-cvd']));
-        $registry->register(new OutputFormat('xrechnung-ubl', Syntax::Ubl, defaultProfile: 'xrechnung', profiles: ['xrechnung', 'xrechnung-extension', 'xrechnung-cvd']));
         $registry->register(new OutputFormat(self::CII, Syntax::Cii, defaultProfile: 'en16931'));
         $registry->register(new OutputFormat(self::UBL, Syntax::Ubl, defaultProfile: 'en16931'));
         $registry->register(new OutputFormat(self::PEPPOL, Syntax::Ubl, defaultProfile: 'peppol', profiles: ['peppol']));
@@ -59,7 +46,6 @@ final class FormatRegistry
         $registry->register(new OutputFormat(self::JSON, json: true));
         $registry->alias(self::FACTUR_X, self::ZUGFERD);
         $registry->alias('facturx', self::ZUGFERD);
-        $registry->alias('xrechnung', 'xrechnung-cii');
 
         return $registry;
     }

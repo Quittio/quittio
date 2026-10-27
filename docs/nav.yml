@@ -27,5 +27,6 @@
 - { page: troubleshooting, title: Troubleshooting }
 - { page: faq, title: FAQ }
 - { page: compatibility, title: Versioning and compatibility }
+- { page: upgrading, title: Upgrading to 1.0 }
 - { page: field-reference, title: Field reference, optional: true }
 - { page: ai, title: AI assistants }

@@ -1810,7 +1810,7 @@
             "public buyer(Quittio\\Core\\Data\\Party\\BuyerParty|Quittio\\Core\\Builder\\PartyBuilder|Quittio\\Core\\Contracts\\ProvidesParty|callable $buyer): static",
             "public buyerReference(?string $reference): static",
             "public cashDiscount(int $days, string $percent, ?string $baseAmount = null): static",
-            "public creditTransfer(string $iban, ?string $bic = null, ?string $accountName = null): static",
+            "public creditTransfer(string $accountId, ?string $bic = null, ?string $accountName = null): static",
             "public currency(string $currency): static",
             "public custom(string $key, mixed $value): static",
             "public deadline(Quittio\\Core\\Support\\Date|DateTimeInterface|string $date): static",
@@ -1875,7 +1875,7 @@
             "public buyer(Quittio\\Core\\Data\\Party\\BuyerParty|Quittio\\Core\\Builder\\PartyBuilder|Quittio\\Core\\Contracts\\ProvidesParty|callable $buyer): static",
             "public buyerReference(?string $reference): static",
             "public cashDiscount(int $days, string $percent, ?string $baseAmount = null): static",
-            "public creditTransfer(string $iban, ?string $bic = null, ?string $accountName = null): static",
+            "public creditTransfer(string $accountId, ?string $bic = null, ?string $accountName = null): static",
             "public currency(string $currency): static",
             "public custom(string $key, mixed $value): static",
             "public deadline(Quittio\\Core\\Support\\Date|DateTimeInterface|string $date): static",
@@ -2731,9 +2731,6 @@
         "implements": [
             "Quittio\\Core\\Formats\\FormatResolver"
         ],
-        "constants": [
-            "EU_COUNTRIES"
-        ],
         "methods": [
             "public __construct(string $defaultProfile = \"en16931\", bool $autoUpgradeProfile = true, ?Closure $peppolLookup = null)",
             "public resolve(Quittio\\Core\\Data\\InvoiceData $invoice, Quittio\\Core\\Countries\\ResolvedCountries $countries): Quittio\\Core\\Formats\\FormatChoice"
@@ -2766,8 +2763,6 @@
             "PDF",
             "PEPPOL",
             "UBL",
-            "XRECHNUNG_CII",
-            "XRECHNUNG_UBL",
             "ZUGFERD"
         ],
         "methods": [
@@ -3540,14 +3535,7 @@
             "public static resetState(): void",
             "public validateFile(string $content): Quittio\\Core\\Validation\\ValidationResult",
             "public validatePath(string $path): Quittio\\Core\\Validation\\ValidationResult",
-            "public validators(): array",
-            "public withFormatResolver(Quittio\\Core\\Formats\\FormatResolver $resolver): Quittio\\Core\\Quittio",
-            "public withPaymentQrGenerator(?Quittio\\Core\\Pdf\\Qr\\PaymentQrGenerator $generator): Quittio\\Core\\Quittio",
-            "public withRenderer(Quittio\\Core\\Pdf\\PdfRenderer $renderer): Quittio\\Core\\Quittio",
-            "public withSerializer(Quittio\\Core\\Xml\\XmlSerializer $serializer): Quittio\\Core\\Quittio",
-            "public withTemplateEngine(Quittio\\Core\\Templates\\TemplateEngine $templates): Quittio\\Core\\Quittio",
-            "public withValidator(Quittio\\Core\\Validation\\ValidationDriver $driver): Quittio\\Core\\Quittio",
-            "public withoutValidators(): Quittio\\Core\\Quittio"
+            "public validators(): array"
         ]
     },
     "Quittio\\Core\\Reading\\DeclaredExemptionReasons": {
@@ -5921,9 +5909,6 @@
     },
     "Quittio\\Country\\DE\\Builder\\GermanInvoiceMacros": {
         "kind": "final class",
-        "constants": [
-            "ADVANCE_TYPES"
-        ],
         "methods": [
             "public static register(): void"
         ]
@@ -6231,7 +6216,6 @@
             "SELF_BILLED_ADVANCE",
             "SERVICE_DATE_OPEN",
             "SMALL_AMOUNT",
-            "SMALL_AMOUNT_LIMIT",
             "SMALL_BUSINESS",
             "TICKET",
             "VAT_IDS_OMITTED"
@@ -6300,8 +6284,6 @@
         "cases": [
             "Standard = \"de.standard\"",
             "Reduced = \"de.reduced\"",
-            "Standard19 = \"de.standard_19\"",
-            "Reduced7 = \"de.reduced_7\"",
             "ZeroRatedPv = \"de.zero_rated_pv\"",
             "SmallBusiness = \"de.small_business\"",
             "ReverseChargeDomestic = \"de.reverse_charge_domestic\"",
@@ -6316,12 +6298,15 @@
             "MarginAntiques = \"de.margin_antiques\"",
             "TravelAgency = \"de.travel_agency\""
         ],
+        "constants": [
+            "LEGACY_REDUCED_KEY",
+            "LEGACY_STANDARD_KEY"
+        ],
         "properties": [
             "public readonly string $name",
             "public readonly string $value"
         ],
         "methods": [
-            "public canonical(): Quittio\\Country\\DE\\Tax\\VatPreset",
             "public category(): Quittio\\Core\\Enums\\VatCategory",
             "public exemptionReason(?string $locale = null): ?string",
             "public exemptionReasonCode(): ?Quittio\\Core\\Enums\\VatExemptionReasonCode",
@@ -6393,7 +6378,7 @@
             "public buyer(Quittio\\Core\\Data\\Party\\BuyerParty|Quittio\\Core\\Builder\\PartyBuilder|Quittio\\Core\\Contracts\\ProvidesParty|callable $buyer): static",
             "public buyerReference(?string $reference): static",
             "public cashDiscount(int $days, string $percent, ?string $baseAmount = null): static",
-            "public creditTransfer(string $iban, ?string $bic = null, ?string $accountName = null): static",
+            "public creditTransfer(string $accountId, ?string $bic = null, ?string $accountName = null): static",
             "public currency(string $currency): static",
             "public custom(string $key, mixed $value): static",
             "public deadline(Quittio\\Core\\Support\\Date|DateTimeInterface|string $date): static",

@@ -374,11 +374,11 @@ it('reads every documented key of the core configuration array', function () {
         ->and([$config->maxXmlBytes, $config->maxPdfBytes, $config->maxDecompressedBytes, $config->cancellationStrategy])->toBe([1, 2, 3, 'negative_invoice']);
 });
 
-it('keeps the deprecated with methods as aliases that change the instance', function () {
+it('changes the instance when validators are cleared and added', function () {
     $quittio = new Quittio;
     $driver = new PhpRulesDriver;
 
-    expect($quittio->withoutValidators())->toBe($quittio)
-        ->and($quittio->withValidator($driver)->validators())->toBe([$driver])
-        ->and($quittio->clearValidators()->addValidator($driver)->validators())->toBe([$driver]);
+    expect($quittio->clearValidators())->toBe($quittio)
+        ->and($quittio->addValidator($driver))->toBe($quittio)
+        ->and($quittio->validators())->toBe([$driver]);
 });

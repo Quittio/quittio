@@ -16,19 +16,20 @@ use Quittio\Country\DE\Dunning\BaseRates;
  * registered with BaseRates, so that DefaultInterest uses them.
  *
  * The configuration of the pack is quittio.countries.de: config/quittio/countries/de.php
- * (tag quittio-de-config) or the section 'de' of 'countries' in config/quittio.php. The key
- * quittio-de (config/quittio-de.php) of 0.3 is still read until 1.0, with a deprecation.
+ * (tag quittio-de-config) or the section 'de' of 'countries' in config/quittio.php. The
+ * configuration quittio-de (config/quittio-de.php) of 0.3 is refused, so that its settings are
+ * not ignored silently.
  */
 final class GermanyServiceProvider extends ServiceProvider
 {
     /** Configuration key of the pack. */
     public const string CONFIG_KEY = 'quittio.countries.de';
 
-    /** Configuration key of 0.3 and earlier (config/quittio-de.php), read until 1.0. */
+    /** Configuration key of 0.3 and earlier (config/quittio-de.php), refused since 1.0. */
     private const string LEGACY_CONFIG_KEY = 'quittio-de';
 
     /**
-     * Merges the defaults of the pack (and the keys of config/quittio-de.php) into quittio.countries.de.
+     * Merges the defaults of the pack into quittio.countries.de.
      */
     public function register(): void
     {
@@ -50,13 +51,8 @@ final class GermanyServiceProvider extends ServiceProvider
     }
 
     /**
-     * Fills quittio.countries.de: the keys set there, then the keys of the deprecated
-     * configuration quittio-de, then the defaults. A key of quittio-de wins over the same key
-     * of quittio.countries.de while that still has its default value, so that a newly
-     * published config/quittio/countries/de.php does not hide the values of an old
-     * config/quittio-de.php. Reports a deprecation (E_USER_DEPRECATED) while quittio-de is set.
-     *
-     * The result does not change when it is merged again, e.g. from a cached configuration.
+     * Fills quittio.countries.de: the keys set there, then the defaults. The result does not change
+     * when it is merged again, e.g. from a cached configuration.
      *
      * @internal
      *
@@ -64,49 +60,33 @@ final class GermanyServiceProvider extends ServiceProvider
      */
     public static function mergeConfiguration(Repository $config, array $defaults): void
     {
+        $legacy = $config->get(self::LEGACY_CONFIG_KEY);
+        if (is_array($legacy) && $legacy !== []) {
+            throw new RuntimeException(sprintf(
+                'The configuration quittio-de (config/quittio-de.php) is no longer read since quittio/country-de 1.0: move its keys to %s (php artisan vendor:publish --tag=quittio-de-config publishes config/quittio/countries/de.php) and delete config/quittio-de.php. If the configuration is cached, delete bootstrap/cache/config.php as well.',
+                self::CONFIG_KEY,
+            ));
+        }
+
         self::moveConfiguredPackClass($config);
 
         $current = $config->get(self::CONFIG_KEY);
         $current = is_array($current) ? $current : [];
-        $legacy = $config->get(self::LEGACY_CONFIG_KEY);
-        $legacy = is_array($legacy) ? $legacy : [];
-
-        $ignored = [];
-        foreach ($legacy as $key => $value) {
-            if (! array_key_exists($key, $current) || (array_key_exists($key, $defaults) && $current[$key] === $defaults[$key])) {
-                $current[$key] = $value;
-            } elseif ($current[$key] !== $value) {
-                $ignored[] = (string) $key;
-            }
-        }
-
         $config->set(self::CONFIG_KEY, array_replace($defaults, $current));
-
-        if ($legacy !== []) {
-            @trigger_error(sprintf(
-                'The configuration quittio-de (config/quittio-de.php) is deprecated since quittio/country-de 0.4 and is read until 1.0: move its keys to %s (php artisan vendor:publish --tag=quittio-de-config publishes config/quittio/countries/de.php) and delete config/quittio-de.php.%s',
-                self::CONFIG_KEY,
-                $ignored === [] ? '' : sprintf(' %s sets %s as well; its value is used.', self::CONFIG_KEY, implode(', ', $ignored)),
-            ), E_USER_DEPRECATED);
-        }
     }
 
     /**
      * A key of the configuration of the pack, e.g. 'base_rate_file': quittio.countries.de;
      * when that does not have the key (e.g. quittio.countries was replaced at runtime), the
-     * deprecated quittio-de, then the default of the pack.
+     * default of the pack.
      *
      * @internal
      */
     public static function setting(Repository $config, string $key): mixed
     {
-        foreach ([self::CONFIG_KEY, self::LEGACY_CONFIG_KEY] as $section) {
-            if ($config->has($section.'.'.$key)) {
-                return $config->get($section.'.'.$key);
-            }
-        }
-
-        return self::defaults()[$key] ?? null;
+        return $config->has(self::CONFIG_KEY.'.'.$key)
+            ? $config->get(self::CONFIG_KEY.'.'.$key)
+            : self::defaults()[$key] ?? null;
     }
 
     /**

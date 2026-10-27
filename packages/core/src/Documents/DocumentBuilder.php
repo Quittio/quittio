@@ -392,9 +392,9 @@ class DocumentBuilder
     /**
      * Bank account for the payment, see InvoiceBuilder::creditTransfer().
      */
-    public function creditTransfer(string $iban, ?string $bic = null, ?string $accountName = null): static
+    public function creditTransfer(string $accountId, ?string $bic = null, ?string $accountName = null): static
     {
-        $this->invoice->creditTransfer($iban, $bic, $accountName);
+        $this->invoice->creditTransfer($accountId, $bic, $accountName);
 
         return $this;
     }

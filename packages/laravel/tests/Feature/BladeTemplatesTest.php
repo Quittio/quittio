@@ -16,8 +16,8 @@ it('renders line groups with subtotals to PDF with the Blade template', function
     // Laravel turns PHP warnings into exceptions: mPDF must not raise any.
     $invoice = Scenarios::base()
         ->group('g1', 'Gruppe 1')
-        ->line(fn ($l) => $l->name('A')->quantity(1, UnitCode::Piece)->netPrice('10.00')->vat(VatPreset::Standard19)->group('g1'))
-        ->line(fn ($l) => $l->name('B')->quantity(1, UnitCode::Piece)->netPrice('20.00')->vat(VatPreset::Reduced7));
+        ->line(fn ($l) => $l->name('A')->quantity(1, UnitCode::Piece)->netPrice('10.00')->vat(VatPreset::Standard)->group('g1'))
+        ->line(fn ($l) => $l->name('B')->quantity(1, UnitCode::Piece)->netPrice('20.00')->vat(VatPreset::Reduced));
 
     expect(Quittio::make($invoice->build())->format('zugferd')->render()->pdf())->toStartWith('%PDF');
 });

@@ -23,29 +23,15 @@ it('describes every builder macro of the pack in the IDE stub', function () {
     }
 });
 
-it('offers the German special cases behind de() and keeps the old macros as deprecated', function () {
+it('offers the German special cases behind de() only', function () {
     GermanInvoiceMacros::register();
     $builder = Scenarios::simple();
 
     expect($builder->de())->toBeInstanceOf(GermanInvoice::class)
         ->and($builder->de()->smallAmount())->toBe($builder)
         ->and($builder->build()->meta->hasFlag(Flags::SMALL_AMOUNT))->toBeTrue()
-        ->and(Scenarios::simple()->de()->selfBilled()->build()->typeCode)->toBe(InvoiceTypeCode::SelfBilledInvoice);
-
-    $deprecations = [];
-    set_error_handler(static function (int $level, string $message) use (&$deprecations): bool {
-        $deprecations[] = $message;
-
-        return true;
-    }, E_USER_DEPRECATED);
-    try {
-        $old = Scenarios::simple()->selfBilled()->build();
-    } finally {
-        restore_error_handler();
-    }
-
-    expect($old->typeCode)->toBe(InvoiceTypeCode::SelfBilledInvoice)
-        ->and($deprecations)->toBe(['The builder macro selfBilled() is deprecated since quittio/country-de 0.3, use ->de()->selfBilled() instead.']);
+        ->and(Scenarios::simple()->de()->selfBilled()->build()->typeCode)->toBe(InvoiceTypeCode::SelfBilledInvoice)
+        ->and(InvoiceBuilder::hasMacro('selfBilled'))->toBeFalse();
 });
 
 it('deducts an advance invoice also on subclasses of the builder', function () {

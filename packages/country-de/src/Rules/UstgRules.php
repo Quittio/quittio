@@ -647,7 +647,7 @@ final class UstgRules
                     $standard = TaxTables::standardRateOn($date);
                     $reduced = TaxTables::reducedRateOn($date);
                     // A preset of the pack names its rate; any other rate is a change after the build.
-                    $expected = match (VatPreset::fromKey($line->vat->presetKey ?? '')?->canonical()) {
+                    $expected = match (VatPreset::fromKey($line->vat->presetKey ?? '')) {
                         VatPreset::Standard => [$standard],
                         VatPreset::Reduced => [$reduced],
                         default => [$standard, $reduced],

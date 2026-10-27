@@ -24,7 +24,7 @@ return [
         // Country pack used when the seller has no country code (BT-40), e.g. 'DE'. Normally
         // the seller's country decides; without an installed pack only EN 16931 rules apply.
         // null = the only installed country pack, if there is exactly one.
-        'country' => env('QUITTIO_DEFAULT_COUNTRY', env('QUITTIO_COUNTRY')),
+        'country' => env('QUITTIO_DEFAULT_COUNTRY'),
 
         // Profile of the e-invoice XML for every format that allows it, e.g. 'en16931',
         // 'extended', 'xrechnung'. null = the default of the format (ZUGFeRD: EN 16931).
@@ -236,7 +236,7 @@ return [
 
         // What happens with errors: 'error' = throw a ValidationException, 'warn' = create the
         // invoice anyway and attach the result ($result->validation()), 'off' = no checks.
-        'mode' => env('QUITTIO_VALIDATION_MODE', env('QUITTIO_VALIDATION', 'error')),
+        'mode' => env('QUITTIO_VALIDATION_MODE', 'error'),
 
         // Which checks run: 'php' (rules of EN 16931, format and country), 'xsd' (XML schema),
         // 'kosit' (the official KoSIT validator, needs Java) and 'verapdf' (PDF/A, needs veraPDF).
@@ -251,7 +251,7 @@ return [
 
         // Checks that the PDF shows every legally required value: 'exception', 'log' or
         // 'off'. null = 'exception' outside production, 'log' in production.
-        'mandatory_field_guard' => env('QUITTIO_MANDATORY_FIELD_GUARD', env('QUITTIO_GUARD')),
+        'mandatory_field_guard' => env('QUITTIO_MANDATORY_FIELD_GUARD'),
 
         // Single PHP rules by the code of their messages; a trailing * matches by prefix.
         // 'disabled' switches rules off, 'severity' changes the severity of their findings
@@ -398,7 +398,7 @@ return [
 
         // Filesystem disk of $result->save() and of queued renders (config/filesystems.php),
         // e.g. 'local' or 's3'. null or '' = the default disk of config/filesystems.php.
-        'disk' => env('QUITTIO_STORAGE_DISK', env('QUITTIO_DISK', 'local')),
+        'disk' => env('QUITTIO_STORAGE_DISK', 'local'),
     ],
 
     /*
@@ -429,7 +429,7 @@ return [
     'preview' => [
 
         // true = register the preview route, false = never. null = only in the local environment.
-        'enabled' => env('QUITTIO_PREVIEW_ENABLED', env('QUITTIO_PREVIEW')),
+        'enabled' => env('QUITTIO_PREVIEW_ENABLED'),
 
         // URL prefix of the preview.
         'path' => '_quittio/preview',

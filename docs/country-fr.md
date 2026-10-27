@@ -1,6 +1,6 @@
 # France (`quittio/country-fr`)
 
-> **Not reviewed by a tax adviser yet.** The legal wording, rules and defaults of this pack follow the law and the official sources as of October 2026, but have not been reviewed by a French tax adviser. Check the mentions and rates of your invoices before you rely on them. Quittio is no tax or legal advice; the business that issues an invoice remains responsible for it.
+> **Not reviewed by a tax adviser yet.** The legal wording, rules and defaults of this pack follow the law and the official sources as of October 2026, but have not been reviewed by a French tax adviser. Check the mentions and rates of your invoices before you rely on them. Quittio is no tax or legal advice; the business that issues an invoice remains responsible for it. Until the review the pack is not covered by the [compatibility promise](compatibility.md#country-packs-without-tax-review): a minor release may change it.
 
 The French pack implements the mentions obligatoires of French invoices, i.e. the details an invoice must state. They come from the French Tax Code (Code général des impôts, CGI: art. 242 nonies A of annex II), with the new mentions of the e-invoicing reform from 1 September 2026, and from the Commercial Code (Code de commerce) for invoices between businesses. The pack also covers the late payment penalties. Its class is `Quittio\Country\FR\CountryFR` (code `FR`, translation namespace `quittio-fr`). It covers metropolitan France and Monaco. The overseas departments have VAT rates of their own, which are not modelled.
 

@@ -244,8 +244,8 @@ function docsExampleOrder(array $attributes = []): Model
             'invoiced_at' => '2026-10-13', 'shipped_at' => '2026-10-12', 'customer_reference' => 'PO-77',
         ]);
         $order->items()->createMany([
-            ['product_name' => 'Desk organiser', 'sku' => 'DO-1', 'quantity' => 3, 'unit_price' => '24.90', 'tax_preset' => 'de.standard_19'],
-            ['product_name' => 'Handbook of VAT law', 'sku' => 'B-7', 'quantity' => 1, 'unit_price' => '89.00', 'tax_preset' => 'de.reduced_7'],
+            ['product_name' => 'Desk organiser', 'sku' => 'DO-1', 'quantity' => 3, 'unit_price' => '24.90', 'tax_preset' => 'de.standard'],
+            ['product_name' => 'Handbook of VAT law', 'sku' => 'B-7', 'quantity' => 1, 'unit_price' => '89.00', 'tax_preset' => 'de.reduced'],
         ]);
 
         return $order->fresh(['customer', 'items']);

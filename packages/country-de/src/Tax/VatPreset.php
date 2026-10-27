@@ -31,21 +31,17 @@ use Quittio\Country\DE\Texts\LegalTexts;
  */
 enum VatPreset: string implements DatedTaxPreset, StatesInvoiceNote
 {
+    /** Key of Standard in 0.2 and earlier, still found in stored invoices. */
+    public const string LEGACY_STANDARD_KEY = 'de.standard_19';
+
+    /** Key of Reduced in 0.2 and earlier, still found in stored invoices. */
+    public const string LEGACY_REDUCED_KEY = 'de.reduced_7';
+
     /** Standard rate (section 12 (1) UStG) of the supply date, today 19 %. */
     case Standard = 'de.standard';
 
     /** Reduced rate (section 12 (2) UStG) of the supply date, today 7 %. */
     case Reduced = 'de.reduced';
-
-    /**
-     * @deprecated use Standard; the key "de.standard_19" of stored data stays readable
-     */
-    case Standard19 = 'de.standard_19';
-
-    /**
-     * @deprecated use Reduced; the key "de.reduced_7" of stored data stays readable
-     */
-    case Reduced7 = 'de.reduced_7';
 
     case ZeroRatedPv = 'de.zero_rated_pv';
     case SmallBusiness = 'de.small_business';
@@ -90,23 +86,16 @@ enum VatPreset: string implements DatedTaxPreset, StatesInvoiceNote
     }
 
     /**
-     * The case of a key, e.g. of LineVat::$presetKey; null for keys of other presets.
+     * The case of a key, e.g. of LineVat::$presetKey; null for keys of other presets. The keys of
+     * 0.2 and earlier ("de.standard_19", "de.reduced_7"), which stored invoices may still carry,
+     * give Standard and Reduced.
      */
     public static function fromKey(string $key): ?self
     {
-        return self::tryFrom($key);
-    }
-
-    /**
-     * The preset without a rate in its name: Standard for Standard19, Reduced for Reduced7.
-     */
-    public function canonical(): self
-    {
-        // By value: the deprecated cases are not referenced by name.
-        return match ($this->value) {
-            'de.standard_19' => self::Standard,
-            'de.reduced_7' => self::Reduced,
-            default => $this,
+        return match ($key) {
+            self::LEGACY_STANDARD_KEY => self::Standard,
+            self::LEGACY_REDUCED_KEY => self::Reduced,
+            default => self::tryFrom($key),
         };
     }
 
@@ -120,7 +109,7 @@ enum VatPreset: string implements DatedTaxPreset, StatesInvoiceNote
      */
     public function on(Date $date): TaxPreset
     {
-        $rate = match ($this->canonical()) {
+        $rate = match ($this) {
             self::Standard => TaxTables::standardRateOn($date),
             self::Reduced => TaxTables::reducedRateOn($date),
             default => null,
@@ -131,7 +120,7 @@ enum VatPreset: string implements DatedTaxPreset, StatesInvoiceNote
 
     public function category(): VatCategory
     {
-        return match ($this->canonical()) {
+        return match ($this) {
             self::Standard, self::Reduced => VatCategory::StandardRate,
             self::ZeroRatedPv => VatCategory::ZeroRated,
             self::ReverseChargeDomestic, self::ReverseChargeEu, self::TriangularTransaction => VatCategory::ReverseCharge,
@@ -139,14 +128,12 @@ enum VatPreset: string implements DatedTaxPreset, StatesInvoiceNote
             self::Export => VatCategory::Export,
             self::NotTaxableInGermany, self::BusinessTransfer => VatCategory::NotSubjectToVat,
             self::SmallBusiness, self::MarginSecondHand, self::MarginArt, self::MarginAntiques, self::TravelAgency => VatCategory::Exempt,
-            // Never reached: canonical() turns the deprecated cases into Standard and Reduced.
-            default => VatCategory::StandardRate,
         };
     }
 
     public function rate(): ?BigDecimal
     {
-        return match ($this->canonical()) {
+        return match ($this) {
             self::Standard => TaxTables::standardRateOn(Date::today('Europe/Berlin')),
             self::Reduced => TaxTables::reducedRateOn(Date::today('Europe/Berlin')),
             self::NotTaxableInGermany, self::BusinessTransfer => null,

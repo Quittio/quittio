@@ -14,6 +14,7 @@ use Quittio\Core\Formats\DefaultFormatResolver;
 use Quittio\Core\Profiles\ProfileRegistry;
 use Quittio\Core\Profiles\Syntax;
 use Quittio\Core\Quittio;
+use Quittio\Core\Tax\CustomTaxPreset;
 use Quittio\Core\Testing\Scenarios;
 use Quittio\Core\Validation\Drivers\PhpRulesDriver;
 use Quittio\Core\Validation\ValidationContext;
@@ -164,7 +165,7 @@ it('adds the new vehicle notice and expects an intra-community supply (section 1
         ->line(fn ($l) => $l->name('Pkw')->quantity(1, UnitCode::Piece)->netPrice('30000.00')->vat($preset)->attribute('Erstzulassung', '2026-09-01')->attribute('Kilometerstand', '12'));
     $invoice = $vehicle(VatPreset::IntraCommunitySupply)->de()->newVehicle()->build();
     $english = $vehicle(VatPreset::IntraCommunitySupply)->de()->newVehicle('en_GB')->build();
-    $standard = ustg($vehicle(VatPreset::Standard19)->de()->newVehicle());
+    $standard = ustg($vehicle(VatPreset::Standard)->de()->newVehicle());
 
     expect($invoice->meta->hasFlag(Flags::NEW_VEHICLE))->toBeTrue()
         ->and($invoice->notes[array_key_last($invoice->notes)]->content)->toBe(LegalTexts::catalog()->get(LegalTexts::NEW_VEHICLE, 'de'))
@@ -189,7 +190,7 @@ it('limits small amount invoices to 250 EUR gross', function () {
 it('rejects VAT on invoices of small businesses', function () {
     $builder = Scenarios::base()
         ->line(fn ($l) => $l->name('Leistung A')->quantity(1, UnitCode::Piece)->netPrice('100.00')->vat(VatPreset::SmallBusiness))
-        ->line(fn ($l) => $l->name('Leistung B')->quantity(1, UnitCode::Piece)->netPrice('100.00')->vat(VatPreset::Standard19));
+        ->line(fn ($l) => $l->name('Leistung B')->quantity(1, UnitCode::Piece)->netPrice('100.00')->vat(VatPreset::Standard));
 
     expect(ustgCodes(ustg($builder)))->toContain('DE-USTG-09');
 });
@@ -291,10 +292,10 @@ it('marks triangular transactions as reverse charge with the wording of section 
 
 it('deducts paid advance invoices with their VAT in the final invoice (section 14 (5) sentence 2 UStG)', function () {
     $advance = (new En16931Calculator)->calculate(Scenarios::base()->number('RE-2026-0040')->issueDate('2026-09-01')->type('386')
-        ->line(fn ($l) => $l->name('Anzahlung Website')->quantity(1, UnitCode::Piece)->netPrice('1000.00')->vat(VatPreset::Standard19))
+        ->line(fn ($l) => $l->name('Anzahlung Website')->quantity(1, UnitCode::Piece)->netPrice('1000.00')->vat(VatPreset::Standard))
         ->build());
     $builder = Scenarios::base()
-        ->line(fn ($l) => $l->name('Website')->quantity(1, UnitCode::Piece)->netPrice('3000.00')->vat(VatPreset::Standard19))
+        ->line(fn ($l) => $l->name('Website')->quantity(1, UnitCode::Piece)->netPrice('3000.00')->vat(VatPreset::Standard))
         ->de()->deductAdvance($advance, received: GermanInvoice::RECEIVED_IN_FULL);
     $invoice = (new En16931Calculator)->calculate($builder->build());
 
@@ -311,7 +312,7 @@ it('deducts paid advance invoices with their VAT in the final invoice (section 1
 
 it('adds up several advance payments', function () {
     $advance = fn (string $number) => (new En16931Calculator)->calculate(Scenarios::base()->number($number)->type('386')
-        ->line(fn ($l) => $l->name('Abschlag')->quantity(1, UnitCode::Piece)->netPrice('500.00')->vat(VatPreset::Standard19))
+        ->line(fn ($l) => $l->name('Abschlag')->quantity(1, UnitCode::Piece)->netPrice('500.00')->vat(VatPreset::Standard))
         ->build());
     $invoice = (new En16931Calculator)->calculate(Scenarios::make('simple')->de()->deductAdvance($advance('RE-1'))->de()->deductAdvance($advance('RE-2'), 'en')->build());
 
@@ -322,7 +323,7 @@ it('adds up several advance payments', function () {
 
 it('writes the whole advance deduction note in one language', function () {
     $advance = (new En16931Calculator)->calculate(Scenarios::base()->number('RE-2026-0040')->issueDate('2026-09-01')->type('386')
-        ->line(fn ($l) => $l->name('Anzahlung')->quantity(1, UnitCode::Piece)->netPrice('1000.00')->vat(VatPreset::Standard19))
+        ->line(fn ($l) => $l->name('Anzahlung')->quantity(1, UnitCode::Piece)->netPrice('1000.00')->vat(VatPreset::Standard))
         ->line(fn ($l) => $l->name('Export')->quantity(1, UnitCode::Piece)->netPrice('100.00')->vat(VatPreset::Export))
         ->build());
     $note = static fn (string $locale): string => (static function (array $notes): string {
@@ -339,7 +340,7 @@ it('writes the whole advance deduction note in one language', function () {
 
 it('deducts only documents that can be advance invoices', function (string $type, bool $accepted) {
     $document = (new En16931Calculator)->calculate(Scenarios::base()->number('X-1')->type($type)
-        ->line(fn ($l) => $l->name('Anzahlung')->quantity(1, UnitCode::Piece)->netPrice('100.00')->vat(VatPreset::Standard19))
+        ->line(fn ($l) => $l->name('Anzahlung')->quantity(1, UnitCode::Piece)->netPrice('100.00')->vat(VatPreset::Standard))
         ->build());
     $deduct = fn () => Scenarios::make('simple')->de()->deductAdvance($document);
 
@@ -357,7 +358,7 @@ it('deducts only documents that can be advance invoices', function (string $type
 it('does not deduct a cancellation by negative invoice', function () {
     $quittio = Quittio::create([], [new CountryDE]);
     $original = (new En16931Calculator)->calculate(Scenarios::base()->number('RE-1')->type('386')
-        ->line(fn ($l) => $l->name('Anzahlung')->quantity(1, UnitCode::Piece)->netPrice('100.00')->vat(VatPreset::Standard19))->build());
+        ->line(fn ($l) => $l->name('Anzahlung')->quantity(1, UnitCode::Piece)->netPrice('100.00')->vat(VatPreset::Standard))->build());
     $cancellation = (new En16931Calculator)->calculate($quittio->cancellation($original, 'ST-1', 'Test', 'negative_invoice')->build());
 
     expect($cancellation->typeCodeValue())->toBe('380')
@@ -382,7 +383,7 @@ it('does not apply the small amount simplifications to reverse charge, intra-com
         ->line(fn ($l) => $l->name('Buch')->quantity(1, UnitCode::Piece)->netPrice('20.00')->vat(VatCategory::StandardRate, '5.5'));
     $domestic = Scenarios::base()->de()->smallAmount()
         ->buyer(fn ($b) => $b->name('Barkunde')->vatId(null)->consumer()->address(null, null, null, 'DE'))
-        ->line(fn ($l) => $l->name('Kaffee')->quantity(2, UnitCode::Piece)->netPrice('3.50')->vat(VatPreset::Standard19));
+        ->line(fn ($l) => $l->name('Kaffee')->quantity(2, UnitCode::Piece)->netPrice('3.50')->vat(VatPreset::Standard));
 
     expect(ustgCodes(ustg($reverseCharge)))->toContain('DE-USTG-12')
         ->and(ustgCodes(ustg($reverseCharge)))->toContain('DE-USTG-01')
@@ -417,9 +418,9 @@ it('requires both VAT identifiers for reverse charge to another member state wit
 it('deducts only advance invoices in the same currency and the amount actually received', function () {
     $usd = (new En16931Calculator)->calculate(Scenarios::base()->number('RE-1')->type('386')->currency('USD')
         ->payment(PaymentMeansCode::CreditTransfer, iban: 'DE02120300000000202051')
-        ->line(fn ($l) => $l->name('Anzahlung')->quantity(1, UnitCode::Piece)->netPrice('1000.00')->vat(VatPreset::Standard19))->build());
+        ->line(fn ($l) => $l->name('Anzahlung')->quantity(1, UnitCode::Piece)->netPrice('1000.00')->vat(VatPreset::Standard))->build());
     $rounded = (new En16931Calculator)->calculate(Scenarios::base()->number('RE-2')->type('386')->rounding('0.03')
-        ->line(fn ($l) => $l->name('Anzahlung')->quantity(1, UnitCode::Piece)->netPrice('99.97')->vat(VatPreset::Standard19))->build());
+        ->line(fn ($l) => $l->name('Anzahlung')->quantity(1, UnitCode::Piece)->netPrice('99.97')->vat(VatPreset::Standard))->build());
     $final = (new En16931Calculator)->calculate(Scenarios::make('simple')->de()->deductAdvance($rounded)->build());
 
     expect(fn () => Scenarios::make('simple')->de()->deductAdvance($usd))->toThrow(InvalidArgumentException::class, 'USD')
@@ -436,7 +437,7 @@ it('compares small amount invoices in a foreign currency by their EUR equivalent
     $small = fn (string $rate) => Scenarios::base()->de()->smallAmount()->currency('USD')->taxCurrency('EUR', $rate, '2026-10-01')
         ->payment(PaymentMeansCode::CreditTransfer, iban: 'DE02120300000000202051')
         ->buyer(fn ($b) => $b->name('Barkunde')->vatId(null)->consumer()->address(null, null, null, 'DE'))
-        ->line(fn ($l) => $l->name('Lizenz')->quantity(1, UnitCode::Unit)->netPrice('200.00')->vat(VatPreset::Standard19));
+        ->line(fn ($l) => $l->name('Lizenz')->quantity(1, UnitCode::Unit)->netPrice('200.00')->vat(VatPreset::Standard));
 
     expect(ustgCodes(ustg($small('0.9'))))->not->toContain('DE-USTG-08')
         ->and(ustgCodes(ustg($small('1.2'))))->toContain('DE-USTG-08');
@@ -669,6 +670,15 @@ it('warns about VAT rates that did not apply on the supply date', function () {
         ->and(ustgCodes(ustg($invoice('2021-01-05', '16'))))->toContain('DE-VAT-RATE')
         // Distance sales carry the rates of the buyer's country.
         ->and(ustgCodes(ustg($invoice('2021-01-05', '20', 'FR'))))->not->toContain('DE-VAT-RATE');
+});
+
+it('checks the rate of lines with a preset key of earlier versions', function () {
+    $invoice = fn (string $rate) => Scenarios::base()->issueDate('2021-01-20')->deliveryDate('2021-01-05')
+        ->line(fn ($l) => $l->name('Buch')->quantity(1, UnitCode::Piece)->netPrice('100.00')
+            ->vat(CustomTaxPreset::make(VatPreset::LEGACY_REDUCED_KEY, VatCategory::StandardRate, $rate)));
+
+    expect(ustgCodes(ustg($invoice('7'))))->not->toContain('DE-VAT-RATE')
+        ->and(ustgCodes(ustg($invoice('19'))))->toContain('DE-VAT-RATE');
 });
 
 it('deducts only the amount received of an advance invoice paid in part (section 14.8 (5) UStAE)', function () {

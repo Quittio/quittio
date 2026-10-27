@@ -59,9 +59,9 @@ it('registers the formats, aliases and serializers of a country pack', function 
         ->and($rendered->xml())->toBe('<national>RE-2026-0042</national>');
 });
 
-it('keeps the XRechnung formats available without the German pack until 1.0', function () {
+it('knows the XRechnung formats only with the German pack', function () {
     $formats = Quittio::create()->formats();
 
-    expect($formats->has('xrechnung-cii'))->toBeTrue()
-        ->and($formats->get('xrechnung')->key)->toBe('xrechnung-cii');
+    expect($formats->has('xrechnung-cii'))->toBeFalse()
+        ->and($formats->has('xrechnung'))->toBeFalse();
 });

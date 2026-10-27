@@ -1,6 +1,6 @@
 # Belgium (`quittio/country-be`)
 
-> **Not reviewed by a tax adviser yet.** The legal wording, rules and defaults of this pack follow the law and the official sources as of October 2026, but have not been reviewed by a Belgian tax adviser. Check the mentions and rates of your invoices before you rely on them. Quittio is no tax or legal advice; the business that issues an invoice remains responsible for it.
+> **Not reviewed by a tax adviser yet.** The legal wording, rules and defaults of this pack follow the law and the official sources as of October 2026, but have not been reviewed by a Belgian tax adviser. Check the mentions and rates of your invoices before you rely on them. Quittio is no tax or legal advice; the business that issues an invoice remains responsible for it. Until the review the pack is not covered by the [compatibility promise](compatibility.md#country-packs-without-tax-review): a minor release may change it.
 
 The Belgian pack implements the invoice mentions of the Belgian VAT Code (Wetboek van de belasting over de toegevoegde waarde / Code de la TVA) and of Royal Decree No. 1 (Koninklijk besluit nr. 1, "KB nr. 1" / Arrêté royal n° 1, "A.R. n° 1"), the e-invoicing obligation of 2026 with Peppol BIS Billing 3.0, the use of languages in the language regions, and the law on late payment of 2 August 2002. Its class is `Quittio\Country\BE\CountryBE` (code `BE`, translation namespace `quittio-be`). Its texts exist in Dutch, French, German and English.
 
