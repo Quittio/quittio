@@ -18,6 +18,10 @@ Quittio 1.0 removes what the 0.x releases deprecated and fixes the public API: f
 - The application refuses to start with a `RuntimeException` while the configuration `quittio-de` (`config/quittio-de.php`) of 0.3 is set, instead of ignoring its settings silently.
 - The country packs for Austria, Switzerland, Belgium and France are not covered by the compatibility promise until a tax adviser of their country has reviewed them ([Country packs without tax review](docs/compatibility.md#country-packs-without-tax-review)).
 
+### Fixed
+
+- `FormatRegistry` and `ProfileRegistry` found no format or profile registered with upper-case letters in its key or as target of an alias, e.g. `new OutputFormat('FatturaPA', …)`: keys are stored in lower case now, as the lookup already compared them.
+
 ### Removed
 
 - `Quittio::withSerializer()`, `withValidator()`, `withoutValidators()`, `withRenderer()`, `withTemplateEngine()`, `withPaymentQrGenerator()` and `withFormatResolver()`: use `addSerializer()`, `addValidator()`, `clearValidators()`, `setRenderer()`, `setTemplateEngine()`, `setPaymentQrGenerator()` and `setFormatResolver()`.

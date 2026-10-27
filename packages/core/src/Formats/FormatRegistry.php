@@ -50,16 +50,24 @@ final class FormatRegistry
         return $registry;
     }
 
+    /**
+     * Registers $format under its key; it replaces a format registered earlier under the same key.
+     * Changes this instance.
+     */
     public function register(OutputFormat $format): self
     {
-        $this->formats[$format->key] = $format;
+        $this->formats[strtolower($format->key)] = $format;
 
         return $this;
     }
 
+    /**
+     * Makes $alias (any case) another name for the format $key, e.g. "factur-x" for "zugferd".
+     * Changes this instance.
+     */
     public function alias(string $alias, string $key): self
     {
-        $this->aliases[strtolower($alias)] = $key;
+        $this->aliases[strtolower($alias)] = strtolower($key);
 
         return $this;
     }

@@ -38,16 +38,24 @@ final class ProfileRegistry
         return $registry;
     }
 
+    /**
+     * Adds $profile under its key(); a profile with the same key is replaced. Changes this
+     * instance.
+     */
     public function register(Profile $profile): self
     {
-        $this->profiles[$profile->key()] = $profile;
+        $this->profiles[strtolower($profile->key())] = $profile;
 
         return $this;
     }
 
+    /**
+     * Makes $alias (case-insensitive) another name for the profile key $key, e.g. "comfort" for
+     * "en16931". Changes this instance.
+     */
     public function alias(string $alias, string $key): self
     {
-        $this->aliases[strtolower($alias)] = $key;
+        $this->aliases[strtolower($alias)] = strtolower($key);
 
         return $this;
     }

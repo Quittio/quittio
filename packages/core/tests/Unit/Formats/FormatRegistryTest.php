@@ -63,6 +63,16 @@ it('registers national formats and aliases next to the defaults', function () {
         ->and(array_keys($registry->all()))->toContain('zugferd', 'fatturapa');
 });
 
+it('finds formats and alias targets registered with upper-case keys', function () {
+    $registry = FormatRegistry::withDefaults()
+        ->register(new OutputFormat('FatturaPA', Syntax::Ubl, defaultProfile: 'en16931'))
+        ->alias('sdi', 'FatturaPA');
+
+    expect($registry->has('fatturapa'))->toBeTrue()
+        ->and($registry->get('FATTURAPA')->key)->toBe('FatturaPA')
+        ->and($registry->get('SDI')->key)->toBe('FatturaPA');
+});
+
 it('detects data that only EXTENDED can carry', function () {
     $simple = Scenarios::simple()->build();
 

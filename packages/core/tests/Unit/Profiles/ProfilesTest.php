@@ -210,6 +210,41 @@ it('accepts sub lines and extension fields in profiles that declare them', funct
         ->toContain('QUITTIO-PROFILE-SUBLINES', 'QUITTIO-PROFILE-XRECHNUNG-EXTENSION-ONLY', 'QUITTIO-THIRD-PARTY-PAYMENTS');
 });
 
+it('finds profiles and alias targets registered with upper-case keys', function () {
+    $profile = new class extends AbstractProfile
+    {
+        public function key(): string
+        {
+            return 'National-CIUS';
+        }
+
+        public function name(): string
+        {
+            return 'National CIUS';
+        }
+
+        public function level(): ProfileLevel
+        {
+            return ProfileLevel::En16931;
+        }
+
+        public function specificationId(StandardVersion $version = StandardVersion::En16931_2017): string
+        {
+            return 'urn:cen.eu:en16931:2017#compliant#urn:example:national';
+        }
+
+        public function xmpConformanceLevel(): ?string
+        {
+            return null;
+        }
+    };
+    $registry = ProfileRegistry::withDefaults()->register($profile)->alias('cius', 'National-CIUS');
+
+    expect($registry->has('national-cius'))->toBeTrue()
+        ->and($registry->get('NATIONAL-CIUS'))->toBe($profile)
+        ->and($registry->get('Cius'))->toBe($profile);
+});
+
 it('tells the EN 16931 version from the specification identifier', function (?string $id, StandardVersion $version) {
     expect(StandardVersion::fromSpecificationId($id))->toBe($version);
 })->with([
