@@ -303,7 +303,7 @@ final class PeppolRules
         /** @param Closure(string): bool $valid */
         $rule = static fn (string $code, string $scheme, string $fallback, Closure $valid, bool $warning = false, bool $endpointsOnly = false): Rule => CallbackRule::l3($code, $fallback, static function (InvoiceData $i, RuleReporter $report) use ($scheme, $valid, $warning, $endpointsOnly): void {
             foreach (self::identifiers($i) as $path => [$bt, $idScheme, $value, $endpoint]) {
-                if ($idScheme !== $scheme || ($endpointsOnly && ! $endpoint) || $valid($value)) {
+                if ($idScheme !== $scheme || ($endpointsOnly && ! $endpoint) || $valid($value) === true) {
                     continue;
                 }
                 $warning
