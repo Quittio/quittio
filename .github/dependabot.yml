@@ -1,5 +1,5 @@
-# Keeps the pinned GitHub Actions (commit SHAs), the Composer constraints and the gems of the
-# documentation website current. Updates of one ecosystem come as one pull request per week.
+# Keeps the pinned GitHub Actions (commit SHAs) and the Composer constraints current.
+# Updates of one ecosystem come as one pull request per week.
 version: 2
 updates:
   - package-ecosystem: github-actions
@@ -24,13 +24,3 @@ updates:
     commit-message:
       prefix: chore
       include: scope
-
-  - package-ecosystem: bundler
-    directory: /docs
-    schedule:
-      interval: weekly
-    groups:
-      docs:
-        patterns: ['*']
-    commit-message:
-      prefix: docs
