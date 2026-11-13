@@ -19,13 +19,16 @@ function docsNavigation(): array
         if ($line === '' || str_starts_with($line, '#')) {
             continue;
         }
-        expect($line)->toMatch('/^- \{ page: ([\w-]+), title: ([^,}]+)((?:, \w+: [^,}]+)*) \}$/');
-        preg_match('/^- \{ page: ([\w-]+), title: ([^,}]+)((?:, \w+: [^,}]+)*) \}$/', $line, $match);
-        preg_match_all('/, (\w+): ([^,}]+)/', $match[3], $fields, PREG_SET_ORDER);
+        // A value is plain up to the next comma or brace, or in double quotes (seo, description).
+        $value = '(?:"(?:[^"\\\\]|\\\\.)*"|[^,}"]+)';
+        expect($line)->toMatch("/^- \\{ page: ([\\w-]+), title: ({$value})((?:, \\w+: {$value})*) \\}$/");
+        preg_match("/^- \\{ page: ([\\w-]+), title: ({$value})((?:, \\w+: {$value})*) \\}$/", $line, $match);
+        preg_match_all("/, (\\w+): ({$value})/", $match[3], $fields, PREG_SET_ORDER);
+        $unquote = fn (string $raw): string => str_starts_with(trim($raw), '"') ? (string) json_decode(trim($raw)) : trim($raw);
         $entries[] = [
             'page' => $match[1],
-            'title' => trim($match[2]),
-            'fields' => array_column(array_map(fn (array $field): array => [$field[1], trim($field[2])], $fields), 1, 0),
+            'title' => $unquote($match[2]),
+            'fields' => array_column(array_map(fn (array $field): array => [$field[1], $unquote($field[2])], $fields), 1, 0),
         ];
     }
 
@@ -77,7 +80,7 @@ it('uses only known fields and existing parents in docs/nav.yml', function () {
     $entries = docsNavigation();
     $titles = array_column($entries, 'title');
     foreach ($entries as $entry) {
-        expect(array_keys($entry['fields']))->each->toBeIn(['parent', 'preview', 'optional']);
+        expect(array_keys($entry['fields']))->each->toBeIn(['parent', 'preview', 'optional', 'seo', 'description']);
         if (isset($entry['fields']['parent'])) {
             expect($titles)->toContain($entry['fields']['parent']);
         }
@@ -85,6 +88,18 @@ it('uses only known fields and existing parents in docs/nav.yml', function () {
             if (isset($entry['fields'][$flag])) {
                 expect($entry['fields'][$flag])->toBe('true');
             }
+        }
+    }
+});
+
+it('keeps the search engine titles and descriptions in docs/nav.yml short', function () {
+    foreach (docsNavigation() as $entry) {
+        if (isset($entry['fields']['seo'])) {
+            expect(mb_strlen($entry['fields']['seo']))->toBeLessThanOrEqual(60, "seo of {$entry['page']}");
+        }
+        if (isset($entry['fields']['description'])) {
+            expect(mb_strlen($entry['fields']['description']))->toBeGreaterThanOrEqual(70, "description of {$entry['page']}")
+                ->toBeLessThanOrEqual(160, "description of {$entry['page']}");
         }
     }
 });

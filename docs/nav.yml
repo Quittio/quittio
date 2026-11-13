@@ -2,27 +2,29 @@
 # their titles and order from here. Every Markdown file in docs/ needs an entry, one per line in
 # this form (tests/Monorepo/DocsNavigationTest.php). parent puts a page below another one,
 # preview: true marks a page of an unreleased package (on the website, but not in llms.txt or the
-# MCP server), optional: true a reference page that AI tools may skip.
+# MCP server), optional: true a reference page that AI tools may skip. seo and description are the
+# title (up to 60 characters) and the description (up to 160) for search engines, in double quotes;
+# without them the website uses the title and the first paragraph of the page.
 
-- { page: index, title: Home }
-- { page: getting-started, title: Getting started }
-- { page: concepts, title: E-invoicing basics }
+- { page: index, title: Home, seo: "Quittio documentation: e-invoicing for PHP and Laravel", description: "Documentation of Quittio, the open-source e-invoicing library for PHP and Laravel: ZUGFeRD/Factur-X, XRechnung, UBL and Peppol BIS based on EN 16931." }
+- { page: getting-started, title: Getting started, seo: "Getting started: your first e-invoice in PHP or Laravel", description: "Install Quittio, enter your company once, then create, render and cancel a first ZUGFeRD invoice, with Laravel or plain PHP. About 15 minutes." }
+- { page: concepts, title: E-invoicing basics, seo: "E-invoicing basics: EN 16931, CII, UBL and profiles", description: "The terms of e-invoicing in five minutes: EN 16931, business terms, CII and UBL, ZUGFeRD and XRechnung profiles, rules and validation." }
 - { page: examples, title: Examples }
 - { page: building-invoices, title: Building invoices }
-- { page: formats, title: Formats and profiles }
-- { page: validation, title: Validation }
+- { page: formats, title: Formats and profiles, seo: "Formats and profiles: ZUGFeRD, XRechnung, Peppol, UBL", description: "What Quittio produces: ZUGFeRD/Factur-X PDF/A-3, XRechnung in CII or UBL, Peppol BIS, plain XML, PDF, HTML or JSON, and how it picks the format." }
+- { page: validation, title: Validation, seo: "Validating e-invoices: EN 16931, XRechnung, KoSIT", description: "Validate invoices against EN 16931, XRechnung, Peppol and the German VAT Act in PHP, plus the official KoSIT validator and veraPDF." }
 - { page: templates, title: Templates and design }
 - { page: documents, title: Quotes and other documents }
-- { page: reading, title: Reading incoming invoices }
-- { page: laravel, title: Laravel integration }
+- { page: reading, title: Reading incoming invoices, seo: "Reading incoming e-invoices: ZUGFeRD, XRechnung, UBL", description: "Read XML and ZUGFeRD/Factur-X PDFs you receive into the same data model, check them and take the values into your accounting." }
+- { page: laravel, title: Laravel integration, seo: "Laravel integration: e-invoices with facade and Blade", description: "Create, render, save, download and mail e-invoices in Laravel: facade, Blade templates, queued rendering, events and drivers." }
 - { page: configuration, title: Configuration }
 - { page: commands, title: Artisan commands }
 - { page: testing, title: Testing }
 - { page: country-packs, title: Country packs }
-- { page: country-at, title: Austria, parent: Country packs }
-- { page: country-be, title: Belgium, parent: Country packs }
-- { page: country-ch, title: Switzerland, parent: Country packs }
-- { page: country-fr, title: France, parent: Country packs }
+- { page: country-at, title: Austria, parent: Country packs, seo: "Austria: ebInterface, CIUS-AT and UStG invoices", description: "The Austrian country pack: UStG 1994 mandatory fields, CIUS-AT-NAT and CIUS-AT-GOV, ebInterface 6.1, default interest. Not reviewed by a tax adviser yet." }
+- { page: country-be, title: Belgium, parent: Country packs, seo: "Belgium: Peppol BIS e-invoicing and VAT mentions", description: "The Belgian country pack: Peppol BIS Billing 3.0 for the 2026 e-invoicing obligation, Royal Decree No. 1 mentions, language regions. Not tax-reviewed yet." }
+- { page: country-ch, title: Switzerland, parent: Country packs, seo: "Switzerland: Swiss QR bill and MWSTG invoices", description: "The Swiss country pack: QR bill with payment part, MWSTG invoice requirements, 5 Rappen rounding, default interest. Not reviewed by a tax adviser yet." }
+- { page: country-fr, title: France, parent: Country packs, seo: "France: Factur-X and the 2026 e-invoicing reform", description: "The French country pack: Factur-X for domestic B2B invoices, the four new mentions from September 2026, SIREN, late payment penalties. Not tax-reviewed yet." }
 - { page: managed, title: Managed layer (preview), preview: true }
 - { page: troubleshooting, title: Troubleshooting }
 - { page: faq, title: FAQ }
