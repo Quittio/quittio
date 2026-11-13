@@ -1,11 +1,14 @@
 {
     "name": "quittio/country-at",
-    "description": "Quittio country pack for Austria: UStG mandatory fields, tax presets, CIUS-AT-NAT and CIUS-AT-GOV profiles, default interest under the UGB.",
+    "description": "Quittio country pack for Austria: e-invoices (e-Rechnung) in ebInterface 6.1 and with the CIUS-AT-NAT and CIUS-AT-GOV profiles, UStG mandatory fields, tax presets, default interest under the UGB. Not reviewed by a tax adviser yet.",
     "keywords": [
         "php",
         "e-invoice",
-        "ebinterface",
+        "e-invoicing",
         "e-rechnung",
+        "ebinterface",
+        "cius-at",
+        "en16931",
         "ustg",
         "austria"
     ],

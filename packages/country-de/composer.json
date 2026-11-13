@@ -1,11 +1,13 @@
 {
     "name": "quittio/country-de",
-    "description": "Quittio country pack for Germany: UStG mandatory fields, tax presets, XRechnung profiles and BR-DE rules, DIN 5008 layouts.",
+    "description": "Quittio country pack for Germany: E-Rechnung with XRechnung profiles and BR-DE rules, UStG mandatory fields, tax presets, tax number checks, default interest and DIN 5008 letter layouts.",
     "keywords": [
         "php",
         "e-invoice",
+        "e-rechnung",
         "xrechnung",
         "zugferd",
+        "leitweg-id",
         "ustg",
         "germany",
         "din5008"

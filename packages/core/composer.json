@@ -1,10 +1,12 @@
 {
     "name": "quittio/core",
-    "description": "Country-neutral e-invoicing core: EN 16931 data model, calculation, validation, CII/UBL, ZUGFeRD/Factur-X PDF/A-3.",
+    "description": "Country-neutral e-invoicing core for any PHP application, with Symfony, another framework or none: EN 16931 data model, calculation, validation, CII and UBL writers and readers, ZUGFeRD/Factur-X PDF/A-3, Peppol BIS. Reads incoming e-invoices.",
     "keywords": [
         "php",
         "e-invoice",
+        "e-invoicing",
         "einvoice",
+        "e-rechnung",
         "en16931",
         "zugferd",
         "factur-x",
@@ -12,7 +14,10 @@
         "ubl",
         "cii",
         "peppol",
-        "pdfa"
+        "pdf-a-3",
+        "pdfa",
+        "framework-agnostic",
+        "invoice"
     ],
     "type": "library",
     "license": "MIT",

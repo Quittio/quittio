@@ -1,13 +1,19 @@
 {
     "name": "quittio/laravel",
-    "description": "Laravel integration for Quittio e-invoicing: facade, configuration, Blade templates, commands and testing helpers.",
+    "description": "Laravel integration for Quittio e-invoicing (E-Rechnung): facade, configuration, Blade templates, queued rendering, mail attachments, Artisan commands and testing helpers for ZUGFeRD/Factur-X, XRechnung and Peppol invoices.",
     "keywords": [
         "laravel",
+        "laravel-package",
+        "php",
         "e-invoice",
+        "e-invoicing",
+        "e-rechnung",
         "zugferd",
         "factur-x",
         "xrechnung",
-        "peppol"
+        "peppol",
+        "en16931",
+        "invoice"
     ],
     "type": "library",
     "license": "MIT",

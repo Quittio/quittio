@@ -1,6 +1,6 @@
 # quittio/country-at
 
-Country pack Austria for Quittio: mandatory fields of the UStG 1994, tax presets, the CIUS-AT-NAT and CIUS-AT-GOV profiles, ebInterface, default interest of the UGB and the ABGB.
+Country pack Austria for Quittio: mandatory fields of the UStG 1994, tax presets, the CIUS-AT-NAT and CIUS-AT-GOV profiles, ebInterface 6.1 (writer and reader) for e-invoices (e-Rechnung), default interest of the UGB and the ABGB.
 
 ```bash
 composer require quittio/country-at

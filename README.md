@@ -14,14 +14,25 @@
 
 # Quittio
 
-E-invoicing for PHP and Laravel. Quittio creates, validates, reads and renders electronic invoices based on the European standard EN 16931: ZUGFeRD/Factur-X, XRechnung, UBL and Peppol BIS from one data model.
+E-invoicing for PHP and Laravel. Quittio creates, validates, reads and renders electronic invoices based on the European standard EN 16931: ZUGFeRD/Factur-X, XRechnung, UBL and Peppol BIS from one data model. It is open source (MIT) and runs inside your application, without an account or a hosted service.
 
 - **PHP:** the core runs in any PHP 8.3 application, with Symfony, another framework or none.
 - **Laravel:** the integration adds a facade, configuration, Blade templates, queued rendering, mail attachments and Artisan commands.
 
-Germany is the first market; everything country-specific lives in country packs, so the core stays country-neutral.
+What you can do with it:
 
-**Website: [quittio.dev](https://quittio.dev) · Documentation: [quittio.dev/docs](https://quittio.dev/docs)**
+- **Create ZUGFeRD / Factur-X invoices:** a PDF/A-3 with the CII XML embedded, profiles MINIMUM to EXTENDED and XRECHNUNG.
+- **Create XRechnung 3.0** in CII or UBL syntax, with the Leitweg-ID as buyer reference and the BR-DE rules of the country pack Germany.
+- **Create Peppol BIS Billing 3.0** and plain UBL 2.1 or CII XML.
+- **Validate e-invoices:** the rules of EN 16931, XRechnung, Peppol and the German VAT Act run in PHP; the official KoSIT validator and veraPDF run locally or in CI when you install them.
+- **Read incoming e-invoices:** XRechnung and other CII or UBL files and ZUGFeRD / Factur-X PDFs become the same data model you use to build invoices.
+- **Print invoices and other documents** as PDF or HTML from templates you can adapt: DIN 5008 letter layout, GiroCode, quotes, delivery notes and payment reminders.
+
+Germany is the first market: every business must be able to receive e-invoices since 2025; issuing them becomes mandatory in 2027 for businesses with more than 800,000 euros turnover in the previous year and in 2028 for all ([the mandate explained](https://quittio.dev/en/e-invoicing-mandate-germany)). Everything country-specific lives in country packs, so the core stays country-neutral; packs for Austria, Belgium, Switzerland and France are available as well.
+
+**Auf Deutsch:** Quittio erstellt E-Rechnungen mit PHP und Laravel (ZUGFeRD, XRechnung, Peppol), prüft sie und liest eingehende E-Rechnungen. Die Website [quittio.dev](https://quittio.dev) ist auf Deutsch, die Dokumentation auf Englisch.
+
+**Website: [quittio.dev](https://quittio.dev) · Documentation: [quittio.dev/docs](https://quittio.dev/docs) · [Getting started](https://quittio.dev/docs/getting-started) · [Sample files](#sample-files)**
 
 > **Status:** version 1.0.0. Implemented: data model, calculation, validation L1–L7, CII/UBL writers and readers, ZUGFeRD/Factur-X PDF/A-3, XRechnung, Peppol BIS, the Laravel integration, the country pack Germany and the country packs Austria, Belgium, Switzerland and France (not reviewed by a tax adviser yet). The Managed layer (issuer profiles, drafts, gapless numbering, archive, cancellations, corrections, mail delivery, audit log) will follow as the separate commercial package `quittio/managed` for Laravel; it is not released yet. From 1.0 on, the public API changes only in major releases; the country packs without tax review are exempt until their review ([Versioning and compatibility](docs/compatibility.md)). The legal wording of the country pack Germany was reviewed by a tax adviser in October 2026 (see [Legal review](#legal-review) and [Disclaimer](#disclaimer)).
 
@@ -67,6 +78,12 @@ php artisan quittio:install
 | `cii`, `ubl` | Plain CII or UBL 2.1 XML in any profile |
 | `peppol` | UBL according to Peppol BIS Billing 3.0 |
 | `pdf`, `html`, `json` | PDF without XML, HTML preview, normalised data model |
+
+Without a format, Quittio picks one from the invoice data. For a German seller: ZUGFeRD for a business customer, XRechnung for a public authority with a Leitweg-ID, a PDF without XML for a consumer ([Formats and profiles](docs/formats.md#you-usually-do-not-choose-a-format)).
+
+### Sample files
+
+The invoice RE-2026-0042, created with Quittio and accepted by the KoSIT validator: [ZUGFeRD PDF (EN 16931)](https://quittio.dev/samples/RE-2026-0042.pdf), [XRechnung CII](https://quittio.dev/samples/RE-2026-0042-xrechnung-cii.xml), [XRechnung UBL](https://quittio.dev/samples/RE-2026-0042-xrechnung-ubl.xml), [Peppol BIS 3.0](https://quittio.dev/samples/RE-2026-0042-peppol.xml) and the [KoSIT report](https://quittio.dev/samples/RE-2026-0042-kosit.html) of the XRechnung.
 
 ## Quick example
 

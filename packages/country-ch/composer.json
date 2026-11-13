@@ -1,10 +1,11 @@
 {
     "name": "quittio/country-ch",
-    "description": "Quittio country pack for Switzerland: VAT presets and invoice requirements of the MWSTG, Swiss QR bill with payment part, 5 Rappen rounding.",
+    "description": "Quittio country pack for Switzerland: Swiss QR bill with payment part and receipt, VAT presets and invoice requirements of the MWSTG, 5 Rappen rounding, default interest. Not reviewed by a tax adviser yet.",
     "keywords": [
         "php",
-        "e-invoice",
+        "invoice",
         "qr-bill",
+        "swiss-qr-bill",
         "qr-rechnung",
         "mwst",
         "switzerland"

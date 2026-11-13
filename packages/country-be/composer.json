@@ -1,12 +1,16 @@
 {
     "name": "quittio/country-be",
-    "description": "Quittio country pack for Belgium: VAT presets and invoice mentions, Peppol BIS for domestic business invoices, enterprise numbers, default interest of the law of 2 August 2002.",
+    "description": "Quittio country pack for Belgium: Peppol BIS Billing 3.0 for the e-invoicing obligation of 2026, VAT presets and invoice mentions of Royal Decree No. 1, enterprise numbers, default interest of the law of 2 August 2002. Not reviewed by a tax adviser yet.",
     "keywords": [
         "php",
         "e-invoice",
+        "e-invoicing",
         "peppol",
+        "peppol-bis",
         "e-facture",
+        "e-factuur",
         "btw",
+        "tva",
         "belgium"
     ],
     "type": "library",

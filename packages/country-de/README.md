@@ -1,6 +1,6 @@
 # quittio/country-de
 
-Country pack Germany for Quittio: UStG mandatory fields, tax presets, XRechnung profiles and BR-DE rules, tax number checks, default interest and DIN 5008 letter layouts.
+Country pack Germany for Quittio: UStG mandatory fields, tax presets, XRechnung profiles and BR-DE rules, tax number checks, default interest and DIN 5008 letter layouts. Together with `quittio/core` it creates e-invoices for Germany (E-Rechnung): XRechnung 3.0 for public authorities with a Leitweg-ID and ZUGFeRD for businesses, chosen from the invoice data. Usable without Laravel.
 
 ```bash
 composer require quittio/country-de

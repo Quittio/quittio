@@ -1,6 +1,6 @@
 # quittio/laravel
 
-Laravel integration of Quittio: facade, configuration, Blade templates, Artisan commands and testing helpers.
+Laravel integration of Quittio: facade, configuration, Blade templates, queued rendering, mail attachments, Artisan commands and testing helpers. Create, validate and read e-invoices (ZUGFeRD / Factur-X, XRechnung, Peppol BIS) in a Laravel application.
 
 ```bash
 composer require quittio/laravel
