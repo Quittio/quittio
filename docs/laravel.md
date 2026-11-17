@@ -617,6 +617,7 @@ Add `auth` to `quittio.preview.middleware` (`['web', 'auth']`), so that guests a
 - It must return an instance of the expected interface, otherwise building the core fails with a `ConfigurationException`.
 - Unknown types throw an `InvalidArgumentException`.
 - `extend()` forgets the built core, so call it in the `boot()` method of a service provider.
+- A renderer registered as `mpdf` or `fagus` replaces the built-in renderer of that name.
 
 | Type | Interface | Used when | Configuration passed |
 |---|---|---|---|

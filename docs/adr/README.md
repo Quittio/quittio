@@ -11,5 +11,6 @@ A record is not changed once it is accepted. A new decision that replaces an old
 | [0003](0003-no-floats.md) | No floats for amounts, prices, rates and quantities | Accepted |
 | [0004](0004-open-core.md) | Open core: MIT packages and a separate Managed layer | Accepted |
 | [0005](0005-cancellation-sign-strategy.md) | Sign strategy of cancellations | Accepted, under legal review |
+| [0006](0006-fagus-as-optional-pdf-renderer.md) | Fagus as an optional PDF renderer for the mPDF templates | Accepted |
 
 New records: copy the structure of an existing one, take the next number, and add it to this table.

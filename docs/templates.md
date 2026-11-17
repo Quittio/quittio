@@ -26,7 +26,7 @@ Quittio ships one default design in two template engines. Both print the same do
 | Blade | `quittio::templates.default.layout` with partials in `quittio::templates.default.partials` | Laravel (`pdf.template`) |
 | Plain PHP | `packages/core/resources/templates/default.php` | `Quittio::create()` without Laravel (template `default`); Laravel falls back to it for names that are no Blade view |
 
-The PDF is created by mPDF, a PHP library that converts the HTML of the template into a PDF ([PDF renderers](#pdf-renderers)). To see the result with your configuration, render the sample invoices with `php artisan quittio:preview` or open the preview route ([HTML output and preview](#html-output-and-preview)).
+The PDF is created by mPDF, a PHP library that converts the HTML of the template into a PDF ([PDF renderers](#pdf-renderers)). Optionally, Fagus renders the same templates ([Fagus](#fagus)). To see the result with your configuration, render the sample invoices with `php artisan quittio:preview` or open the preview route ([HTML output and preview](#html-output-and-preview)).
 
 ### Page layout
 
@@ -46,6 +46,8 @@ When the line table continues on the next page, the default templates print a ru
 - The first row of the next page reads "Brought forward from page 1" (German "Übertrag von Seite 1") with the same amount.
 
 The mPDF renderer does this. It lays the document out once. Only if the line rows land on more than one page, it lays the document out again with space reserved for the carry rows, finds the page breaks, splits the table there and inserts the rows. Single-page documents are rendered once. Documents without prices (delivery notes) get no carry-over.
+
+The [Fagus renderer](#fagus) puts the carry rows into the head and the foot of the line table, where Fagus shows them only at page breaks; the document is laid out once.
 
 Own templates can use the same mechanism ([Carry-over in own templates](#carry-over-in-own-templates)).
 
@@ -267,6 +269,7 @@ $quittio = Quittio::create(['presentation' => new Presentation(font: 'corporate'
 - The Laravel renderer searches `pdf.font_directories`, then `resources/fonts/quittio` and its subdirectories automatically. Fonts placed there only need an entry in `pdf.fonts`.
 - Font files are taken from the first directory that has them. The configured directories come before the bundled fonts and those of mPDF, so a published and edited font replaces the bundled one.
 - Without Laravel, pass the fonts to the renderer: `new MpdfRenderer(tempDir: …, fonts: [...], fontDirectories: [...], defaultFont: 'corporate')`.
+- The [Fagus renderer](#fagus) takes the same settings and prints the same families with the same files.
 
 ### Letter layouts
 
@@ -300,7 +303,7 @@ A watermark marks drafts and previews: `->option('watermark', 'DRAFT')` or `Pres
 
 - Watermarked PDFs are rendered without PDF/A, because PDF/A does not allow the transparency of watermarks.
 - They never contain e-invoice XML. A watermark together with any format that produces XML (also next to `pdf` in `formats([...])`) throws a `ConfigurationException`, so a draft can never pass as an e-invoice.
-- The default templates print it with mPDF's `<watermarktext>` (alpha 0.08) and, for browsers, as rotated CSS overlay (`design.watermarkCss`).
+- The default templates print it with mPDF's `<watermarktext>` (alpha 0.08) and, for browsers, as rotated CSS overlay (`design.watermarkCss`). The [Fagus renderer](#fagus) prints the `<watermarktext>` and leaves the overlay out.
 - The labels `draft` and `preview` can be used as text: "DRAFT" and "PREVIEW", in German "ENTWURF" (draft) and "VORSCHAU" (preview).
 
 ### Payment QR codes
@@ -505,6 +508,8 @@ mPDF supports only part of CSS. Follow these rules:
 - Use `page-break-inside: avoid` for the totals block.
 - Images as PNG or JPEG; fonts must be embeddable.
 
+Templates that follow these rules also render with [Fagus](#fagus), which translates the mPDF constructs into standard CSS.
+
 ### Other template engines
 
 Other engines (Twig …) implement `Quittio\Core\Templates\TemplateEngine::render(string $template, InvoiceViewModel $invoice, array $data = []): string`. Pass them to `Quittio::create(templates: …)` or `$quittio->setTemplateEngine(…)`.
@@ -516,6 +521,7 @@ A renderer turns the HTML of the template into the PDF (design level 4).
 | Renderer | Use |
 |---|---|
 | `MpdfRenderer` (default) | HTML to PDF/A-3b with mPDF in pure PHP; embeds the XML and writes the XMP metadata (the document description PDF/A requires) in one pass |
+| `FagusRenderer` | HTML to PDF/A-3b with Fagus, a binary next to PHP; the same templates, embedding and metadata by Fagus ([Fagus](#fagus)). Needs `composer require nforst/fagus` |
 | `CallbackRenderer(Closure $callback)` | Own rendering (Browsershot, Gotenberg …): `fn (string $html, RenderRequest $request): string` returns the PDF; PDF/A, metadata and the XML are added by `MpdfPostProcessor` |
 | `PassthroughRenderer(string $pdf)` | A finished PDF of the application; only PDF/A and the XML are added |
 
@@ -545,7 +551,7 @@ The factory receives the container and `pdf.renderers.{name}`. Without Laravel, 
 
 A renderer implements `PdfRenderer` with `render(RenderRequest $request): string` and `supportsEmbedding(): bool`:
 
-- `supportsEmbedding()` returns `true` when the renderer creates the PDF/A and embeds the XML itself (`MpdfRenderer`, and `CallbackRenderer`/`PassthroughRenderer` through their post processor).
+- `supportsEmbedding()` returns `true` when the renderer creates the PDF/A and embeds the XML itself (`MpdfRenderer`, `FagusRenderer`, and `CallbackRenderer`/`PassthroughRenderer` through their post processor).
 - For `false`, Quittio passes the PDF to `MpdfPostProcessor` whenever the request asks for PDF/A or an embedded XML, so a plain HTML-to-PDF renderer is enough.
 - `RenderRequest` holds `html`, `title`, `author`, `subject`, `paper`, `pdfa`, `embedded` (`EmbeddedXml`: `content`, `filename`, `relationship`, `conformanceLevel`, `description`, `documentType`, `version`) and `font`.
 - The post processor imports the pages with FPDI (a PHP library that reads existing PDFs). The result is PDF/A only if the source PDF allows it (embedded fonts, no encryption, no JavaScript), so check it with [veraPDF](validation.md#verapdf-l6), a validator for PDF/A.
@@ -560,6 +566,85 @@ mPDF settings of `MpdfRenderer`:
 - `pdf.cache_path` as temporary directory (without Laravel `temp_dir`, default `sys_get_temp_dir()/quittio-mpdf`).
 
 mPDF cannot load anything over HTTP (a denying HTTP client is installed), has no remote base path and does not follow redirects. Remote resources of a template are rendered as missing.
+
+### Fagus
+
+[Fagus](https://fagus.niklasforst.de) is an engine for HTML and CSS to PDF that implements CSS Paged Media and prints like Chrome, without a browser. It runs as a binary next to PHP and writes PDF/A-3b and ZUGFeRD/Factur-X itself. `FagusRenderer` renders the same templates as mPDF with it. mPDF stays the default: Fagus is opt-in, because it adds a binary to the installation and is still a 0.x release.
+
+Install the package. Its Composer plugin downloads the binary for the platform (see the [Fagus documentation](https://fagus.niklasforst.de/docs) for servers without download):
+
+```bash
+composer require nforst/fagus
+```
+
+Then select the renderer:
+
+```php laravel
+// config/quittio.php
+'pdf' => [
+    'renderer' => 'fagus',
+    'renderers' => ['fagus' => ['binary' => env('FAGUS_BINARY'), 'timeout' => 60]],
+],
+```
+
+```php plain
+use Quittio\Core\Pdf\Renderers\FagusRenderer;
+use Quittio\Core\Quittio;
+use Quittio\Country\DE\CountryDE;
+
+$quittio = Quittio::create([], [new CountryDE], renderer: new FagusRenderer(
+    fonts: ['corporate' => ['R' => 'Corporate-Regular.ttf', 'B' => 'Corporate-Bold.ttf']],
+    fontDirectories: [__DIR__.'/fonts'],
+    defaultFont: 'geist',
+    binary: null,
+    timeout: 60.0,
+));
+```
+
+- `fonts`, `fontDirectories` and `defaultFont` are those of `MpdfRenderer` ([Fonts](#fonts)); in Laravel `pdf.fonts`, `pdf.font_directories` and `pdf.font`. Font directories that do not exist are skipped.
+- `binary` is the path of the `fagus` binary (`pdf.renderers.fagus.binary`). `null` takes `FAGUS_BINARY`, the binary the package installed, or `fagus` on the `PATH`.
+- `timeout` is the number of seconds the renderer waits for each answer of the Fagus worker (`pdf.renderers.fagus.timeout`, default 60).
+- The renderer starts the Fagus worker process with the first document and keeps it running for the next ones, e.g. in a queue worker.
+- Without `nforst/fagus`, creating the renderer (or the Laravel core with `pdf.renderer = 'fagus'`) fails with a `ConfigurationException` that asks for `composer require nforst/fagus`. A failed render throws a `PdfException`.
+
+#### What the renderer translates
+
+Templates keep the mPDF markup. Before rendering, `FagusRenderer` translates it into standard CSS, so the default templates and own templates written for mPDF work unchanged:
+
+| mPDF | With Fagus |
+|---|---|
+| `<htmlpageheader name="x">`, `<htmlpagefooter name="x">` | Running elements (`position: running()`) |
+| `@page { header: html_x; footer: html_y; }` (also `odd-header-name`, `odd-footer-name`) | The margin boxes `@top-center` and `@bottom-center` with `content: element()`; other values print no header or footer |
+| `margin-header`, `margin-footer` in `@page` | The distance of the header from the top edge and of the footer from the bottom edge |
+| `sheet-size` in `@page` | `size` |
+| `{PAGENO}`, `{nbpg}`, `{nb}` | `counter(page)`, `counter(pages)` |
+| `<pagebreak />`, `<formfeed />`, `<newpage />` | A page break |
+| `<pagebreak page-selector="slip" />` | A block on the named page `slip` up to the next page selector. Its first page has the header and footer of `@page :first`, as in mPDF. |
+| `position: absolute` or `fixed` on a child of `<body>` | Placed from the edges of the sheet on the page where it is, as by mPDF |
+| `<watermarktext content="…" alpha="…" />` | The text at 45 degrees on every page, not in PDF/A (as with mPDF); a `body::before` overlay of the template is left out |
+| [Carry-over](#carry-over-in-own-templates) markers | Rows of the table head and foot that Fagus shows only at page breaks, with the running total from `data-carry-over` |
+| The paper size, mPDF's page margins (20, 15, 20 and 25 mm, header and footer 8 mm) and mPDF's default stylesheet | Applied before the template's own styles |
+| The font families of mPDF (`geist`, `geistmedium`, `inter`, `liberationsans`, `pdf.fonts`) | `@font-face` rules with the same files |
+| Title, author and subject of the `RenderRequest` | `<title>`, `<meta name="author">` and `<meta name="description">` |
+
+Not translated: `<tocpagebreak>`, `<columns>`, `<barcode>`, `<bookmark>`, `<annotation>`, `<watermarkimage>`, `<sethtmlpageheader>`, the attributes of `<pagebreak>` other than `page-selector`, the margins of `@page :first` on the first page of a named page, `even-header-name` and `even-footer-name` (`MpdfRenderer` prints the odd ones on every page as well), and the fonts that come with mPDF (DejaVu, FreeSans …) unless their directory is a font directory.
+
+#### Differences from mPDF
+
+The pages break at the same places as with mPDF for the default templates, and the documents look alike. Remaining differences:
+
+- Fagus applies all of CSS, mPDF only part of it. Rules mPDF ignores take effect: the receipt of the Swiss QR bill prints its headings and values at 6 and 8 pt (`.receipt .slip-heading`, `.receipt .slip-value`), mPDF at the 8 and 10 pt of the payment part. A template may also use flexbox and grid, but then prints differently with mPDF.
+- A table row that does not fit on the page breaks across the page, as in browsers. mPDF moves the whole row to the next page, so an invoice line with a long description can start a page later there. The carry-over at such a break shows the running total including the broken line.
+- Text is kerned and the widths of table columns without a fixed width are computed as in browsers, so text can wrap at other places (e.g. a long label in the totals).
+- Positioned elements of `<body>` are drawn over the page content.
+- The watermark is centred on the page area, not on the sheet.
+- For XRechnung in a PDF, Fagus writes the XMP version `1.0` and the description "Factur-X/ZUGFeRD invoice" (mPDF: `3.0` and "XRechnung Invoice"). The file name `xrechnung.xml`, the conformance level `XRECHNUNG` and the embedded XML are the same. File name, relationship, description and version of the `EmbeddedXml` come from Fagus' profile; the profile comes from `conformanceLevel` (or from the XML when it is unknown).
+- The metadata have no creator "Quittio"; the producer is "Fagus".
+- A multi-page invoice is laid out once instead of up to three times, so rendering is faster.
+
+#### Files and network
+
+Like mPDF, Fagus loads nothing over the network, and it reads no files of its own accord. `FagusRenderer` hands over only images that the HTML names by a local path (as the logo prepared by the [logo cache](#logos)), at most 10 MB and only if they are PNG, JPEG, GIF, WebP or SVG images. `data:` URIs work as in mPDF. Other files and `http(s)` URLs of a template are rendered as missing.
 
 ## View model
 

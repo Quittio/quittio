@@ -4,6 +4,10 @@ All notable changes to this project are documented in this file. The format foll
 
 ## [Unreleased]
 
+### Added
+
+- Fagus as optional PDF renderer: `Quittio\Core\Pdf\Renderers\FagusRenderer`, in Laravel `pdf.renderer = 'fagus'` with `pdf.renderers.fagus.binary` and `timeout`. It renders the same templates as mPDF with [Fagus](https://fagus.niklasforst.de), an engine for CSS Paged Media that runs as a binary, and writes PDF/A-3b and ZUGFeRD/Factur-X itself. The mPDF markup of the templates (page headers and footers, page numbers, page breaks and named pages, positioned elements, the watermark and the carry-over rows) is translated into standard CSS at render time, so the default templates and own templates work unchanged. The package `nforst/fagus` is suggested, not required; mPDF stays the default. See [Fagus](docs/templates.md#fagus) for what is translated and how the output differs from mPDF.
+
 ## [1.0.0] - 2026-10-27
 
 Quittio 1.0 removes what the 0.x releases deprecated and fixes the public API: from 1.0 on, only a major release breaks it. The [upgrade guide](docs/upgrading.md) lists every break with what to do.
