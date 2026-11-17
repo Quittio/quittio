@@ -51,6 +51,7 @@
         "setasign/fpdi": "^2.6"
     },
     "require-dev": {
+        "nforst/fagus": "^0.1.0",
         "opis/json-schema": "^2.6",
         "pestphp/pest": "^4.7 || ^5.0",
         "quittio/country-de": "self.version",
@@ -61,7 +62,8 @@
         "ext-zip": "Unpack the KoSIT validator configuration (quittio:schemas:download)",
         "opis/json-schema": "Validate JSON input against the shipped invoice schema",
         "quittio/laravel": "Laravel integration with Blade templates, facade, commands and testing helpers",
-        "quittio/country-de": "Country pack for Germany (UStG, XRechnung, DIN 5008)"
+        "quittio/country-de": "Country pack for Germany (UStG, XRechnung, DIN 5008)",
+        "nforst/fagus": "Fagus as PDF renderer (FagusRenderer): HTML and CSS to PDF with a binary instead of mPDF"
     },
     "autoload": {
         "psr-4": {
@@ -85,7 +87,8 @@
     "config": {
         "sort-packages": true,
         "allow-plugins": {
-            "pestphp/pest-plugin": true
+            "pestphp/pest-plugin": true,
+            "nforst/fagus": true
         }
     }
 }

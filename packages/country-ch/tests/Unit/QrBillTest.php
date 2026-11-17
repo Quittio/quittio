@@ -2,11 +2,14 @@
 
 declare(strict_types=1);
 
+use Fagus\Engine;
+use Fagus\Fagus;
 use Quittio\Core\Calculation\En16931Calculator;
 use Quittio\Core\Data\Presentation\Presentation;
 use Quittio\Core\Documents\DocumentBuilder;
 use Quittio\Core\Documents\DocumentCalculator;
 use Quittio\Core\Enums\PaymentMeansCode;
+use Quittio\Core\Pdf\Renderers\FagusRenderer;
 use Quittio\Core\Quittio;
 use Quittio\Core\Validation\ValidationLevel;
 use Quittio\Core\View\ViewContext;
@@ -152,3 +155,41 @@ it('keeps PDF/A-3b with the payment part, according to veraPDF', function (strin
 
     return $code !== 0 && getenv('CI') !== 'true';
 }, 'Docker image verapdf/cli is not available.');
+
+it('prints the payment part at the bottom of a page of its own with Fagus, without header and footer', function () {
+    $pdf = Quittio::create([], [new CountryCH])->setRenderer(new FagusRenderer)->make(Swiss::calculated(Swiss::invoice()))->format('pdf')->render()->pdf();
+    $file = tempnam(sys_get_temp_dir(), 'quittio-ch-');
+    file_put_contents((string) $file, $pdf);
+    exec('pdftotext -layout '.escapeshellarg((string) $file).' -', $text);
+    exec('pdftotext -f 2 -l 2 -bbox '.escapeshellarg((string) $file).' -', $boxes);
+    unlink((string) $file);
+    $pages = explode("\f", rtrim(implode("\n", $text), "\f"));
+    // The top of the word in millimetres from the top of the sheet.
+    $top = static function (string $word) use ($boxes): ?float {
+        foreach ($boxes as $line) {
+            if (preg_match('/yMin="([0-9.]+)".*>'.preg_quote($word, '/').'</', $line, $m) === 1) {
+                return (float) $m[1] / 72 * 25.4;
+            }
+        }
+
+        return null;
+    };
+
+    expect($pages)->toHaveCount(2)
+        ->and($pages[0])->toContain('Seite 1 von 2')
+        ->and($pages[1])->toContain('Empfangsschein')
+        ->and($pages[1])->toContain('Zahlteil')
+        // As with mPDF, the page of the slip is a first page: no header, and no footer.
+        ->and($pages[1])->not->toContain('Seite 2')
+        ->and($pages[1])->not->toContain('Rechnung RE-2026-0042')
+        // The slip takes the bottom 105 mm of the sheet: its titles 5 mm below its top edge.
+        ->and($top('Zahlteil'))->toBeGreaterThan(196.0)->toBeLessThan(199.0)
+        ->and($top('Empfangsschein'))->toBeGreaterThan(196.0)->toBeLessThan(199.0);
+})->skip(function () {
+    exec('command -v pdftotext', $output, $code);
+    try {
+        return $code !== 0 || ! class_exists(Fagus::class) || ! function_exists('imagecreatetruecolor') || (new Engine)->version() === '';
+    } catch (Throwable) {
+        return true;
+    }
+}, 'nforst/fagus, its binary, poppler or GD is not installed.');

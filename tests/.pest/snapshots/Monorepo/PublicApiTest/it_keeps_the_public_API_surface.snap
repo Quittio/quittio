@@ -3178,6 +3178,17 @@
             "public sendRequest(Psr\\Http\\Message\\RequestInterface $request): never"
         ]
     },
+    "Quittio\\Core\\Pdf\\Renderers\\FagusRenderer": {
+        "kind": "final class",
+        "implements": [
+            "Quittio\\Core\\Pdf\\PdfRenderer"
+        ],
+        "methods": [
+            "public __construct(array $fonts = [], array $fontDirectories = [], string $defaultFont = \"geist\", ?string $binary = null, float $timeout = 60)",
+            "public render(Quittio\\Core\\Pdf\\RenderRequest $request): string",
+            "public supportsEmbedding(): bool"
+        ]
+    },
     "Quittio\\Core\\Pdf\\Renderers\\MpdfRenderer": {
         "kind": "final class",
         "implements": [
