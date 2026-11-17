@@ -140,7 +140,8 @@ return [
     */
     'pdf' => [
 
-        // PDF engine: 'mpdf' (bundled) or a renderer registered with Quittio::extend('renderer', …).
+        // PDF engine: 'mpdf' (bundled), 'fagus' (needs composer require nforst/fagus) or a
+        // renderer registered with Quittio::extend('renderer', …).
         'renderer' => 'mpdf',
 
         // Blade view of the invoice layout. Publish and change the default template with
@@ -220,8 +221,11 @@ return [
 
         // Options of the PDF engines. mPDF: simple_tables drops the borders of table cells
         // (keep it off); pdfa_auto lets mPDF correct PDF/A errors instead of failing.
+        // Fagus: binary = path of the fagus binary (null = FAGUS_BINARY or the binary installed
+        // with nforst/fagus); timeout = seconds to wait for each answer of its worker process.
         'renderers' => [
             'mpdf' => ['simple_tables' => false, 'pdfa_auto' => false],
+            'fagus' => ['binary' => env('FAGUS_BINARY'), 'timeout' => 60],
         ],
     ],
 

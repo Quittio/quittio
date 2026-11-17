@@ -21,6 +21,7 @@ use Quittio\Core\Formats\DefaultFormatResolver;
 use Quittio\Core\Formats\FormatResolver;
 use Quittio\Core\Pdf\PdfRenderer;
 use Quittio\Core\Pdf\Qr\PaymentQrGenerator;
+use Quittio\Core\Pdf\Renderers\FagusRenderer;
 use Quittio\Core\Pdf\Renderers\MpdfRenderer;
 use Quittio\Core\Quittio;
 use Quittio\Core\Validation\Drivers\PhpRulesDriver;
@@ -159,8 +160,8 @@ final readonly class CoreFactory
         if ($this->drivers->has('renderer', $name)) {
             return $this->drivers->make('renderer', $name, $this->container, $settings->array('pdf.renderers.'.$name), PdfRenderer::class);
         }
-        if ($name !== 'mpdf') {
-            throw new ConfigurationException(sprintf('Unknown PDF renderer "%s". Register it with Quittio::extend(\'renderer\', ...).', $name));
+        if ($name !== 'mpdf' && $name !== 'fagus') {
+            throw new ConfigurationException(sprintf('Unknown PDF renderer "%s". Use "mpdf" or "fagus", or register it with Quittio::extend(\'renderer\', ...).', $name));
         }
 
         $fonts = [];
@@ -170,6 +171,21 @@ final readonly class CoreFactory
                     $fonts[$family][(string) $style] = $file;
                 }
             }
+        }
+
+        if ($name === 'fagus') {
+            $timeout = $options->get('timeout', 60);
+            if (! is_int($timeout) && ! is_float($timeout)) {
+                throw new ConfigurationException('quittio.pdf.renderers.fagus.timeout must be a number of seconds.');
+            }
+
+            return new FagusRenderer(
+                fonts: $fonts,
+                fontDirectories: $this->fontDirectories($settings),
+                defaultFont: $settings->string('pdf.font', 'geist'),
+                binary: $options->nullableString('binary'),
+                timeout: (float) $timeout,
+            );
         }
 
         return new MpdfRenderer(
