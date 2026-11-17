@@ -4,9 +4,11 @@ All notable changes to this project are documented in this file. The format foll
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-18
+
 ### Added
 
-- Fagus as optional PDF renderer: `Quittio\Core\Pdf\Renderers\FagusRenderer`, in Laravel `pdf.renderer = 'fagus'` with `pdf.renderers.fagus.binary` and `timeout`. It renders the same templates as mPDF with [Fagus](https://fagus.niklasforst.de), an engine for CSS Paged Media that runs as a binary, and writes PDF/A-3b and ZUGFeRD/Factur-X itself. The mPDF markup of the templates (page headers and footers, page numbers, page breaks and named pages, positioned elements, the watermark and the carry-over rows) is translated into standard CSS at render time, so the default templates and own templates work unchanged. The package `nforst/fagus` is suggested, not required; mPDF stays the default. See [Fagus](docs/templates.md#fagus) for what is translated and how the output differs from mPDF.
+- Fagus as optional PDF renderer: `Quittio\Core\Pdf\Renderers\FagusRenderer`, in Laravel `pdf.renderer = 'fagus'` with `pdf.renderers.fagus.binary` and `timeout`. It renders the same templates as mPDF with [Fagus](https://fagus.niklasforst.de), an engine for CSS Paged Media that runs as a binary, and writes PDF/A-3b and ZUGFeRD/Factur-X itself. The mPDF markup of the templates (page headers and footers, page numbers, page breaks and named pages, positioned elements, the watermark and the carry-over rows) is translated into standard CSS at render time, so the default templates and own templates work unchanged. The package `nforst/fagus` is suggested, not required; mPDF stays the default. It needs `nforst/fagus` 0.2 or newer (older versions conflict). See [Fagus](docs/templates.md#fagus) for what is translated and how the output differs from mPDF.
 
 ## [1.0.0] - 2026-10-27
 
@@ -401,7 +403,8 @@ First release.
 - `pdf.paper` and the VIES verification (`validation.drivers.vies.enabled`) take effect; file names of XML-only formats no longer contain a raw translation key.
 - Watermarks (draft and preview PDFs) were never printed: mPDF needs `showWatermarkText`, and PDF/A forbids their transparency. Watermarked PDFs without embedded XML are now rendered without PDF/A.
 
-[Unreleased]: https://github.com/Quittio/quittio/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/Quittio/quittio/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/Quittio/quittio/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/Quittio/quittio/compare/v0.8.0...v1.0.0
 [0.8.0]: https://github.com/Quittio/quittio/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/Quittio/quittio/compare/v0.7.0...v0.7.1
