@@ -147,9 +147,8 @@ it('embeds XRechnung under its file name and conformance level', function () {
     expect((new PdfEmbeddedFileExtractor)->extract($pdf))->toBe(['xrechnung.xml', $result->xml()])
         ->and($pdf)->toContain('<fx:DocumentFileName>xrechnung.xml</fx:DocumentFileName>')
         ->and($pdf)->toContain('<fx:ConformanceLevel>XRECHNUNG</fx:ConformanceLevel>')
-        // Fagus writes the Factur-X version and its own description, not those of XRechnung
-        // (3.0, "XRechnung Invoice") as MpdfRenderer does.
-        ->and($pdf)->toContain('<fx:Version>1.0</fx:Version>');
+        // The version of XRechnung, as MpdfRenderer writes it.
+        ->and($pdf)->toContain('<fx:Version>3.0</fx:Version>');
 })->skip(fn () => ! fagusAvailable(), 'nforst/fagus or its binary is not installed.');
 
 it('keeps PDF/A-3b according to veraPDF', function (string $format) {

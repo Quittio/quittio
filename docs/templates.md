@@ -638,7 +638,7 @@ The pages break at the same places as with mPDF for the default templates, and t
 - Text is kerned and the widths of table columns without a fixed width are computed as in browsers, so text can wrap at other places (e.g. a long label in the totals).
 - Positioned elements of `<body>` are drawn over the page content.
 - The watermark is centred on the page area, not on the sheet.
-- For XRechnung in a PDF, Fagus writes the XMP version `1.0` and the description "Factur-X/ZUGFeRD invoice" (mPDF: `3.0` and "XRechnung Invoice"). The file name `xrechnung.xml`, the conformance level `XRECHNUNG` and the embedded XML are the same. File name, relationship, description and version of the `EmbeddedXml` come from Fagus' profile; the profile comes from `conformanceLevel` (or from the XML when it is unknown).
+- The XMP version and the description of the embedded XML are those of the `EmbeddedXml`, as with mPDF (for XRechnung `3.0` and "XRechnung Invoice"). File name and relationship come from Fagus' profile and are the same as with mPDF; the profile comes from `conformanceLevel` (or from the XML when it is unknown).
 - The metadata have no creator "Quittio"; the producer is "Fagus".
 - A multi-page invoice is laid out once instead of up to three times, so rendering is faster.
 

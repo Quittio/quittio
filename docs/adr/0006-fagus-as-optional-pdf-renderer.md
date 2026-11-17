@@ -27,5 +27,4 @@ There is one template set for both renderers. `FagusRenderer` translates the mPD
 - Applications can switch with one configuration value and keep their templates; switching back is the same value.
 - The converter supports the constructs the default templates use and the common ones of mPDF; others (`<columns>`, `<barcode>`, `<tocpagebreak>` …) are left as they are and documented as not translated. Its tests cover each construct, and the renderer tests compare the page breaks with mPDF.
 - The output differs from mPDF where mPDF ignores CSS or breaks differently (table rows across pages, kerning, column widths); the differences are documented in [templates.md](../templates.md#fagus).
-- For XRechnung in a PDF, Fagus writes its own XMP version and description, which differ from those of `MpdfRenderer`.
-- Work-arounds for Fagus 0.1 (separate borders on the line table, the header of the first page of a named page) live in the converter and can go when Fagus changes.
+- Work-arounds for Fagus 0.2 (separate borders on the line table, the header of the first page of a named page) live in the converter and can go when Fagus changes.

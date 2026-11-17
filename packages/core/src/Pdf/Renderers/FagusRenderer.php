@@ -81,7 +81,12 @@ final class FagusRenderer implements PdfRenderer
                 $document = $document->resource($url, $data);
             }
             if ($request->embedded !== null) {
-                $document = $document->facturX($request->embedded->content, self::profile($request->embedded->conformanceLevel));
+                $document = $document->facturX(
+                    $request->embedded->content,
+                    self::profile($request->embedded->conformanceLevel),
+                    version: $request->embedded->version,
+                    description: $request->embedded->description,
+                );
             } elseif ($request->pdfa) {
                 $document = $document->pdfA(Conformance::PdfA3b);
             }
