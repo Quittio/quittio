@@ -59,6 +59,18 @@ function publicApiOwned(string $class): bool
     return false;
 }
 
+/**
+ * Whether the method comes from a trait of another package (such as Laravel's queue traits): its
+ * methods change with that package's version and are not part of Quittio's API.
+ */
+function publicApiFromForeignTrait(ReflectionMethod $method): bool
+{
+    $file = $method->getFileName();
+    $packages = realpath(dirname(__DIR__, 2).'/packages');
+
+    return $file !== false && $packages !== false && ! str_starts_with((string) realpath($file), $packages.DIRECTORY_SEPARATOR);
+}
+
 function publicApiDefault(ReflectionParameter $parameter): string
 {
     if (! $parameter->isDefaultValueAvailable()) {
@@ -116,7 +128,7 @@ function publicApiOf(string $class): array
     $methods = [];
     foreach ($reflection->getMethods() as $method) {
         $visible = $method->isPublic() || ($extensible && $method->isProtected());
-        if (! $visible || publicApiIsInternal($method) || ! publicApiOwned($method->getDeclaringClass()->getName())) {
+        if (! $visible || publicApiIsInternal($method) || ! publicApiOwned($method->getDeclaringClass()->getName()) || publicApiFromForeignTrait($method)) {
             continue;
         }
         $methods[] = publicApiMethod($method);
