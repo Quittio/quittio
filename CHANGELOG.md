@@ -7,6 +7,8 @@ All notable changes to this project are documented in this file. The format foll
 ### Changed
 
 - `FagusRenderer` gives the first page after a `<pagebreak page-selector>` all rules of `@page :first` (also its top and bottom margins), as mPDF does, with a page group (`@page name:nth(1 of name)`) instead of running elements at the start of the section. A `<pagebreak />` without page selector no longer starts a new page group. This needs Fagus 0.3.
+- `FagusRenderer` places positioned elements of `<body>` that lie in the page area of their page (the address field, the payment slip) in the page area instead of a margin box, so that the tagged PDF keeps them as content that screen readers read; margin boxes are artifacts. Elements in the page margins, such as fold and punch marks, stay in the layer over the sheet.
+- The default templates give the page of the payment slip no page margins (`@page slip { margin: 0; }`), so that the slip lies in its page area. mPDF prints it as before. Published templates keep their slip, which Fagus then draws partly in the layer over the sheet.
 
 ## [1.1.0] - 2026-11-18
 

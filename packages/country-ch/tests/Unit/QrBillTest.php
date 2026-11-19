@@ -162,6 +162,7 @@ it('prints the payment part at the bottom of a page of its own with Fagus, witho
     file_put_contents((string) $file, $pdf);
     exec('pdftotext -layout '.escapeshellarg((string) $file).' -', $text);
     exec('pdftotext -f 2 -l 2 -bbox '.escapeshellarg((string) $file).' -', $boxes);
+    exec('pdfinfo -struct-text '.escapeshellarg((string) $file), $structure);
     unlink((string) $file);
     $pages = explode("\f", rtrim(implode("\n", $text), "\f"));
     // The top of the word in millimetres from the top of the sheet.
@@ -184,7 +185,11 @@ it('prints the payment part at the bottom of a page of its own with Fagus, witho
         ->and($pages[1])->not->toContain('Rechnung RE-2026-0042')
         // The slip takes the bottom 105 mm of the sheet: its titles 5 mm below its top edge.
         ->and($top('Zahlteil'))->toBeGreaterThan(196.0)->toBeLessThan(199.0)
-        ->and($top('Empfangsschein'))->toBeGreaterThan(196.0)->toBeLessThan(199.0);
+        ->and($top('Empfangsschein'))->toBeGreaterThan(196.0)->toBeLessThan(199.0)
+        // In the page area, not in a margin box: content of the tagged PDF, which screen readers read.
+        ->and(implode("\n", $structure))->toContain('"Empfangsschein"')
+        ->toContain('"Zahlteil"')
+        ->toContain('"Annahmestelle"');
 })->skip(function () {
     exec('command -v pdftotext', $output, $code);
     try {

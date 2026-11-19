@@ -100,6 +100,34 @@ it('prints the letterhead, the footer with page numbers and the fonts of the tem
         ->and($fonts)->toContain('Geist-SemiBold');
 })->skip(fn () => ! fagusAvailable() || ! fagusPoppler(), 'nforst/fagus, its binary or poppler is not installed.');
 
+it('places the address field of the letter layout in the page area, as content of the tagged PDF', function (string $layout, float $top) {
+    $pdf = fagusQuittio()->make(Scenarios::make('simple')->build())->format('pdf')->presentation(new Presentation(letterLayout: $layout))->validate(false)->render()->pdf();
+    $structure = implode("\n", fagusPopplerOutput('pdfinfo -struct-text', $pdf));
+    // Top and left edge in millimetres of the first word on the sheet.
+    $edges = static function (string $word) use ($pdf): array {
+        foreach (fagusPopplerOutput('pdftotext -bbox', $pdf) as $line) {
+            if (preg_match('/xMin="([0-9.]+)" yMin="([0-9.]+)".*>'.preg_quote($word, '/').'</', $line, $m) === 1) {
+                return [(float) $m[2] / 72 * 25.4, (float) $m[1] / 72 * 25.4];
+            }
+        }
+
+        return [0.0, 0.0];
+    };
+    [$senderTop] = $edges('Musterstadt');
+    [$recipientTop, $left] = $edges('Kunde');
+
+    // Not an artifact of the margin boxes: screen readers read the address.
+    expect($structure)->toContain('"Muster GmbH · Hauptstraße 1 · 12345 Musterstadt"')
+        ->and($structure)->toContain('"Kunde AG"')
+        ->and($structure)->toContain('"54321 Beispielstadt"')
+        ->and($left)->toBeGreaterThan(19.5)->toBeLessThan(20.5)
+        ->and($senderTop)->toBeGreaterThan($top - 0.5)->toBeLessThan($top + 1.5)
+        ->and($recipientTop)->toBeGreaterThan($top + 6.5)->toBeLessThan($top + 9.0);
+})->with([
+    'DIN 5008 form A' => ['din5008a', 27.0],
+    'DIN 5008 form B' => ['din5008b', 45.0],
+])->skip(fn () => ! fagusAvailable() || ! fagusPoppler(), 'nforst/fagus, its binary or poppler is not installed.');
+
 it('breaks a long line table at the same rows as mPDF, with the carry-over and the running header', function () {
     $invoice = Scenarios::make('many-lines')->build();
     $fagus = fagusPages(fagusQuittio()->make($invoice)->format('pdf')->validate(false)->render()->pdf());

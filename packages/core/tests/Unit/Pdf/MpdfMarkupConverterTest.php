@@ -138,6 +138,57 @@ it('draws positioned children of the body in a layer over the sheet of their pag
         .'<div class="box"><div class="mark"></div></div>');
 });
 
+it('places positioned elements before the content of a page in its page area, with the margins of that page', function () {
+    $body = convertedBody(mpdfMarkup(
+        '<watermarktext content="X" /><div class="mark" style="top: 105mm"></div> <div class="address">Address</div><p>Flow</p>'
+        .'<pagebreak page-selector="slip" /><div class="slip" style="top: 192mm; left: 5mm; width: 200mm; height: 105mm">Slip</div>'
+        .'<pagebreak /><div class="slip" style="top: 50mm; left: 30mm; position: fixed">Next</div>',
+        '@page { margin: 40mm 19mm 37mm 20mm; } @page :first { margin-top: 15mm; margin-left: 30mm; } @page slip { margin: 0; margin-top: 1cm; } '
+        .'.mark { position: absolute; left: 0; width: 4.2mm; } .address { position: absolute; top: 45mm; left: 30mm; width: 85mm; height: 45mm; } .slip { position: absolute; }',
+    ));
+
+    $area = static fn (string $elements): string => '<div class="mpdf-area" style="position: relative; display: flow-root; height: 0;">'.$elements.'</div>';
+
+    // The fold mark lies in the page margin: in the layer over the sheet. The address from the
+    // edges of the page area of the first page (its top and left margins come from :first).
+    expect($body)->toContain('<div class="mpdf-sheet" style="position: running(mpdf-sheet);"><div style="position: relative; width: 210mm; height: 297mm;"><div class="mark" style="top: 105mm"></div></div></div><div style="position: running(mpdf-sheet);"></div> '
+        .$area('<div class="address" style="top: 30mm !important; left: 0mm !important;">Address</div>').'<p>Flow</p>')
+        // The first page of a named page: :first without its left margin, then the named page.
+        ->and($body)->toContain('page: slip;">'.$area('<div class="slip" style="top: 192mm; left: 5mm; width: 200mm; height: 105mm; top: 182mm !important; left: 5mm !important;">Slip</div>'))
+        // The following pages of the named page; fixed like absolute.
+        ->and($body)->toContain('<div class="mpdf-page" style="break-before: page;"></div>'
+            .$area('<div class="slip" style="top: 50mm; left: 30mm; position: fixed; position: absolute; top: 40mm !important; left: 30mm !important;">Next</div>'));
+});
+
+it('draws positioned elements in the layer over the sheet unless they lie in the page area of a known page', function (string $style, string $before = '') {
+    $body = convertedBody(mpdfMarkup($before.'<div style="position: absolute; '.$style.'">X</div>', '@page { margin: 20mm; }'));
+
+    expect($body)->toContain('mpdf-sheet')
+        ->and($body)->not->toContain('mpdf-area');
+})->with([
+    'in the left margin' => ['top: 30mm; left: 10mm;'],
+    'in the top margin' => ['top: 10mm; left: 30mm;'],
+    'reaching into the right margin' => ['top: 30mm; left: 30mm; width: 170mm;'],
+    'reaching into the bottom margin' => ['top: 250mm; left: 30mm; height: 40mm;'],
+    'below the page area' => ['top: 280mm; left: 30mm;'],
+    'without left' => ['top: 30mm;'],
+    'with right' => ['top: 30mm; left: 30mm; right: 30mm;'],
+    'with bottom' => ['top: 30mm; left: 30mm; bottom: 30mm;'],
+    'in relative units' => ['top: 10%; left: 30mm;'],
+    'with a width in relative units' => ['top: 30mm; left: 30mm; width: 50%;'],
+    'after content of the page' => ['top: 30mm; left: 30mm;', '<p>Flow</p>'],
+    'on a page of unknown size' => ['top: 30mm; left: 30mm;', '<pagebreak page-selector="wide" /><style>@page wide { size: auto; }</style>'],
+]);
+
+it('reads the page size and margins of the page in absolute units', function () {
+    $body = convertedBody(mpdfMarkup(
+        '<pagebreak page-selector="wide" /><div style="position: absolute; top: 1in; left: 72pt; width: 240mm">Wide</div>',
+        '@page wide { sheet-size: A4-L; margin: 0.5in 96px 2cm 6pc; }',
+    ));
+
+    expect($body)->toContain('top: 12.7mm !important; left: 0mm !important;');
+});
+
 it('takes the position from the winning rule', function () {
     $body = convertedBody(mpdfMarkup(
         '<div class="a b">1</div><div class="a" style="position: static">2</div><div class="c">3</div><span class="d">4</span><div class="e">5</div>',

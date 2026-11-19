@@ -620,7 +620,7 @@ Templates keep the mPDF markup. Before rendering, `FagusRenderer` translates it 
 | `{PAGENO}`, `{nbpg}`, `{nb}` | `counter(page)`, `counter(pages)` |
 | `<pagebreak />`, `<formfeed />`, `<newpage />` | A page break |
 | `<pagebreak page-selector="slip" />` | A block on the named page `slip` up to the next page selector, a page group. Its first page has the rules of `@page :first` before those of `@page slip`, without the size and the left and right margins, as in mPDF (`@page slip:nth(1 of slip)`). A `<pagebreak />` without page selector stays in the group. |
-| `position: absolute` or `fixed` on a child of `<body>` | Placed from the edges of the sheet on the page where it is, as by mPDF |
+| `position: absolute` or `fixed` on a child of `<body>` | Placed from the edges of the sheet on the page where it is, as by mPDF. An element before the content of its page (at the start of the document or right after a `<pagebreak>`) whose `top` and `left` (and `width` and `height`, if given) are absolute lengths and that lies inside the page area is placed in the page area, so a tagged PDF keeps it as content that screen readers read (the address field, the payment slip). Others, such as fold marks in the page margin, are drawn in a layer over the sheet in a margin box, where they are artifacts. |
 | `<watermarktext content="…" alpha="…" />` | The text at 45 degrees on every page, not in PDF/A (as with mPDF); a `body::before` overlay of the template is left out |
 | [Carry-over](#carry-over-in-own-templates) markers | Rows of the table head and foot that Fagus shows only at page breaks, with the running total from `data-carry-over` |
 | The paper size, mPDF's page margins (20, 15, 20 and 25 mm, header and footer 8 mm) and mPDF's default stylesheet | Applied before the template's own styles |
@@ -637,6 +637,7 @@ The pages break at the same places as with mPDF for the default templates, and t
 - A table row that does not fit on the page breaks across the page, as in browsers. mPDF moves the whole row to the next page, so an invoice line with a long description can start a page later there. The carry-over at such a break shows the running total including the broken line.
 - Text is kerned and the widths of table columns without a fixed width are computed as in browsers, so text can wrap at other places (e.g. a long label in the totals).
 - Positioned elements of `<body>` are drawn over the page content.
+- An address field in the page area aligns with the other content of the page, whose left edge Fagus rounds to whole points as Chrome does (about 0.1 mm to the right with a margin of 20 mm).
 - The watermark is centred on the page area, not on the sheet.
 - The XMP version and the description of the embedded XML are those of the `EmbeddedXml`, as with mPDF (for XRechnung `3.0` and "XRechnung Invoice"). File name and relationship come from Fagus' profile and are the same as with mPDF; the profile comes from `conformanceLevel` (or from the XML when it is unknown).
 - The metadata have no creator "Quittio"; the producer is "Fagus".

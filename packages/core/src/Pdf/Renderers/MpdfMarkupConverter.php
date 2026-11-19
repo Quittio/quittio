@@ -32,6 +32,18 @@ final readonly class MpdfMarkupConverter
     /** Running name of the layers with the positioned elements of a page. */
     public const string SHEET = 'mpdf-sheet';
 
+    /** Class of the blocks that place positioned elements in the page area. */
+    public const string AREA = 'mpdf-area';
+
+    /** Properties that place a positioned element. */
+    private const array POSITION_PROPERTIES = ['position', 'top', 'left', 'right', 'bottom', 'width', 'height'];
+
+    /** Elements that make no box in the flow of the page. */
+    private const array BOXLESS = [
+        'script', 'style', 'link', 'meta', 'title', 'template', 'watermarktext', 'watermarkimage', 'bookmark', 'tocentry',
+        'indexentry', 'annotation', 'sethtmlpageheader', 'sethtmlpagefooter', 'setpageheader', 'setpagefooter',
+    ];
+
     /** Elements without content (or written as <tag />) that never open a scope. */
     private const array VOID = [
         'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr',
@@ -68,8 +80,9 @@ final readonly class MpdfMarkupConverter
 
         $html = self::carryOver($html);
         [$html, $running] = self::runningElements($html);
-        $css = self::namedFirstPages($html, self::pageBlocks($html));
-        $html = self::body($html, $running, self::positionRules($html), $width, $height);
+        $blocks = self::pageBlocks($html);
+        $css = self::namedFirstPages($html, $blocks);
+        $html = self::body($html, $running, self::positionRules($html), $blocks, $width, $height);
         $html = $this->watermark($html, min($width, $height));
         $html = self::placeholders($html);
         $html = self::styles($html);
@@ -260,67 +273,109 @@ final readonly class MpdfMarkupConverter
     }
 
     /**
-     * The children of <body>: the running elements first, positioned elements in layers over the
-     * sheet, and a page break for every top-level <pagebreak>. A page break with a page selector
-     * starts a block on that named page, a page group, up to the next one; the pages after a page
-     * break without page selector stay in it.
+     * The children of <body>: the running elements first, positioned elements in the page area or
+     * in layers over the sheet, and a page break for every top-level <pagebreak>. A page break
+     * with a page selector starts a block on that named page, a page group, up to the next one;
+     * the pages after a page break without page selector stay in it.
      *
-     * @param  list<array{list<string>, string, array{int, int, int}, bool}>  $rules
+     * mPDF places positioned elements from the edges of the sheet of the page they are on. Before
+     * the first content of a page, that page and its margins are known: a positioned element
+     * that lies in its page area is placed there, in the flow, so that a tagged PDF keeps it as
+     * content. Others, such as fold marks in the page margin, which the page area would cut off,
+     * are drawn in a layer over the sheet in a margin box, where they are artifacts.
+     *
+     * @param  array<string, list<array{list<string>, string, array{int, int, int}, bool}>>  $rules
+     * @param  array<string, string>  $blocks  the @page blocks by selector
      */
-    private static function body(string $html, string $running, array $rules, float $width, float $height): string
+    private static function body(string $html, string $running, array $rules, array $blocks, float $width, float $height): string
     {
         [$start, $end] = self::bodyRange($html);
         $body = substr($html, $start, $end - $start);
 
         $out = $running;
-        // Positioned elements waiting for their layer, and what follows them until the next one.
-        $layer = '';
+        // Positioned elements waiting for their block (sheet or area), and what follows them until the next one.
+        $group = '';
+        $into = self::SHEET;
         $pending = '';
         $open = false;
+        $named = '';
+        // The page of the positioned elements, until content of the page comes before them.
+        $page = self::pageBox([$blocks[''] ?? '', $blocks[':first'] ?? ''], $width, $height);
 
         foreach (self::topLevel($body) as [$kind, $chunk, $tag, $attributes]) {
             if ($kind !== 'element') {
                 // Whitespace and comments stay where they are; a group of positioned elements spans them.
-                if ($layer !== '' && ($kind === 'comment' || trim($chunk) === '')) {
+                if ($group !== '' && ($kind === 'comment' || trim($chunk) === '')) {
                     $pending .= $chunk;
                 } else {
-                    $out .= self::layer($layer, $width, $height).$pending.$chunk;
-                    $layer = $pending = '';
+                    $out .= self::group($into, $group, $width, $height).$pending.$chunk;
+                    $group = $pending = '';
                 }
+                $page = $kind === 'text' && trim($chunk) !== '' ? null : $page;
 
                 continue;
             }
             if (in_array($tag, self::BREAKS, true)) {
-                $out .= self::layer($layer, $width, $height).$pending;
-                $layer = $pending = '';
+                $out .= self::group($into, $group, $width, $height).$pending;
+                $group = $pending = '';
                 $selector = trim($attributes['page-selector'] ?? '');
                 if ($selector === '') {
                     // The page selector before applies to the following pages until another one is given.
                     $out .= '<div class="mpdf-page" style="break-before: page;"></div>';
+                    $page = self::pageBox([$blocks[''] ?? '', $named === '' ? '' : $blocks[strtolower($named)] ?? ''], $width, $height);
 
                     continue;
                 }
                 $out .= ($open ? '</div>' : '').'<div class="mpdf-page" style="break-before: page; page: '.self::ident($selector).';">';
                 $open = true;
+                $named = $selector;
+                // The first page of a named page, as namedFirstPages() styles it.
+                $page = self::pageBox([$blocks[''] ?? '', self::firstPageBlock($blocks[':first'] ?? ''), $blocks[strtolower($selector)] ?? ''], $width, $height);
 
                 continue;
             }
-            $position = self::position($tag, $attributes, $rules);
-            if ($position === null) {
-                $out .= self::layer($layer, $width, $height).$pending.$chunk;
-                $layer = $pending = '';
+            $position = self::property('position', $tag, $attributes, $rules);
+            if ($position !== 'absolute' && $position !== 'fixed') {
+                $out .= self::group($into, $group, $width, $height).$pending.$chunk;
+                $group = $pending = '';
+                $page = in_array($tag, self::BOXLESS, true) ? $page : null;
 
                 continue;
             }
+            $area = $page === null ? null : self::inPageArea($tag, $attributes, $rules, $page);
+            $target = $area === null ? self::SHEET : self::AREA;
+            if ($group !== '' && $target !== $into) {
+                $out .= self::group($into, $group, $width, $height).$pending;
+                $group = $pending = '';
+            }
+            $into = $target;
             // mPDF places fixed elements like absolute ones, on the page they are on.
-            $layer .= $pending.($position === 'fixed' ? self::withStyle($chunk, 'position: absolute;') : $chunk);
+            $declarations = ($position === 'fixed' ? 'position: absolute; ' : '')
+                .($area === null ? '' : 'top: '.self::number($area[0]).'mm !important; left: '.self::number($area[1]).'mm !important;');
+            $group .= $pending.($declarations === '' ? $chunk : self::withStyle($chunk, trim($declarations)));
             $pending = '';
         }
-        $out .= self::layer($layer, $width, $height).$pending.($open ? '</div>' : '');
+        $out .= self::group($into, $group, $width, $height).$pending.($open ? '</div>' : '');
         // A page break inside another element only breaks the page.
         $out = (string) preg_replace('/<(?:pagebreak|formfeed|newpage)\b(?:[^>"\']|"[^"]*"|\'[^\']*\')*>(?:\s*<\/(?:pagebreak|formfeed|newpage)\s*>)?/i', '<div class="mpdf-page" style="break-before: page;"></div>', $out);
 
         return substr($html, 0, $start).$out.substr($html, $end);
+    }
+
+    /**
+     * Positioned elements in the page area ({@see AREA}) or in a layer over the sheet ({@see SHEET}).
+     */
+    private static function group(string $into, string $elements, float $width, float $height): string
+    {
+        if ($elements === '') {
+            return '';
+        }
+
+        // A block of no height at the top of the page area (a block formatting context, which
+        // the margins of the content after it do not collapse through) holds them.
+        return $into === self::AREA
+            ? '<div class="'.self::AREA.'" style="position: relative; display: flow-root; height: 0;">'.$elements.'</div>'
+            : self::layer($elements, $width, $height);
     }
 
     /**
@@ -329,12 +384,15 @@ final readonly class MpdfMarkupConverter
      */
     private static function layer(string $elements, float $width, float $height): string
     {
-        if ($elements === '') {
-            return '';
-        }
-
         return '<div class="'.self::SHEET.'" style="position: running('.self::SHEET.');"><div style="position: relative; width: '.$width.'mm; height: '.$height.'mm;">'
             .$elements.'</div></div><div style="position: running('.self::SHEET.');"></div>';
+    }
+
+    private static function number(float $value): string
+    {
+        $number = rtrim(rtrim(sprintf('%.3F', $value), '0'), '.');
+
+        return $number === '-0' ? '0' : $number;
     }
 
     /**
@@ -495,23 +553,23 @@ final readonly class MpdfMarkupConverter
     }
 
     /**
-     * The value of position (absolute or fixed) of a top-level element, from its style attribute
-     * or the rules of the document's stylesheets; null for any other value.
+     * The value of a property of a top-level element (in lower case), from its style attribute
+     * or the rules of the document's stylesheets; null where none sets it.
      *
      * @param  array<string, string>  $attributes
-     * @param  list<array{list<string>, string, array{int, int, int}, bool}>  $rules
+     * @param  array<string, list<array{list<string>, string, array{int, int, int}, bool}>>  $rules
      */
-    private static function position(string $tag, array $attributes, array $rules): ?string
+    private static function property(string $property, string $tag, array $attributes, array $rules): ?string
     {
         $value = null;
-        if (preg_match_all('/(?:^|;)\s*position\s*:\s*([a-z-]+)\s*(!\s*important)?/i', $attributes['style'] ?? '', $inline, PREG_SET_ORDER) > 0) {
+        if (preg_match_all('/(?:^|;)\s*'.$property.'\s*:\s*([^;]*?)\s*(?:!\s*important\s*)?(?=;|$)/i', $attributes['style'] ?? '', $inline, PREG_SET_ORDER) > 0) {
             $value = strtolower($inline[count($inline) - 1][1]);
         }
 
         $classes = preg_split('/\s+/', trim($attributes['class'] ?? ''), -1, PREG_SPLIT_NO_EMPTY);
         $classes = is_array($classes) ? $classes : [];
         $winner = null;
-        foreach ($rules as $order => [$compound, $ruleValue, $specificity, $important]) {
+        foreach ($rules[$property] ?? [] as $order => [$compound, $ruleValue, $specificity, $important]) {
             if (! self::matches($compound, $tag, $attributes['id'] ?? null, $classes)) {
                 continue;
             }
@@ -524,7 +582,46 @@ final readonly class MpdfMarkupConverter
             $value = $winner[1];
         }
 
-        return in_array($value, ['absolute', 'fixed'], true) ? $value : null;
+        return $value;
+    }
+
+    /**
+     * Top and left of a positioned element from the edges of the page area of its page, where
+     * its top and left are absolute lengths and its box lies in the page area (as far as its
+     * width and height are absolute lengths, and without right and bottom); null otherwise.
+     *
+     * @param  array<string, string>  $attributes
+     * @param  array<string, list<array{list<string>, string, array{int, int, int}, bool}>>  $rules
+     * @param  array{?float, ?float, ?float, ?float, ?float, ?float}  $page  see {@see pageBox()}
+     * @return array{float, float}|null
+     */
+    private static function inPageArea(string $tag, array $attributes, array $rules, array $page): ?array
+    {
+        [$width, $height, $marginTop, $marginRight, $marginBottom, $marginLeft] = $page;
+        $value = static fn (string $property): ?string => self::property($property, $tag, $attributes, $rules);
+        // No width or height: the box fits its content, which is not measured here.
+        $size = static function (string $property) use ($value): ?float {
+            $length = $value($property);
+
+            return $length === null || $length === 'auto' ? 0.0 : self::millimetres($length);
+        };
+        $top = self::millimetres((string) $value('top'));
+        $left = self::millimetres((string) $value('left'));
+        $boxWidth = $size('width');
+        $boxHeight = $size('height');
+        if ($top === null || $left === null || $boxWidth === null || $boxHeight === null || ! in_array($value('right'), [null, 'auto'], true) || ! in_array($value('bottom'), [null, 'auto'], true)
+            || $width === null || $height === null || $marginTop === null || $marginRight === null || $marginBottom === null || $marginLeft === null) {
+            return null;
+        }
+
+        // Rounding of the lengths: a box that ends at the edge of the page area is in it.
+        $tolerance = 0.01;
+        $inside = $top >= $marginTop - $tolerance && $left >= $marginLeft - $tolerance
+            && $left + $boxWidth <= $width - $marginRight + $tolerance
+            && $top + $boxHeight <= $height - $marginBottom + $tolerance
+            && $top < $height - $marginBottom;
+
+        return $inside ? [$top - $marginTop, $left - $marginLeft] : null;
     }
 
     /**
@@ -549,11 +646,12 @@ final readonly class MpdfMarkupConverter
     }
 
     /**
-     * The rules of the document's stylesheets that set position: for each selector the parts
-     * of its last compound selector, the value, the specificity and whether it is important.
-     * Only what mPDF applies: top-level rules and those of @media print and all.
+     * The rules of the document's stylesheets that set position or the offsets and size of a
+     * positioned element, by property: for each selector the parts of its last compound
+     * selector, the value, the specificity and whether it is important. Only what mPDF applies:
+     * top-level rules and those of @media print and all.
      *
-     * @return list<array{list<string>, string, array{int, int, int}, bool}>
+     * @return array<string, list<array{list<string>, string, array{int, int, int}, bool}>>
      */
     private static function positionRules(string $html): array
     {
@@ -561,7 +659,7 @@ final readonly class MpdfMarkupConverter
         foreach (self::styleBlocks($html) as [$css]) {
             foreach (self::rules(self::withoutComments($css)) as [$selectors, $declarations]) {
                 foreach (self::declarations($declarations) as [$name, $value]) {
-                    if ($name !== 'position') {
+                    if (! in_array($name, self::POSITION_PROPERTIES, true)) {
                         continue;
                     }
                     $important = (bool) preg_match('/!\s*important\s*$/i', $value);
@@ -574,7 +672,7 @@ final readonly class MpdfMarkupConverter
                         $compounds = preg_split('/\s*[>+~]\s*|\s+/', $selector, -1, PREG_SPLIT_NO_EMPTY);
                         $last = is_array($compounds) && $compounds !== [] ? $compounds[count($compounds) - 1] : '';
                         preg_match_all('/[#.]?[A-Za-z_\-*][\w-]*|\*/', (string) preg_replace('/\[[^\]]*\]|:[\w-]+(?:\([^)]*\))?/', '', $last), $parts);
-                        $rules[] = [$parts[0], $value, [
+                        $rules[$name][] = [$parts[0], $value, [
                             substr_count($selector, '#'),
                             substr_count($selector, '.') + substr_count($selector, '[') + self::occurrences('/:[\w-]/', $selector),
                             self::occurrences('/(?:^|[\s>+~])[a-zA-Z]/', $selector),
@@ -585,6 +683,79 @@ final readonly class MpdfMarkupConverter
         }
 
         return $rules;
+    }
+
+    /**
+     * Size and margins in millimetres of a page that the @page blocks style, in cascade order
+     * after mPDF's page defaults (see {@see baseStyles()}); null for a value that is not an
+     * absolute length.
+     *
+     * @param  list<string>  $blocks
+     * @return array{?float, ?float, ?float, ?float, ?float, ?float} width, height, and the margins top, right, bottom and left
+     */
+    private static function pageBox(array $blocks, float $width, float $height): array
+    {
+        $box = [$width, $height, 20.0, 15.0, 25.0, 20.0];
+        $sides = ['margin-top' => 2, 'margin-right' => 3, 'margin-bottom' => 4, 'margin-left' => 5];
+        foreach ($blocks as $block) {
+            foreach (self::declarations($block) as [$name, $value]) {
+                $value = trim((string) preg_replace('/!\s*important\s*$/i', '', $value), " \t\n\r\0\x0B\"'");
+                if ($name === 'margin') {
+                    [$box[2], $box[3], $box[4], $box[5]] = array_map(self::millimetres(...), self::sides($value));
+                } elseif (isset($sides[$name])) {
+                    $box[$sides[$name]] = self::millimetres($value);
+                } elseif ($name === 'size' || $name === 'sheet-size') {
+                    [$box[0], $box[1]] = self::size($value);
+                }
+            }
+        }
+
+        return $box;
+    }
+
+    /**
+     * Width and height in millimetres of a value of size or sheet-size; nulls for one that is
+     * neither two absolute lengths nor an mPDF page format (with landscape or portrait).
+     *
+     * @return array{?float, ?float}
+     */
+    private static function size(string $value): array
+    {
+        $parts = preg_split('/\s+/', strtolower(trim($value)), -1, PREG_SPLIT_NO_EMPTY);
+        $parts = is_array($parts) ? $parts : [];
+        if (count($parts) === 2 && self::millimetres($parts[0]) !== null && self::millimetres($parts[1]) !== null) {
+            return [self::millimetres($parts[0]), self::millimetres($parts[1])];
+        }
+        $orientation = array_values(array_intersect($parts, ['landscape', 'portrait']));
+        $name = implode(' ', array_diff($parts, ['landscape', 'portrait']));
+        try {
+            [$width, $height] = self::paperSize($name);
+        } catch (PdfException) {
+            return [null, null];
+        }
+        $landscape = ($orientation[0] ?? null) === 'landscape';
+
+        return ($orientation === [] || $landscape === ($width > $height)) ? [$width, $height] : [$height, $width];
+    }
+
+    /**
+     * An absolute length (mm, cm, Q, in, pt, pc, px or 0) in millimetres; null for anything else.
+     */
+    private static function millimetres(string $value): ?float
+    {
+        if (preg_match('/^(-?(?:\d+\.?\d*|\.\d+))(mm|cm|q|in|pt|pc|px)?$/i', trim($value), $m) !== 1 || (($m[2] ?? '') === '' && (float) $m[1] !== 0.0)) {
+            return null;
+        }
+
+        return (float) $m[1] * match (strtolower($m[2] ?? '')) {
+            'cm' => 10.0,
+            'q' => 0.25,
+            'in' => 25.4,
+            'pt' => 25.4 / 72,
+            'pc' => 25.4 / 6,
+            'px' => 25.4 / 96,
+            default => 1.0,
+        };
     }
 
     private static function occurrences(string $pattern, string $subject): int
