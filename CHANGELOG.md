@@ -4,6 +4,10 @@ All notable changes to this project are documented in this file. The format foll
 
 ## [Unreleased]
 
+### Changed
+
+- `FagusRenderer` gives the first page after a `<pagebreak page-selector>` all rules of `@page :first` (also its top and bottom margins), as mPDF does, with a page group (`@page name:nth(1 of name)`) instead of running elements at the start of the section. A `<pagebreak />` without page selector no longer starts a new page group. This needs Fagus 0.3.
+
 ## [1.1.0] - 2026-11-18
 
 ### Added

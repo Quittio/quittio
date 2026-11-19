@@ -90,9 +90,8 @@ it('turns page breaks into breaks and page selectors into blocks on named pages'
     $body = convertedBody(mpdfMarkup('<p>One</p><pagebreak /><p>Two</p><pagebreak page-selector="slip" /><p>Three</p><pagebreak /><p>Four</p><pagebreak page-selector="other"><p>Five</p>'));
 
     expect($body)->toBe('<p>One</p><div class="mpdf-page" style="break-before: page;"></div><p>Two</p>'
-        .'<div class="mpdf-page" style="break-before: page; page: slip;"><p>Three</p></div>'
-        // The page selector applies until another one is given.
-        .'<div class="mpdf-page" style="break-before: page; page: slip;"><p>Four</p></div>'
+        // The page selector applies until another one is given: a page break without one stays in its page group.
+        .'<div class="mpdf-page" style="break-before: page; page: slip;"><p>Three</p><div class="mpdf-page" style="break-before: page;"></div><p>Four</p></div>'
         .'<div class="mpdf-page" style="break-before: page; page: other;"><p>Five</p></div>');
 });
 
@@ -101,20 +100,26 @@ it('breaks the page for a page break inside another element', function () {
         ->toBe('<div><p>One</p><div class="mpdf-page" style="break-before: page;"></div><p>Two</p></div>');
 });
 
-it('gives the first page of a page selector the header and footer of the first page, as mPDF does', function () {
+it('gives the first page of a page selector the rules of the first page, as mPDF does', function () {
     $html = (new MpdfMarkupConverter)->convert(mpdfMarkup(
         '<htmlpageheader name="first"></htmlpageheader><htmlpageheader name="main">Head</htmlpageheader><htmlpagefooter name="foot">Foot</htmlpagefooter>'
-        .'<p>One</p><pagebreak page-selector="slip" /><p>Slip</p>',
-        '@page { header: html_main; footer: html_foot; } @page :first { header: html_first; } @page slip { footer: none; }',
+        .'<p>One</p><pagebreak page-selector="slip" /><p>Slip</p><pagebreak page-selector="slip" /><p>Second slip</p>',
+        '@page { header: html_main; footer: html_foot; } @page :first { margin: 15mm 5mm 30mm; size: A5; header: html_first; @top-left { content: "x"; } } @page slip { footer: none; margin-bottom: 10mm; }',
     ));
 
-    // The header of the first page on the first page of the section, the regular one after it;
-    // the footer is the same on both.
-    expect($html)->toContain('<div class="mpdf-page" style="break-before: page; page: slip;">'
-        .'<div class="mpdf-header" style="position: running(mpdf-page-slip-header);"></div>'
-        .'<div class="mpdf-header" style="position: running(mpdf-page-slip-header);">Head</div><p>Slip</p></div>')
-        ->and($html)->toContain("<style>\n@page slip { @top-center { content: element(mpdf-page-slip-header); } }\n</style>\n</head>")
-        ->and($html)->not->toContain('mpdf-page-slip-footer');
+    // The rules of :first without size and the left and right margins, then those of the named
+    // page again; one rule for every page group of that name.
+    expect($html)->toContain("<style>\n@page slip:nth(1 of slip) { margin-top: 15mm; margin-bottom: 30mm; margin-bottom: 10mm;\n"
+        ."      @top-left { content: \"x\"; }\n      @top-center { content: element(mpdf-header-first); }\n      @bottom-center { content: none; } }\n</style>\n</head>")
+        ->and($html)->toContain('<div class="mpdf-page" style="break-before: page; page: slip;"><p>Slip</p></div><div class="mpdf-page" style="break-before: page; page: slip;"><p>Second slip</p></div>')
+        ->and(substr_count($html, ':nth('))->toBe(1)
+        ->and($html)->not->toContain('mpdf-page-slip');
+});
+
+it('adds no rules for named pages without rules of the first page', function () {
+    $html = (new MpdfMarkupConverter)->convert(mpdfMarkup('<p>One</p><pagebreak page-selector="slip" /><p>Slip</p>', '@page slip { footer: none; }'));
+
+    expect($html)->not->toContain(':nth(');
 });
 
 it('draws positioned children of the body in a layer over the sheet of their page', function () {

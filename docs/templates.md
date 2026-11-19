@@ -619,7 +619,7 @@ Templates keep the mPDF markup. Before rendering, `FagusRenderer` translates it 
 | `sheet-size` in `@page` | `size` |
 | `{PAGENO}`, `{nbpg}`, `{nb}` | `counter(page)`, `counter(pages)` |
 | `<pagebreak />`, `<formfeed />`, `<newpage />` | A page break |
-| `<pagebreak page-selector="slip" />` | A block on the named page `slip` up to the next page selector. Its first page has the header and footer of `@page :first`, as in mPDF. |
+| `<pagebreak page-selector="slip" />` | A block on the named page `slip` up to the next page selector, a page group. Its first page has the rules of `@page :first` before those of `@page slip`, without the size and the left and right margins, as in mPDF (`@page slip:nth(1 of slip)`). A `<pagebreak />` without page selector stays in the group. |
 | `position: absolute` or `fixed` on a child of `<body>` | Placed from the edges of the sheet on the page where it is, as by mPDF |
 | `<watermarktext content="…" alpha="…" />` | The text at 45 degrees on every page, not in PDF/A (as with mPDF); a `body::before` overlay of the template is left out |
 | [Carry-over](#carry-over-in-own-templates) markers | Rows of the table head and foot that Fagus shows only at page breaks, with the running total from `data-carry-over` |
@@ -627,7 +627,7 @@ Templates keep the mPDF markup. Before rendering, `FagusRenderer` translates it 
 | The font families of mPDF (`geist`, `geistmedium`, `inter`, `liberationsans`, `pdf.fonts`) | `@font-face` rules with the same files |
 | Title, author and subject of the `RenderRequest` | `<title>`, `<meta name="author">` and `<meta name="description">` |
 
-Not translated: `<tocpagebreak>`, `<columns>`, `<barcode>`, `<bookmark>`, `<annotation>`, `<watermarkimage>`, `<sethtmlpageheader>`, the attributes of `<pagebreak>` other than `page-selector`, the margins of `@page :first` on the first page of a named page, `even-header-name` and `even-footer-name` (`MpdfRenderer` prints the odd ones on every page as well), and the fonts that come with mPDF (DejaVu, FreeSans …) unless their directory is a font directory.
+Not translated: `<tocpagebreak>`, `<columns>`, `<barcode>`, `<bookmark>`, `<annotation>`, `<watermarkimage>`, `<sethtmlpageheader>`, the attributes of `<pagebreak>` other than `page-selector`, `even-header-name` and `even-footer-name` (`MpdfRenderer` prints the odd ones on every page as well), and the fonts that come with mPDF (DejaVu, FreeSans …) unless their directory is a font directory.
 
 #### Differences from mPDF
 

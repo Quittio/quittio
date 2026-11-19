@@ -67,9 +67,9 @@ final readonly class MpdfMarkupConverter
         $watermark = preg_match('/<watermarktext\b/i', $html) === 1;
 
         $html = self::carryOver($html);
-        [$html, $running, $contents] = self::runningElements($html);
-        [$sections, $css] = self::namedFirstPages($html, $contents);
-        $html = self::body($html, $running, $sections, self::positionRules($html), $width, $height);
+        [$html, $running] = self::runningElements($html);
+        $css = self::namedFirstPages($html, self::pageBlocks($html));
+        $html = self::body($html, $running, self::positionRules($html), $width, $height);
         $html = $this->watermark($html, min($width, $height));
         $html = self::placeholders($html);
         $html = self::styles($html);
@@ -140,83 +140,118 @@ final readonly class MpdfMarkupConverter
     /**
      * <htmlpageheader> and <htmlpagefooter> as running elements, taken out of the document.
      *
-     * @return array{string, string, array<string, array<string, string>>} the HTML without them,
-     *         the running elements, and their content by kind (header, footer) and name
+     * @return array{string, string} the HTML without them, and the running elements
      */
     private static function runningElements(string $html): array
     {
         $running = '';
-        $contents = ['header' => [], 'footer' => []];
         $html = (string) preg_replace_callback(
             '/<htmlpage(header|footer)\b((?:[^>"\']|"[^"]*"|\'[^\']*\')*)>(.*?)<\/htmlpage\1\s*>/is',
-            static function (array $m) use (&$running, &$contents): string {
+            static function (array $m) use (&$running): string {
                 $kind = strtolower($m[1]);
                 $name = self::attributes($m[2])['name'] ?? '';
                 $running .= '<div class="mpdf-'.$kind.'" style="position: running('.self::runningName($kind, $name).');">'.$m[3].'</div>'."\n";
-                $contents[$kind][$name] = $m[3];
 
                 return '';
             },
             $html,
         );
 
-        return [$html, $running, $contents];
+        return [$html, $running];
+    }
+
+    /**
+     * The blocks of the top-level @page rules of the document's stylesheets by selector: '' for
+     *
+     * @page, ':first', or the page name in lower case (mPDF ignores the case of page names).
+     *
+     * @return array<string, string>
+     */
+    private static function pageBlocks(string $html): array
+    {
+        $blocks = [];
+        foreach (self::styleBlocks($html) as [$css]) {
+            foreach (self::statements(self::withoutComments($css)) as [$prelude, $block]) {
+                if ($block !== null && preg_match('/^\s*@page\b(.*)$/is', $prelude, $m) === 1) {
+                    $selector = strtolower(trim($m[1]));
+                    $blocks[$selector] = ($blocks[$selector] ?? '').$block.';';
+                }
+            }
+        }
+
+        return $blocks;
     }
 
     /**
      * mPDF applies the rules of @page :first also to the first page after a <pagebreak> with a
-     * page selector (before those of the named page). CSS has no selector for the first page of
-     * a named page, so where this gives that page another header or footer than the following
-     * pages of the same name, the named page shows them as running elements set at the start of
-     * the section: the one for its first page, then the one for the pages after it.
+     * page selector, before those of the named page. Each such page break starts a page group
+     * (see {@see body()}), so @page name:nth(1 of name) selects that page: it gets the rules of
+     * :first, then those of the named page again, which the more specific rule would override.
      *
-     * @param  array<string, array<string, string>>  $contents  header and footer content by name
-     * @return array{array<string, string>, string} running elements for the start of a section of
-     *         each page name, and the margin boxes that show them
+     * @param  array<string, string>  $blocks  the @page blocks by selector
+     * @return string the @page rules of the first pages of the named pages
      */
-    private static function namedFirstPages(string $html, array $contents): array
+    private static function namedFirstPages(string $html, array $blocks): string
     {
-        $rules = [];
-        foreach (self::styleBlocks($html) as [$css]) {
-            foreach (self::statements(self::withoutComments($css)) as [$prelude, $block]) {
-                if ($block === null || preg_match('/^\s*@page\b(.*)$/is', $prelude, $m) !== 1) {
-                    continue;
-                }
-                $selector = strtolower(trim($m[1]));
-                foreach (self::declarations($block) as [$name, $value]) {
-                    $name = ['odd-header-name' => 'header', 'odd-footer-name' => 'footer'][$name] ?? $name;
-                    if ($name === 'header' || $name === 'footer') {
-                        $rules[$selector][$name] = trim($value, " \t\n\r\0\x0B\"'");
-                    }
-                }
-            }
+        $first = self::firstPageBlock($blocks[':first'] ?? '');
+        if ($first === '') {
+            return '';
         }
 
         preg_match_all('/<(?:pagebreak|formfeed|newpage)\b[^>]*\spage-selector\s*=\s*(?:"([^"]*)"|\'([^\']*)\'|([^\s>]+))/i', $html, $selectors, PREG_SET_ORDER);
-        $sections = [];
+        $pages = [];
         $css = '';
         foreach ($selectors as $m) {
             $page = trim(html_entity_decode(($m[1] ?? '').($m[2] ?? '').($m[3] ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
-            $key = strtolower($page);
-            if ($page === '' || isset($sections[$page])) {
+            $ident = self::ident($page);
+            if ($page === '' || isset($pages[$ident])) {
                 continue;
             }
-            $first = [...$rules[''] ?? [], ...$rules[':first'] ?? [], ...$rules[$key] ?? []];
-            $following = [...$rules[''] ?? [], ...$rules[$key] ?? []];
-            $sections[$page] = '';
-            foreach (['header' => 'top-center', 'footer' => 'bottom-center'] as $kind => $box) {
-                if (($first[$kind] ?? null) === ($following[$kind] ?? null)) {
-                    continue;
-                }
-                $name = 'mpdf-page-'.self::ident($page).'-'.$kind;
-                $content = static fn (?string $value): string => preg_match('/^html_(.+)$/i', (string) $value, $h) === 1 ? ($contents[$kind][$h[1]] ?? '') : '';
-                $sections[$page] .= '<div class="mpdf-'.$kind.'" style="position: running('.$name.');">'.$content($first[$kind] ?? null).'</div>'
-                    .'<div class="mpdf-'.$kind.'" style="position: running('.$name.');">'.$content($following[$kind] ?? null).'</div>';
-                $css .= '@page '.self::ident($page).' { @'.$box.' { content: element('.$name.'); } }'."\n";
+            $pages[$ident] = true;
+            $css .= '@page '.$ident.':nth(1 of '.$ident.') {'.self::pageRule($first.($blocks[strtolower($page)] ?? '')).'}'."\n";
+        }
+
+        return $css;
+    }
+
+    /**
+     * The rules of @page :first that mPDF applies to the first page of a named page: all but the
+     * size and the left and right margins.
+     */
+    private static function firstPageBlock(string $block): string
+    {
+        $kept = '';
+        foreach (self::statements($block) as [$text, $nested]) {
+            if ($nested !== null) {
+                $kept .= trim($text).' {'.$nested.'} ';
+            }
+        }
+        foreach (self::declarations($block) as [$name, $value]) {
+            if ($name === 'margin') {
+                [$top, , $bottom] = self::sides($value);
+                $kept .= 'margin-top: '.$top.'; margin-bottom: '.$bottom.'; ';
+            } elseif (! in_array($name, ['size', 'sheet-size', 'margin-left', 'margin-right'], true)) {
+                $kept .= $name.': '.$value.'; ';
             }
         }
 
-        return [$sections, $css];
+        return $kept;
+    }
+
+    /**
+     * The four sides (top, right, bottom, left) of a shorthand value such as that of margin.
+     *
+     * @return array{string, string, string, string}
+     */
+    private static function sides(string $value): array
+    {
+        $parts = preg_split('/\s+/', trim($value), -1, PREG_SPLIT_NO_EMPTY);
+        $parts = is_array($parts) && $parts !== [] ? $parts : [''];
+        $top = $parts[0];
+        $right = $parts[1] ?? $top;
+        $bottom = $parts[2] ?? $top;
+
+        return [$top, $right, $bottom, $parts[3] ?? $right];
     }
 
     private static function runningName(string $kind, string $name): string
@@ -226,12 +261,13 @@ final readonly class MpdfMarkupConverter
 
     /**
      * The children of <body>: the running elements first, positioned elements in layers over the
-     * sheet, and a page break (or a block on a named page) for every top-level <pagebreak>.
+     * sheet, and a page break for every top-level <pagebreak>. A page break with a page selector
+     * starts a block on that named page, a page group, up to the next one; the pages after a page
+     * break without page selector stay in it.
      *
-     * @param  array<string, string>  $sections  running elements for the start of a section by page name
      * @param  list<array{list<string>, string, array{int, int, int}, bool}>  $rules
      */
-    private static function body(string $html, string $running, array $sections, array $rules, float $width, float $height): string
+    private static function body(string $html, string $running, array $rules, float $width, float $height): string
     {
         [$start, $end] = self::bodyRange($html);
         $body = substr($html, $start, $end - $start);
@@ -240,7 +276,6 @@ final readonly class MpdfMarkupConverter
         // Positioned elements waiting for their layer, and what follows them until the next one.
         $layer = '';
         $pending = '';
-        $page = null;
         $open = false;
 
         foreach (self::topLevel($body) as [$kind, $chunk, $tag, $attributes]) {
@@ -259,13 +294,14 @@ final readonly class MpdfMarkupConverter
                 $out .= self::layer($layer, $width, $height).$pending;
                 $layer = $pending = '';
                 $selector = trim($attributes['page-selector'] ?? '');
-                // A page selector applies to the following pages until another one is given.
-                $page = $selector !== '' ? $selector : $page;
-                $out .= $open ? '</div>' : '';
-                $open = $page !== null;
-                $out .= $open
-                    ? '<div class="mpdf-page" style="break-before: page; page: '.self::ident($page).';">'.($selector !== '' ? $sections[$selector] ?? '' : '')
-                    : '<div class="mpdf-page" style="break-before: page;"></div>';
+                if ($selector === '') {
+                    // The page selector before applies to the following pages until another one is given.
+                    $out .= '<div class="mpdf-page" style="break-before: page;"></div>';
+
+                    continue;
+                }
+                $out .= ($open ? '</div>' : '').'<div class="mpdf-page" style="break-before: page; page: '.self::ident($selector).';">';
+                $open = true;
 
                 continue;
             }
