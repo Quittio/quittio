@@ -37,8 +37,8 @@ $brand = function () use ($design, $invoice, $e): string {
     /* Following pages start below their header (logo, title, number and buyer); the first page with the letterhead. */
     @page { margin: <?= $e($design->continuationMarginTop) ?>mm 19mm 37mm 20mm; margin-header: 14.6mm; margin-footer: 5.5mm; header: html_quittioHeader; footer: html_quittioFooter; }
     @page :first { margin-top: <?= $e($design->pageMarginTop) ?>mm; header: html_quittioFirstHeader; }
-    /* The page of the payment slip: no footer, the slip takes the bottom 105 mm. */
-    @page slip { footer: html_quittioNoFooter; }
+    /* The page of the payment slip: no footer, the slip takes the bottom 105 mm of the sheet, which needs no page margins. */
+    @page slip { margin: 0; footer: html_quittioNoFooter; }
     body { font-family: <?= $e($design->font) ?>; font-size: 9.75pt; color: <?= $text ?>; line-height: 1.45; }
     table { border-collapse: collapse; width: 100%; }
     td, th { vertical-align: top; padding: 0; line-height: 1.5; }
