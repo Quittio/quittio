@@ -15,9 +15,11 @@ use Quittio\Core\Pdf\PdfException;
  * - <htmlpageheader name> and <htmlpagefooter name> become running elements, and the @page
  *   properties header, footer, margin-header and margin-footer the top and bottom center margin
  *   boxes that show them; {PAGENO} and {nbpg} become counter(page) and counter(pages);
- * - <pagebreak> becomes a page break, with page-selector a block on that named page;
+ * - <pagebreak> becomes a page break, with page-selector a block on that named page, whose
+ *   first page gets the rules of @page :first through a page group;
  * - absolutely (and fixed) positioned children of <body>, which mPDF places relative to the
- *   sheet, are drawn in a layer over the sheet of the page they are on;
+ *   sheet, are placed in the page area of the page they are on where they lie in it, else
+ *   drawn in a layer over the sheet of that page;
  * - <watermarktext> becomes a watermark on every page (unless watermarks are off, as mPDF
  *   prints none in PDF/A), and replaces a browser watermark of the template (body::before);
  * - the carry-over rows of the line table (see {@see CarryOver}) become rows of its table head
