@@ -123,10 +123,6 @@ final readonly class MpdfMarkupConverter
         $carryIn = self::carryRow(str_replace(['{page}', '{amount}'], ['<span class="mpdf-previous-page"></span>', $amount], $in));
         $carryOut = self::carryRow(str_replace(['{page}', '{amount}'], ['<span class="mpdf-next-page"></span>', $amount], $out));
         $html = substr($html, 0, $headEnd).$carryIn.'</thead><tfoot>'.$carryOut.'</tfoot>'.substr($html, $headEnd + strlen('</thead>'));
-        // Separate borders: with collapsed borders, Fagus 0.1 draws the bottom border of the hidden
-        // carry-in row instead of the border below the column heads on the first page of the table.
-        $tableEnd = (int) strpos($html, '>', $tableStart) + 1;
-        $html = substr($html, 0, $tableStart).self::withStyle(substr($html, $tableStart, $tableEnd - $tableStart), 'border-collapse: separate; border-spacing: 0;').substr($html, $tableEnd);
 
         return (string) preg_replace('/<!--quittio:carry-(?:out|in)\s.*?-->/s', '', $html);
     }

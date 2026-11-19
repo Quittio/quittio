@@ -193,7 +193,7 @@ it('puts the carry-over rows into the head and foot of the line table', function
 
     $body = convertedBody($html);
 
-    expect($body)->toBe('<table class="lines" style="width: 100%; border-collapse: separate; border-spacing: 0;"><thead><tr><th>Pos.</th><th>Amount</th></tr>'
+    expect($body)->toBe('<table class="lines" style="width: 100%"><thead><tr><th>Pos.</th><th>Amount</th></tr>'
         .'<tr data-mpdf-carry class="carry carry-in"><td>Brought forward from page <span class="mpdf-previous-page"></span></td><td><span class="mpdf-carry-amount"></span></td></tr></thead>'
         .'<tfoot><tr data-mpdf-carry class="carry carry-out"><td>Continued on page <span class="mpdf-next-page"></span></td><td><span class="mpdf-carry-amount"></span></td></tr></tfoot><tbody>'
         .'<!--quittio:rows--><tr class="line" data-carry-over="10,00 €"><td>1</td><td>10,00 €</td></tr><!--/quittio:rows-->'
