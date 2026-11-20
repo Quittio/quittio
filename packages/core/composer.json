@@ -51,14 +51,14 @@
         "setasign/fpdi": "^2.6"
     },
     "require-dev": {
-        "nforst/fagus": "^0.2.0",
+        "nforst/fagus": "^1.0.0",
         "opis/json-schema": "^2.6",
         "pestphp/pest": "^4.7 || ^5.0",
         "quittio/country-de": "self.version",
         "spatie/pest-plugin-snapshots": "^2.2"
     },
     "conflict": {
-        "nforst/fagus": "<0.2"
+        "nforst/fagus": "<1.0"
     },
     "suggest": {
         "ext-intl": "Locale-aware number and date formatting",

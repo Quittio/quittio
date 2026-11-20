@@ -6,7 +6,7 @@ All notable changes to this project are documented in this file. The format foll
 
 ### Changed
 
-- `FagusRenderer` gives the first page after a `<pagebreak page-selector>` all rules of `@page :first` (also its top and bottom margins), as mPDF does, with a page group (`@page name:nth(1 of name)`) instead of running elements at the start of the section. A `<pagebreak />` without page selector no longer starts a new page group. This needs Fagus 0.3.
+- `FagusRenderer` gives the first page after a `<pagebreak page-selector>` all rules of `@page :first` (also its top and bottom margins), as mPDF does, with a page group (`@page name:nth(1 of name)`) instead of running elements at the start of the section. A `<pagebreak />` without page selector no longer starts a new page group. This needs Fagus 1.0.
 - `FagusRenderer` places positioned elements of `<body>` that lie in the page area of their page (the address field, the payment slip) in the page area instead of a margin box, so that the tagged PDF keeps them as content that screen readers read; margin boxes are artifacts. Elements in the page margins, such as fold and punch marks, stay in the layer over the sheet.
 - The default templates give the page of the payment slip no page margins (`@page slip { margin: 0; }`), so that the slip lies in its page area. mPDF prints it as before. Published templates keep their slip, which Fagus then draws partly in the layer over the sheet.
 
@@ -14,7 +14,7 @@ All notable changes to this project are documented in this file. The format foll
 
 ### Added
 
-- Fagus as optional PDF renderer: `Quittio\Core\Pdf\Renderers\FagusRenderer`, in Laravel `pdf.renderer = 'fagus'` with `pdf.renderers.fagus.binary` and `timeout`. It renders the same templates as mPDF with [Fagus](https://fagus.niklasforst.de), an engine for CSS Paged Media that runs as a binary, and writes PDF/A-3b and ZUGFeRD/Factur-X itself. The mPDF markup of the templates (page headers and footers, page numbers, page breaks and named pages, positioned elements, the watermark and the carry-over rows) is translated into standard CSS at render time, so the default templates and own templates work unchanged. The package `nforst/fagus` is suggested, not required; mPDF stays the default. It needs `nforst/fagus` 0.2 or newer (older versions conflict). See [Fagus](docs/templates.md#fagus) for what is translated and how the output differs from mPDF.
+- Fagus as optional PDF renderer: `Quittio\Core\Pdf\Renderers\FagusRenderer`, in Laravel `pdf.renderer = 'fagus'` with `pdf.renderers.fagus.binary` and `timeout`. It renders the same templates as mPDF with [Fagus](https://fagus.niklasforst.de), an engine for CSS Paged Media that runs as a binary, and writes PDF/A-3b and ZUGFeRD/Factur-X itself. The mPDF markup of the templates (page headers and footers, page numbers, page breaks and named pages, positioned elements, the watermark and the carry-over rows) is translated into standard CSS at render time, so the default templates and own templates work unchanged. The package `nforst/fagus` is suggested, not required; mPDF stays the default. It needs `nforst/fagus` 1.0 or newer (older versions conflict). See [Fagus](docs/templates.md#fagus) for what is translated and how the output differs from mPDF.
 
 ## [1.0.0] - 2026-10-27
 
